@@ -1,0 +1,45 @@
+---
+description: Data layer conventions using accountService and transactions
+globs: "global/server/services/**/*.luau"
+alwaysApply: false
+---
+
+# Data Layer
+
+## accountService
+
+Player data is managed through `global/server/services/accountService/`. Key modules:
+
+- `schema.luau` — account template + GreenTea validation schema
+- `store.luau` — Charm signal + ProfileStore instance
+- `transaction.luau` — transactional mutation engine
+- `migrations.luau` — versioned data migrations
+- `init.luau` — service entry point, player lifecycle, replication
+
+## Mutation Rules
+
+- **NEVER** modify account data outside a transaction
+- Use `accountService.transaction()` to wrap mutations:
+
+```luau
+accountService.transaction(function(tx)
+    tx(player, function()
+        accountService.mutateData(function(acc)
+            acc = sift.Dictionary.set(acc, "currencies",
+                sift.Dictionary.set(acc.currencies, "gold", acc.currencies.gold + 100)
+            )
+            return acc
+        end)
+    end)
+end)
+```
+
+- All mutations are validated against the GreenTea schema before commit
+- Aborted transactions roll back automatically
+- Use `accountService.onSuccess()` / `accountService.onAbort()` for side effects
+
+## Client Sync
+
+- Server replicates diffs via `delta-compress` + blink `account.sync` event
+- Client receives patches in `accountController` and applies them to a local Charm signal
+- Client sends `account.ready` to begin receiving replication

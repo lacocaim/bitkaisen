@@ -1,0 +1,6 @@
+option Casing = Camel
+option ServerOutput  = "./out/server.luau"
+option ClientOutput = "./out/client.luau"
+
+import "./global/account.blink" as account
+import "./global/interaction.blink" as interaction

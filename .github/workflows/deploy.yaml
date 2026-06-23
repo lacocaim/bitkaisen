@@ -1,0 +1,30 @@
+# Deploy when a version tag is pushed
+name: Deploy
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rokit
+        uses: CompeyDev/setup-rokit@v0.1.2
+
+      - name: Install Dependencies
+        run: pesde install
+
+      - name: Build
+        run: rojo build bitkaisen.project.json -o bitkaisen.rbxl
+
+      - name: Publish
+        shell: bash
+        env:
+          UID: ${{ vars.UNIVERSE_ID }}
+          PID: ${{ vars.PLACE_ID }}
+          API_KEY: ${{ secrets.API_KEY }}
+          FILE: bitkaisen.rbxl
+        run: rbxcloud experience publish --api-key "$API_KEY" --universe-id "$UID" --place-id "$PID" --version-type published --filename "$FILE"

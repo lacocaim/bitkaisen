@@ -1,0 +1,38 @@
+---
+description: Core project architecture and conventions for bitkaisen
+alwaysApply: true
+---
+
+# bitkaisen - Project Overview
+
+Roblox anime tower defense game. **Rojo** is the source of truth — all game code lives in this repo, synced to Studio via `rojo serve`.
+
+## Tech Stack
+
+- **Language**: Luau (`.luau` only, never `.lua`)
+- **Sync**: Rojo (`bitkaisen.project.json`)
+- **ECS**: Jecs (world) + Planck (scheduler) + Jabby (debugger) + Replecs (replication)
+- **Networking**: Blink (codegen from `.blink` definitions) + ByteNet (ECS replication)
+- **UI**: Fusion `Hydrate` pattern — UI templates live in Studio, logic binds via `scope:Hydrate(template) { ... }`
+- **Data**: ProfileStore + Charm (atoms/signals) + Delta-Compress (replication diffs)
+- **Validation**: GreenTea schemas
+- **Build**: Darklua + Selene (lint) + Rokit (toolchain) + Pesde/Wally (packages)
+- **Task runner**: `just` (see `justfile`)
+
+## Folder Layout
+
+```
+game/server/          → ServerScriptService
+game/shared/          → ReplicatedStorage (ECS, components, systems, hooks, controllers)
+game/starterplayer/   → StarterPlayerScripts
+global/server/        → ServerScriptService/global (accountService, commands)
+global/shared/        → ReplicatedStorage/global (types, utils, constants, controllers)
+global/client/        → StarterPlayerScripts/global
+remotes/              → Blink .blink definitions (codegen output in remotes/out/, git-ignored)
+```
+
+## Key Commands
+
+- `just packages` — install deps + generate sourcemap
+- `just dev` — start dev (rojo serve + blink watch)
+- `just net` — compile blink networking only

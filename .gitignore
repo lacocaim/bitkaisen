@@ -1,0 +1,32 @@
+# Build output
+build/
+
+# Package manager
+roblox_packages/
+roblox_server_packages/
+.pesde/
+node_modules/
+
+# Blink codegen output
+remotes/out/
+
+# Sourcemap
+sourcemap.json
+
+# Roblox place files
+*.rbxl
+*.rbxlx
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+!.vscode/settings.json
+
+# Rokit cache
+~/.rokit/
+
+# Darklua
+.darklua.json5

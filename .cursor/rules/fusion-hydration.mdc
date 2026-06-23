@@ -1,0 +1,41 @@
+---
+description: Fusion UI hydration conventions
+globs: "game/shared/{controllers,hooks}/**/*.luau"
+alwaysApply: false
+---
+
+# Fusion Hydration UI
+
+UI templates are authored visually in Roblox Studio. Code binds reactive logic to them using Fusion's `Hydrate`.
+
+## Pattern
+
+```luau
+local Fusion = require(ReplicatedStorage.Packages.Fusion)
+
+local function init()
+    local scope = Fusion:scoped()
+    local someState = scope:Value(initialValue)
+
+    local template = playerGui:WaitForChild("TemplateName")
+    scope:Hydrate(template) {
+        Text = scope:Computed(function(use)
+            return tostring(use(someState))
+        end),
+    }
+
+    return function()
+        Fusion.doCleanup(scope)
+    end
+end
+```
+
+## Rules
+
+- **No full-code UI construction** — do not use `scope:New("Frame")` to build complex UIs from scratch; design them in Studio
+- Always create a `scope` via `Fusion:scoped()` and clean it up on teardown
+- Use `scope:Value()` for mutable state, `scope:Computed()` for derived state
+- Use `scope:Spring()` or `scope:Tween()` for animations
+- Hydration controllers go in `game/shared/controllers/`
+- Reusable Fusion hooks go in `game/shared/hooks/`
+- One controller per UI screen/feature

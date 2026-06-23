@@ -1,0 +1,15 @@
+{
+	"languageMode": "strict",
+	"aliases": {
+		"packages": "roblox_packages",
+		"server-packages": "roblox_server_packages",
+		"constants": "global/shared/constants",
+		"utils": "global/shared/utils",
+		"global": "global",
+		"game": "game",
+		"server-blink": "remotes/out/server.luau",
+		"client-blink": "remotes/out/client.luau",
+		"hooks": "game/shared/hooks",
+		"components": "game/shared/components"
+	}
+}

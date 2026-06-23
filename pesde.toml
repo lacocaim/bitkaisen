@@ -1,0 +1,43 @@
+name = "lacocaim/bitkaisen"
+version = "0.1.0"
+description = "Anime tower defense game"
+authors = ["lacocaim"]
+license = "MIT"
+
+[target]
+environment = "roblox"
+
+[indices]
+default = "https://github.com/pesde-pkg/index"
+
+[wally_indices]
+default = "https://github.com/upliftgames/wally-index"
+
+[scripts]
+roblox_sync_config_generator = ".pesde/scripts/roblox_sync_config_generator.luau"
+sourcemap_generator = ".pesde/scripts/sourcemap_generator.luau"
+
+[dev_dependencies]
+scripts = { name = "pesde/scripts_rojo", version = "^0.2.0", target = "lune" }
+rojo = { name = "pesde/rojo", version = "^7.5.1", target = "lune" }
+
+[engines]
+pesde = "^0.7.0"
+lune = "^0.10.2"
+
+[dependencies]
+Jabby = { wally = "alicesaidhi/jabby", version = "0.2.0-rc.8" }
+Jecs = { wally = "ukendio/jecs", version = "0.9.0-rc.12" }
+Planck = { wally = "yetanotherclown/planck", version = "0.2.0-rc.1" }
+PlanckJabby = { wally = "yetanotherclown/planck-jabby", version = "0.2.0-rc.1" }
+PlanckRunService = { wally = "yetanotherclown/planck-runservice", version = "0.2.0-rc.1" }
+Bytenet = { wally = "howmanysmall/bytenet", version = "0.4.7" }
+Replecs = { wally = "pepeeltoro41/replecs", version = "0.2.3" }
+
+Fusion = { wally = "elttob/fusion", version = "0.3.0-beta" }
+sift = { wally = "csqrl/sift", version = "0.0.11" }
+gt = { wally = "corecii/greentea", version = "0.4.11" }
+
+delta-compress = { wally = "nezuo/delta-compress", version = "0.1.3" }
+profilestore = { wally = "lm-loleris/profilestore", version = "^1.0.3" }
+charm = { wally = "littensy/charm", version = "^0.11.0-rc.5" }

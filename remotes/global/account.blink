@@ -1,0 +1,14 @@
+
+event sync {
+    From: Server,
+    Type: Reliable,
+    Call: SingleAsync,
+    Data: buffer
+}
+
+event ready {
+    From: Client,
+    Type: Reliable,
+    Call: SingleAsync,
+    Data: ()
+}

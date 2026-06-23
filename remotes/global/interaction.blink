@@ -1,0 +1,14 @@
+
+event interact {
+    From: Client,
+    Type: Reliable,
+    Call: SingleAsync,
+    Data: string
+}
+
+event interactResult {
+    From: Server,
+    Type: Reliable,
+    Call: SingleAsync,
+    Data: (string, boolean)
+}

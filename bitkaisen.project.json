@@ -1,0 +1,63 @@
+{
+	"name": "bitkaisen",
+	"tree": {
+		"$className": "DataModel",
+		"ReplicatedStorage": {
+			"$className": "ReplicatedStorage",
+			"$path": "game/shared",
+			"Packages": {
+				"$path": "roblox_packages"
+			},
+			"Assets": {
+				"$className": "Folder",
+				"$ignoreUnknownInstances": true
+			},
+			"JABBY_REMOTES": {
+				"$className": "Folder",
+				"$ignoreUnknownInstances": true
+			},
+			"global": {
+				"$className": "Folder",
+				"$path": "global/shared"
+			},
+			"client-blink": {
+				"$path": "remotes/out/client.luau"
+			}
+		},
+		"ServerScriptService": {
+			"$className": "ServerScriptService",
+			"$path": "game/server",
+			"global": {
+				"$className": "Folder",
+				"$path": "global/server"
+			},
+			"server-blink": {
+				"$path": "remotes/out/server.luau"
+			},
+			"server-packages": {
+				"$path": "roblox_server_packages"
+			}
+		},
+		"StarterPlayer": {
+			"$className": "StarterPlayer",
+			"StarterPlayerScripts": {
+				"$className": "StarterPlayerScripts",
+				"$path": "game/starterplayer",
+				"global": {
+					"$className": "Folder",
+					"$path": "global/client"
+				}
+			}
+		},
+		"Workspace": {
+			"$properties": {
+				"FilteringEnabled": true
+			}
+		},
+		"SoundService": {
+			"$properties": {
+				"RespectFilteringEnabled": true
+			}
+		}
+	}
+}

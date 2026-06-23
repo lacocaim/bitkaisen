@@ -1,0 +1,1037 @@
+-- LocalScript: BitKaisenTopBarController
+-- Location: StarterPlayerScripts
+-- Purpose:
+--   Stable Update 6.2 top bar organizer.
+--
+-- Layout:
+--   [ DAILY ]   [ UPDATE LOG ]   [ VOW ]   [ SHOP ]   [ AFK ]
+--
+-- Fix:
+--   - Hard-locks button position/size so other UI scripts cannot snap them back.
+--   - Removes badge chaos by hiding NEW/number badges attached to these buttons.
+--   - Prevents VOW button flicker when BindingVowsUI tries to move it on click.
+--
+-- This script does NOT replace:
+--   - Daily Login UI
+--   - Binding Vows UI
+--   - Update Log UI
+--   - Settings Menu
+--   - GameManager
+--
+-- It only finds existing top buttons and forces clean layout.
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local GuiService = game:GetService("GuiService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local THEME = {
+	PanelHover = Color3.fromRGB(34, 27, 40),
+
+	Text = Color3.fromRGB(245, 243, 252),
+	Gold = Color3.fromRGB(255, 207, 105),
+	Purple = Color3.fromRGB(172, 120, 255),
+	Green = Color3.fromRGB(105, 220, 140),
+
+	Stroke = Color3.fromRGB(62, 52, 78),
+}
+
+local BUTTON_ORDER = {
+	{
+		Key = "Daily",
+		TextMatches = {
+			"DAILY",
+			"DAILY LOGIN",
+		},
+		NameMatches = {
+			"OpenDailyLogin",
+			"DailyLoginButton",
+		},
+		Text = "DAILY",
+		Width = 96,
+		SmallWidth = 70,
+		Color = Color3.fromRGB(42, 31, 18),
+		TextColor = THEME.Gold,
+		StrokeColor = THEME.Gold,
+	},
+
+	{
+		Key = "FreeRewards",
+		TextMatches = {
+			"🎁 FREE",
+			"FREE",
+			"FREE REWARDS",
+		},
+		NameMatches = {
+			"OpenFreeRewards",
+			"FreeRewardsButton",
+		},
+		Text = "🎁 FREE",
+		ShortText = "FREE",
+		Width = 106,
+		SmallWidth = 74,
+		Color = Color3.fromRGB(74, 38, 16),
+		TextColor = Color3.fromRGB(255, 231, 125),
+		StrokeColor = Color3.fromRGB(255, 176, 66),
+	},
+
+	{
+		Key = "UpdateLog",
+		TextMatches = {
+			"UPDATE LOG",
+			"UPDATES",
+		},
+		NameMatches = {
+			"UpdateLogButton",
+			"OpenUpdateLog",
+			"UpdateButton",
+		},
+		Text = "UPDATE LOG",
+		ShortText = "LOG",
+		Width = 190,
+		SmallWidth = 76,
+		Color = Color3.fromRGB(42, 34, 24),
+		TextColor = THEME.Text,
+		StrokeColor = THEME.Stroke,
+	},
+
+	{
+		Key = "Vows",
+		TextMatches = {
+			"VOW",
+			"VOWS",
+			"BINDING VOWS",
+		},
+		NameMatches = {
+			"VowButton",
+			"VowsButton",
+			"OpenVowsButton",
+			"BindingVowsButton",
+			"OpenBindingVows",
+		},
+		Text = "VOW",
+		Width = 96,
+		SmallWidth = 70,
+		Color = Color3.fromRGB(43, 31, 74),
+		TextColor = THEME.Text,
+		StrokeColor = THEME.Purple,
+	},
+
+
+	{
+		Key = "Shop",
+		TextMatches = {
+			"SHOP",
+			"PRODUCTS",
+			"PRODUCTS / SHOP",
+		},
+		NameMatches = {
+			"OpenShopButton",
+			"TopShopButton",
+			"BitKaisenShopButton",
+		},
+		Text = "SHOP",
+		Width = 96,
+		SmallWidth = 70,
+		Color = Color3.fromRGB(18, 50, 31),
+		TextColor = THEME.Green,
+		StrokeColor = THEME.Green,
+	},
+
+	{
+		Key = "AFK",
+		TextMatches = {
+			"AFK",
+			"AFK ON",
+		},
+		NameMatches = {
+			"AFKButton",
+			"OpenAFKStabilization",
+		},
+		Text = "AFK",
+		Width = 86,
+		SmallWidth = 62,
+		Color = Color3.fromRGB(33, 28, 48),
+		TextColor = THEME.Gold,
+		StrokeColor = THEME.Purple,
+	},
+}
+
+local state = {
+	Buttons = {},
+	ButtonDefinitions = {},
+	Locks = {},
+	LastLayoutSignature = "",
+	HardLockUntil = 0,
+	IsApplying = false,
+	TopBarGui = nil,
+	TopBarHolder = nil,
+	TopBarBacking = nil,
+	TopBarLayout = nil,
+}
+
+local function isSmallScreen()
+	local camera = workspace.CurrentCamera
+	local viewport = camera and camera.ViewportSize or Vector2.new(1280, 720)
+
+	return viewport.X < 820 or viewport.Y < 560 or UserInputService.TouchEnabled
+end
+
+local function tween(instance, duration, properties)
+	local t = TweenService:Create(
+		instance,
+		TweenInfo.new(duration or 0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		properties
+	)
+
+	t:Play()
+	return t
+end
+
+local function normalizeText(text)
+	text = tostring(text or "")
+	text = string.upper(text)
+	text = text:gsub("%s+", " ")
+	text = text:gsub("^%s+", "")
+	text = text:gsub("%s+$", "")
+	return text
+end
+
+local function textMatches(buttonText, matches)
+	local normalized = normalizeText(buttonText)
+
+	for _, wanted in ipairs(matches) do
+		local normalizedWanted = normalizeText(wanted)
+
+		if normalized == normalizedWanted then
+			return true
+		end
+
+		if normalized:find(normalizedWanted, 1, true) then
+			return true
+		end
+	end
+
+	return false
+end
+
+local function nameMatches(instanceName, matches)
+	local lowered = string.lower(tostring(instanceName or ""))
+
+	for _, wanted in ipairs(matches) do
+		local wantedLower = string.lower(tostring(wanted or ""))
+
+		if lowered == wantedLower then
+			return true
+		end
+
+		if lowered:find(wantedLower, 1, true) then
+			return true
+		end
+	end
+
+	return false
+end
+
+local function isButtonCandidate(instance)
+	return instance:IsA("TextButton") or instance:IsA("ImageButton")
+end
+
+local function identifyButton(instance)
+	if not isButtonCandidate(instance) then
+		return nil
+	end
+
+	local explicitKey = instance:GetAttribute("BKTopBarKey")
+	if explicitKey then
+		for _, definition in ipairs(BUTTON_ORDER) do
+			if definition.Key == explicitKey then
+				return definition
+			end
+		end
+	end
+
+	local text = ""
+
+	if instance:IsA("TextButton") then
+		text = instance.Text or ""
+	end
+
+	for _, definition in ipairs(BUTTON_ORDER) do
+		if nameMatches(instance.Name, definition.NameMatches) then
+			return definition
+		end
+
+		if instance:IsA("TextButton") and textMatches(text, definition.TextMatches) then
+			return definition
+		end
+	end
+
+	return nil
+end
+
+local function isInsideMenuContent(instance)
+	local current = instance
+
+	while current and current ~= playerGui do
+		local name = tostring(current.Name or "")
+
+		if name == "MenuWindow"
+			or name == "Overlay"
+			or name == "Content"
+			or name == "Tabs"
+			or name == "TabHolder"
+			or name == "AssetTabs"
+			or name == "AssetsOverlay"
+			or name == "AssetsWindow"
+			or name == "MenuContent"
+			or name == "AFKPanel"
+			or name == "OwnedTab"
+			or name == "ShopTab"
+			or name == "DojoTab"
+			or name == "SettingsTab"
+		then
+			return true
+		end
+
+		current = current.Parent
+	end
+
+	return false
+end
+
+local function getDefinitionByKey(key)
+	for _, definition in ipairs(BUTTON_ORDER) do
+		if definition.Key == key then
+			return definition
+		end
+	end
+
+	return nil
+end
+
+local function getButtonPriority(button, definition)
+	local priority = 0
+
+	if button:GetAttribute("BKTopBarKey") == definition.Key then
+		priority += 1000
+	end
+
+	if button.Name == "OpenShopButton" and definition.Key == "Shop" then
+		priority += 800
+	elseif button.Name == "OpenDailyLogin" and definition.Key == "Daily" then
+		priority += 500
+	elseif button.Name == "UpdateLogButton" and definition.Key == "UpdateLog" then
+		priority += 500
+	elseif (button.Name == "VowButton" or button.Name == "OpenVowsButton" or button.Name == "OpenBindingVows") and definition.Key == "Vows" then
+		priority += 500
+	end
+
+	if button.Parent and button.Parent:IsA("ScreenGui") then
+		priority += 80
+	end
+
+	if button.Visible then
+		priority += 20
+	end
+
+	if isInsideMenuContent(button) then
+		priority -= 500
+	end
+
+	return priority
+end
+
+local function findButtonByName(buttonName)
+	for _, descendant in ipairs(playerGui:GetDescendants()) do
+		if isButtonCandidate(descendant) and descendant.Name == buttonName then
+			return descendant
+		end
+	end
+
+	return nil
+end
+
+local function getButtonHeight()
+	return isSmallScreen() and 30 or 32
+end
+
+local function getButtonGap()
+	return isSmallScreen() and 10 or 12
+end
+
+local function getButtonY()
+	local topInset = 0
+	pcall(function()
+		local topLeftInset = GuiService:GetGuiInset()
+		topInset = math.max(0, topLeftInset.Y)
+	end)
+
+	return math.max(8, topInset + 6)
+end
+
+local function getButtonYScale()
+	return isSmallScreen() and 0.05 or 0
+end
+
+local function getButtonYOffset()
+	return isSmallScreen() and 0 or getButtonY()
+end
+
+local function getScaledWidth(definition)
+	if isSmallScreen() then
+		return definition.SmallWidth or definition.Width
+	end
+
+	return definition.Width
+end
+
+local function getSafeTopBarBounds(viewport)
+	local small = isSmallScreen()
+	local insetLeft = 0
+	local insetRight = 0
+
+	pcall(function()
+		local topLeftInset, bottomRightInset = GuiService:GetGuiInset()
+		insetLeft = math.max(0, topLeftInset.X)
+		insetRight = math.max(0, bottomRightInset.X)
+	end)
+
+	local leftPadding = small and 96 or 120
+	local rightPadding = small and 72 or 18
+	leftPadding = math.max(leftPadding, insetLeft + (small and 72 or 0))
+	rightPadding = math.max(rightPadding, insetRight + (small and 56 or 0))
+
+	return leftPadding, math.max(leftPadding + 120, viewport.X - rightPadding)
+end
+
+local function ensureTopBarHolder()
+	if state.TopBarHolder and state.TopBarHolder.Parent then
+		return state.TopBarHolder
+	end
+
+	local oldGui = playerGui:FindFirstChild("BitKaisenTopBarGui")
+	if oldGui then
+		oldGui:Destroy()
+	end
+
+	local topBarGui = Instance.new("ScreenGui")
+	topBarGui.Name = "BitKaisenTopBarGui"
+	topBarGui.ResetOnSpawn = false
+	topBarGui.IgnoreGuiInset = true
+	topBarGui.DisplayOrder = 1400
+	topBarGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	topBarGui.Parent = playerGui
+
+	local backing = Instance.new("Frame")
+	backing.Name = "TopBarBacking"
+	backing.BackgroundColor3 = Color3.fromRGB(8, 8, 14)
+	backing.BackgroundTransparency = 0.18
+	backing.BorderSizePixel = 0
+	backing.ClipsDescendants = false
+	backing.ZIndex = 1398
+	backing.Parent = topBarGui
+
+	local backingCorner = Instance.new("UICorner")
+	backingCorner.CornerRadius = UDim.new(0, 16)
+	backingCorner.Parent = backing
+
+	local backingStroke = Instance.new("UIStroke")
+	backingStroke.Color = Color3.fromRGB(42, 36, 58)
+	backingStroke.Thickness = 1
+	backingStroke.Transparency = 0.35
+	backingStroke.Parent = backing
+
+	local backingGradient = Instance.new("UIGradient")
+	backingGradient.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(16, 12, 24)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(6, 6, 10)),
+	})
+	backingGradient.Rotation = 90
+	backingGradient.Parent = backing
+
+	local holder = Instance.new("Frame")
+	holder.Name = "ButtonRow"
+	holder.BackgroundTransparency = 1
+	holder.BorderSizePixel = 0
+	holder.ClipsDescendants = false
+	holder.ZIndex = 1400
+	holder.Parent = topBarGui
+
+	local layout = Instance.new("UIListLayout")
+	layout.FillDirection = Enum.FillDirection.Horizontal
+	layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+	layout.VerticalAlignment = Enum.VerticalAlignment.Top
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Parent = holder
+
+	state.TopBarGui = topBarGui
+	state.TopBarHolder = holder
+	state.TopBarBacking = backing
+	state.TopBarLayout = layout
+
+	return holder
+end
+
+local function isBadgeLike(child)
+	if not child:IsA("TextLabel") and not child:IsA("TextButton") then
+		return false
+	end
+
+	local loweredName = string.lower(child.Name or "")
+	local text = ""
+
+	if child:IsA("TextLabel") or child:IsA("TextButton") then
+		text = normalizeText(child.Text)
+	end
+
+	return text == "NEW"
+		or text == "!"
+		or tonumber(text) ~= nil
+		or loweredName:find("badge", 1, true) ~= nil
+		or loweredName:find("new", 1, true) ~= nil
+end
+
+local function hideBadges(button)
+	for _, child in ipairs(button:GetChildren()) do
+		if isBadgeLike(child) then
+			child.Visible = false
+		end
+	end
+end
+
+local function styleButton(button, definition)
+	if not button or not button.Parent then
+		return
+	end
+
+	button.Visible = true
+	button.AnchorPoint = Vector2.new(0.5, 0)
+	button.BorderSizePixel = 0
+	button.AutoButtonColor = false
+	local isActiveAFK = definition.Key == "AFK" and button:GetAttribute("BKAFKActive") == true
+	button.BackgroundColor3 = isActiveAFK and Color3.fromRGB(28, 72, 45) or definition.Color
+	button.BackgroundTransparency = 0.75
+	button.ClipsDescendants = false
+	button.ZIndex = 1400
+
+	if button:IsA("TextButton") then
+		button.Text = isActiveAFK and "AFK ON" or ((isSmallScreen() and definition.ShortText) or definition.Text)
+		button.TextColor3 = isActiveAFK and THEME.Green or definition.TextColor
+		button.TextSize = isSmallScreen() and 9 or 12
+		button.Font = Enum.Font.GothamBlack
+		button.TextWrapped = false
+		button.TextScaled = false
+	end
+
+	local corner = button:FindFirstChildOfClass("UICorner")
+	if not corner then
+		corner = Instance.new("UICorner")
+		corner.Parent = button
+	end
+	corner.CornerRadius = UDim.new(0, 9)
+
+	local stroke = button:FindFirstChildOfClass("UIStroke")
+	if not stroke then
+		stroke = Instance.new("UIStroke")
+		stroke.Parent = button
+	end
+
+	stroke.Color = isActiveAFK and THEME.Green or definition.StrokeColor
+	stroke.Thickness = isActiveAFK and 2 or 1
+	stroke.Transparency = isActiveAFK and 0.18 or 0.65
+
+	hideBadges(button)
+end
+
+local function collectButtons()
+	local candidates = {}
+
+	for _, descendant in ipairs(playerGui:GetDescendants()) do
+		if isButtonCandidate(descendant) and not isInsideMenuContent(descendant) then
+			local definition = identifyButton(descendant)
+
+			if definition then
+				candidates[definition.Key] = candidates[definition.Key] or {}
+				table.insert(candidates[definition.Key], {
+					Button = descendant,
+					Definition = definition,
+					Priority = getButtonPriority(descendant, definition),
+				})
+			end
+		end
+	end
+
+	local found = {}
+	local definitions = {}
+
+	for key, keyCandidates in pairs(candidates) do
+		table.sort(keyCandidates, function(a, b)
+			return a.Priority > b.Priority
+		end)
+
+		local winner = keyCandidates[1]
+		if winner then
+			found[key] = winner.Button
+			definitions[key] = winner.Definition
+
+			for index = 2, #keyCandidates do
+				local duplicate = keyCandidates[index].Button
+				if duplicate and duplicate.Parent then
+					duplicate.Visible = false
+					duplicate:SetAttribute("BKTopBarDuplicateHidden", true)
+				end
+			end
+		end
+	end
+
+	local explicitShopButton = findButtonByName("OpenShopButton")
+	local shopDefinition = getDefinitionByKey("Shop")
+	if explicitShopButton and shopDefinition then
+		local previousShopButton = found.Shop
+		if previousShopButton and previousShopButton ~= explicitShopButton and previousShopButton.Parent then
+			previousShopButton.Visible = false
+			previousShopButton:SetAttribute("BKTopBarDuplicateHidden", true)
+		end
+		found.Shop = explicitShopButton
+		definitions.Shop = shopDefinition
+	end
+
+	local explicitVowButton = findButtonByName("OpenBindingVows")
+	local vowDefinition = getDefinitionByKey("Vows")
+	if explicitVowButton and vowDefinition then
+		found.Vows = explicitVowButton
+		definitions.Vows = vowDefinition
+	end
+
+	local explicitDailyButton = findButtonByName("OpenDailyLogin")
+	local dailyDefinition = getDefinitionByKey("Daily")
+	if explicitDailyButton and dailyDefinition then
+		found.Daily = explicitDailyButton
+		definitions.Daily = dailyDefinition
+	end
+
+	local explicitUpdateButton = findButtonByName("OpenUpdateLog")
+	local updateDefinition = getDefinitionByKey("UpdateLog")
+	if explicitUpdateButton and updateDefinition then
+		found.UpdateLog = explicitUpdateButton
+		definitions.UpdateLog = updateDefinition
+	end
+
+	local explicitFreeButton = findButtonByName("OpenFreeRewards")
+	local freeDefinition = getDefinitionByKey("FreeRewards")
+	if explicitFreeButton and freeDefinition then
+		found.FreeRewards = explicitFreeButton
+		definitions.FreeRewards = freeDefinition
+	end
+
+	state.Buttons = found
+	state.ButtonDefinitions = definitions
+
+	return found, definitions
+end
+
+local function getLayoutSignature(buttons)
+	local pieces = {}
+
+	for _, definition in ipairs(BUTTON_ORDER) do
+		local button = buttons[definition.Key]
+		table.insert(pieces, definition.Key .. ":" .. tostring(button and button:GetFullName() or "nil"))
+	end
+
+	table.insert(pieces, "small:" .. tostring(isSmallScreen()))
+
+	return table.concat(pieces, "|")
+end
+
+local function buildLayout()
+	local buttons = state.Buttons
+	local available = {}
+
+	for _, definition in ipairs(BUTTON_ORDER) do
+		local button = buttons[definition.Key]
+
+		if button and button.Parent then
+			table.insert(available, {
+				Key = definition.Key,
+				Button = button,
+				Definition = definition,
+				Width = getScaledWidth(definition),
+			})
+		end
+	end
+
+	if #available <= 0 then
+		return {}
+	end
+
+	local totalWidth = 0
+	local gap = getButtonGap()
+
+	for index, item in ipairs(available) do
+		totalWidth += item.Width
+
+		if index > 1 then
+			totalWidth += gap
+		end
+	end
+
+	local camera = workspace.CurrentCamera
+	local viewport = camera and camera.ViewportSize or Vector2.new(1280, 720)
+	local safeLeft, safeRight = getSafeTopBarBounds(viewport)
+	local safeWidth = math.max(120, safeRight - safeLeft)
+
+	if totalWidth > safeWidth then
+		local shrink = safeWidth / totalWidth
+		totalWidth = 0
+		gap = math.max(4, math.floor(gap * shrink))
+
+		for index, item in ipairs(available) do
+			item.Width = math.max(52, math.floor(item.Width * shrink))
+			totalWidth += item.Width
+
+			if index > 1 then
+				totalWidth += gap
+			end
+		end
+	end
+
+	if totalWidth > safeWidth then
+		totalWidth = 0
+		gap = 2
+
+		for index, item in ipairs(available) do
+			item.Width = math.max(42, math.floor(item.Width * 0.9))
+			totalWidth += item.Width
+
+			if index > 1 then
+				totalWidth += gap
+			end
+		end
+	end
+
+	local maxStart = safeRight - totalWidth
+	local wantedStart = (viewport.X / 2) - (totalWidth / 2)
+	local startX = maxStart >= safeLeft and math.clamp(wantedStart, safeLeft, maxStart) or safeLeft
+	local yScale = getButtonYScale()
+	local yOffset = getButtonYOffset()
+	local height = getButtonHeight()
+	local holder = ensureTopBarHolder()
+
+	if state.TopBarLayout then
+		state.TopBarLayout.Padding = UDim.new(0, gap)
+	end
+
+	holder.AnchorPoint = Vector2.new(0, 0)
+	holder.Position = UDim2.new(0, startX, yScale, yOffset)
+	holder.Size = UDim2.new(0, totalWidth, 0, height)
+
+	local backing = state.TopBarBacking
+	if backing and backing.Parent then
+		local padX = isSmallScreen() and 10 or 14
+		local padY = isSmallScreen() and 7 or 8
+		backing.AnchorPoint = Vector2.new(0, 0)
+		backing.Position = UDim2.new(0, math.max(0, startX - padX), yScale, yOffset - padY)
+		backing.Size = UDim2.new(0, totalWidth + (padX * 2), 0, height + (padY * 2))
+		backing.Visible = true
+	end
+
+	local layout = {}
+
+	for index, item in ipairs(available) do
+		layout[item.Key] = {
+			Button = item.Button,
+			Definition = item.Definition,
+			Size = UDim2.new(0, item.Width, 0, height),
+			Position = UDim2.new(0, 0, 0, 0),
+			AnchorPoint = Vector2.new(0, 0),
+			ZIndex = 1400,
+			LayoutOrder = index,
+			ManagedByHolder = true,
+		}
+	end
+
+	return layout
+end
+
+local function applyButtonLock(lockData, instant)
+	local button = lockData.Button
+	local definition = lockData.Definition
+
+	if not button or not button.Parent then
+		return
+	end
+
+	state.IsApplying = true
+
+	if lockData.ManagedByHolder then
+		local holder = ensureTopBarHolder()
+		if button.Parent ~= holder then
+			button.Parent = holder
+		end
+	end
+
+	styleButton(button, definition)
+
+	if lockData.ManagedByHolder then
+		button.AnchorPoint = lockData.AnchorPoint
+		button.Size = lockData.Size
+		button.ZIndex = lockData.ZIndex
+		button.LayoutOrder = lockData.LayoutOrder or 1
+	elseif instant then
+		button.AnchorPoint = lockData.AnchorPoint
+		button.Size = lockData.Size
+		button.Position = lockData.Position
+		button.ZIndex = lockData.ZIndex
+	else
+		button.AnchorPoint = lockData.AnchorPoint
+		button.ZIndex = lockData.ZIndex
+
+		tween(button, 0.12, {
+			Size = lockData.Size,
+			Position = lockData.Position,
+		})
+	end
+
+	state.IsApplying = false
+end
+
+local function applyLayout(instant)
+	collectButtons()
+
+	local signature = getLayoutSignature(state.Buttons)
+	local layout = buildLayout()
+
+	for key, lockData in pairs(layout) do
+		state.Locks[key] = lockData
+		applyButtonLock(lockData, instant or state.LastLayoutSignature ~= signature)
+	end
+
+	state.LastLayoutSignature = signature
+end
+
+local function forceLockedPositions()
+	for key, lockData in pairs(state.Locks) do
+		local button = lockData.Button
+
+		if button and button.Parent then
+			local wrong
+
+			if lockData.ManagedByHolder then
+				wrong =
+					button.Parent ~= state.TopBarHolder
+					or button.AnchorPoint ~= lockData.AnchorPoint
+					or button.Size ~= lockData.Size
+					or button.ZIndex ~= lockData.ZIndex
+					or button.LayoutOrder ~= (lockData.LayoutOrder or 1)
+			else
+				wrong =
+					button.AnchorPoint ~= lockData.AnchorPoint
+					or button.Size ~= lockData.Size
+					or button.Position ~= lockData.Position
+					or button.ZIndex ~= lockData.ZIndex
+			end
+
+			if wrong then
+				applyButtonLock(lockData, true)
+			end
+		end
+	end
+end
+
+local function requestHardLock(duration)
+	state.HardLockUntil = math.max(state.HardLockUntil, os.clock() + (duration or 0.75))
+end
+
+local function installButtonGuards(button, definition)
+	if not button or button:GetAttribute("BKTopBarGuardInstalled") then
+		return
+	end
+
+	button:SetAttribute("BKTopBarGuardInstalled", true)
+
+	button.MouseButton1Down:Connect(function()
+		requestHardLock(1.25)
+		task.defer(forceLockedPositions)
+	end)
+
+	button.MouseButton1Click:Connect(function()
+		requestHardLock(1.25)
+		task.defer(forceLockedPositions)
+		task.delay(0.03, forceLockedPositions)
+		task.delay(0.08, forceLockedPositions)
+		task.delay(0.16, forceLockedPositions)
+	end)
+
+	button:GetPropertyChangedSignal("Position"):Connect(function()
+		if state.IsApplying then
+			return
+		end
+
+		requestHardLock(0.35)
+		task.defer(forceLockedPositions)
+	end)
+
+	button:GetPropertyChangedSignal("Size"):Connect(function()
+		if state.IsApplying then
+			return
+		end
+
+		requestHardLock(0.35)
+		task.defer(forceLockedPositions)
+	end)
+
+	button:GetPropertyChangedSignal("AnchorPoint"):Connect(function()
+		if state.IsApplying then
+			return
+		end
+
+		requestHardLock(0.35)
+		task.defer(forceLockedPositions)
+	end)
+
+	button:GetPropertyChangedSignal("ZIndex"):Connect(function()
+		if state.IsApplying then
+			return
+		end
+
+		requestHardLock(0.35)
+		task.defer(forceLockedPositions)
+	end)
+
+	button.MouseEnter:Connect(function()
+		tween(button, 0.1, {
+			BackgroundColor3 = THEME.PanelHover,
+		})
+	end)
+
+	button.MouseLeave:Connect(function()
+		tween(button, 0.1, {
+			BackgroundColor3 = definition.Color,
+		})
+	end)
+end
+
+local function installGuards()
+	for _, definition in ipairs(BUTTON_ORDER) do
+		local button = state.Buttons[definition.Key]
+
+		if button then
+			installButtonGuards(button, definition)
+		end
+	end
+end
+
+local function isEffectivelyVisible(guiObject)
+	local current = guiObject
+	while current and current ~= playerGui do
+		if current:IsA("GuiObject") and not current.Visible then
+			return false
+		end
+		current = current.Parent
+	end
+
+	return true
+end
+
+local function isBlockingModalOpen()
+	local minigameGui = playerGui:FindFirstChild("BitKaisenMinigamesGui")
+	if minigameGui and minigameGui:IsA("ScreenGui") and minigameGui.Enabled ~= false then
+		for _, child in ipairs(minigameGui:GetChildren()) do
+			if child:IsA("GuiObject") and isEffectivelyVisible(child) and child.AbsoluteSize.X > 100 and child.AbsoluteSize.Y > 80 then
+				return true
+			end
+		end
+	end
+
+	for _, descendant in ipairs(playerGui:GetDescendants()) do
+		if descendant:IsA("GuiObject") and isEffectivelyVisible(descendant) and not descendant:IsDescendantOf(state.TopBarGui) then
+			local name = descendant.Name or ""
+			local isModalLayer = name:find("Overlay", 1, true) ~= nil or name:find("Window", 1, true) ~= nil or name:find("Minigame", 1, true) ~= nil
+			if isModalLayer and descendant.AbsoluteSize.X > 100 and descendant.AbsoluteSize.Y > 80 then
+				return true
+			end
+		end
+	end
+
+	return false
+end
+
+local function updateTopBarLayer()
+	if not state.TopBarGui then
+		return
+	end
+
+	state.TopBarGui.DisplayOrder = isBlockingModalOpen() and -5 or 1400
+end
+
+task.spawn(function()
+	for _ = 1, 50 do
+		applyLayout(true)
+		installGuards()
+		forceLockedPositions()
+		task.wait(0.18)
+	end
+
+	while playerGui.Parent do
+		applyLayout(false)
+		installGuards()
+		forceLockedPositions()
+		updateTopBarLayer()
+		task.wait(0.75)
+	end
+end)
+
+RunService.RenderStepped:Connect(function()
+	updateTopBarLayer()
+
+	if os.clock() <= state.HardLockUntil then
+		forceLockedPositions()
+	end
+end)
+
+playerGui.DescendantAdded:Connect(function(descendant)
+	if isButtonCandidate(descendant) then
+		task.defer(function()
+			applyLayout(true)
+			installGuards()
+			forceLockedPositions()
+		end)
+	end
+
+	if descendant:IsA("TextLabel") or descendant:IsA("TextButton") then
+		task.defer(function()
+			applyLayout(true)
+			installGuards()
+			forceLockedPositions()
+		end)
+	end
+end)
+
+if workspace.CurrentCamera then
+	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+		applyLayout(true)
+		forceLockedPositions()
+	end)
+end
+
+workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+	task.wait()
+
+	if workspace.CurrentCamera then
+		workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+			applyLayout(true)
+			forceLockedPositions()
+		end)
+	end
+
+	applyLayout(true)
+	forceLockedPositions()
+end)
+
+print("[BitKaisenTopBarController] Loaded hard-locked stable top bar.")
+

@@ -1,0 +1,528 @@
+-- LocalScript: BitKaisenConsoleSupport
+-- Location: StarterPlayerScripts
+-- Purpose: Adds gamepad/console navigation without changing existing UI button logic.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+local GuiService = game:GetService("GuiService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+local updateLifeEvent = ReplicatedStorage:WaitForChild("UpdateLifeEvent", 20)
+
+local SELECTABLE_CLASSES = {
+	TextButton = true,
+	ImageButton = true,
+}
+
+local MAIN_NAV_ORDER = {
+	"MISSIONSButton",
+	"ACTIVITIESButton",
+	"ASSETSButton",
+	"RELATIONSHIPSButton",
+	"AFFILIATIONSButton",
+}
+
+local BUTTON_HINTS = {
+	AgeUpButton = true,
+	MainMenuButton = true,
+	MISSIONSButton = true,
+	ACTIVITIESButton = true,
+	ASSETSButton = true,
+	RELATIONSHIPSButton = true,
+	AFFILIATIONSButton = true,
+}
+
+local state = {
+	LastRefresh = 0,
+	NavIndex = 1,
+	PromptBar = nil,
+	PromptText = nil,
+	SelectionImage = nil,
+	GamepadInputActive = UserInputService:GetLastInputType() == Enum.UserInputType.Gamepad1,
+}
+
+local function isGamepadMode()
+	return state.GamepadInputActive and UserInputService.GamepadEnabled
+end
+
+local setPromptVisible
+local chooseDefaultSelection
+local getActiveSelectionRoot
+
+local function setGamepadInputActive(isActive)
+	state.GamepadInputActive = isActive == true
+	setPromptVisible(isGamepadMode())
+	if state.GamepadInputActive then
+		chooseDefaultSelection()
+	else
+		GuiService.SelectedObject = nil
+	end
+end
+
+local function getBitKaisenGui()
+	return playerGui:FindFirstChild("BitKaisenGui")
+end
+
+local function isVisibleGuiObject(object)
+	if not object or not object:IsA("GuiObject") then
+		return false
+	end
+
+	local current = object
+	while current and current:IsA("GuiObject") do
+		if current.Visible == false then
+			return false
+		end
+		current = current.Parent
+	end
+
+	return object.AbsoluteSize.X > 2 and object.AbsoluteSize.Y > 2
+end
+
+local function isUsableButton(button)
+	if not button or not SELECTABLE_CLASSES[button.ClassName] then
+		return false
+	end
+	if isVisibleGuiObject(button) ~= true then
+		return false
+	end
+	if button.Active == false then
+		return false
+	end
+	if button:IsA("TextButton") and button.TextTransparency >= 1 then
+		return false
+	end
+	if isInsideActiveSelectionRoot(button) ~= true then
+		return false
+	end
+	return true
+end
+
+local function getButtonText(button)
+	if not button then
+		return ""
+	end
+	if button:IsA("TextButton") then
+		return tostring(button.Text or "")
+	end
+	local label = button:FindFirstChildWhichIsA("TextLabel", true)
+	return label and tostring(label.Text or "") or ""
+end
+
+local function activateButton(button)
+	if not isUsableButton(button) then
+		return false
+	end
+
+	GuiService.SelectedObject = button
+	local ok = pcall(function()
+		button:Activate()
+	end)
+	return ok
+end
+
+local function makeSelectable(button)
+	if not button or not SELECTABLE_CLASSES[button.ClassName] then
+		return
+	end
+
+	button.Selectable = true
+	button.Active = true
+	if state.SelectionImage then
+		pcall(function()
+			button.SelectionImageObject = state.SelectionImage
+		end)
+	end
+
+	if BUTTON_HINTS[button.Name] then
+		button.SelectionOrder = button.SelectionOrder ~= 0 and button.SelectionOrder or 10
+	end
+end
+
+local function createSelectionImage()
+	local image = Instance.new("Frame")
+	image.Name = "BitKaisenConsoleSelection"
+	image.BackgroundTransparency = 1
+	image.BorderSizePixel = 0
+	image.Size = UDim2.fromScale(1, 1)
+
+	local stroke = Instance.new("UIStroke")
+	stroke.Name = "ConsoleFocusStroke"
+	stroke.Color = Color3.fromRGB(255, 217, 105)
+	stroke.Thickness = 3
+	stroke.Transparency = 0
+	stroke.Parent = image
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = image
+
+	state.SelectionImage = image
+end
+
+local function ensurePromptBar(gui)
+	if not gui or state.PromptBar and state.PromptBar.Parent then
+		return
+	end
+
+	local mainPanel = gui:FindFirstChild("MainPanel")
+	if not mainPanel then
+		return
+	end
+
+	local bar = Instance.new("Frame")
+	bar.Name = "ConsolePromptBar"
+	bar.AnchorPoint = Vector2.new(0.5, 1)
+	bar.Position = UDim2.new(0.5, 0, 1, -8)
+	bar.Size = UDim2.new(0, 560, 0, 30)
+	bar.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
+	bar.BackgroundTransparency = 0.08
+	bar.BorderSizePixel = 0
+	bar.Visible = false
+	bar.ZIndex = 240
+	bar.Parent = mainPanel
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = bar
+
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Color3.fromRGB(70, 60, 92)
+	stroke.Thickness = 1
+	stroke.Transparency = 0.15
+	stroke.Parent = bar
+
+	local text = Instance.new("TextLabel")
+	text.Name = "PromptText"
+	text.BackgroundTransparency = 1
+	text.Size = UDim2.new(1, -16, 1, 0)
+	text.Position = UDim2.new(0, 8, 0, 0)
+	text.TextColor3 = Color3.fromRGB(230, 225, 245)
+	text.TextSize = 12
+	text.Font = Enum.Font.GothamBold
+	text.TextXAlignment = Enum.TextXAlignment.Center
+	text.Text = "A Select    B Back    Y Age Up    X Menu    LB/RB Tabs"
+	text.ZIndex = 241
+	text.Parent = bar
+
+	state.PromptBar = bar
+	state.PromptText = text
+end
+
+local function getScreenGuiDisplayOrder(object)
+	local current = object
+	while current do
+		if current:IsA("ScreenGui") then
+			return current.DisplayOrder or 0
+		end
+		current = current.Parent
+	end
+	return 0
+end
+
+local function hasSelectableDescendant(container)
+	if not container or not container:IsA("GuiObject") then
+		return false
+	end
+
+	for _, descendant in ipairs(container:GetDescendants()) do
+		if SELECTABLE_CLASSES[descendant.ClassName] and isVisibleGuiObject(descendant) and descendant.Active ~= false then
+			return true
+		end
+	end
+
+	return false
+end
+
+local function isLayerCandidate(object)
+	if not object or not object:IsA("GuiObject") then
+		return false
+	end
+	if object.Name == "ConsolePromptBar" then
+		return false
+	end
+	if isVisibleGuiObject(object) ~= true or hasSelectableDescendant(object) ~= true then
+		return false
+	end
+
+	local name = string.lower(tostring(object.Name or ""))
+	if name == "mainpanel" or name == "navpanel" or name == "statspanel" or name == "contentarea" then
+		return false
+	end
+
+	if object.ZIndex >= 100 then
+		return true
+	end
+
+	return name:find("modal", 1, true)
+		or name:find("popup", 1, true)
+		or name:find("window", 1, true)
+		or name:find("menu", 1, true)
+		or name:find("panel", 1, true)
+		or name:find("frame", 1, true)
+end
+
+local function getGuiArea(object)
+	local size = object.AbsoluteSize
+	return math.max(0, size.X) * math.max(0, size.Y)
+end
+
+local function getLayerScore(object)
+	return getScreenGuiDisplayOrder(object) * 10000 + object.ZIndex
+end
+
+getActiveSelectionRoot = function()
+	local best = nil
+	local bestScore = -math.huge
+
+	for _, screenGui in ipairs(playerGui:GetChildren()) do
+		if screenGui:IsA("ScreenGui") and screenGui.Enabled ~= false then
+			for _, descendant in ipairs(screenGui:GetDescendants()) do
+				if isLayerCandidate(descendant) then
+					local score = getLayerScore(descendant)
+					if score > bestScore then
+						best = descendant
+						bestScore = score
+					elseif score == bestScore and best and getGuiArea(descendant) > getGuiArea(best) then
+						best = descendant
+					end
+				end
+			end
+		end
+	end
+
+	return best
+end
+
+local function isInsideActiveSelectionRoot(button)
+	local root = getActiveSelectionRoot()
+	return root == nil or button == root or button:IsDescendantOf(root)
+end
+
+local function getSelectionSearchRoots()
+	local activeRoot = getActiveSelectionRoot()
+	if activeRoot then
+		return { activeRoot }
+	end
+
+	local roots = {}
+	for _, child in ipairs(playerGui:GetChildren()) do
+		if child:IsA("ScreenGui") and child.Enabled ~= false then
+			table.insert(roots, child)
+		end
+	end
+	return roots
+end
+
+local function refreshSelectableButtons()
+	local gui = getBitKaisenGui()
+	if gui then
+		ensurePromptBar(gui)
+	end
+
+	for _, root in ipairs(getSelectionSearchRoots()) do
+		for _, descendant in ipairs(root:GetDescendants()) do
+			if SELECTABLE_CLASSES[descendant.ClassName] then
+				makeSelectable(descendant)
+			end
+		end
+	end
+end
+
+local function findFirstVisibleButtonByName(name)
+	for _, root in ipairs(getSelectionSearchRoots()) do
+		local found = root:FindFirstChild(name, true)
+		if isUsableButton(found) then
+			return found
+		end
+	end
+	return nil
+end
+
+local function findVisibleButtonMatching(words)
+	for _, root in ipairs(getSelectionSearchRoots()) do
+		for _, descendant in ipairs(root:GetDescendants()) do
+			if isUsableButton(descendant) then
+				local name = string.lower(tostring(descendant.Name or ""))
+				local text = string.lower(getButtonText(descendant))
+				for _, word in ipairs(words) do
+					word = string.lower(word)
+					if name:find(word, 1, true) or text:find(word, 1, true) then
+						return descendant
+					end
+				end
+			end
+		end
+	end
+
+	return nil
+end
+
+chooseDefaultSelection = function()
+	if not isGamepadMode() then
+		GuiService.SelectedObject = nil
+		return
+	end
+	if not isGamepadMode() then
+		return
+	end
+	if isUsableButton(GuiService.SelectedObject) then
+		return
+	end
+
+	local priority = {
+		"AgeUpButton",
+		"MISSIONSButton",
+		"ACTIVITIESButton",
+		"ASSETSButton",
+		"RELATIONSHIPSButton",
+		"AFFILIATIONSButton",
+		"MainMenuButton",
+	}
+
+	for _, name in ipairs(priority) do
+		local button = findFirstVisibleButtonByName(name)
+		if button then
+			GuiService.SelectedObject = button
+			return
+		end
+	end
+
+	local fallback = findVisibleButtonMatching({ "open", "claim", "back", "close", "select" })
+	if fallback then
+		GuiService.SelectedObject = fallback
+	end
+end
+
+setPromptVisible = function(visible)
+	if state.PromptBar then
+		state.PromptBar.Visible = visible == true
+	end
+end
+
+local function selectNav(delta)
+	local gui = getBitKaisenGui()
+	local mainPanel = gui and gui:FindFirstChild("MainPanel")
+	local navPanel = mainPanel and mainPanel:FindFirstChild("NavPanel")
+	if not navPanel then
+		return
+	end
+
+	local available = {}
+	for _, name in ipairs(MAIN_NAV_ORDER) do
+		local button = navPanel:FindFirstChild(name)
+		if isUsableButton(button) then
+			table.insert(available, button)
+		end
+	end
+
+	if #available <= 0 then
+		return
+	end
+
+	state.NavIndex += delta
+	if state.NavIndex < 1 then
+		state.NavIndex = #available
+	elseif state.NavIndex > #available then
+		state.NavIndex = 1
+	end
+
+	GuiService.SelectedObject = available[state.NavIndex]
+end
+
+local function tryBackAction()
+	local backButton = findVisibleButtonMatching({ "back", "close", "cancel", "x" })
+	if backButton then
+		activateButton(backButton)
+		return true
+	end
+
+	local menuButton = findFirstVisibleButtonByName("MainMenuButton")
+	if menuButton then
+		GuiService.SelectedObject = menuButton
+		return true
+	end
+
+	return false
+end
+
+local function handleGamepadInput(input, gameProcessed)
+	if input.UserInputType == Enum.UserInputType.Gamepad1 then
+		setGamepadInputActive(true)
+	elseif input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.Keyboard then
+		setGamepadInputActive(false)
+	end
+	if not isGamepadMode() or gameProcessed then
+		return
+	end
+	if UserInputService:GetFocusedTextBox() then
+		return
+	end
+
+	local key = input.KeyCode
+	if key == Enum.KeyCode.ButtonY then
+		local ageButton = findFirstVisibleButtonByName("AgeUpButton")
+		if not activateButton(ageButton) and updateLifeEvent then
+			updateLifeEvent:FireServer("AgeUp")
+		end
+	elseif key == Enum.KeyCode.ButtonX then
+		activateButton(findFirstVisibleButtonByName("MainMenuButton"))
+	elseif key == Enum.KeyCode.ButtonB then
+		tryBackAction()
+	elseif key == Enum.KeyCode.ButtonL1 then
+		selectNav(-1)
+	elseif key == Enum.KeyCode.ButtonR1 then
+		selectNav(1)
+	elseif key == Enum.KeyCode.ButtonStart then
+		activateButton(findFirstVisibleButtonByName("MainMenuButton"))
+	end
+end
+
+UserInputService.InputBegan:Connect(handleGamepadInput)
+UserInputService.LastInputTypeChanged:Connect(function(inputType)
+	setGamepadInputActive(inputType == Enum.UserInputType.Gamepad1)
+end)
+
+UserInputService.GamepadConnected:Connect(function()
+	refreshSelectableButtons()
+	setPromptVisible(isGamepadMode())
+	if isGamepadMode() then
+		chooseDefaultSelection()
+	end
+end)
+
+UserInputService.GamepadDisconnected:Connect(function()
+	setGamepadInputActive(false)
+end)
+
+local gui = getBitKaisenGui() or playerGui:WaitForChild("BitKaisenGui", 20)
+if gui then
+	createSelectionImage()
+	refreshSelectableButtons()
+	setPromptVisible(isGamepadMode())
+	chooseDefaultSelection()
+
+	gui.DescendantAdded:Connect(function(descendant)
+		if SELECTABLE_CLASSES[descendant.ClassName] then
+			task.defer(function()
+				makeSelectable(descendant)
+				chooseDefaultSelection()
+			end)
+		end
+	end)
+end
+
+RunService.Heartbeat:Connect(function()
+	if os.clock() - state.LastRefresh < 1 then
+		return
+	end
+	state.LastRefresh = os.clock()
+	refreshSelectableButtons()
+	setPromptVisible(isGamepadMode())
+	chooseDefaultSelection()
+end)
+
+print("[BitKaisenConsoleSupport] Loaded gamepad selection and shortcut support.")

@@ -5,6 +5,7 @@
 		"ReplicatedStorage": {
 			"$className": "ReplicatedStorage",
 			"$path": "game/shared",
+			"$ignoreUnknownInstances": true,
 			"Packages": {
 				"$path": "roblox_packages"
 			},
@@ -27,6 +28,7 @@
 		"ServerScriptService": {
 			"$className": "ServerScriptService",
 			"$path": "game/server",
+			"$ignoreUnknownInstances": true,
 			"global": {
 				"$className": "Folder",
 				"$path": "global/server"
@@ -43,6 +45,7 @@
 			"StarterPlayerScripts": {
 				"$className": "StarterPlayerScripts",
 				"$path": "game/starterplayer",
+				"$ignoreUnknownInstances": true,
 				"global": {
 					"$className": "Folder",
 					"$path": "global/client"
@@ -50,14 +53,24 @@
 			}
 		},
 		"Workspace": {
+			"$ignoreUnknownInstances": true,
 			"$properties": {
 				"FilteringEnabled": true
 			}
 		},
+		"ServerStorage": {
+			"$className": "ServerStorage",
+			"$ignoreUnknownInstances": true
+		},
 		"SoundService": {
+			"$ignoreUnknownInstances": true,
 			"$properties": {
 				"RespectFilteringEnabled": true
 			}
+		},
+		"StarterGui": {
+			"$className": "StarterGui",
+			"$ignoreUnknownInstances": true
 		}
 	}
 }

@@ -18,7 +18,7 @@ jobs:
         run: pesde install
 
       - name: Build
-        run: rojo build bitkaisen.project.json -o bitkaisen.rbxl
+        run: rojo build game.project.json -o bitkaisen.rbxl
 
       - name: Publish
         shell: bash

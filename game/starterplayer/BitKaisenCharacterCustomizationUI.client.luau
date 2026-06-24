@@ -561,6 +561,9 @@ end
 
 local function randomizeBirthPath()
 	for _, field in ipairs(PAGE2_FIELDS) do
+		if not OPTIONS[field.Key] then
+			continue
+		end
 		if field.LockedByGodMode and not checkGodMode() then
 			state[field.Key] = DEFAULTS[field.Key]
 		else

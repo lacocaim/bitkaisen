@@ -1172,6 +1172,8 @@ function BitKaisenStats.CheckPromotion(stats)
 	local currentGrade = stats.Grade or "Non-Sorcerer"
 	if currentGrade == "Non-Sorcerer" then return nil end
 
+	local lookupGrade = string.gsub(currentGrade, "^Unregistered ", "")
+
 	local ce = stats.CursedEnergy or 0
 	local rep = stats.Reputation or 0
 	local rec = stats.TeacherRecommendations or 0
@@ -1189,7 +1191,7 @@ function BitKaisenStats.CheckPromotion(stats)
 		["Special Grade 1"] = { Next = "Special Grade", CE = 1000, Rep = 120, Rec = 6, Missions = 18, Smarts = 80, MinTraitRarity = "Rare" },
 	}
 
-	local req = promotionRequirements[currentGrade]
+	local req = promotionRequirements[lookupGrade]
 	if not req then return nil end
 
 	if ce >= req.CE

@@ -116,6 +116,19 @@ local function getTraitList(stats)
 	return owned
 end
 
+local SPECIAL_ORIGINS = {
+	{
+		Id = "ryomen_clan",
+		DisplayName = "Ryomen Clan",
+		Category = "Clan",
+		FamilyType = "Sorcerer",
+		FamilyName = "Ryomen",
+		BonusCE = 36,
+		BonusSmarts = 6,
+		InnatePool = { { Name = "Shrine", Weight = 100 } },
+	},
+}
+
 local function getClanOptionsPayload()
 	local list = {}
 	for _, origin in ipairs(BitKaisenStats.Origins or {}) do
@@ -128,6 +141,14 @@ local function getClanOptionsPayload()
 			})
 		end
 	end
+	for _, origin in ipairs(SPECIAL_ORIGINS) do
+		table.insert(list, {
+			Name = tostring(origin.DisplayName or origin.FamilyName or "Unknown"),
+			FamilyName = tostring(origin.FamilyName or origin.DisplayName or "Unknown"),
+			Category = tostring(origin.Category or "Special"),
+			Chance = 0,
+		})
+	end
 	table.sort(list, function(a, b)
 		if a.Chance ~= b.Chance then return a.Chance < b.Chance end
 		return a.Name < b.Name
@@ -138,18 +159,23 @@ end
 local function findOriginByName(name)
 	local needle = string.lower(tostring(name or ""))
 	if needle == "" then return nil end
-	for _, origin in ipairs(BitKaisenStats.Origins or {}) do
-		local displayName = string.lower(tostring(origin.DisplayName or ""))
-		local familyName = string.lower(tostring(origin.FamilyName or ""))
-		if displayName == needle or familyName == needle then
-			return origin
+	local allSources = { BitKaisenStats.Origins or {}, SPECIAL_ORIGINS }
+	for _, sourceList in ipairs(allSources) do
+		for _, origin in ipairs(sourceList) do
+			local displayName = string.lower(tostring(origin.DisplayName or ""))
+			local familyName = string.lower(tostring(origin.FamilyName or ""))
+			if displayName == needle or familyName == needle then
+				return origin
+			end
 		end
 	end
-	for _, origin in ipairs(BitKaisenStats.Origins or {}) do
-		local displayName = string.lower(tostring(origin.DisplayName or ""))
-		local familyName = string.lower(tostring(origin.FamilyName or ""))
-		if displayName:find(needle, 1, true) or familyName:find(needle, 1, true) then
-			return origin
+	for _, sourceList in ipairs(allSources) do
+		for _, origin in ipairs(sourceList) do
+			local displayName = string.lower(tostring(origin.DisplayName or ""))
+			local familyName = string.lower(tostring(origin.FamilyName or ""))
+			if displayName:find(needle, 1, true) or familyName:find(needle, 1, true) then
+				return origin
+			end
 		end
 	end
 	return nil

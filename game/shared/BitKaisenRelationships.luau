@@ -401,17 +401,13 @@ local function inferGenderFromRole(role)
 end
 
 local function normalizeGender(gender, role)
+	if gender == "Female" or gender == "Male" then
+		return gender
+	end
+
 	local forcedGender = inferGenderFromRole(role)
 	if forcedGender then
 		return forcedGender
-	end
-
-	if gender == "Female" then
-		return "Female"
-	end
-
-	if gender == "Male" then
-		return "Male"
 	end
 
 	return rollGender()

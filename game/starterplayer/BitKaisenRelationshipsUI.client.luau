@@ -548,13 +548,18 @@ local function getActionsForRelationship(relationship)
 	}, relationship)
 end
 
-local overlay = Instance.new("Frame")
+local overlay = Instance.new("ScrollingFrame")
 overlay.Name = "RelationshipsOverlay"
 overlay.Size = UDim2.new(1, 0, 1, 0)
 overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 overlay.BackgroundTransparency = 1
 overlay.Visible = false
 overlay.ZIndex = 300
+overlay.ScrollingEnabled = false
+overlay.ScrollBarThickness = 0
+overlay.CanvasSize = UDim2.new(0, 0, 0, 0)
+overlay.BorderSizePixel = 0
+overlay.Active = true
 overlay.Parent = bitKaisenGui
 
 local forceCloseEvent = Instance.new("BindableEvent")

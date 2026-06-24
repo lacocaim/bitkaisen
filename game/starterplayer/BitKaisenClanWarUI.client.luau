@@ -401,3 +401,32 @@ UserInputService.WindowFocused:Connect(refresh)
 applyResponsiveLayout()
 refresh()
 
+local function isAnyModalOpen()
+	local gui = playerGui:FindFirstChild("BitKaisenGui")
+	if not gui then return false end
+	local overlayNames = {
+		"OverlayPanel", "RelationshipsOverlay", "AffiliationsOverlay",
+		"AssetsOverlay", "SettingsOverlay", "MenuOverlay",
+		"AchievementsOverlay", "BitKaisenRelationshipsOverlay",
+		"BitKaisenAffiliationsOverlay", "BitKaisenSettingsOverlay",
+	}
+	for _, name in ipairs(overlayNames) do
+		local obj = gui:FindFirstChild(name, true)
+		if obj and obj:IsA("GuiObject") and obj.Visible == true then
+			return true
+		end
+	end
+	return false
+end
+
+task.spawn(function()
+	while true do
+		task.wait(0.3)
+		local data = currentData
+		local eligible = data and (data.Active == true or data.Eligible == true)
+		if eligible and not panelOpen then
+			warButton.Visible = not isAnyModalOpen()
+		end
+	end
+end)
+

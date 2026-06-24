@@ -92,6 +92,13 @@ local function applyTraitBuffsFromSnapshot(stats, before, actionContext, relatio
 	return ""
 end
 
+local function getDojoFocusLabel(stats)
+	if context.GetDojoFocusLabel then
+		return context.GetDojoFocusLabel(stats)
+	end
+	return "Balanced"
+end
+
 local function maybeTeacherRecommendation(player, stats, logMessage)
 	if context.MaybeTeacherRecommendation then
 		return context.MaybeTeacherRecommendation(player, stats, logMessage)

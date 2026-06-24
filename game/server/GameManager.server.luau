@@ -6,6 +6,12 @@
 --   was refusing to compile the mega GameManager with "Out of local registers".
 --   Do not blindly convert them back to local unless GameManager is split into modules.
 
+if _G.__GameManagerLoaded then
+	warn("[GameManager] Duplicate detected — skipping. Delete the old Studio copy.")
+	return
+end
+_G.__GameManagerLoaded = true
+
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
@@ -107,7 +113,7 @@ local BitKaisenTechniqueEvolution = require(ReplicatedStorage:WaitForChild("BitK
 local BitKaisenAssets = require(ReplicatedStorage:WaitForChild("BitKaisenAssets"))
 local BitKaisenSituations = require(ReplicatedStorage:WaitForChild("BitKaisenSituations"))
 local BitKaisenLegacy = require(ReplicatedStorage:WaitForChild("BitKaisenLegacy"))
-local BitKaisenSaveSystem = require(ServerStorage:WaitForChild("BitKaisenSaveSystem"))
+local BitKaisenSaveSystem = require(ServerScriptService:WaitForChild("BitKaisenSaveSystem"))
 
 -- Put your own Roblox UserId(s) here. Anyone in this table can use dev_awaken
 -- and will see hidden dev activities.
@@ -3163,6 +3169,18 @@ function startAsCurseRebirth(player)
 	BitKaisenTraits.ApplyStartingBonuses(newStats)
 	newStats.TraitsRolled = true
 	local curseStartBoostMessage = BK_GodModeService.ApplyStartBoost(newStats)
+
+	local priorChildren = {}
+	for _, rel in ipairs(oldStats.Relationships or {}) do
+		if rel.Role == "Child" and rel.Alive ~= false then
+			local copy = {}
+			for k, v in pairs(rel) do
+				copy[k] = v
+			end
+			table.insert(priorChildren, copy)
+		end
+	end
+	newStats.PriorLifeChildren = priorChildren
 	newStats.Relationships = {}
 	newStats.RelationshipHistory = oldStats.RelationshipHistory or {}
 	newStats.LegacyHistory = oldStats.LegacyHistory or {}
@@ -6896,12 +6914,6 @@ function checkPromotionAndPopup(player, stats, logMessage)
 	local wasUnregistered = isUnregisteredSorcerer(stats)
 	local wasCurseUser = isCurseUser(stats)
 
-	-- Unregistered sorcerers do not use official mission/promotion grading.
-	-- Their growth comes from UnregisteredProgress, private training, scenarios, and risky choices.
-	if wasUnregistered and not wasOfficial and not wasCurseUser then
-		return logMessage
-	end
-
 	local promotion = BitKaisenStats.CheckPromotion(stats)
 
 	if promotion then
@@ -8771,6 +8783,7 @@ function ageUp(player)
 		stats.RelationshipActionsThisAge = 0
 		stats.DomainTrainingThisAge = 0
 		stats.MissionAttemptsThisAge = 0
+		stats.PhysicalConditioningThisAge = 0
 		stats.MissionAttemptsWindowAge = math.max(0, tonumber(stats.Age) or 0)
 
 		advanceOutsideDojoSenseiAges(stats, 0.5)
@@ -8839,6 +8852,7 @@ function ageUp(player)
 			stats.RelationshipActionsThisAge = 0
 			stats.DomainTrainingThisAge = 0
 			stats.MissionAttemptsThisAge = 0
+			stats.PhysicalConditioningThisAge = 0
 			stats.MissionAttemptsWindowAge = math.max(0, tonumber(stats.Age) or 0)
 
 			stats.Health = math.clamp((stats.Health or 100) + math.random(-5, 4), 0, 100)
@@ -8920,6 +8934,7 @@ function ageUp(player)
 				stats.Health = math.clamp((stats.Health or 100) + assetBonuses.HealthRecoveryBonus, 0, 100)
 			end
 
+			logMessage = logMessage .. BK_WorldHistoryService.AdvanceYear(player, stats)
 			logMessage = logMessage .. BK_ClanWarService.AdvanceYear(player, stats)
 			logMessage = addRandomLifeEvent(player, stats, logMessage)
 			logMessage = addRelationshipAgeEvent(player, stats, logMessage)
@@ -8981,6 +8996,7 @@ function ageUp(player)
 	stats.RelationshipActionsThisAge = 0
 	stats.DomainTrainingThisAge = 0
 	stats.MissionAttemptsThisAge = 0
+	stats.PhysicalConditioningThisAge = 0
 	stats.MissionAttemptsWindowAge = math.max(0, tonumber(stats.Age) or 0)
 
 	stats.Health = math.clamp((stats.Health or 100) + math.random(-5, 4), 0, 100)
@@ -9093,7 +9109,7 @@ function ageUp(player)
 
 	logMessage = addRandomLifeEvent(player, stats, logMessage, forceScenarioThisAge)
 	logMessage = addRelationshipAgeEvent(player, stats, logMessage)
-	local unregisteredActivityProgress, unregisteredActivityReason = getUnregisteredActivityProgress(activityId, stats)
+	local unregisteredActivityProgress, unregisteredActivityReason = getUnregisteredActivityProgress(nil, stats)
 	logMessage = awardUnregisteredProgress(player, stats, unregisteredActivityProgress, unregisteredActivityReason, logMessage)
 
 	logMessage = maybeTeacherRecommendation(player, stats, logMessage)
@@ -10337,6 +10353,8 @@ local BitKaisenServiceContext = {
 BK_CommerceService.Init(BitKaisenServiceContext)
 BK_CombatService.Init(BitKaisenServiceContext)
 BK_AFKService.Init(BitKaisenServiceContext)
+BitKaisenSaveSystem.Init()
+
 BK_CodeService.Init(BitKaisenServiceContext)
 BK_AchievementService.Init(BitKaisenServiceContext)
 BK_DojoService.Init(BitKaisenServiceContext)

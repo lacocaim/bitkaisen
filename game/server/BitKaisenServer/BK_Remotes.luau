@@ -134,14 +134,20 @@ function BK_Remotes.Ensure(name, className)
 end
 
 function BK_Remotes.Init()
+	if _G.__BK_RemotesInitialized then
+		return
+	end
+	if initialized then
+		return
+	end
+	_G.__BK_RemotesInitialized = true
+	initialized = true
+
 	for name, className in pairs(REMOTE_DEFINITIONS) do
 		BK_Remotes.Ensure(name, className)
 	end
 
-	if not initialized then
-		initialized = true
-		print("[BK_Remotes] Loaded " .. tostring(#BK_Remotes.ListNames()) .. " remotes.")
-	end
+	print("[BK_Remotes] Loaded " .. tostring(#BK_Remotes.ListNames()) .. " remotes.")
 end
 
 function BK_Remotes.Get(name)

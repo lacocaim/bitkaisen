@@ -554,10 +554,6 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 
 	local logMessage = ""
 	local relationshipActionCostsTurn = not freeRelationshipAction
-	if relationshipActionCostsTurn then
-		-- Reserve the relationship action before any stat gains so rapid button spam cannot bypass the yearly cap.
-		stats.RelationshipActionsThisAge = math.clamp((tonumber(stats.RelationshipActionsThisAge) or 0) + 1, 0, 3)
-	end
 	local traitBefore = captureTraitBuffSnapshot(stats, relationship)
 
 	if actionId == "brain_transplant" then
@@ -1755,6 +1751,9 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 	if actionId ~= "brain_transplant" and actionId ~= "murder_relationship" then
 		logMessage = logMessage .. applyTraitBuffsFromSnapshot(stats, traitBefore, "Relationship", relationship)
 	end
+	if relationshipActionCostsTurn then
+		stats.RelationshipActionsThisAge = math.clamp((tonumber(stats.RelationshipActionsThisAge) or 0) + 1, 0, 3)
+	end
 	syncFamilyStatus(stats)
 	fireLifeUpdate(player, stats, logMessage)
 	saveStats(player)
@@ -1829,6 +1828,7 @@ function BK_RelationshipService.GetRelationshipsPayload(player)
 				Fear = math.clamp(tonumber(rival.Threat) or 25, 0, 100),
 				Alive = tostring(rival.Status or "Active") ~= "Dead",
 				IsRivalEntry = true,
+				ReadOnly = true,
 			})
 		end
 	end

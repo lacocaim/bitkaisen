@@ -4,12 +4,15 @@ local transaction = require("./accountService/transaction")
 local migrations = require("./accountService/migrations")
 
 local store = require("./accountService/store")
-local charm = require("@packages/charm")
-local delta_compress = require("@packages/delta-compress")
-local server_blink = require("@server-blink")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 
-local objects = require("@utils/objects")
-local observers = require("@utils/observers")
+local charm = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("charm"))
+local delta_compress = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("delta-compress"))
+local server_blink = require(ServerScriptService:WaitForChild("server-blink"))
+
+local objects = require(ReplicatedStorage:WaitForChild("global"):WaitForChild("utils"):WaitForChild("objects"))
+local observers = require(ReplicatedStorage:WaitForChild("global"):WaitForChild("utils"):WaitForChild("observers"))
 
 local schema = require("./accountService/schema")
 
@@ -86,7 +89,7 @@ local function playerAdded(player: Player)
 			migrations.migrateFields(player, profile)
 			store.profiles[player] = profile
 			store.set(function(state)
-				return objects.set(state, tostring(player.UserId), profile.Data)
+				return objects.set(state, tostring(player.UserId), objects.deepClone(profile.Data))
 			end)
 			scope = charm.effectScope(function()
 				local playerComputed = charm.computed(function()
@@ -94,7 +97,7 @@ local function playerAdded(player: Player)
 				end)
 				charm.onCleanup(charm.listen(playerComputed, function(new, old)
 					if new then
-						profile.Data.account = new
+						profile.Data.account = objects.deepClone(new)
 						replicate(player, old, new)
 					end
 				end))
@@ -115,10 +118,12 @@ local function playerAdded(player: Player)
 	end
 end
 local function init()
-	migrations.validateMigrations()
-	for _, player in Players:GetPlayers() do
-		task.spawn(playerAdded, player)
+	if _G.__AccountServiceInitialized then
+		return
 	end
+	_G.__AccountServiceInitialized = true
+
+	migrations.validateMigrations()
 
 	observers.observePlayers(function(player: Player)
 		return playerAdded(player)
@@ -127,8 +132,9 @@ local function init()
 	server_blink.account.ready.on(function(player)
 		if not readyForReplication[player] then
 			readyForReplication[player] = true
-			if getAccountFor(player) then
-				replicate(player, {}, getAccountFor(player))
+			local acc = getAccountFor(player)
+			if acc then
+				server_blink.account.sync.fire(player, acc)
 			end
 		end
 	end)

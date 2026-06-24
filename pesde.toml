@@ -1,6 +1,6 @@
 name = "lacocaim/bitkaisen"
 version = "0.1.0"
-description = "Anime tower defense game"
+description = "BitLife-style Jujutsu Kaisen life simulator"
 authors = ["lacocaim"]
 license = "MIT"
 
@@ -26,15 +26,7 @@ pesde = "^0.7.0"
 lune = "^0.10.2"
 
 [dependencies]
-Jabby = { wally = "alicesaidhi/jabby", version = "0.2.0-rc.8" }
-Jecs = { wally = "ukendio/jecs", version = "0.9.0-rc.12" }
-Planck = { wally = "yetanotherclown/planck", version = "0.2.0-rc.1" }
-PlanckJabby = { wally = "yetanotherclown/planck-jabby", version = "0.2.0-rc.1" }
-PlanckRunService = { wally = "yetanotherclown/planck-runservice", version = "0.2.0-rc.1" }
-Bytenet = { wally = "howmanysmall/bytenet", version = "0.4.7" }
-Replecs = { wally = "pepeeltoro41/replecs", version = "0.2.3" }
-
-Fusion = { wally = "elttob/fusion", version = "0.3.0-beta" }
+Fusion = { wally = "elttob/fusion", version = "0.2.0" }
 sift = { wally = "csqrl/sift", version = "0.0.11" }
 gt = { wally = "corecii/greentea", version = "0.4.11" }
 

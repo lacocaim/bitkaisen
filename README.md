@@ -1,6 +1,6 @@
 # bitkaisen
 
-Roblox Anime Tower Defense game using ECS architecture and Fusion UI hydration.
+BitLife-style Jujutsu Kaisen life simulator on Roblox. Live your life as a sorcerer -- age through eras, unlock cursed techniques, master domains, build relationships, complete missions, and rise through clan ranks.
 
 ## Prerequisites
 
@@ -15,7 +15,7 @@ Roblox Anime Tower Defense game using ECS architecture and Fusion UI hydration.
 
 2. Install packages:
    ```bash
-   just packages bitkaisen
+   just packages
    ```
 
 3. Start developing:
@@ -26,13 +26,13 @@ Roblox Anime Tower Defense game using ECS architecture and Fusion UI hydration.
    and restart studio.
 
    ```bash
-   just dev bitkaisen
+   just dev
    ```
 
    This does a few things:
    - watches and creates sourcemap
    - runs rojo serve
-   - watches `bitkaisen.blink` and compiles networking code via blink
+   - watches `.blink` files and compiles networking code via blink
    - outputs to `build/` (darklua)
 
    Now connect to the server via the Rojo plugin.
@@ -60,36 +60,34 @@ lune run Lune/test.lua
 
 ```
 game/
-├── server/          # Server code & systems
-├── shared/          # Replicated code (ECS, components, types)
-│   ├── ecs/         # World, scheduler, replicator, startup
-│   ├── components/  # ECS component definitions
-│   ├── systems/     # ECS systems
-│   ├── hooks/       # Fusion hooks & utilities
-│   └── controllers/ # UI hydration controllers
-└── starterplayer/   # Client startup scripts
+├── server/              # Server code (GameManager, BK_* services)
+│   └── BitKaisenServer/ # Service modules (Remotes, Combat, Missions, etc.)
+├── shared/              # Replicated code
+│   ├── hooks/           # Fusion hooks & utilities
+│   └── controllers/     # UI hydration controllers
+└── starterplayer/       # Client scripts (BitKaisenUIBuilder, ~40 UI scripts)
 
 global/
-├── server/          # Datastore, ProfileStore, accountService
-├── shared/          # Data types, store sync, constants
-│   ├── constants/   # Game data definitions
-│   ├── utils/       # Shared utilities
-│   └── types/       # Type definitions
-└── client/          # Global client-side code
+├── server/              # Datastore, ProfileStore, accountService
+├── shared/              # Data types, store sync, constants
+│   ├── constants/       # Game data definitions
+│   ├── utils/           # Shared utilities (px scaling, objects, observers)
+│   └── types/           # Type definitions
+└── client/              # Global client-side code
 
-remotes/             # Blink networking definitions
-├── bitkaisen.blink  # Main blink entry (imports global/)
-└── global/          # Shared networking events
+remotes/                 # Blink networking definitions
+├── bitkaisen.blink      # Main blink entry (imports global/)
+└── global/              # Shared networking events
 
-Packages/            # Wally/pesde dependencies
-Zune/                # Automation scripts
+Packages/                # Wally/pesde dependencies
+Zune/                    # Automation scripts
 ```
 
 ## Tech Stack
 
-- **ECS**: Jecs + Planck scheduler + Jabby debugger + Replecs replication
-- **Networking**: Blink (codegen) + ByteNet
-- **UI**: Fusion (Hydrate pattern against Studio templates)
+- **Networking**: Blink (codegen) + BK_Remotes (classic RemoteEvent/Function)
+- **UI**: Fusion 0.2 (Hydrate pattern against Studio templates)
+- **Scaling**: px.luau -- design at 1920x1080, logarithmic scaling to all devices
 - **Data**: ProfileStore + Charm (state) + Delta-Compress (replication)
 - **Build**: Rojo + Darklua + Selene (lint)
 - **Toolchain**: Rokit + Pesde + Just + Zune
@@ -97,7 +95,7 @@ Zune/                # Automation scripts
 ## Guidelines
 
 - Use `.luau` file extension
-- Follow existing ECS patterns for new systems
 - Use transaction API for data changes, never modify atoms directly
-- UI logic via Fusion `Hydrate` against Studio templates; no full-code UI construction
+- UI logic via Fusion 0.2 `Hydrate` against Studio templates; no full-code UI construction
+- Use `px()` for all pixel measurements to ensure device-universal scaling
 - Never edit generated files in `remotes/out/`

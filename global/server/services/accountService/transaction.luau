@@ -1,9 +1,11 @@
 local Players = game:GetService("Players")
 
-local objects = require("@utils/objects")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local objects = require(ReplicatedStorage:WaitForChild("global"):WaitForChild("utils"):WaitForChild("objects"))
 local schema = require("../accountService/schema")
 local store = require("../accountService/store")
-local charm = require("@packages/charm")
+local charm = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("charm"))
 
 local transacting: {
 	aborted: boolean,
@@ -125,7 +127,7 @@ local function transaction(registerTransactions: schema.Transaction)
 				return false
 			end
 			if evaluating then
-				possibleCommits[player] = objects.deepFreeze(evaluating.uncommittedAccount)
+				possibleCommits[player] = evaluating.uncommittedAccount
 			end
 		end
 		if next(possibleCommits) then

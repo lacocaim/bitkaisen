@@ -1,41 +1,79 @@
 ---
-description: Fusion UI hydration conventions
+description: Fusion 0.2 UI hydration and px scaling conventions
 globs: "game/shared/{controllers,hooks}/**/*.luau"
 alwaysApply: false
 ---
 
-# Fusion Hydration UI
+# Fusion 0.2 Hydration UI
 
-UI templates are authored visually in Roblox Studio. Code binds reactive logic to them using Fusion's `Hydrate`.
+UI templates are authored visually in Roblox Studio. Code binds reactive logic to them using Fusion 0.2's `Hydrate`.
 
-## Pattern
+## Hydration Pattern
 
 ```luau
 local Fusion = require(ReplicatedStorage.Packages.Fusion)
+local Value = Fusion.Value
+local Computed = Fusion.Computed
+local Hydrate = Fusion.Hydrate
 
 local function init()
-    local scope = Fusion:scoped()
-    local someState = scope:Value(initialValue)
+    local someState = Value(initialValue)
 
     local template = playerGui:WaitForChild("TemplateName")
-    scope:Hydrate(template) {
-        Text = scope:Computed(function(use)
-            return tostring(use(someState))
+    Hydrate(template) {
+        Text = Computed(function()
+            return tostring(someState:get())
         end),
     }
-
-    return function()
-        Fusion.doCleanup(scope)
-    end
 end
 ```
 
+## Fusion 0.2 API (no scopes)
+
+- `Value(initial)` -- mutable reactive state; read with `:get()`, write with `:set(v)`
+- `Computed(fn)` -- derived state; fn reads other values via `:get()`
+- `Hydrate(instance) { ... }` -- bind reactive properties to an existing instance
+- `Spring(goal, speed?, damping?)` -- spring animation toward a reactive goal
+- `Tween(goal, tweenInfo)` -- tween toward a reactive goal
+- `Observer(value):onChange(fn)` -- watch a value for changes
+- `OnEvent(eventName)` / `OnChange(propertyName)` -- keys for Hydrate tables
+
+## px Scaling (device-universal UI)
+
+Design all UI at **1920x1080**. Use `px.luau` to scale pixel values to the current device:
+
+```luau
+local px = require("@utils/px")
+
+-- Call once at UI root
+px.connectViewport()
+
+-- Use in Hydrate calls -- returns Fusion Computed values
+Hydrate(frame) {
+    Size = px.offset(300, 200),           -- scaled UDim2.fromOffset
+    Position = px.udim2(0.5, -150, 0, 40), -- UDim2 with scaled offsets
+}
+
+-- For single values (font size, corner radius, padding)
+local fontSize = px(18) -- Computed that returns scaled integer
+```
+
+### px API
+
+| Function | Returns | Description |
+|---|---|---|
+| `px(n)` | `Computed<number>` | Scaled + rounded pixel value |
+| `px.scale(n)` | `Computed<number>` | Scaled pixel (no rounding, for animations) |
+| `px.offset(x, y)` | `Computed<UDim2>` | `UDim2.fromOffset` with scaled values |
+| `px.udim2(sx, ox, sy, oy)` | `Computed<UDim2>` | Full UDim2 with scaled offsets |
+| `px.udim(s, o)` | `Computed<UDim>` | UDim with scaled offset |
+| `px.connectViewport()` | void | Connect to camera viewport (call once) |
+
 ## Rules
 
-- **No full-code UI construction** — do not use `scope:New("Frame")` to build complex UIs from scratch; design them in Studio
-- Always create a `scope` via `Fusion:scoped()` and clean it up on teardown
-- Use `scope:Value()` for mutable state, `scope:Computed()` for derived state
-- Use `scope:Spring()` or `scope:Tween()` for animations
+- **No full-code UI construction** -- do not build complex UIs from scratch in code; design them in Studio
+- Use `Hydrate` to bind reactive state to Studio templates
+- Use `px()` for all pixel measurements to ensure device scaling
 - Hydration controllers go in `game/shared/controllers/`
 - Reusable Fusion hooks go in `game/shared/hooks/`
 - One controller per UI screen/feature

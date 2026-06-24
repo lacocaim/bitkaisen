@@ -231,7 +231,7 @@ end
 ----------------------------------------------------------------
 
 local function normalizeDailyLoginTable(daily)
-	daily = typeof(daily) == "table" and daily or {}
+	daily = shallowCopyTable(typeof(daily) == "table" and daily or {})
 
 	daily.LastClaimDate = tostring(daily.LastClaimDate or "")
 	daily.LastClaimTimestamp = tonumber(daily.LastClaimTimestamp) or 0
@@ -524,9 +524,13 @@ function BK_DailyLoginService.ClearSessionCache(playerOrUserId)
 end
 
 function BK_DailyLoginService.Init(ctx)
+	if _G.__BK_DailyLoginServiceInitialized then
+		return
+	end
 	if initialized then
 		return
 	end
+	_G.__BK_DailyLoginServiceInitialized = true
 
 	context = ctx or {}
 

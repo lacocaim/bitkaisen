@@ -5,34 +5,46 @@ alwaysApply: true
 
 # bitkaisen - Project Overview
 
-Roblox anime tower defense game. **Rojo** is the source of truth — all game code lives in this repo, synced to Studio via `rojo serve`.
+BitLife-style Jujutsu Kaisen life simulator. **Rojo** is the source of truth -- all game code lives in this repo, synced to Studio via `rojo serve`.
+
+## Game Features
+
+Life simulation with JJK theming: aging, clans, cursed techniques, technique mastery, traits, missions, relationships, civilian jobs, combat, domain expansion, binding vows, rivals, achievements, daily login rewards, and world history progression through Heian/modern eras.
 
 ## Tech Stack
 
 - **Language**: Luau (`.luau` only, never `.lua`)
-- **Sync**: Rojo (`bitkaisen.project.json`)
-- **ECS**: Jecs (world) + Planck (scheduler) + Jabby (debugger) + Replecs (replication)
-- **Networking**: Blink (codegen from `.blink` definitions) + ByteNet (ECS replication)
-- **UI**: Fusion `Hydrate` pattern — UI templates live in Studio, logic binds via `scope:Hydrate(template) { ... }`
+- **Sync**: Rojo (`game.project.json`)
+- **Networking**: Blink (codegen from `.blink` definitions) for RemoteEvent/RemoteFunction; BK_Remotes module for classic remotes
+- **UI**: Fusion 0.2 `Hydrate` pattern -- UI templates live in Studio, logic binds via `Hydrate(template) { ... }`
+- **Scaling**: `px.luau` -- design at 1920x1080, logarithmic scaling to all devices
 - **Data**: ProfileStore + Charm (atoms/signals) + Delta-Compress (replication diffs)
 - **Validation**: GreenTea schemas
 - **Build**: Darklua + Selene (lint) + Rokit (toolchain) + Pesde/Wally (packages)
 - **Task runner**: `just` (see `justfile`)
 
+## Architecture
+
+The game uses a traditional Roblox scripting architecture (not ECS):
+- **Server**: `GameManager.server.luau` is the central server script orchestrating all `BK_*` service modules
+- **Client**: ~40 `BitKaisen*.client.luau` scripts handle individual UI features
+- **UI Builder**: `BitKaisenUIBuilder` LocalScript constructs the main GUI layout; child modules (`MasteryButtonController`, `TraitButtonController`) handle sub-features
+
 ## Folder Layout
 
 ```
-game/server/          → ServerScriptService
-game/shared/          → ReplicatedStorage (ECS, components, systems, hooks, controllers)
-game/starterplayer/   → StarterPlayerScripts
-global/server/        → ServerScriptService/global (accountService, commands)
-global/shared/        → ReplicatedStorage/global (types, utils, constants, controllers)
-global/client/        → StarterPlayerScripts/global
-remotes/              → Blink .blink definitions (codegen output in remotes/out/, git-ignored)
+game/server/                -> ServerScriptService (GameManager, BK_* services)
+game/server/BitKaisenServer/ -> Server service modules (BK_Remotes, BK_CombatService, etc.)
+game/shared/                -> ReplicatedStorage (hooks, controllers, config)
+game/starterplayer/         -> StarterPlayerScripts (BitKaisenUIBuilder, BitKaisen*UI scripts)
+global/server/              -> ServerScriptService/global (accountService, commands)
+global/shared/              -> ReplicatedStorage/global (types, utils, constants, controllers)
+global/client/              -> StarterPlayerScripts/global
+remotes/                    -> Blink .blink definitions (codegen output in remotes/out/, git-ignored)
 ```
 
 ## Key Commands
 
-- `just packages` — install deps + generate sourcemap
-- `just dev` — start dev (rojo serve + blink watch)
-- `just net` — compile blink networking only
+- `just packages` -- install deps + generate sourcemap
+- `just dev` -- start dev (rojo serve + blink watch)
+- `just net` -- compile blink networking only

@@ -242,9 +242,12 @@ render = function()
 		fire("toggle_legacy_traits", { Enabled = not settings.GuaranteedLegacyTraits })
 	end)
 
-	local clanCard = makeCard(142)
+	local clanOptions = data.ClanOptions or {}
+	local clanListHeight = math.min(#clanOptions * 26, 130)
+	local clanCardHeight = 142 + clanListHeight + (clanListHeight > 0 and 10 or 0)
+	local clanCard = makeCard(clanCardHeight)
 	makeLabel(clanCard, "Clan Control", 10, 20, THEME.Gold, 15, true)
-	makeLabel(clanCard, tostring(data.CurrentClan or "Unknown") .. " • " .. tostring(data.ClanRerollsUsed or 0) .. "/" .. tostring(data.ClanRerollsMax or 3) .. " rerolls used. Type a clan/family name to pick directly.", 34, 34, THEME.Muted, 12, false)
+	makeLabel(clanCard, tostring(data.CurrentClan or "Unknown") .. " • " .. tostring(data.ClanRerollsUsed or 0) .. "/" .. tostring(data.ClanRerollsMax or 3) .. " rerolls used. Type a clan name or pick from the list.", 34, 34, THEME.Muted, 12, false)
 	makeButton(clanCard, "REROLL CLAN", 12, 72, 145, 30, THEME.Purple, function()
 		fire("reroll_clan")
 	end)
@@ -265,6 +268,40 @@ render = function()
 	makeButton(clanCard, "PICK", 12, 106, 145, 28, THEME.Green, function()
 		fire("select_clan", { ClanName = clanBox.Text })
 	end)
+
+	if #clanOptions > 0 then
+		local clanScroll = Instance.new("ScrollingFrame")
+		clanScroll.Position = UDim2.fromOffset(12, 140)
+		clanScroll.Size = UDim2.new(1, -24, 0, clanListHeight)
+		clanScroll.BackgroundColor3 = THEME.Panel2
+		clanScroll.BorderSizePixel = 0
+		clanScroll.ScrollBarThickness = 4
+		clanScroll.ScrollBarImageColor3 = THEME.Muted
+		clanScroll.CanvasSize = UDim2.new(0, 0, 0, #clanOptions * 26)
+		clanScroll.Parent = clanCard
+		Instance.new("UICorner", clanScroll).CornerRadius = UDim.new(0, 6)
+		local clanLayout = Instance.new("UIListLayout")
+		clanLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		clanLayout.Parent = clanScroll
+		for idx, clan in ipairs(clanOptions) do
+			local clanBtn = Instance.new("TextButton")
+			clanBtn.Size = UDim2.new(1, 0, 0, 26)
+			clanBtn.BackgroundTransparency = idx % 2 == 0 and 0.6 or 0.8
+			clanBtn.BackgroundColor3 = THEME.Panel
+			clanBtn.BorderSizePixel = 0
+			clanBtn.Text = "  " .. tostring(clan.Name or "Unknown") .. "  (" .. tostring(clan.Category or "Clan") .. ")"
+			clanBtn.TextColor3 = THEME.Text
+			clanBtn.Font = Enum.Font.GothamBold
+			clanBtn.TextSize = 11
+			clanBtn.TextXAlignment = Enum.TextXAlignment.Left
+			clanBtn.TextWrapped = true
+			clanBtn.LayoutOrder = idx
+			clanBtn.Parent = clanScroll
+			clanBtn.Activated:Connect(function()
+				fire("select_clan", { ClanName = clan.FamilyName or clan.Name })
+			end)
+		end
+	end
 
 	local traitCard = makeCard(202)
 	makeLabel(traitCard, "Trait Editor", 10, 20, THEME.Gold, 15, true)

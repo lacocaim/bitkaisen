@@ -327,35 +327,44 @@ end
 function BitKaisenLegacy.GetEligibleSuccessors(parentStats)
 	local eligible = {}
 
-	if not parentStats or not parentStats.Relationships then
+	if not parentStats then
 		return eligible
 	end
 
-	for _, relationship in ipairs(parentStats.Relationships) do
-		if relationship.Role == "Child" and relationship.Alive ~= false then
-			local technique = getBestKnownTechnique(relationship)
+	local seenIds = {}
+	local sources = { parentStats.Relationships or {} }
+	if typeof(parentStats.PriorLifeChildren) == "table" then
+		table.insert(sources, parentStats.PriorLifeChildren)
+	end
 
-			table.insert(eligible, {
-				Id = relationship.Id,
-				Name = relationship.Name,
-				Age = relationship.Age or 0,
-				Gender = relationship.Gender or "Unknown",
-				Grade = relationship.Grade or "Non-Sorcerer",
-				CursedEnergy = relationship.CursedEnergy or 0,
-				CEBaseline = relationship.CEBaseline or relationship.CursedEnergy or 0,
-				CursedTechnique = technique,
-				InnateTechnique = relationship.InnateTechnique or "None",
-				PlayerClanInnateTechnique = relationship.PlayerClanInnateTechnique or "None",
-				TechniqueMastery = relationship.TechniqueMastery or 0,
-				Traits = deepCopyTable(relationship.Traits or {}),
-				InheritanceProfile = deepCopyTable(relationship.InheritanceProfile or {}),
-				CanJoinDojo = relationship.CanJoinDojo == true,
-				CanJoinClan = relationship.CanJoinClan == true,
-				DojoEligible = relationship.DojoEligible == true,
-				ClanEligible = relationship.ClanEligible == true,
-				FamilyCareer = relationship.FamilyCareer or "Undecided",
-				HasInheritedTechnique = technique ~= "None"
-			})
+	for _, sourceList in ipairs(sources) do
+		for _, relationship in ipairs(sourceList) do
+			if relationship.Role == "Child" and relationship.Alive ~= false and not seenIds[relationship.Id] then
+				seenIds[relationship.Id] = true
+				local technique = getBestKnownTechnique(relationship)
+
+				table.insert(eligible, {
+					Id = relationship.Id,
+					Name = relationship.Name,
+					Age = relationship.Age or 0,
+					Gender = relationship.Gender or "Unknown",
+					Grade = relationship.Grade or "Non-Sorcerer",
+					CursedEnergy = relationship.CursedEnergy or 0,
+					CEBaseline = relationship.CEBaseline or relationship.CursedEnergy or 0,
+					CursedTechnique = technique,
+					InnateTechnique = relationship.InnateTechnique or "None",
+					PlayerClanInnateTechnique = relationship.PlayerClanInnateTechnique or "None",
+					TechniqueMastery = relationship.TechniqueMastery or 0,
+					Traits = deepCopyTable(relationship.Traits or {}),
+					InheritanceProfile = deepCopyTable(relationship.InheritanceProfile or {}),
+					CanJoinDojo = relationship.CanJoinDojo == true,
+					CanJoinClan = relationship.CanJoinClan == true,
+					DojoEligible = relationship.DojoEligible == true,
+					ClanEligible = relationship.ClanEligible == true,
+					FamilyCareer = relationship.FamilyCareer or "Undecided",
+					HasInheritedTechnique = technique ~= "None"
+				})
+			end
 		end
 	end
 
@@ -487,8 +496,10 @@ function BitKaisenLegacy.BuildSuccessorStats(parentStats, successorId, BitKaisen
 	for _, oldRelationship in ipairs(parentStats.Relationships or {}) do
 		if oldRelationship.Role == "Spouse" and oldRelationship.Alive ~= false then
 			local survivingParent = deepCopyTable(oldRelationship)
+			local preservedGender = survivingParent.Gender
 			survivingParent.Id = "surviving_parent_" .. tostring(math.random(100000, 999999))
 			survivingParent.Role = resolveLivingParentRole(survivingParent)
+			survivingParent.Gender = preservedGender or survivingParent.Gender
 			survivingParent.Status = "Surviving Parent"
 			survivingParent.Romance = 0
 			survivingParent.Bond = clampStat(survivingParent.Bond or 60, 40, 100)

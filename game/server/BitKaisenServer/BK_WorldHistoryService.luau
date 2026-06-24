@@ -307,8 +307,11 @@ function BK_WorldHistoryService.GetAffiliationNotables(stats)
 end
 
 local function getStrongestSorcererName(stats)
-	local strongestName = stats.Name or stats.FullName or "Unknown"
-	local strongestPower = playerPower(stats)
+	local playerAge = tonumber(stats.Age) or 0
+	local playerCE = tonumber(stats.CursedEnergy) or 0
+	local playerEligible = playerAge >= 12 and playerCE >= 100
+	local strongestName = playerEligible and (stats.Name or stats.FullName or "Unknown") or "No dominant sorcerer yet"
+	local strongestPower = playerEligible and playerPower(stats) or 0
 	for _, npc in ipairs(stats.NotableSorcerers or {}) do
 		local age = tonumber(npc.Age) or 0
 		local ce = tonumber(npc.CursedEnergy) or 0

@@ -6,6 +6,7 @@ local playerState = require("@ui-state/playerState")
 local uiState = require("@ui-state/uiState")
 local navRegistry = require("@ui-state/navRegistry")
 local remotes = require("@ui-state/remotes")
+local device = require("@ui-state/device")
 local px = require("@ui/px")
 
 local ProfileCard = require("@ui-components/shell/ProfileCard")
@@ -15,6 +16,7 @@ local NavPanel = require("@ui-components/shell/NavPanel")
 local NotificationHolder = require("@ui-components/shell/NotificationHolder")
 local MajorPopup = require("@ui-components/shell/MajorPopup")
 local SettingsButton = require("@ui-components/shell/SettingsButton")
+local ServerSelection = require("@ui-components/shell/ServerSelection")
 
 local MissionsPanel = require("@ui-panels/MissionsPanel")
 local ActivitiesPanel = require("@ui-panels/ActivitiesPanel")
@@ -66,18 +68,11 @@ navRegistry.register({ id = "rivals", label = "RIVALS", order = 8, color = theme
 navRegistry.register({ id = "history", label = "HISTORY", order = 9, color = theme.Blue })
 navRegistry.register({ id = "mentor", label = "MENTOR", order = 10, color = Color3.fromRGB(55, 180, 220) })
 
-local function isMobile()
-	local camera = workspace.CurrentCamera
-	if not camera then return false end
-	local viewport = camera.ViewportSize
-	return viewport.X < 900 or viewport.Y > viewport.X
-end
-
 local function applyResponsiveLayout(mainPanel: Frame)
 	local camera = workspace.CurrentCamera
 	if not camera then return end
 	local viewport = camera.ViewportSize
-	local mobile = isMobile()
+	local mobile = device.isMobileLayout()
 	local smallMobile = viewport.X < 520
 	local portrait = mobile and viewport.Y > viewport.X
 
@@ -176,9 +171,24 @@ local function BitKaisenGui()
 	local notifHolder = NotificationHolder()
 	notifHolder.Parent = notifLayer
 
+	local selectionLayer = create("ScreenGui") {
+		Name = "BitKaisenSelectionLayer",
+		ResetOnSpawn = false,
+		IgnoreGuiInset = true,
+		DisplayOrder = 2000,
+		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+		Parent = playerGui,
+	}
+	local selectionScreen = ServerSelection.create()
+	selectionScreen.Parent = selectionLayer
+
 	applyResponsiveLayout(mainPanel)
 	task.defer(function() applyResponsiveLayout(mainPanel) end)
 	task.delay(0.25, function() applyResponsiveLayout(mainPanel) end)
+
+	device.subscribe(function()
+		applyResponsiveLayout(mainPanel)
+	end)
 
 	if workspace.CurrentCamera then
 		workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
@@ -222,6 +232,7 @@ AFKPanel.init()
 IncidentMapPanel.init()
 
 px.usePx()
+device.init()
 
 vide.mount(function()
 	return BitKaisenGui()
@@ -249,11 +260,26 @@ local lastLogTimeKey = ""
 local lastLogClock = 0
 local lastLoggedAge = ""
 local lastLifeWasDead = false
+local serverSelectionHandled = false
 
 local ule = remotes.updateLifeEvent()
 if ule then
 	ule.OnClientEvent:Connect(function(updatedStats, logMessage, forceResetLog)
 		if not updatedStats then return end
+
+		if not serverSelectionHandled then
+			serverSelectionHandled = true
+			local savedMode = nil
+			if typeof(updatedStats) == "table" and typeof(updatedStats.Settings) == "table" then
+				savedMode = updatedStats.Settings.PlatformMode
+			end
+			if typeof(savedMode) == "string" and (savedMode == "CrossPlatform" or savedMode == "Mobile") then
+				device.setUiMode(savedMode :: device.UiMode)
+			end
+			if ServerSelection.shouldShow(savedMode) then
+				ServerSelection.show()
+			end
+		end
 
 		if forceResetLog == true then
 			lastLifeWasDead = false

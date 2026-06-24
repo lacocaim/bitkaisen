@@ -2,6 +2,7 @@ local TweenService = game:GetService("TweenService")
 local vide = require("@packages/vide")
 local theme = require("@ui/theme")
 local uiState = require("@ui-state/uiState")
+local device = require("@ui-state/device")
 
 local create = vide.create
 local derive = vide.derive
@@ -83,9 +84,23 @@ local function OverlayPanel()
 	}
 	overlayRef = overlay
 
+	local function getContentWindowSize()
+		if device.isMobileLayout() then
+			local portrait = device.isPortrait()
+			return UDim2.new(
+				portrait and 0.96 or 0.92, 0,
+				portrait and 0.88 or 0.86, 0
+			)
+		end
+		return UDim2.new(0.56, 0, 0.76, 0)
+	end
+
 	local host = create("Frame") {
 		Name = "ContentWindow",
-		Size = UDim2.new(0.56, 0, 0.76, 0),
+		Size = function()
+			local _ = device.version()
+			return getContentWindowSize()
+		end,
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.new(0.5, 0, 0.5, 0),
 		BackgroundColor3 = theme.Panel,

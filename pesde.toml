@@ -33,5 +33,5 @@ gt = { wally = "corecii/greentea", version = "0.4.11" }
 delta-compress = { wally = "nezuo/delta-compress", version = "0.1.3" }
 profilestore = { wally = "lm-loleris/profilestore", version = "^1.0.3" }
 charm = { wally = "littensy/charm", version = "^0.11.0-rc.5" }
-vide = { repo = "https://github.com/bravobravo909/vide", rev = "24e1a9bd24fef896a10620ac1851aa26f78809ed" }
+vide = { repo = "https://github.com/lacocaim/vide", rev = "24e1a9bd24fef896a10620ac1851aa26f78809ed" }
 ripple = { wally = "littensy/ripple", version = "0.10.2" }

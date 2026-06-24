@@ -2345,7 +2345,8 @@ function ensureExtraStats(stats)
 		HighContrastText = false,
 		ReducedMotion = false,
 		ScreenShake = true,
-		SkipCombatSkillChecks = false
+		SkipCombatSkillChecks = false,
+		PlatformMode = "",
 	}
 
 	for settingName, defaultValue in pairs(defaultSettings) do
@@ -2365,6 +2366,10 @@ function ensureExtraStats(stats)
 	stats.Settings.ReducedMotion = stats.Settings.ReducedMotion == true
 	stats.Settings.ScreenShake = stats.Settings.ScreenShake ~= false
 	stats.Settings.SkipCombatSkillChecks = stats.Settings.SkipCombatSkillChecks == true
+
+	if stats.Settings.PlatformMode ~= "CrossPlatform" and stats.Settings.PlatformMode ~= "Mobile" and stats.Settings.PlatformMode ~= "" then
+		stats.Settings.PlatformMode = ""
+	end
 
 	local age = tonumber(stats.Age) or 0
 	if stats.SchoolStage == nil then
@@ -10314,7 +10319,12 @@ local ALLOWED_SETTINGS = {
 	HighContrastText = "boolean",
 	ReducedMotion = "boolean",
 	ScreenShake = "boolean",
-	SkipCombatSkillChecks = "boolean"
+	SkipCombatSkillChecks = "boolean",
+	PlatformMode = "string",
+}
+
+local ALLOWED_STRING_VALUES = {
+	PlatformMode = { CrossPlatform = true, Mobile = true },
 }
 
 updateSettingsEvent.OnServerEvent:Connect(function(player, settingName, value)
@@ -10342,6 +10352,10 @@ updateSettingsEvent.OnServerEvent:Connect(function(player, settingName, value)
 		value = math.clamp(tonumber(value) or 0, 0, 1)
 	elseif expectedType == "boolean" then
 		value = value == true
+	elseif expectedType == "string" then
+		if typeof(value) ~= "string" then return end
+		local whitelist = ALLOWED_STRING_VALUES[settingName]
+		if whitelist and not whitelist[value] then return end
 	else
 		return
 	end

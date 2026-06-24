@@ -88,6 +88,9 @@ local COMBAT_RECOVERY_KIT_PRODUCT_ID = 3605164164
 ----------------------------------------------------------------
 local MAIN_GUI_NAME = "BitKaisenGui"
 
+local device = require("@ui-state/device")
+local ServerSelection = require("@ui-components/shell/ServerSelection")
+
 local DEFAULT_SETTINGS = {
 	MusicVolume = 1,
 	SFXVolume = 1,
@@ -98,6 +101,7 @@ local DEFAULT_SETTINGS = {
 	ReducedMotion = false,
 	ScreenShake = true,
 	SkipCombatSkillChecks = false,
+	PlatformMode = "",
 }
 
 local THEME = {
@@ -292,7 +296,7 @@ local MOBILE_WINDOW_MARGIN_X = 28
 local MOBILE_WINDOW_MARGIN_Y = 70
 
 local function isMobile()
-	return getViewport().X < 900
+	return device.isMobileLayout() or getViewport().X < 900
 end
 
 local function isSmallMobile()
@@ -343,8 +347,15 @@ local function syncSettingsFromStats(stats)
 				currentSettings[key] = clamp01(loadedValue)
 			elseif typeof(defaultValue) == "boolean" then
 				currentSettings[key] = loadedValue == true
+			elseif typeof(defaultValue) == "string" then
+				currentSettings[key] = tostring(loadedValue)
 			end
 		end
+	end
+
+	local mode = currentSettings.PlatformMode
+	if mode == "CrossPlatform" or mode == "Mobile" then
+		device.setUiMode(mode :: device.UiMode)
 	end
 end
 
@@ -354,6 +365,8 @@ local function saveSetting(key, value)
 		value = clamp01(value)
 	elseif typeof(DEFAULT_SETTINGS[key]) == "boolean" then
 		value = bool(value)
+	elseif typeof(DEFAULT_SETTINGS[key]) == "string" then
+		value = tostring(value)
 	else
 		return
 	end
@@ -1187,6 +1200,22 @@ buildGameplayPage = function()
 
 	makeSectionLabel("Display")
 	makeToggleRow("High Contrast Text", "Makes life log text larger and easier to read.", "HighContrastText")
+
+	makeSectionLabel("Platform")
+	local currentModeLabel = currentSettings.PlatformMode == "Mobile" and "Mobile" or "Cross Platform"
+	makeActionRow(
+		"\xF0\x9F\x93\xB1",
+		"Platform Mode",
+		"Current: " .. currentModeLabel .. ". Change how the UI is laid out for your device.",
+		device.isMobileLayout() and Color3.fromRGB(235, 100, 115) or Color3.fromRGB(100, 160, 235),
+		"CHANGE",
+		function()
+			uiState.closeRoute()
+			task.defer(function()
+				ServerSelection.show()
+			end)
+		end
+	)
 end
 
 local function makeSlotCard(slot, selectedSlot)
@@ -1924,6 +1953,10 @@ workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
 			if isOpen then applyResponsiveLayout() end
 		end)
 	end
+	if isOpen then applyResponsiveLayout() end
+end)
+
+device.subscribe(function()
 	if isOpen then applyResponsiveLayout() end
 end)
 

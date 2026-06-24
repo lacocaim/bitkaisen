@@ -1,5 +1,10 @@
 set shell := ["powershell", "-c"]
 
+setup name="game":
+	rokit install --no-trust-check
+	pesde install
+	rojo sourcemap {{name}}.project.json -o sourcemap.json
+
 packages name="game":
 	pesde install
 	rojo sourcemap {{name}}.project.json -o sourcemap.json

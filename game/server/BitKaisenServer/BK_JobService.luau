@@ -156,6 +156,7 @@ function BK_JobService.GetJobsPayload(player)
 		Route = stats.RetiredFromSorcery and "Civilian Survival" or (stats.LifePath or ((stats.RegisteredSorcerer or stats.InJujutsuHigh) and "Sorcerer" or "Civilian")),
 		RetiredFromSorcery = stats.RetiredFromSorcery == true,
 		CivilianStability = stats.CivilianStability or 0,
+		Age = tonumber(stats.Age) or 0,
 	}
 end
 

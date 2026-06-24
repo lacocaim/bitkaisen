@@ -66,6 +66,9 @@ title.Text = "JOBS"
 title.TextColor3 = THEME.Text
 title.Font = Enum.Font.GothamBlack
 title.TextXAlignment = Enum.TextXAlignment.Left
+title.Position = UDim2.new(0, 24, 0, 18)
+title.Size = UDim2.new(1, -90, 0, 30)
+title.TextSize = 23
 title.ZIndex = 622
 title.Parent = window
 
@@ -75,6 +78,9 @@ subtitle.TextColor3 = THEME.SubText
 subtitle.Font = Enum.Font.GothamMedium
 subtitle.TextWrapped = true
 subtitle.TextXAlignment = Enum.TextXAlignment.Left
+subtitle.Position = UDim2.new(0, 24, 0, 50)
+subtitle.Size = UDim2.new(1, -48, 0, 32)
+subtitle.TextSize = 12
 subtitle.ZIndex = 622
 subtitle.Parent = window
 
@@ -85,6 +91,9 @@ closeButton.BorderSizePixel = 0
 closeButton.Text = "X"
 closeButton.TextColor3 = THEME.Red
 closeButton.Font = Enum.Font.GothamBlack
+closeButton.Position = UDim2.new(1, -56, 0, 16)
+closeButton.Size = UDim2.new(0, 40, 0, 40)
+closeButton.TextSize = 19
 closeButton.ZIndex = 623
 closeButton.Parent = window
 Instance.new("UICorner", closeButton).CornerRadius = UDim.new(0, 8)
@@ -95,6 +104,9 @@ scroll.BackgroundTransparency = 1
 scroll.BorderSizePixel = 0
 scroll.ScrollBarImageColor3 = THEME.Purple
 scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+scroll.Position = UDim2.new(0, 24, 0, 92)
+scroll.Size = UDim2.new(1, -48, 1, -110)
+scroll.ScrollBarThickness = 5
 scroll.ZIndex = 622
 scroll.Parent = window
 
@@ -247,8 +259,11 @@ local function makeRouteCard(payload)
 	end
 end
 
-local function makeCard(job, canApply)
+local function makeCard(job, canApply, playerAge)
 	local isMobile = mobile()
+	local tooYoung = playerAge < (tonumber(job.MinAge) or 0)
+	local eligible = canApply and not tooYoung
+
 	local card = Instance.new("Frame")
 	card.Size = UDim2.new(1, -8, 0, isMobile and 112 or 96)
 	card.BackgroundColor3 = THEME.Card
@@ -265,22 +280,40 @@ local function makeCard(job, canApply)
 	addText(card, "$" .. tostring(job.Pay or 0) .. " / year | " .. tostring(job.Acceptance or 0) .. "% acceptance", isMobile and 10 or 12, THEME.Gold, UDim2.new(0, 14, 0, 38), UDim2.new(1, -136, 0, 20), true)
 	addText(card, "Best with " .. tostring(job.Stat or "stats") .. " | Age " .. tostring(job.MinAge or 0) .. "+", isMobile and 9 or 11, THEME.SubText, UDim2.new(0, 14, 0, 62), UDim2.new(1, -136, 0, 34), false)
 
+	local buttonLabel
+	if not canApply then
+		buttonLabel = "USED"
+	elseif tooYoung then
+		buttonLabel = "AGE " .. tostring(job.MinAge) .. "+"
+	else
+		buttonLabel = "APPLY"
+	end
+
+	local buttonColor
+	if eligible then
+		buttonColor = Color3.fromRGB(38, 82, 54)
+	elseif tooYoung then
+		buttonColor = Color3.fromRGB(58, 48, 38)
+	else
+		buttonColor = Color3.fromRGB(34, 35, 45)
+	end
+
 	local apply = Instance.new("TextButton")
 	apply.Size = UDim2.new(0, isMobile and 92 or 106, 0, 34)
 	apply.Position = UDim2.new(1, isMobile and -104 or -120, 0.5, -17)
-	apply.BackgroundColor3 = canApply and Color3.fromRGB(38, 82, 54) or Color3.fromRGB(34, 35, 45)
+	apply.BackgroundColor3 = buttonColor
 	apply.BorderSizePixel = 0
-	apply.Text = canApply and "APPLY" or "USED"
-	apply.TextColor3 = canApply and THEME.Text or THEME.SubText
+	apply.Text = buttonLabel
+	apply.TextColor3 = eligible and THEME.Text or THEME.SubText
 	apply.TextSize = isMobile and 10 or 12
 	apply.Font = Enum.Font.GothamBlack
-	apply.Active = canApply
-	apply.AutoButtonColor = canApply
+	apply.Active = eligible
+	apply.AutoButtonColor = eligible
 	apply.ZIndex = 624
 	apply.Parent = card
 	Instance.new("UICorner", apply).CornerRadius = UDim.new(0, 8)
 
-	if canApply then
+	if eligible then
 		apply.MouseButton1Click:Connect(function()
 			if busy then return end
 			busy = true
@@ -306,13 +339,40 @@ function refresh()
 		return
 	end
 
+	local playerAge = tonumber(payload.Age) or 0
 	local jobLevel = tonumber(payload.JobLevel) or 0
 	local salary = tonumber(payload.JobSalary) or 0
 	local careerText = jobLevel > 0 and (" | Lv " .. tostring(jobLevel) .. " | $" .. tostring(salary) .. "/yr") or ""
-	subtitle.Text = "Current: " .. tostring(payload.CurrentJob or "Unemployed") .. careerText .. " | Year " .. tostring(payload.Year or "?") .. " | Applications " .. tostring(payload.ApplicationsThisYear or 0) .. "/1"
+	subtitle.Text = "Age " .. tostring(playerAge) .. " | Current: " .. tostring(payload.CurrentJob or "Unemployed") .. careerText .. " | Year " .. tostring(payload.Year or "?") .. " | Applications " .. tostring(payload.ApplicationsThisYear or 0) .. "/1"
+
+	local hasAgeLocked = false
+	for _, job in ipairs(payload.Jobs or {}) do
+		if playerAge < (tonumber(job.MinAge) or 0) then
+			hasAgeLocked = true
+			break
+		end
+	end
+
+	if hasAgeLocked then
+		local note = Instance.new("TextLabel")
+		note.Size = UDim2.new(1, -8, 0, 28)
+		note.BackgroundColor3 = Color3.fromRGB(40, 32, 20)
+		note.BorderSizePixel = 0
+		note.Text = "  Some roles need you to be older — locked jobs show their minimum age."
+		note.TextColor3 = THEME.Gold
+		note.TextSize = 11
+		note.Font = Enum.Font.GothamMedium
+		note.TextXAlignment = Enum.TextXAlignment.Left
+		note.TextWrapped = true
+		note.ZIndex = 623
+		note.LayoutOrder = -1
+		note.Parent = scroll
+		Instance.new("UICorner", note).CornerRadius = UDim.new(0, 6)
+	end
+
 	makeRouteCard(payload)
 	for _, job in ipairs(payload.Jobs or {}) do
-		makeCard(job, payload.CanApply == true)
+		makeCard(job, payload.CanApply == true, playerAge)
 	end
 	task.defer(function()
 		scroll.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 16)

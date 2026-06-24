@@ -1,47 +1,522 @@
-local vide = require("@packages/vide")
-local theme = require("@ui/theme")
-local remotes = require("@ui-state/remotes")
-local factory = require("@ui-panels/panelFactory")
-local OverlayPanel = require("@ui-components/shell/OverlayPanel")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local GroupService = game:GetService("GroupService")
+local UserInputService = game:GetService("UserInputService")
 
-local function buildFreeRewards(parent: Frame)
-	local scroll, title = factory.createCardList(parent, "FREE REWARDS")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
 
-	local getFreeReward = remotes.getFreeReward()
-	if not getFreeReward then
-		factory.createMessageCard(scroll, "Free rewards unavailable.")
-		return
+local getFreeReward = ReplicatedStorage:WaitForChild("GetFreeReward", 20)
+local claimFreeReward = ReplicatedStorage:WaitForChild("ClaimFreeReward", 20)
+
+if not getFreeReward or not claimFreeReward then
+	warn("[FreeRewardsPanel] Free reward remotes missing. UI skipped.")
+	return { init = function() end }
+end
+
+local GUI_NAME = "BitKaisenFreeRewardsGui"
+local GROUP_ID = 212374896
+
+local THEME = {
+	Backdrop = Color3.fromRGB(0, 0, 0),
+	Window = Color3.fromRGB(12, 12, 18),
+	Window2 = Color3.fromRGB(7, 7, 11),
+	TopBar = Color3.fromRGB(16, 15, 24),
+	Inner = Color3.fromRGB(15, 15, 22),
+	Panel = Color3.fromRGB(20, 20, 30),
+	Panel2 = Color3.fromRGB(27, 27, 38),
+	Panel3 = Color3.fromRGB(31, 29, 46),
+	PanelHover = Color3.fromRGB(40, 36, 58),
+	Purple = Color3.fromRGB(165, 112, 255),
+	PurpleDark = Color3.fromRGB(48, 33, 78),
+	Gold = Color3.fromRGB(255, 207, 105),
+	GoldDark = Color3.fromRGB(68, 48, 24),
+	Green = Color3.fromRGB(115, 220, 150),
+	GreenDark = Color3.fromRGB(28, 72, 45),
+	Red = Color3.fromRGB(155, 35, 48),
+	RedDark = Color3.fromRGB(88, 24, 37),
+	Text = Color3.fromRGB(245, 243, 252),
+	SubText = Color3.fromRGB(184, 178, 202),
+	Muted = Color3.fromRGB(126, 119, 145),
+	Stroke = Color3.fromRGB(68, 58, 92),
+	StrokeSoft = Color3.fromRGB(43, 39, 58),
+	UpdatePanel = Color3.fromRGB(18, 15, 13),
+	UpdateContainer = Color3.fromRGB(25, 21, 18),
+	UpdateCard = Color3.fromRGB(36, 29, 25),
+	UpdateClose = Color3.fromRGB(55, 42, 38),
+	UpdateText = Color3.fromRGB(245, 239, 225),
+	UpdateSubText = Color3.fromRGB(198, 186, 164),
+	UpdateGold = Color3.fromRGB(255, 220, 139),
+}
+
+local state = {
+	IsOpen = false,
+	Liked = false,
+	Payload = nil,
+	Status = "",
+}
+
+local existing = playerGui:FindFirstChild(GUI_NAME)
+if existing then existing:Destroy() end
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = GUI_NAME
+screenGui.ResetOnSpawn = false
+screenGui.IgnoreGuiInset = true
+screenGui.DisplayOrder = 636
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.Enabled = false
+screenGui.Parent = playerGui
+
+local function getViewport()
+	local camera = workspace.CurrentCamera
+	return camera and camera.ViewportSize or Vector2.new(1280, 720)
+end
+
+local function isSmallScreen()
+	local viewport = getViewport()
+	return viewport.X < 780 or viewport.Y < 560 or UserInputService.TouchEnabled
+end
+
+local function addCorner(parent, radius)
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, radius or 10)
+	corner.Parent = parent
+	return corner
+end
+
+local function addStroke(parent, color, thickness, transparency)
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = color or THEME.Stroke
+	stroke.Thickness = thickness or 1
+	stroke.Transparency = transparency or 0
+	stroke.Parent = parent
+	return stroke
+end
+
+local function addGradient(parent, colorA, colorB, rotation)
+	local gradient = Instance.new("UIGradient")
+	gradient.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, colorA),
+		ColorSequenceKeypoint.new(1, colorB),
+	})
+	gradient.Rotation = rotation or 90
+	gradient.Parent = parent
+	return gradient
+end
+
+local function tween(instance, duration, props)
+	local tw = TweenService:Create(instance, TweenInfo.new(duration or 0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), props)
+	tw:Play()
+	return tw
+end
+
+local function makeLabel(parent, name, text, size, color, bold)
+	local label = Instance.new("TextLabel")
+	label.Name = name
+	label.BackgroundTransparency = 1
+	label.BorderSizePixel = 0
+	label.Text = text or ""
+	label.TextColor3 = color or THEME.Text
+	label.TextSize = size or 14
+	label.Font = bold and Enum.Font.GothamBlack or Enum.Font.GothamBold
+	label.TextWrapped = true
+	label.TextXAlignment = Enum.TextXAlignment.Center
+	label.TextYAlignment = Enum.TextYAlignment.Center
+	label.RichText = true
+	label.ZIndex = parent:IsA("GuiObject") and parent.ZIndex + 2 or 2
+	label.Parent = parent
+	return label
+end
+
+local function makeButton(parent, name, text, color)
+	local button = Instance.new("TextButton")
+	button.Name = name
+	button.BackgroundColor3 = color or THEME.Panel2
+	button.BorderSizePixel = 0
+	button.Text = text or "BUTTON"
+	button.TextColor3 = THEME.Text
+	button.TextSize = 12
+	button.Font = Enum.Font.GothamBlack
+	button.AutoButtonColor = false
+	button.ZIndex = parent:IsA("GuiObject") and parent.ZIndex + 3 or 3
+	button.Parent = parent
+	addCorner(button, 8)
+	addStroke(button, Color3.fromRGB(255, 255, 255), 1, 0.62)
+
+	local base = button.BackgroundColor3
+	button.MouseEnter:Connect(function()
+		tween(button, 0.1, { BackgroundColor3 = THEME.PanelHover })
+	end)
+	button.MouseLeave:Connect(function()
+		tween(button, 0.1, { BackgroundColor3 = base })
+	end)
+	return button
+end
+
+local function fetchPayload()
+	local ok, payload = pcall(function()
+		return getFreeReward:InvokeServer()
+	end)
+	if ok and typeof(payload) == "table" then
+		state.Payload = payload
+		if tonumber(payload.GroupId) then
+			GROUP_ID = tonumber(payload.GroupId)
+		end
+		return payload
 	end
+	state.Status = "Could not load free reward right now."
+	return state.Payload
+end
 
-	local ok, payload = pcall(function() return getFreeReward:InvokeServer() end)
-	if not ok or typeof(payload) ~= "table" then
-		factory.createMessageCard(scroll, "Failed to load free rewards.")
-		return
-	end
+local overlay = Instance.new("Frame")
+overlay.Name = "Overlay"
+overlay.BackgroundColor3 = THEME.Backdrop
+overlay.BackgroundTransparency = 1
+overlay.BorderSizePixel = 0
+overlay.Size = UDim2.fromScale(1, 1)
+overlay.Visible = false
+overlay.Active = true
+overlay.ZIndex = 1225
+overlay.Parent = screenGui
 
-	if payload.CanClaim then
-		factory.createCard(scroll, 1, {
-			title = "Free Reward Available!",
-			subtitle = tostring(payload.Description or "Claim your reward"),
-			accentColor = theme.Gold,
-			actions = {
-				{ label = "CLAIM", callback = function()
-					local cfr = remotes.claimFreeReward()
-					if cfr then pcall(function() cfr:InvokeServer() end) end
-				end },
-			},
-		})
+local window = Instance.new("Frame")
+window.Name = "FreeRewardsWindow"
+window.AnchorPoint = Vector2.new(0.5, 0.5)
+window.Position = UDim2.fromScale(0.5, 0.5)
+window.Size = UDim2.fromScale(0.44, 0.54)
+window.BackgroundColor3 = THEME.Window
+window.BorderSizePixel = 0
+window.ZIndex = 1226
+window.Parent = overlay
+addCorner(window, 8)
+addStroke(window, THEME.Stroke, 1, 0.06)
+addGradient(window, THEME.Window, THEME.Window2, 90)
+
+local windowScale = Instance.new("UIScale")
+windowScale.Name = "ResponsiveScale"
+windowScale.Parent = window
+
+local header = Instance.new("Frame")
+header.Name = "Header"
+header.AnchorPoint = Vector2.new(0.5, 0)
+header.Size = UDim2.fromScale(0.97, 0.17)
+header.Position = UDim2.fromScale(0.5, 0.018)
+header.BackgroundColor3 = THEME.TopBar
+header.BorderSizePixel = 0
+header.ZIndex = 1227
+header.Parent = window
+addCorner(header, 8)
+
+local headerGradient = Instance.new("UIGradient")
+headerGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(24, 22, 36)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(13, 12, 20)),
+})
+headerGradient.Rotation = 90
+headerGradient.Parent = header
+
+local headerAccent = Instance.new("Frame")
+headerAccent.Name = "Accent"
+headerAccent.Size = UDim2.fromScale(0.01, 0.62)
+headerAccent.Position = UDim2.fromScale(0.035, 0.19)
+headerAccent.BackgroundColor3 = THEME.Gold
+headerAccent.BorderSizePixel = 0
+headerAccent.ZIndex = header.ZIndex + 1
+headerAccent.Parent = header
+addCorner(headerAccent, 999)
+
+local title = makeLabel(header, "Title", "FREE REWARD", 24, THEME.Text, true)
+title.Size = UDim2.fromScale(0.78, 0.4)
+title.Position = UDim2.fromScale(0.075, 0.14)
+title.TextXAlignment = Enum.TextXAlignment.Left
+
+local headerSubtitle = makeLabel(header, "HeaderSubtitle", "Claim a limited mastery boost after supporting the game.", 12, THEME.SubText, false)
+headerSubtitle.Size = UDim2.fromScale(0.78, 0.32)
+headerSubtitle.Position = UDim2.fromScale(0.075, 0.56)
+headerSubtitle.TextXAlignment = Enum.TextXAlignment.Left
+
+local closeButton = makeButton(header, "Close", "X", THEME.RedDark)
+closeButton.AnchorPoint = Vector2.new(1, 0.5)
+closeButton.Size = UDim2.fromScale(0.06, 0.46)
+closeButton.Position = UDim2.fromScale(0.965, 0.5)
+closeButton.TextColor3 = THEME.Text
+closeButton.TextSize = 13
+closeButton.MouseEnter:Connect(function()
+	tween(closeButton, 0.1, { BackgroundColor3 = THEME.RedDark })
+end)
+closeButton.MouseLeave:Connect(function()
+	tween(closeButton, 0.1, { BackgroundColor3 = THEME.RedDark })
+end)
+
+local innerPanel = Instance.new("Frame")
+innerPanel.Name = "InnerPanel"
+innerPanel.AnchorPoint = Vector2.new(0.5, 0)
+innerPanel.Size = UDim2.fromScale(0.97, 0.62)
+innerPanel.Position = UDim2.fromScale(0.5, 0.22)
+innerPanel.BackgroundColor3 = THEME.UpdateContainer
+innerPanel.BorderSizePixel = 0
+innerPanel.ZIndex = 1226
+innerPanel.Parent = window
+addCorner(innerPanel, 8)
+addStroke(innerPanel, THEME.StrokeSoft, 1, 0.08)
+
+local subtitle = makeLabel(innerPanel, "Subtitle", "Complete both steps to unlock the reward.", 13, THEME.UpdateGold, true)
+subtitle.Size = UDim2.fromScale(0.94, 0.11)
+subtitle.Position = UDim2.fromScale(0.03, 0.04)
+subtitle.TextXAlignment = Enum.TextXAlignment.Left
+
+local rewardPanel = Instance.new("Frame")
+rewardPanel.Name = "RewardPanel"
+rewardPanel.Size = UDim2.fromScale(0.94, 0.28)
+rewardPanel.Position = UDim2.fromScale(0.03, 0.66)
+rewardPanel.BackgroundColor3 = THEME.UpdateCard
+rewardPanel.BorderSizePixel = 0
+rewardPanel.ZIndex = 1227
+rewardPanel.Parent = innerPanel
+addCorner(rewardPanel, 8)
+addStroke(rewardPanel, THEME.StrokeSoft, 1, 0.2)
+addGradient(rewardPanel, THEME.UpdateCard, THEME.UpdateContainer, 90)
+
+local rewardIcon = makeLabel(rewardPanel, "RewardIcon", "🎁", 30, THEME.UpdateGold, true)
+rewardIcon.Size = UDim2.fromScale(0.13, 1)
+rewardIcon.Position = UDim2.fromScale(0.02, 0)
+
+local rewardTitle = makeLabel(rewardPanel, "RewardTitle", "FREE x2 Technique Mastery Boost", 18, THEME.UpdateText, true)
+rewardTitle.Size = UDim2.fromScale(0.78, 0.42)
+rewardTitle.Position = UDim2.fromScale(0.16, 0.14)
+rewardTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+local rewardDuration = makeLabel(rewardPanel, "RewardDuration", "For 5 Minutes", 15, THEME.UpdateGold, true)
+rewardDuration.Size = UDim2.fromScale(0.78, 0.32)
+rewardDuration.Position = UDim2.fromScale(0.16, 0.58)
+rewardDuration.TextXAlignment = Enum.TextXAlignment.Left
+
+local likeCard = Instance.new("Frame")
+likeCard.Name = "LikeCard"
+likeCard.Size = UDim2.fromScale(0.455, 0.43)
+likeCard.Position = UDim2.fromScale(0.03, 0.2)
+likeCard.BackgroundColor3 = THEME.UpdateCard
+likeCard.BorderSizePixel = 0
+likeCard.ZIndex = 1227
+likeCard.Parent = innerPanel
+addCorner(likeCard, 8)
+addStroke(likeCard, THEME.StrokeSoft, 1, 0)
+addGradient(likeCard, THEME.UpdateCard, THEME.UpdateContainer, 90)
+
+local likeStep = makeLabel(likeCard, "StepBadge", "1", 12, THEME.Gold, true)
+likeStep.Size = UDim2.fromScale(0.105, 0.2)
+likeStep.Position = UDim2.fromScale(0.05, 0.105)
+likeStep.BackgroundColor3 = THEME.GoldDark
+likeStep.BackgroundTransparency = 0
+addCorner(likeStep, 999)
+addStroke(likeStep, THEME.Gold, 1, 0.35)
+
+local likeIcon = makeLabel(likeCard, "Icon", "👍", 30, THEME.Text, true)
+likeIcon.Size = UDim2.fromScale(0.24, 0.48)
+likeIcon.Position = UDim2.fromScale(0.16, 0.22)
+
+local likeTitle = makeLabel(likeCard, "StepTitle", "LIKE the Game", 14, THEME.Text, true)
+likeTitle.Size = UDim2.fromScale(0.56, 0.22)
+likeTitle.Position = UDim2.fromScale(0.4, 0.22)
+likeTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+local likeButton = makeButton(likeCard, "LikeConfirm", "I LIKED", THEME.PurpleDark)
+likeButton.Size = UDim2.fromScale(0.52, 0.28)
+likeButton.Position = UDim2.fromScale(0.4, 0.58)
+likeButton.TextSize = 12
+likeButton.TextColor3 = THEME.Text
+
+local groupCard = Instance.new("Frame")
+groupCard.Name = "GroupCard"
+groupCard.Size = UDim2.fromScale(0.455, 0.43)
+groupCard.Position = UDim2.fromScale(0.515, 0.2)
+groupCard.BackgroundColor3 = THEME.UpdateCard
+groupCard.BorderSizePixel = 0
+groupCard.ZIndex = 1227
+groupCard.Parent = innerPanel
+addCorner(groupCard, 8)
+addStroke(groupCard, THEME.StrokeSoft, 1, 0)
+addGradient(groupCard, THEME.UpdateCard, THEME.UpdateContainer, 90)
+
+local groupStep = makeLabel(groupCard, "StepBadge", "2", 12, THEME.Gold, true)
+groupStep.Size = UDim2.fromScale(0.105, 0.2)
+groupStep.Position = UDim2.fromScale(0.05, 0.105)
+groupStep.BackgroundColor3 = THEME.GoldDark
+groupStep.BackgroundTransparency = 0
+addCorner(groupStep, 999)
+addStroke(groupStep, THEME.Gold, 1, 0.35)
+
+local groupIcon = makeLabel(groupCard, "Icon", "👥", 30, THEME.Text, true)
+groupIcon.Size = UDim2.fromScale(0.24, 0.48)
+groupIcon.Position = UDim2.fromScale(0.16, 0.22)
+
+local groupTitle = makeLabel(groupCard, "StepTitle", "JOIN Group", 14, THEME.Text, true)
+groupTitle.Size = UDim2.fromScale(0.56, 0.22)
+groupTitle.Position = UDim2.fromScale(0.4, 0.22)
+groupTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+local groupButton = makeButton(groupCard, "JoinGroup", "JOIN / CHECK", THEME.PurpleDark)
+groupButton.Size = UDim2.fromScale(0.52, 0.28)
+groupButton.Position = UDim2.fromScale(0.4, 0.58)
+groupButton.TextSize = 12
+groupButton.TextColor3 = THEME.Text
+
+local claimButton = makeButton(window, "ClaimReward", "VERIFY", THEME.GreenDark)
+claimButton.AnchorPoint = Vector2.new(0.5, 0)
+claimButton.Size = UDim2.fromScale(0.36, 0.1)
+claimButton.Position = UDim2.fromScale(0.5, 0.865)
+claimButton.TextColor3 = THEME.Text
+claimButton.TextSize = 16
+local claimGradient = addGradient(claimButton, Color3.fromRGB(38, 88, 56), THEME.GreenDark, 90)
+
+local statusLabel = makeLabel(window, "Status", "", 12, THEME.SubText, true)
+statusLabel.AnchorPoint = Vector2.new(0.5, 0)
+statusLabel.Size = UDim2.fromScale(0.9, 0.075)
+statusLabel.Position = UDim2.fromScale(0.5, 0.785)
+
+local function updateVisuals()
+	local payload = state.Payload or {}
+	local groupVerified = payload.GroupVerified == true
+	local claimed = payload.Claimed == true
+
+	likeButton.Text = state.Liked and "LIKED ✓" or "I LIKED"
+	likeButton.BackgroundColor3 = state.Liked and THEME.GreenDark or THEME.PurpleDark
+
+	groupButton.Text = groupVerified and "JOINED ✓" or "JOIN / CHECK"
+	groupButton.BackgroundColor3 = groupVerified and THEME.GreenDark or THEME.PurpleDark
+
+	if claimed then
+		claimButton.Text = "CLAIMED"
+		claimButton.BackgroundColor3 = THEME.Panel3
+		claimGradient.Enabled = false
+		statusLabel.TextColor3 = THEME.Gold
+		statusLabel.Text = "You already claimed this free reward."
+	elseif state.Status ~= "" then
+		claimButton.Text = "VERIFY"
+		claimButton.BackgroundColor3 = THEME.GreenDark
+		claimGradient.Enabled = true
+		statusLabel.TextColor3 = THEME.SubText
+		statusLabel.Text = state.Status
 	else
-		factory.createCard(scroll, 1, {
-			title = "No Rewards Available",
-			body = "Check back later for free rewards!",
-			accentColor = theme.Muted,
-		})
+		claimButton.Text = "VERIFY"
+		claimButton.BackgroundColor3 = THEME.GreenDark
+		claimGradient.Enabled = true
+		statusLabel.TextColor3 = THEME.SubText
+		statusLabel.Text = "Note: this reward is only the 5-minute x2 Technique Mastery Boost."
 	end
 end
+
+local function resize()
+	windowScale.Scale = 1
+	window.Size = isSmallScreen() and UDim2.fromScale(0.94, 0.74) or UDim2.fromScale(0.44, 0.54)
+	window.Position = UDim2.fromScale(0.5, isSmallScreen() and 0.49 or 0.5)
+end
+
+local function open()
+	if state.IsOpen then return end
+	state.IsOpen = true
+	state.Status = ""
+	fetchPayload()
+	updateVisuals()
+	resize()
+
+	screenGui.Enabled = true
+	overlay.Visible = true
+	overlay.BackgroundTransparency = 1
+	window.BackgroundTransparency = 1
+	window.Position = UDim2.fromScale(0.5, 0.53)
+
+	tween(overlay, 0.14, { BackgroundTransparency = 0.38 })
+	tween(window, 0.16, {
+		BackgroundTransparency = 0,
+		Position = UDim2.fromScale(0.5, isSmallScreen() and 0.49 or 0.5),
+	})
+end
+
+local function close()
+	if not state.IsOpen then return end
+	state.IsOpen = false
+	tween(overlay, 0.12, { BackgroundTransparency = 1 })
+	tween(window, 0.12, { BackgroundTransparency = 1 })
+	task.delay(0.14, function()
+		if not state.IsOpen then
+			overlay.Visible = false
+			screenGui.Enabled = false
+		end
+	end)
+end
+
+closeButton.MouseButton1Click:Connect(close)
+
+overlay.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		local mouse = UserInputService:GetMouseLocation()
+		local pos = window.AbsolutePosition
+		local size = window.AbsoluteSize
+		local inside = mouse.X >= pos.X and mouse.X <= pos.X + size.X and mouse.Y >= pos.Y and mouse.Y <= pos.Y + size.Y
+		if not inside then
+			close()
+		end
+	end
+end)
+
+likeButton.MouseButton1Click:Connect(function()
+	state.Liked = true
+	state.Status = "Like confirmed. Join the group, then press VERIFY."
+	updateVisuals()
+end)
+
+groupButton.MouseButton1Click:Connect(function()
+	local ok, result = pcall(function()
+		return GroupService:PromptJoinAsync(GROUP_ID)
+	end)
+	if ok and (result == Enum.GroupMembershipStatus.Joined or result == Enum.GroupMembershipStatus.AlreadyMember) then
+		state.Status = "Group membership checked."
+	else
+		state.Status = "Join the group, then press this again to check."
+	end
+	fetchPayload()
+	updateVisuals()
+end)
+
+claimButton.MouseButton1Click:Connect(function()
+	local ok, result = pcall(function()
+		return claimFreeReward:InvokeServer(state.Liked == true)
+	end)
+	if ok and typeof(result) == "table" then
+		state.Status = tostring(result.Message or "")
+		if typeof(result.Payload) == "table" then
+			state.Payload = result.Payload
+		else
+			fetchPayload()
+		end
+	else
+		state.Status = "Could not claim right now."
+		fetchPayload()
+	end
+	updateVisuals()
+end)
+
+if workspace.CurrentCamera then
+	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(resize)
+end
+
+workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+	task.wait()
+	resize()
+	if workspace.CurrentCamera then
+		workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(resize)
+	end
+end)
+
+fetchPayload()
+updateVisuals()
+resize()
 
 local function init()
-	OverlayPanel.registerPanelBuilder("free_rewards", buildFreeRewards)
+	-- Free rewards opens via button/remote; expose open for external callers.
 end
 
-return { init = init }
+return { init = init, open = open }

@@ -1,8 +1,5 @@
 local vide = require("@packages/vide")
 
-local cleanup = vide.cleanup
-local derive = vide.derive
-local effect = vide.effect
 local source = vide.source
 
 local BASE_RESOLUTION = Vector2.new(1920, 1080)
@@ -10,31 +7,30 @@ local DOMINANT_AXIS = 0.5
 
 local currentScale = source(1)
 
-local function modifyScale(scale: number): number
-	return scale
+local function recalcScale()
+	local camera = workspace.CurrentCamera
+	if not camera then return end
+	local viewport = camera.ViewportSize
+	local constrainedAspectRatio = math.min(viewport.X / viewport.Y, 16 / 9)
+	local constrained = Vector2.new(viewport.Y * constrainedAspectRatio, viewport.Y)
+	local scaleX = math.log(constrained.X / BASE_RESOLUTION.X, 2)
+	local scaleY = math.log(constrained.Y / BASE_RESOLUTION.Y, 2)
+	currentScale(2 ^ math.lerp(scaleX, scaleY, DOMINANT_AXIS))
 end
 
 local function usePx()
-	local viewportSize = source(Vector2.new(0, 0))
-
-	local getConstrainedViewportSize = derive(function()
-		local viewport = viewportSize()
-		local constrainedAspectRatio = math.min(viewport.X / viewport.Y, 16 / 9)
-		return Vector2.new(viewport.Y * constrainedAspectRatio, viewport.Y)
+	recalcScale()
+	if workspace.CurrentCamera then
+		workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(recalcScale)
+	end
+	workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+		task.defer(function()
+			recalcScale()
+			if workspace.CurrentCamera then
+				workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(recalcScale)
+			end
+		end)
 	end)
-
-	effect(function()
-		local viewport = getConstrainedViewportSize()
-		local scaleX = math.log(viewport.X / BASE_RESOLUTION.X, 2)
-		local scaleY = math.log(viewport.Y / BASE_RESOLUTION.Y, 2)
-		currentScale(modifyScale(2 ^ math.lerp(scaleX, scaleY, DOMINANT_AXIS)))
-	end)
-
-	cleanup(workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
-		viewportSize(workspace.CurrentCamera.ViewportSize)
-	end))
-
-	viewportSize(workspace.CurrentCamera.ViewportSize)
 end
 
 local function setScale(scale: number)

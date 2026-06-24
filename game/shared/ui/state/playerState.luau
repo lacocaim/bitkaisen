@@ -3,6 +3,8 @@ local remotes = require("@ui-state/remotes")
 
 local source = vide.source
 
+local LOG_MAX_LINES = 120
+
 local stats = source(nil :: { [string]: any }?)
 local previousStats = source(nil :: { [string]: any }?)
 local lifeLog = source({} :: { string })
@@ -32,6 +34,9 @@ end
 local function pushLog(message: string)
 	local log = table.clone(lifeLog())
 	table.insert(log, message)
+	while #log > LOG_MAX_LINES do
+		table.remove(log, 1)
+	end
 	lifeLog(log)
 	logVersion(logVersion() + 1)
 end

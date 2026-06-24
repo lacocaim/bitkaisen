@@ -242,7 +242,7 @@ local function ProfileCard()
 				local s = playerState.stats()
 				return s and s.Smarts or 50
 			end),
-			StatBar("Looks", theme.Blue, function()
+			StatBar("Looks", Color3.fromRGB(96, 170, 255), function()
 				local s = playerState.stats()
 				return s and s.Looks or 50
 			end),

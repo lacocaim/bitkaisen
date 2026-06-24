@@ -1,12 +1,6 @@
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local MarketplaceService = game:GetService("MarketplaceService")
-
-print("[BitKaisenClient] Script starting...")
 
 local vide = require("@packages/vide")
-print("[BitKaisenClient] Vide loaded")
 local theme = require("@ui/theme")
 local playerState = require("@ui-state/playerState")
 local uiState = require("@ui-state/uiState")
@@ -20,7 +14,6 @@ local AgeUpButton = require("@ui-components/shell/AgeUpButton")
 local NavPanel = require("@ui-components/shell/NavPanel")
 local NotificationHolder = require("@ui-components/shell/NotificationHolder")
 local MajorPopup = require("@ui-components/shell/MajorPopup")
-local OverlayPanel = require("@ui-components/shell/OverlayPanel")
 local SettingsButton = require("@ui-components/shell/SettingsButton")
 
 local MissionsPanel = require("@ui-panels/MissionsPanel")
@@ -53,23 +46,14 @@ local MissionSituationPanel = require("@ui-panels/MissionSituationPanel")
 local FirstTimeGuidancePanel = require("@ui-panels/FirstTimeGuidancePanel")
 local IncidentMapPanel = require("@ui-panels/IncidentMapPanel")
 
+local TopBarController = require("@ui-panels/TopBarController")
+local SFXController = require("@ui/SFXController")
+local ConsoleSupport = require("@ui/ConsoleSupport")
+
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
 local create = vide.create
-local source = vide.source
-local effect = vide.effect
-
-local VIP_SORCERER_PASS_ID = 1847855390
-local LUCKY_BIRTH_GAMEPASS_ID = 1859848647
-local EXTRA_DOJO_STUDENTS_GAMEPASS_ID = 1862959768
-local RECOMMENDATION_LETTER_PRODUCT_ID = 3600600214
-local EMERGENCY_TREATMENT_PRODUCT_ID = 3600600619
-local DOJO_FUNDING_PACK_PRODUCT_ID = 3603671641
-local GIFT_GO_ROGUE_PRODUCT_ID = 3604042615
-local GIFT_GOD_MODE_PRODUCT_ID = 3606084567
-local GIFT_AFK_STABILIZATION_PRODUCT_ID = 3606084638
-local TEST_GIFT_PRODUCT_ID = 3606089240
 
 navRegistry.register({ id = "missions", label = "MISSIONS", order = 1, color = theme.Red })
 navRegistry.register({ id = "activities", label = "ACTIVITIES", order = 2, color = theme.Red })
@@ -170,14 +154,27 @@ local function BitKaisenGui()
 		SettingsButton(),
 	}
 
-	local overlayPanel = OverlayPanel.create()
-	overlayPanel.Parent = gui
-
+	local popupLayer = create("ScreenGui") {
+		Name = "BitKaisenPopupLayer",
+		ResetOnSpawn = false,
+		IgnoreGuiInset = true,
+		DisplayOrder = 1000,
+		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+		Parent = playerGui,
+	}
 	local majorPopup = MajorPopup()
-	majorPopup.Parent = gui
+	majorPopup.Parent = popupLayer
 
+	local notifLayer = create("ScreenGui") {
+		Name = "BitKaisenNotifLayer",
+		ResetOnSpawn = false,
+		IgnoreGuiInset = true,
+		DisplayOrder = 990,
+		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+		Parent = playerGui,
+	}
 	local notifHolder = NotificationHolder()
-	notifHolder.Parent = gui
+	notifHolder.Parent = notifLayer
 
 	applyResponsiveLayout(mainPanel)
 	task.defer(function() applyResponsiveLayout(mainPanel) end)
@@ -213,9 +210,6 @@ DomainPanel.init()
 RivalsPanel.init()
 WorldHistoryPanel.init()
 MentorPanel.init()
-RatesPanel.init()
-TechniqueMasteryPanel.init()
-TraitDetailsPanel.init()
 DevToolsPanel.init()
 SettingsPanel.init()
 BindingVowsPanel.init()
@@ -225,21 +219,28 @@ UpdateLogPanel.init()
 ClanWarPanel.init()
 GodModePanel.init()
 AFKPanel.init()
-CombatPanel.init()
-MinigamesPanel.init()
-CharacterCustomizationPanel.init()
 IncidentMapPanel.init()
 
-playerState.connect()
 px.usePx()
 
 vide.mount(function()
 	return BitKaisenGui()
 end, playerGui)
 
+RatesPanel.init()
+TechniqueMasteryPanel.init()
+TraitDetailsPanel.init(playerGui)
+
+CombatPanel.init(playerGui)
+MinigamesPanel.init(playerGui)
+CharacterCustomizationPanel.init(playerGui)
 DeathPanel.init(playerGui)
 MissionSituationPanel.init(playerGui)
 FirstTimeGuidancePanel.init(playerGui)
+
+TopBarController.init()
+SFXController.init()
+ConsoleSupport.init()
 
 local helpers = require("@ui/helpers")
 
@@ -303,11 +304,4 @@ if ule then
 	end)
 end
 
-local sms = remotes.get("ShowMissionSituation")
-if sms then
-	sms.OnClientEvent:Connect(function() end)
-end
 
-if RunService:IsStudio() then
-	print("[BitKaisenClient] Vide UI mounted.")
-end

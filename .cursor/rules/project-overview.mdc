@@ -27,8 +27,10 @@ Life simulation with JJK theming: aging, clans, cursed techniques, technique mas
 
 The game uses a traditional Roblox scripting architecture (not ECS):
 - **Server**: `GameManager.server.luau` is the central server script orchestrating all `BK_*` service modules
-- **Client**: A single `BitKaisenClient/init.client.luau` mounts the entire Vide component tree into `PlayerGui`. All UI screens are Vide components under `game/shared/ui/`
-- **State**: `playerState` (reactive source from `UpdateLifeEvent`), `uiState` (route/modal stack), `navRegistry` (dynamic nav entries), `remotes` (centralized remote access)
+- **Client**: `BitKaisenClient/init.client.luau` bootstraps the UI. It mounts the Vide reactive shell (ProfileCard, LifeLog, NavPanel, AgeUpButton, SettingsButton, MajorPopup, NotificationHolder) via `vide.mount()`, then initializes all panel modules
+- **Panels**: Each panel is a standalone module at `game/shared/ui/panels/` that owns its own ScreenGui, uses `Instance.new()` for all UI construction, and wires to `uiState.subscribe()` for route-driven open/close or listens for remote events for event-driven panels. Panels use imperative `refresh()` methods and `:Connect()` for events -- no Vide reactive primitives
+- **State**: `playerState` (reactive source from `UpdateLifeEvent`), `uiState` (route/modal stack + imperative `subscribe(fn)->disconnect` observers for panels), `navRegistry` (dynamic nav entries), `remotes` (centralized remote access)
+- **Controllers**: `TopBarController`, `SFXController`, `ConsoleSupport` provide cross-cutting concerns (top bar layout, sound effects, gamepad support)
 
 ## Folder Layout
 
@@ -36,8 +38,11 @@ The game uses a traditional Roblox scripting architecture (not ECS):
 game/server/                -> ServerScriptService (GameManager, BK_* services)
 game/server/BitKaisenServer/ -> Server service modules (BK_Remotes, BK_CombatService, etc.)
 game/shared/                -> ReplicatedStorage (hooks, controllers, config)
-game/shared/ui/             -> Vide UI tree (components/, panels/, state/, hooks/, theme, helpers, px)
-game/starterplayer/         -> StarterPlayerScripts (BitKaisenClient bootstrap)
+game/shared/ui/             -> UI tree: shell components (Vide), panels (imperative modules), state/, hooks/, theme, helpers, px
+game/shared/ui/panels/      -> All panel modules (30+), each with own ScreenGui, imperative Instance.new() code
+game/shared/ui/components/  -> Vide reactive shell components (ProfileCard, LifeLog, NavPanel, etc.)
+game/shared/ui/state/       -> Shared state: playerState, uiState (with subscribe), navRegistry, remotes
+game/starterplayer/         -> StarterPlayerScripts (BitKaisenClient bootstrap, MobileOrientationLock, GroupJoin)
 global/server/              -> ServerScriptService/global (accountService, commands)
 global/shared/              -> ReplicatedStorage/global (types, utils, constants, controllers)
 global/client/              -> StarterPlayerScripts/global

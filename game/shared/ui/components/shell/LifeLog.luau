@@ -19,12 +19,15 @@ local function LifeLog()
 		return table.concat(lines, "\n")
 	end)
 
+	local scrollRef: ScrollingFrame = nil :: any
+
 	return container {
 		name = "LogContainer",
 		ws = 0.61, hs = 0.76,
 		xs = 0.025, ys = 0.07,
 		color = theme.Panel,
 		corner = 12,
+		clips = true,
 		gradient { color = ColorSequence.new(theme.Panel, theme.Bg2), rotation = 90 },
 		stroke { color = theme.StrokeSoft },
 
@@ -38,7 +41,17 @@ local function LifeLog()
 			CanvasSize = UDim2.new(0, 0, 0, 0),
 			AutomaticCanvasSize = Enum.AutomaticSize.Y,
 
-			create("UIListLayout") { SortOrder = Enum.SortOrder.LayoutOrder },
+			create("UIListLayout") {
+				SortOrder = Enum.SortOrder.LayoutOrder,
+				[vide.action(function(layout: UIListLayout)
+					layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+						if scrollRef then
+							local contentHeight = layout.AbsoluteContentSize.Y + 40
+							scrollRef.CanvasPosition = Vector2.new(0, contentHeight)
+						end
+					end)
+				end)] = true,
+			},
 			create("UIPadding") {
 				PaddingTop = UDim.new(0, 20), PaddingBottom = UDim.new(0, 20),
 				PaddingLeft = UDim.new(0, 25), PaddingRight = UDim.new(0, 25),
@@ -57,6 +70,10 @@ local function LifeLog()
 				auto = "y",
 				ws = 1,
 			},
+
+			[vide.action(function(sf: ScrollingFrame)
+				scrollRef = sf
+			end)] = true,
 		},
 	}
 end

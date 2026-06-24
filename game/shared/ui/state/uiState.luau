@@ -12,6 +12,28 @@ local activeRoute = source("" :: Route)
 local modalStack = source({} :: { ModalEntry })
 local topBarVisible = source(true)
 
+local subscribers = {} :: { (route: Route) -> () }
+
+local function notifySubscribers()
+	local route = activeRoute()
+	for _, fn in subscribers do
+		task.spawn(fn, route)
+	end
+end
+
+local function subscribe(fn: (route: Route) -> ()): () -> ()
+	table.insert(subscribers, fn)
+	local idx = #subscribers
+	return function()
+		for i, sub in subscribers do
+			if sub == fn then
+				table.remove(subscribers, i)
+				return
+			end
+		end
+	end
+end
+
 local function hasModal()
 	return #modalStack() > 0
 end
@@ -25,15 +47,18 @@ end
 local function navigate(route: Route)
 	if activeRoute() == route then
 		activeRoute("")
+		notifySubscribers()
 		return
 	end
 	modalStack({})
 	activeRoute(route)
+	notifySubscribers()
 end
 
 local function closeRoute()
 	activeRoute("")
 	modalStack({})
+	notifySubscribers()
 end
 
 local function pushModal(id: string, route: Route)
@@ -70,6 +95,7 @@ end
 local function closeAll()
 	activeRoute("")
 	modalStack({})
+	notifySubscribers()
 end
 
 return {
@@ -85,4 +111,5 @@ return {
 	popModal = popModal,
 	closeModal = closeModal,
 	closeAll = closeAll,
+	subscribe = subscribe,
 }

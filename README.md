@@ -16,9 +16,9 @@ rokit self-install
 
 ## Setup
 
-### 1. Authenticate with GitHub (recommended)
+### 1. Authenticate with GitHub (required on flaky networks)
 
-This prevents intermittent download failures caused by GitHub API rate limits. Create a [Personal Access Token](https://github.com/settings/tokens) (classic, no scopes needed) and run:
+This prevents download failures caused by GitHub API rate limits. Without this step, `rokit install` will frequently fail with `error decoding response body` or silently drop connections. Create a [Personal Access Token](https://github.com/settings/tokens) (classic, no scopes needed) and run:
 
 ```powershell
 rokit authenticate github --token YOUR_TOKEN_HERE
@@ -72,6 +72,8 @@ zune setup <nvim | zed | vscode | emacs>
 - **"command not found" or "tool is missing" right after install** -- Restart your terminal so `~/.rokit/bin` is on PATH. Run `rokit list` to verify tools are installed. If any are missing, run `rokit install --force`.
 
 - **Downloads fail intermittently / connection drops / "works some days"** -- This is GitHub API rate limiting. Run `rokit authenticate github --token <PAT>` then re-run `just setup`.
+
+- **`Failed to download contents for <tool>` / `error decoding response body`** -- GitHub throttled or dropped the download mid-stream. Fix: (1) `git pull` to get the latest setup steps; (2) `rokit authenticate github --token <PAT>` if you haven't already; (3) `rokit install --force` to re-download the failed tool; (4) retry on a stable connection if it still fails.
 
 - **"Won't let me reinstall" / tool is half-installed** -- Run `rokit install --force` to re-download all tools regardless of cache state.
 

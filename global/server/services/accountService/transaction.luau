@@ -82,8 +82,12 @@ local function transaction(registerTransactions: schema.Transaction)
 	end
 	local allPlayersRegistered = true
 	local function tx(player: Player, fn: () -> ())
-		if not player or not fn or not playerLoaded(player) then
+		if not player or not fn then
 			warn("TRANSACTION COULDN'T START: Invalid arguments")
+			allPlayersRegistered = false
+			return
+		end
+		if not playerLoaded(player) then
 			allPlayersRegistered = false
 			return
 		end

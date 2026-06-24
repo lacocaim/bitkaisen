@@ -372,7 +372,7 @@ end
 
 function BK_JobService.Init(ctx)
 	context = ctx or {}
-	print("[BK_JobService] Civilian jobs loaded.")
+	if context.IS_DEBUG then print("[BK_JobService] Civilian jobs loaded.") end
 end
 
 return BK_JobService

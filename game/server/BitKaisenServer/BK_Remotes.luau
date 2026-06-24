@@ -97,6 +97,10 @@ local REMOTE_DEFINITIONS = {
 
 	-- Update 6: Character Customization
 	SubmitCharacterCustomization = "RemoteFunction",
+
+	-- Jujutsu Mentor
+	GetMentor = "RemoteFunction",
+	MentorAction = "RemoteEvent",
 }
 
 local remoteCache = {}
@@ -147,7 +151,7 @@ function BK_Remotes.Init()
 		BK_Remotes.Ensure(name, className)
 	end
 
-	print("[BK_Remotes] Loaded " .. tostring(#BK_Remotes.ListNames()) .. " remotes.")
+	if game:GetService("RunService"):IsStudio() then print("[BK_Remotes] Loaded " .. tostring(#BK_Remotes.ListNames()) .. " remotes.") end
 end
 
 function BK_Remotes.Get(name)

@@ -388,7 +388,7 @@ end
 
 function BK_WorldHistoryService.Init(ctx)
 	context = ctx or {}
-	print("[BK_WorldHistoryService] Update 10 world history loaded.")
+	if context.IS_DEBUG then print("[BK_WorldHistoryService] Update 10 world history loaded.") end
 end
 
 return BK_WorldHistoryService

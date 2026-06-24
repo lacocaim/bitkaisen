@@ -18,7 +18,12 @@
           "@server-blink": "remotes/out/server.luau",
           "@packages": "roblox_packages",
           "@game": "game",
-          "@server-packages": "roblox_server_packages"
+          "@server-packages": "roblox_server_packages",
+          "@ui": "game/shared/ui",
+          "@ui-components": "game/shared/ui/components",
+          "@ui-panels": "game/shared/ui/panels",
+          "@ui-state": "game/shared/ui/state",
+          "@ui-hooks": "game/shared/ui/hooks"
         }
       },
       "rule": "convert_require"

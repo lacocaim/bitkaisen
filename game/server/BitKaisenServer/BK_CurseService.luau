@@ -1391,7 +1391,7 @@ function BK_CurseService.Init(ctx)
 	context = ctx or {}
 	pendingMissions = context.PendingMissions or pendingMissions or {}
 	showMissionSituation = context.ShowMissionSituation or showMissionSituation
-	print("[BK_CurseService] Loaded Phase 8 curse helpers.")
+	if context and context.IS_DEBUG then print("[BK_CurseService] Loaded Phase 8 curse helpers.") end
 end
 
 return BK_CurseService

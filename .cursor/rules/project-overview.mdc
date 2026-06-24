@@ -16,8 +16,8 @@ Life simulation with JJK theming: aging, clans, cursed techniques, technique mas
 - **Language**: Luau (`.luau` only, never `.lua`)
 - **Sync**: Rojo (`game.project.json`)
 - **Networking**: Blink (codegen from `.blink` definitions) for RemoteEvent/RemoteFunction; BK_Remotes module for classic remotes
-- **UI**: Fusion 0.2 `Hydrate` pattern -- UI templates live in Studio, logic binds via `Hydrate(template) { ... }`
-- **Scaling**: `px.luau` -- design at 1920x1080, logarithmic scaling to all devices
+- **UI**: Vide (Bravo's fork) -- reactive component tree, single `vide.mount()` bootstrap replaces ~40 imperative scripts. Fusion 0.2 is installed for a future Hydrate migration.
+- **Scaling**: Vide `px.luau` (getter-based) -- design at 1920×1080, logarithmic scaling to all devices. Legacy Fusion `px.luau` remains in `global/shared/utils/`.
 - **Data**: ProfileStore + Charm (atoms/signals) + Delta-Compress (replication diffs)
 - **Validation**: GreenTea schemas
 - **Build**: Darklua + Selene (lint) + Rokit (toolchain) + Pesde/Wally (packages)
@@ -27,8 +27,8 @@ Life simulation with JJK theming: aging, clans, cursed techniques, technique mas
 
 The game uses a traditional Roblox scripting architecture (not ECS):
 - **Server**: `GameManager.server.luau` is the central server script orchestrating all `BK_*` service modules
-- **Client**: ~40 `BitKaisen*.client.luau` scripts handle individual UI features
-- **UI Builder**: `BitKaisenUIBuilder` LocalScript constructs the main GUI layout; child modules (`MasteryButtonController`, `TraitButtonController`) handle sub-features
+- **Client**: A single `BitKaisenClient/init.client.luau` mounts the entire Vide component tree into `PlayerGui`. All UI screens are Vide components under `game/shared/ui/`
+- **State**: `playerState` (reactive source from `UpdateLifeEvent`), `uiState` (route/modal stack), `navRegistry` (dynamic nav entries), `remotes` (centralized remote access)
 
 ## Folder Layout
 
@@ -36,7 +36,8 @@ The game uses a traditional Roblox scripting architecture (not ECS):
 game/server/                -> ServerScriptService (GameManager, BK_* services)
 game/server/BitKaisenServer/ -> Server service modules (BK_Remotes, BK_CombatService, etc.)
 game/shared/                -> ReplicatedStorage (hooks, controllers, config)
-game/starterplayer/         -> StarterPlayerScripts (BitKaisenUIBuilder, BitKaisen*UI scripts)
+game/shared/ui/             -> Vide UI tree (components/, panels/, state/, hooks/, theme, helpers, px)
+game/starterplayer/         -> StarterPlayerScripts (BitKaisenClient bootstrap)
 global/server/              -> ServerScriptService/global (accountService, commands)
 global/shared/              -> ReplicatedStorage/global (types, utils, constants, controllers)
 global/client/              -> StarterPlayerScripts/global

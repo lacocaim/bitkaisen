@@ -1,0 +1,1556 @@
+-- LocalScript: BitKaisenBindingVowsUI
+-- Location: StarterPlayerScripts
+-- Purpose:
+--   Clean readable Binding Vows menu.
+--   Fixes invisible/unreadable text by using parent-aware ZIndex layering.
+--   Preserves:
+--     - Preset Vows tab
+--     - Custom Binding Vow contracts
+--     - GetBindingVows RemoteFunction
+--     - BindingVowAction RemoteEvent
+--
+-- Actions sent:
+--   BindingVowAction:FireServer("MakeVow", presetVowId)
+--   BindingVowAction:FireServer("BreakVow", presetVowId)
+--   BindingVowAction:FireServer("MakeCustomVow", { SacrificeId = "...", RewardId = "...", SeverityId = "..." })
+--   BindingVowAction:FireServer("BreakCustomVow", customVowId)
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local updateLifeEvent = ReplicatedStorage:WaitForChild("UpdateLifeEvent")
+local getBindingVows = ReplicatedStorage:WaitForChild("GetBindingVows")
+local bindingVowAction = ReplicatedStorage:WaitForChild("BindingVowAction")
+
+local GUI_NAME = "BitKaisenBindingVowsGui"
+local BASE_WINDOW_WIDTH = 820
+local BASE_WINDOW_HEIGHT = 560
+local MOBILE_WINDOW_MARGIN_X = 28
+local MOBILE_WINDOW_MARGIN_Y = 70
+
+local oldGui = playerGui:FindFirstChild(GUI_NAME)
+if oldGui then
+	oldGui:Destroy()
+end
+
+local THEME = {
+	Bg = Color3.fromRGB(0, 0, 0),
+
+	Window = Color3.fromRGB(12, 12, 18),
+	TopBar = Color3.fromRGB(16, 15, 24),
+	Panel = Color3.fromRGB(18, 18, 28),
+	Panel2 = Color3.fromRGB(24, 23, 36),
+	Panel3 = Color3.fromRGB(30, 28, 44),
+
+	Card = Color3.fromRGB(22, 21, 32),
+	CardGreen = Color3.fromRGB(18, 32, 25),
+	CardRed = Color3.fromRGB(35, 21, 28),
+
+	Stroke = Color3.fromRGB(68, 58, 92),
+	StrokeSoft = Color3.fromRGB(43, 39, 58),
+
+	Text = Color3.fromRGB(245, 243, 252),
+	SubText = Color3.fromRGB(190, 182, 210),
+	Muted = Color3.fromRGB(126, 119, 145),
+
+	Gold = Color3.fromRGB(255, 211, 115),
+	Purple = Color3.fromRGB(165, 112, 255),
+	PurpleDark = Color3.fromRGB(68, 43, 110),
+
+	Green = Color3.fromRGB(115, 220, 150),
+	Bad = Color3.fromRGB(236, 82, 98),
+
+	Button = Color3.fromRGB(41, 38, 56),
+	ButtonHover = Color3.fromRGB(54, 50, 74),
+	ButtonDisabled = Color3.fromRGB(35, 35, 45),
+
+	RedDark = Color3.fromRGB(88, 24, 37),
+}
+
+local PREVIEW_RULES = {
+	SeverityPower = {
+		minor = 1,
+		serious = 2,
+		deathly = 3,
+	},
+
+	SacrificeCost = {
+		body = function(power)
+			return "-" .. tostring(8 * power) .. " Health now"
+		end,
+
+		joy = function(power)
+			return "-" .. tostring(10 * power) .. " Happiness now"
+		end,
+
+		wealth = function(power)
+			return "Lose " .. tostring(15 * power) .. "% of current money"
+		end,
+
+		name = function(power)
+			return "-" .. tostring(7 * power) .. " Reputation now"
+		end,
+
+		control = function(power)
+			return "-" .. tostring(4 * power) .. " Technique Mastery now"
+		end,
+
+		reserves = function(power)
+			return "-" .. tostring(18 * power) .. " Cursed Energy now"
+		end,
+	},
+
+	RewardGain = {
+		cursed_energy = function(power)
+			return "+" .. tostring(28 * power) .. " Cursed Energy now"
+		end,
+
+		mastery = function(power)
+			return "+" .. tostring(7 * power) .. " Technique Mastery now"
+		end,
+
+		recognition = function(power)
+			return "+" .. tostring(10 * power) .. " Reputation now"
+		end,
+
+		recommendations = function(power)
+			return "+" .. tostring(power) .. " Teacher Recommendations now"
+		end,
+
+		clan = function(power)
+			return "+" .. tostring(8 * power) .. " Clan Reputation now"
+		end,
+	},
+
+	SacrificeBreak = {
+		body = function(power)
+			return "-" .. tostring(8 * power) .. " Health backlash"
+		end,
+
+		joy = function(power)
+			return "-" .. tostring(8 * power) .. " Happiness backlash"
+		end,
+
+		wealth = function(power)
+			return "lose " .. tostring(10 * power) .. "% of current money as backlash"
+		end,
+
+		name = function(power)
+			return "-" .. tostring(10 * power) .. " Reputation backlash"
+		end,
+
+		control = function(power)
+			return "-" .. tostring(5 * power) .. " Technique Mastery backlash"
+		end,
+
+		reserves = function(power)
+			return "-" .. tostring(15 * power) .. " Cursed Energy backlash"
+		end,
+	},
+
+	RewardBreak = {
+		cursed_energy = function(power)
+			return "-" .. tostring(18 * power) .. " Cursed Energy"
+		end,
+
+		mastery = function(power)
+			return "-" .. tostring(5 * power) .. " Technique Mastery"
+		end,
+
+		recognition = function(power)
+			return "-" .. tostring(8 * power) .. " Reputation"
+		end,
+
+		recommendations = function(power)
+			return "-" .. tostring(power) .. " Teacher Recommendations"
+		end,
+
+		clan = function(power)
+			return "-" .. tostring(7 * power) .. " Clan Reputation"
+		end,
+	},
+}
+
+local MATCHING_REWARD_BY_SACRIFICE = {
+	control = "mastery",
+	name = "recognition",
+	reserves = "cursed_energy",
+}
+
+local currentStats = nil
+local currentPayload = nil
+local currentTab = "Custom"
+
+local isOpen = false
+local loading = false
+
+local pendingMakePresetId = nil
+local pendingBreakPresetId = nil
+local pendingBreakCustomId = nil
+local pendingSignCustom = false
+
+local selectedSacrificeIndex = 1
+local selectedRewardIndex = 1
+local selectedSeverityIndex = 1
+
+local openBadge = nil
+local contentLayout = nil
+local contentPadding = nil
+local rebuild = nil
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = GUI_NAME
+screenGui.ResetOnSpawn = false
+screenGui.IgnoreGuiInset = true
+screenGui.DisplayOrder = 1080
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.Parent = playerGui
+
+local function viewport()
+	local camera = workspace.CurrentCamera
+	return camera and camera.ViewportSize or Vector2.new(1280, 720)
+end
+
+local function isSmallScreen()
+	local v = viewport()
+	return v.X < 850 or v.Y < 560 or UserInputService.TouchEnabled
+end
+
+local function nextZ(parent, bump)
+	local parentZ = 1
+
+	if parent and parent:IsA("GuiObject") then
+		parentZ = parent.ZIndex
+	end
+
+	return parentZ + (bump or 1)
+end
+
+local function addCorner(parent, radius)
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, radius or 10)
+	corner.Parent = parent
+	return corner
+end
+
+local function addStroke(parent, color, thickness, transparency)
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = color or THEME.Stroke
+	stroke.Thickness = thickness or 1
+	stroke.Transparency = transparency or 0
+	stroke.Parent = parent
+	return stroke
+end
+
+local function addPadding(parent, left, right, top, bottom)
+	local padding = Instance.new("UIPadding")
+	padding.PaddingLeft = UDim.new(0, left or 0)
+	padding.PaddingRight = UDim.new(0, right or 0)
+	padding.PaddingTop = UDim.new(0, top or 0)
+	padding.PaddingBottom = UDim.new(0, bottom or 0)
+	padding.Parent = parent
+	return padding
+end
+
+local function tween(instance, duration, props)
+	local tw = TweenService:Create(
+		instance,
+		TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		props
+	)
+
+	tw:Play()
+	return tw
+end
+
+local function setHover(button, hoverColor)
+	local baseColor = button.BackgroundColor3
+
+	button.MouseEnter:Connect(function()
+		if button.Active then
+			tween(button, 0.12, {
+				BackgroundColor3 = hoverColor or THEME.ButtonHover,
+			})
+		end
+	end)
+
+	button.MouseLeave:Connect(function()
+		tween(button, 0.12, {
+			BackgroundColor3 = baseColor,
+		})
+	end)
+end
+
+local function makeText(parent, name, text, size, color, bold)
+	local label = Instance.new("TextLabel")
+	label.Name = name
+	label.BackgroundTransparency = 1
+	label.BorderSizePixel = 0
+	label.Text = text or ""
+	label.TextColor3 = color or THEME.Text
+	label.TextSize = size or 14
+	label.Font = bold and Enum.Font.GothamBlack or Enum.Font.GothamMedium
+	label.TextWrapped = true
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.TextYAlignment = Enum.TextYAlignment.Top
+	label.RichText = true
+	label.ZIndex = nextZ(parent, 2)
+	label.Parent = parent
+	return label
+end
+
+local function makeButton(parent, name, text, color)
+	local button = Instance.new("TextButton")
+	button.Name = name
+	button.BackgroundColor3 = color or THEME.Button
+	button.BorderSizePixel = 0
+	button.Text = text or "BUTTON"
+	button.TextColor3 = THEME.Text
+	button.TextSize = 12
+	button.Font = Enum.Font.GothamBlack
+	button.AutoButtonColor = false
+	button.Active = true
+	button.ZIndex = nextZ(parent, 3)
+	button.Parent = parent
+
+	addCorner(button, 9)
+	addStroke(button, THEME.StrokeSoft, 1, 0)
+	setHover(button, THEME.ButtonHover)
+
+	return button
+end
+
+local function clearGuiObjects(parent)
+	for _, child in ipairs(parent:GetChildren()) do
+		if child:IsA("GuiObject") or child:IsA("UIListLayout") or child:IsA("UIPadding") then
+			child:Destroy()
+		end
+	end
+end
+
+local function safeNumber(value, defaultValue)
+	local number = tonumber(value)
+	if number == nil then
+		return defaultValue or 0
+	end
+
+	return number
+end
+
+local function getStatLine()
+	if typeof(currentStats) ~= "table" then
+		return "No active life loaded."
+	end
+
+	local age = safeNumber(currentStats.Age, 0)
+	local month = tostring(currentStats.CurrentMonthName or currentStats.CurrentMonth or "")
+	local grade = tostring(currentStats.Grade or "Non-Sorcerer")
+	local ce = safeNumber(currentStats.CursedEnergy, 0)
+	local mastery = safeNumber(currentStats.TechniqueMastery, 0)
+
+	if month ~= "" then
+		return "Age " .. tostring(age) .. " • " .. month .. " • " .. grade .. " • CE " .. tostring(ce) .. " • Mastery " .. tostring(mastery)
+	end
+
+	return "Age " .. tostring(age) .. " • " .. grade .. " • CE " .. tostring(ce) .. " • Mastery " .. tostring(mastery)
+end
+
+local function getCustomOptions()
+	local payload = currentPayload or {}
+	local options = typeof(payload.CustomOptions) == "table" and payload.CustomOptions or {}
+
+	return {
+		Sacrifices = typeof(options.Sacrifices) == "table" and options.Sacrifices or {},
+		Rewards = typeof(options.Rewards) == "table" and options.Rewards or {},
+		Severities = typeof(options.Severities) == "table" and options.Severities or {},
+	}
+end
+
+local function getSelected(list, index)
+	if typeof(list) ~= "table" or #list <= 0 then
+		return nil
+	end
+
+	index = math.clamp(index, 1, #list)
+	return list[index]
+end
+
+local function cycleIndex(list, index, direction)
+	if typeof(list) ~= "table" or #list <= 0 then
+		return 1
+	end
+
+	index += direction
+
+	if index > #list then
+		index = 1
+	elseif index < 1 then
+		index = #list
+	end
+
+	return index
+end
+
+local function activeVowCount(payload)
+	if typeof(payload) ~= "table" then
+		return 0
+	end
+
+	local count = 0
+
+	if typeof(payload.ActiveVows) == "table" then
+		count += #payload.ActiveVows
+	end
+
+	if typeof(payload.CustomVows) == "table" then
+		for _, vow in ipairs(payload.CustomVows) do
+			if vow and vow.Owned == true then
+				count += 1
+			end
+		end
+	end
+
+	return count
+end
+
+local function refreshOpenBadge()
+	if not openBadge then
+		return
+	end
+
+	local count = activeVowCount(currentPayload)
+	openBadge.Text = tostring(count)
+	openBadge.Visible = count > 0
+end
+
+local function getPowerFromSeverity(severity)
+	local id = tostring(severity and severity.Id or "")
+	return PREVIEW_RULES.SeverityPower[id] or 1
+end
+
+local function getCostText(sacrifice, power)
+	local id = tostring(sacrifice and sacrifice.Id or "")
+	local builder = PREVIEW_RULES.SacrificeCost[id]
+
+	if builder then
+		return builder(power)
+	end
+
+	return "Cost depends on the selected sacrifice."
+end
+
+local function getGainText(reward, power)
+	local id = tostring(reward and reward.Id or "")
+	local builder = PREVIEW_RULES.RewardGain[id]
+
+	if builder then
+		return builder(power)
+	end
+
+	return "Gain depends on the selected reward."
+end
+
+local function getPenaltyText(sacrifice, reward, power)
+	local sacrificeId = tostring(sacrifice and sacrifice.Id or "")
+	local rewardId = tostring(reward and reward.Id or "")
+
+	local sacrificeBuilder = PREVIEW_RULES.SacrificeBreak[sacrificeId]
+	local rewardBuilder = PREVIEW_RULES.RewardBreak[rewardId]
+
+	local sacrificeText = sacrificeBuilder and sacrificeBuilder(power) or "sacrifice backlash"
+	local rewardText = rewardBuilder and rewardBuilder(power) or "reward backlash"
+
+	return "Breaking this signed vow causes backlash: " .. sacrificeText .. ", " .. rewardText .. ", and -" .. tostring(8 * power) .. " Reputation."
+end
+
+local function setStatus(label, text, color)
+	label.Text = tostring(text or "")
+	label.TextColor3 = color or THEME.Gold
+end
+
+local openButton = makeButton(screenGui, "OpenBindingVows", "VOW", Color3.fromRGB(27, 22, 38))
+openButton.AnchorPoint = Vector2.new(1, 0)
+openButton.Size = UDim2.new(0, 74, 0, 32)
+openButton.Position = UDim2.new(1, -70, 0, 18)
+openButton.ZIndex = 1078
+openButton.TextSize = 12
+openButton:SetAttribute("BKTopBarKey", "Vows")
+
+local openButtonStroke = openButton:FindFirstChildOfClass("UIStroke")
+if openButtonStroke then
+	openButtonStroke.Color = THEME.Purple
+	openButtonStroke.Transparency = 0.18
+	openButtonStroke.Thickness = 1
+end
+
+local openAccent = Instance.new("Frame")
+openAccent.Name = "Accent"
+openAccent.BackgroundColor3 = THEME.Purple
+openAccent.BorderSizePixel = 0
+openAccent.Size = UDim2.new(0, 4, 1, -12)
+openAccent.Position = UDim2.new(0, 8, 0, 6)
+openAccent.ZIndex = openButton.ZIndex + 1
+openAccent.Parent = openButton
+addCorner(openAccent, 3)
+
+openBadge = Instance.new("TextLabel")
+openBadge.Name = "ActiveBadge"
+openBadge.AnchorPoint = Vector2.new(1, 0)
+openBadge.Size = UDim2.new(0, 22, 0, 16)
+openBadge.Position = UDim2.new(1, 5, 0, -7)
+openBadge.BackgroundColor3 = THEME.RedDark
+openBadge.BorderSizePixel = 0
+openBadge.Text = "0"
+openBadge.TextColor3 = THEME.Text
+openBadge.TextSize = 9
+openBadge.Font = Enum.Font.GothamBlack
+openBadge.ZIndex = openButton.ZIndex + 2
+openBadge.Visible = false
+openBadge.Parent = openButton
+addCorner(openBadge, 9)
+addStroke(openBadge, THEME.StrokeSoft, 1, 0)
+
+local overlay = Instance.new("Frame")
+overlay.Name = "Overlay"
+overlay.Size = UDim2.fromScale(1, 1)
+overlay.Position = UDim2.fromScale(0, 0)
+overlay.BackgroundColor3 = THEME.Bg
+overlay.BackgroundTransparency = 1
+overlay.BorderSizePixel = 0
+overlay.Visible = false
+overlay.Active = true
+overlay.ZIndex = 1080
+overlay.Parent = screenGui
+
+local window = Instance.new("Frame")
+window.Name = "BindingVowsWindow"
+window.AnchorPoint = Vector2.new(0.5, 0.5)
+window.Position = UDim2.new(0.5, 0, 0.5, 0)
+window.Size = UDim2.fromOffset(BASE_WINDOW_WIDTH, BASE_WINDOW_HEIGHT)
+window.BackgroundColor3 = THEME.Window
+window.BackgroundTransparency = 1
+window.BorderSizePixel = 0
+window.Visible = false
+window.ClipsDescendants = true
+window.ZIndex = overlay.ZIndex + 1
+window.Parent = overlay
+addCorner(window, 14)
+addStroke(window, THEME.Purple, 2, 0.06)
+
+local windowScale = Instance.new("UIScale")
+windowScale.Name = "ResponsiveScale"
+windowScale.Scale = 1
+windowScale.Parent = window
+
+local topBar = Instance.new("Frame")
+topBar.Name = "TopBar"
+topBar.Size = UDim2.new(1, 0, 0, 76)
+topBar.Position = UDim2.new(0, 0, 0, 0)
+topBar.BackgroundColor3 = THEME.TopBar
+topBar.BorderSizePixel = 0
+topBar.ZIndex = window.ZIndex + 1
+topBar.Parent = window
+
+local titleLabel = makeText(topBar, "Title", "BINDING VOWS", 22, THEME.Text, true)
+titleLabel.Size = UDim2.new(1, -92, 0, 28)
+titleLabel.Position = UDim2.new(0, 20, 0, 13)
+
+local subtitleLabel = makeText(topBar, "Subtitle", "Preset vows and readable custom contracts.", 11, THEME.SubText, false)
+subtitleLabel.Size = UDim2.new(1, -110, 0, 18)
+subtitleLabel.Position = UDim2.new(0, 20, 0, 44)
+
+local closeButton = makeButton(topBar, "Close", "X", THEME.RedDark)
+closeButton.AnchorPoint = Vector2.new(1, 0)
+closeButton.Size = UDim2.new(0, 32, 0, 32)
+closeButton.Position = UDim2.new(1, -18, 0, 18)
+
+local tabBar = Instance.new("Frame")
+tabBar.Name = "TabBar"
+tabBar.Position = UDim2.new(0, 20, 0, 88)
+tabBar.Size = UDim2.new(1, -40, 0, 38)
+tabBar.BackgroundTransparency = 1
+tabBar.BorderSizePixel = 0
+tabBar.ZIndex = window.ZIndex + 1
+tabBar.Parent = window
+
+local customTab = makeButton(tabBar, "CustomTab", "CUSTOM CONTRACT", THEME.Purple)
+customTab.Size = UDim2.new(0, 176, 1, 0)
+customTab.Position = UDim2.new(0, 0, 0, 0)
+
+local presetTab = makeButton(tabBar, "PresetTab", "PRESET VOWS", THEME.Button)
+presetTab.Size = UDim2.new(0, 142, 1, 0)
+presetTab.Position = UDim2.new(0, 184, 0, 0)
+
+local statusLabel = makeText(tabBar, "Status", "", 11, THEME.Gold, true)
+statusLabel.Size = UDim2.new(1, -344, 1, 0)
+statusLabel.Position = UDim2.new(0, 344, 0, 0)
+statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+statusLabel.TextYAlignment = Enum.TextYAlignment.Center
+
+local infoPanel = Instance.new("Frame")
+infoPanel.Name = "InfoPanel"
+infoPanel.Position = UDim2.new(0, 20, 0, 136)
+infoPanel.Size = UDim2.new(1, -40, 0, 56)
+infoPanel.BackgroundColor3 = THEME.Panel2
+infoPanel.BorderSizePixel = 0
+infoPanel.ZIndex = window.ZIndex + 1
+infoPanel.Parent = window
+addCorner(infoPanel, 10)
+addStroke(infoPanel, THEME.StrokeSoft, 1, 0)
+addPadding(infoPanel, 12, 12, 9, 9)
+
+local infoTitle = makeText(infoPanel, "InfoTitle", "Current Life", 12, THEME.Gold, true)
+infoTitle.Size = UDim2.new(1, 0, 0, 16)
+infoTitle.Position = UDim2.new(0, 0, 0, 0)
+
+local infoBody = makeText(infoPanel, "InfoBody", "No active life loaded.", 11, THEME.SubText, false)
+infoBody.Size = UDim2.new(1, 0, 0, 24)
+infoBody.Position = UDim2.new(0, 0, 0, 22)
+
+local content = Instance.new("ScrollingFrame")
+content.Name = "Content"
+content.Position = UDim2.new(0, 20, 0, 204)
+content.Size = UDim2.new(1, -40, 1, -224)
+content.BackgroundColor3 = THEME.Panel
+content.BorderSizePixel = 0
+content.ScrollBarThickness = 5
+content.ScrollBarImageColor3 = THEME.Purple
+content.CanvasSize = UDim2.new(0, 0, 0, 0)
+content.AutomaticCanvasSize = Enum.AutomaticSize.Y
+content.ScrollingDirection = Enum.ScrollingDirection.Y
+content.ScrollingEnabled = true
+content.Active = true
+content.ElasticBehavior = Enum.ElasticBehavior.WhenScrollable
+content.ZIndex = window.ZIndex + 1
+content.Parent = window
+addCorner(content, 10)
+addStroke(content, THEME.StrokeSoft, 1, 0)
+
+local function updateCanvas()
+	if not contentLayout or not contentPadding then
+		content.CanvasSize = UDim2.new(0, 0, 0, 0)
+		return
+	end
+
+	local contentHeight = contentLayout.AbsoluteContentSize.Y + contentPadding.PaddingTop.Offset + contentPadding.PaddingBottom.Offset + 36
+	content.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
+end
+
+local function installContentLayout()
+	contentLayout = Instance.new("UIListLayout")
+	contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	contentLayout.Padding = UDim.new(0, 10)
+	contentLayout.Parent = content
+
+	contentPadding = Instance.new("UIPadding")
+	contentPadding.PaddingTop = UDim.new(0, 12)
+	contentPadding.PaddingBottom = UDim.new(0, 18)
+	contentPadding.PaddingLeft = UDim.new(0, 12)
+	contentPadding.PaddingRight = UDim.new(0, 12)
+	contentPadding.Parent = content
+
+	contentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvas)
+end
+
+installContentLayout()
+
+local function fetchPayload()
+	if loading then
+		return currentPayload
+	end
+
+	loading = true
+	setStatus(statusLabel, "Loading vows...", THEME.Gold)
+
+	local ok, payload = pcall(function()
+		return getBindingVows:InvokeServer()
+	end)
+
+	loading = false
+
+	if ok and typeof(payload) == "table" then
+		currentPayload = payload
+		refreshOpenBadge()
+		setStatus(statusLabel, "", THEME.Gold)
+		return payload
+	end
+
+	warn("[BitKaisenBindingVowsUI] Failed to load vows:", payload)
+
+	currentPayload = {
+		ActiveVows = {},
+		BrokenBindingVows = {},
+		CustomVows = {},
+		CustomOptions = {
+			Sacrifices = {},
+			Rewards = {},
+			Severities = {},
+		},
+		Vows = {},
+	}
+
+	refreshOpenBadge()
+	setStatus(statusLabel, "Could not load vows. Check GetBindingVows.", THEME.Bad)
+	return currentPayload
+end
+
+local function layout()
+	local v = viewport()
+	local small = isSmallScreen()
+
+	local scaleX = (v.X - MOBILE_WINDOW_MARGIN_X) / BASE_WINDOW_WIDTH
+	local scaleY = (v.Y - MOBILE_WINDOW_MARGIN_Y) / BASE_WINDOW_HEIGHT
+	local responsiveScale = math.clamp(math.min(scaleX, scaleY, 1), 0.34, 1)
+
+	window.Size = UDim2.fromOffset(BASE_WINDOW_WIDTH, BASE_WINDOW_HEIGHT)
+	window.Position = UDim2.new(0.5, 0, 0.5, 0)
+	windowScale.Scale = responsiveScale
+
+	if small then
+		openButton.Size = UDim2.new(0, 66, 0, 30)
+		openButton.Position = UDim2.new(1, -58, 0, 14)
+	else
+		openButton.Size = UDim2.new(0, 74, 0, 32)
+		openButton.Position = UDim2.new(1, -70, 0, 18)
+	end
+end
+
+local function updateTabs()
+	if currentTab == "Custom" then
+		customTab.BackgroundColor3 = THEME.Purple
+		presetTab.BackgroundColor3 = THEME.Button
+	else
+		customTab.BackgroundColor3 = THEME.Button
+		presetTab.BackgroundColor3 = THEME.Purple
+	end
+end
+
+local function makeEmptyCard(message)
+	local card = Instance.new("Frame")
+	card.Name = "EmptyCard"
+	card.Size = UDim2.new(1, -6, 0, 104)
+	card.BackgroundColor3 = THEME.Card
+	card.BorderSizePixel = 0
+	card.ZIndex = content.ZIndex + 1
+	card.Parent = content
+	addCorner(card, 10)
+	addStroke(card, THEME.StrokeSoft, 1, 0)
+
+	local label = makeText(card, "Message", message, 13, THEME.SubText, false)
+	label.Size = UDim2.new(1, -28, 1, -24)
+	label.Position = UDim2.new(0, 14, 0, 14)
+	label.TextYAlignment = Enum.TextYAlignment.Center
+end
+
+local function makeSectionTitle(text)
+	local label = makeText(content, "SectionTitle", text, 13, THEME.Gold, true)
+	label.Size = UDim2.new(1, -6, 0, 24)
+	label.TextYAlignment = Enum.TextYAlignment.Center
+	return label
+end
+
+local function getPresetButtonState(vow)
+	if vow.Owned == true then
+		if pendingBreakPresetId == vow.Id then
+			return "CONFIRM BREAK", THEME.RedDark, true
+		end
+
+		return "BREAK VOW", THEME.RedDark, true
+	end
+
+	if vow.Broken == true then
+		return "BROKEN", THEME.ButtonDisabled, false
+	end
+
+	if vow.CanMake == true then
+		if pendingMakePresetId == vow.Id then
+			return "CONFIRM VOW", THEME.RedDark, true
+		end
+
+		return "MAKE VOW", THEME.Purple, true
+	end
+
+	return "LOCKED", THEME.ButtonDisabled, false
+end
+
+local function makeVowCard(vow, index, isCustom)
+	local owned = vow.Owned == true
+	local broken = vow.Broken == true
+	local canMake = vow.CanMake == true
+
+	local buttonText
+	local buttonColor
+	local buttonActive
+
+	if isCustom then
+		if owned then
+			if pendingBreakCustomId == vow.Id then
+				buttonText = "CONFIRM BREAK"
+				buttonColor = THEME.RedDark
+				buttonActive = true
+			else
+				buttonText = "BREAK VOW"
+				buttonColor = THEME.RedDark
+				buttonActive = true
+			end
+		elseif broken then
+			buttonText = "BROKEN"
+			buttonColor = THEME.ButtonDisabled
+			buttonActive = false
+		else
+			buttonText = "SIGNED"
+			buttonColor = THEME.ButtonDisabled
+			buttonActive = false
+		end
+	else
+		buttonText, buttonColor, buttonActive = getPresetButtonState(vow)
+	end
+
+	local card = Instance.new("Frame")
+	card.Name = (isCustom and "CustomVowCard_" or "PresetVowCard_") .. tostring(vow.Id or index)
+	card.Size = UDim2.new(1, -6, 0, 202)
+	card.BackgroundColor3 = owned and THEME.CardGreen or (broken and THEME.CardRed or THEME.Card)
+	card.BorderSizePixel = 0
+	card.ZIndex = content.ZIndex + 1
+	card.Parent = content
+	addCorner(card, 11)
+	addStroke(card, owned and THEME.Green or (broken and THEME.Bad or THEME.StrokeSoft), owned and 2 or 1, 0)
+
+	local title = makeText(card, "Name", tostring(vow.Name or "Binding Vow"), 16, owned and THEME.Green or (broken and THEME.Bad or THEME.Text), true)
+	title.Size = UDim2.new(1, -178, 0, 24)
+	title.Position = UDim2.new(0, 14, 0, 12)
+
+	local req = Instance.new("TextLabel")
+	req.Name = "Requirement"
+	req.BackgroundColor3 = Color3.fromRGB(42, 34, 22)
+	req.BorderSizePixel = 0
+	req.Text = tostring(vow.RequirementText or "No requirement")
+	req.TextColor3 = THEME.Gold
+	req.TextSize = 10
+	req.Font = Enum.Font.GothamBold
+	req.TextXAlignment = Enum.TextXAlignment.Left
+	req.TextYAlignment = Enum.TextYAlignment.Center
+	req.TextWrapped = true
+	req.ZIndex = card.ZIndex + 2
+	req.Parent = card
+	req.Size = UDim2.new(1, -178, 0, 24)
+	req.Position = UDim2.new(0, 14, 0, 44)
+	addCorner(req, 7)
+	addStroke(req, Color3.fromRGB(82, 70, 40), 1, 0.2)
+	addPadding(req, 8, 8, 0, 0)
+
+	local desc = makeText(card, "Description", tostring(vow.Description or ""), 11, THEME.SubText, false)
+	desc.Size = UDim2.new(1, -178, 0, 44)
+	desc.Position = UDim2.new(0, 14, 0, 78)
+
+	local costBox = Instance.new("Frame")
+	costBox.Name = "CostBox"
+	costBox.BackgroundColor3 = Color3.fromRGB(33, 21, 29)
+	costBox.BorderSizePixel = 0
+	costBox.ZIndex = card.ZIndex + 1
+	costBox.Parent = card
+	costBox.Size = UDim2.new(0.5, -26, 0, 58)
+	costBox.Position = UDim2.new(0, 14, 0, 132)
+	addCorner(costBox, 9)
+	addStroke(costBox, Color3.fromRGB(92, 48, 58), 1, 0.15)
+
+	local costTitle = makeText(costBox, "CostTitle", "COST", 10, THEME.Bad, true)
+	costTitle.Size = UDim2.new(1, -14, 0, 14)
+	costTitle.Position = UDim2.new(0, 8, 0, 6)
+
+	local costBody = makeText(costBox, "CostBody", tostring(vow.CostText or "Unknown cost."), 10, THEME.SubText, false)
+	costBody.Size = UDim2.new(1, -14, 0, 34)
+	costBody.Position = UDim2.new(0, 8, 0, 21)
+
+	local gainBox = Instance.new("Frame")
+	gainBox.Name = "GainBox"
+	gainBox.BackgroundColor3 = Color3.fromRGB(20, 32, 25)
+	gainBox.BorderSizePixel = 0
+	gainBox.ZIndex = card.ZIndex + 1
+	gainBox.Parent = card
+	gainBox.Size = UDim2.new(0.5, -92, 0, 58)
+	gainBox.Position = UDim2.new(0.5, -4, 0, 132)
+	addCorner(gainBox, 9)
+	addStroke(gainBox, Color3.fromRGB(58, 92, 71), 1, 0.15)
+
+	local gainTitle = makeText(gainBox, "GainTitle", "GAIN", 10, THEME.Green, true)
+	gainTitle.Size = UDim2.new(1, -14, 0, 14)
+	gainTitle.Position = UDim2.new(0, 8, 0, 6)
+
+	local gainBody = makeText(gainBox, "GainBody", tostring(vow.BonusText or "Unknown reward."), 10, THEME.SubText, false)
+	gainBody.Size = UDim2.new(1, -14, 0, 34)
+	gainBody.Position = UDim2.new(0, 8, 0, 21)
+
+	local actionButton = makeButton(card, "ActionButton", buttonText, buttonColor)
+	actionButton.AnchorPoint = Vector2.new(1, 0)
+	actionButton.Size = UDim2.new(0, 138, 0, 36)
+	actionButton.Position = UDim2.new(1, -14, 0, 14)
+	actionButton.Active = buttonActive
+	actionButton.AutoButtonColor = false
+
+	if not buttonActive then
+		actionButton.TextColor3 = THEME.Muted
+	end
+
+	local stateText = owned and "ACTIVE" or (broken and "BROKEN" or (canMake and "AVAILABLE" or "LOCKED"))
+	local stateColor = owned and THEME.Green or (broken and THEME.Bad or (canMake and THEME.Purple or THEME.Muted))
+
+	local state = makeText(card, "State", stateText, 10, stateColor, true)
+	state.AnchorPoint = Vector2.new(1, 0)
+	state.Size = UDim2.new(0, 138, 0, 18)
+	state.Position = UDim2.new(1, -14, 0, 58)
+	state.TextXAlignment = Enum.TextXAlignment.Center
+
+	local infoText
+	local infoColor = THEME.SubText
+
+	if owned then
+		if isCustom and pendingBreakCustomId == vow.Id then
+			infoText = tostring(vow.BreakCostText or "Backlash will occur.")
+			infoColor = THEME.Bad
+		elseif (not isCustom) and pendingBreakPresetId == vow.Id then
+			infoText = tostring(vow.BreakCostText or "Backlash will occur.")
+			infoColor = THEME.Bad
+		else
+			infoText = "This vow is active. Breaking it causes backlash."
+			infoColor = THEME.Gold
+		end
+	elseif broken then
+		infoText = "Broken for this life."
+		infoColor = THEME.Bad
+	elseif canMake then
+		infoText = pendingMakePresetId == vow.Id and "Click again to sign." or "Permanent unless broken."
+		infoColor = pendingMakePresetId == vow.Id and THEME.Gold or THEME.SubText
+	else
+		infoText = tostring(vow.Reason or "Requirement not met.")
+		infoColor = THEME.Muted
+	end
+
+	local sideInfo = makeText(card, "SideInfo", infoText, 10, infoColor, true)
+	sideInfo.AnchorPoint = Vector2.new(1, 0)
+	sideInfo.Size = UDim2.new(0, 138, 0, 104)
+	sideInfo.Position = UDim2.new(1, -14, 0, 86)
+	sideInfo.TextXAlignment = Enum.TextXAlignment.Center
+
+	actionButton.MouseButton1Click:Connect(function()
+		if not buttonActive then
+			return
+		end
+
+		if isCustom then
+			if not owned then
+				return
+			end
+
+			if pendingBreakCustomId ~= vow.Id then
+				pendingBreakCustomId = vow.Id
+				pendingBreakPresetId = nil
+				pendingMakePresetId = nil
+				pendingSignCustom = false
+				setStatus(statusLabel, "Breaking a signed vow causes backlash. Confirm to continue.", THEME.Bad)
+				rebuild()
+				return
+			end
+
+			pendingBreakCustomId = nil
+			actionButton.Text = "BREAKING..."
+			actionButton.Active = false
+			bindingVowAction:FireServer("BreakCustomVow", tostring(vow.Id))
+			return
+		end
+
+		if owned then
+			if pendingBreakPresetId ~= vow.Id then
+				pendingBreakPresetId = vow.Id
+				pendingBreakCustomId = nil
+				pendingMakePresetId = nil
+				pendingSignCustom = false
+				setStatus(statusLabel, "Breaking a vow causes backlash. Confirm to continue.", THEME.Bad)
+				rebuild()
+				return
+			end
+
+			pendingBreakPresetId = nil
+			actionButton.Text = "BREAKING..."
+			actionButton.Active = false
+			bindingVowAction:FireServer("BreakVow", tostring(vow.Id))
+			return
+		end
+
+		if not canMake or broken then
+			return
+		end
+
+		if pendingMakePresetId ~= vow.Id then
+			pendingMakePresetId = vow.Id
+			pendingBreakPresetId = nil
+			pendingBreakCustomId = nil
+			pendingSignCustom = false
+			setStatus(statusLabel, "Click CONFIRM VOW to sign " .. tostring(vow.Name or "this vow") .. ".", THEME.Gold)
+			rebuild()
+			return
+		end
+
+		pendingMakePresetId = nil
+		actionButton.Text = "SIGNING..."
+		actionButton.Active = false
+		bindingVowAction:FireServer("MakeVow", tostring(vow.Id))
+	end)
+end
+
+local function makeSelectionRow(parent, sectionNumber, title, selectedText, description, onPrev, onNext)
+	local row = Instance.new("Frame")
+	row.Name = "SelectionRow"
+	row.Size = UDim2.new(1, 0, 0, 94)
+	row.BackgroundColor3 = THEME.Panel2
+	row.BorderSizePixel = 0
+	row.ZIndex = nextZ(parent, 1)
+	row.Parent = parent
+	addCorner(row, 10)
+	addStroke(row, THEME.StrokeSoft, 1, 0)
+
+	local header = makeText(row, "Header", "Section " .. tostring(sectionNumber) .. ": " .. title, 12, THEME.Gold, true)
+	header.Size = UDim2.new(1, -20, 0, 18)
+	header.Position = UDim2.new(0, 12, 0, 9)
+
+	local selector = Instance.new("Frame")
+	selector.Name = "Selector"
+	selector.Size = UDim2.new(1, -24, 0, 32)
+	selector.Position = UDim2.new(0, 12, 0, 33)
+	selector.BackgroundColor3 = THEME.Panel3
+	selector.BorderSizePixel = 0
+	selector.ZIndex = row.ZIndex + 1
+	selector.Parent = row
+	addCorner(selector, 9)
+	addStroke(selector, THEME.StrokeSoft, 1, 0)
+
+	local left = makeButton(selector, "Left", "<", THEME.Button)
+	left.Size = UDim2.new(0, 34, 0, 26)
+	left.Position = UDim2.new(0, 4, 0.5, -13)
+
+	local value = makeText(selector, "Value", selectedText, 13, THEME.Text, true)
+	value.Size = UDim2.new(1, -86, 1, 0)
+	value.Position = UDim2.new(0, 43, 0, 0)
+	value.TextXAlignment = Enum.TextXAlignment.Center
+	value.TextYAlignment = Enum.TextYAlignment.Center
+	value.TextTruncate = Enum.TextTruncate.AtEnd
+
+	local right = makeButton(selector, "Right", ">", THEME.Button)
+	right.AnchorPoint = Vector2.new(1, 0)
+	right.Size = UDim2.new(0, 34, 0, 26)
+	right.Position = UDim2.new(1, -4, 0.5, -13)
+
+	local desc = makeText(row, "Description", description or "", 10, THEME.SubText, false)
+	desc.Size = UDim2.new(1, -24, 0, 22)
+	desc.Position = UDim2.new(0, 12, 0, 69)
+	desc.TextYAlignment = Enum.TextYAlignment.Center
+
+	left.MouseButton1Click:Connect(onPrev)
+	right.MouseButton1Click:Connect(onNext)
+
+	return row
+end
+
+local function makePreviewLine(parent, y, labelText, valueText, valueColor)
+	local label = makeText(parent, "Label_" .. labelText, labelText .. ":", 11, THEME.Gold, true)
+	label.Size = UDim2.new(0, 122, 0, 18)
+	label.Position = UDim2.new(0, 12, 0, y)
+
+	local value = makeText(parent, "Value_" .. labelText, valueText, 11, valueColor or THEME.SubText, false)
+	value.Size = UDim2.new(1, -146, 0, 30)
+	value.Position = UDim2.new(0, 132, 0, y)
+
+	return value
+end
+
+local function makeContractPanel()
+	local options = getCustomOptions()
+	local sacrifices = options.Sacrifices
+	local rewards = options.Rewards
+	local severities = options.Severities
+
+	if #sacrifices <= 0 or #rewards <= 0 or #severities <= 0 then
+		makeEmptyCard("Custom contracts need the updated GameManager custom vow payload. Your remotes exist, but CustomOptions came back empty.")
+		return
+	end
+
+	selectedSacrificeIndex = math.clamp(selectedSacrificeIndex, 1, #sacrifices)
+	selectedRewardIndex = math.clamp(selectedRewardIndex, 1, #rewards)
+	selectedSeverityIndex = math.clamp(selectedSeverityIndex, 1, #severities)
+
+	local sacrifice = getSelected(sacrifices, selectedSacrificeIndex)
+	local reward = getSelected(rewards, selectedRewardIndex)
+	local severity = getSelected(severities, selectedSeverityIndex)
+
+	if not sacrifice or not reward or not severity then
+		makeEmptyCard("Custom contract options loaded incorrectly. Check the CustomOptions payload.")
+		return
+	end
+
+	local power = getPowerFromSeverity(severity)
+	local contractName = tostring(severity.Name or "Minor") .. " Vow of " .. tostring(reward.Name or "Power")
+	local statement = "I offer " .. tostring(sacrifice.Name or "Something") .. ". In return, I claim " .. tostring(reward.Name or "Something") .. "."
+	local costText = getCostText(sacrifice, power)
+	local gainText = getGainText(reward, power)
+	local penaltyText = getPenaltyText(sacrifice, reward, power)
+	local invalidSameStat = MATCHING_REWARD_BY_SACRIFICE[tostring(sacrifice.Id or "")] == tostring(reward.Id or "")
+	local stacked = isSmallScreen() or viewport().X < 720
+
+	local panel = Instance.new("Frame")
+	panel.Name = "CustomContractPanel"
+	panel.Size = UDim2.new(1, -6, 0, stacked and 820 or 514)
+	panel.BackgroundColor3 = Color3.fromRGB(15, 15, 23)
+	panel.BorderSizePixel = 0
+	panel.ZIndex = content.ZIndex + 1
+	panel.Parent = content
+	addCorner(panel, 12)
+	addStroke(panel, THEME.Purple, 2, 0.08)
+
+	local header = Instance.new("Frame")
+	header.Name = "Header"
+	header.Size = UDim2.new(1, -24, 0, 56)
+	header.Position = UDim2.new(0, 12, 0, 12)
+	header.BackgroundColor3 = Color3.fromRGB(22, 19, 34)
+	header.BorderSizePixel = 0
+	header.ZIndex = panel.ZIndex + 1
+	header.Parent = panel
+	addCorner(header, 10)
+	addStroke(header, THEME.StrokeSoft, 1, 0)
+
+	local title = makeText(header, "Title", "Binding Vow Contract", 18, THEME.Text, true)
+	title.Size = UDim2.new(1, -24, 0, 24)
+	title.Position = UDim2.new(0, 12, 0, 8)
+	title.TextXAlignment = Enum.TextXAlignment.Center
+	title.TextYAlignment = Enum.TextYAlignment.Center
+
+	local subtitle = makeText(header, "Subtitle", "Pick a sacrifice, reward, and strictness. Then sign it.", 11, THEME.SubText, false)
+	subtitle.Size = UDim2.new(1, -24, 0, 18)
+	subtitle.Position = UDim2.new(0, 12, 0, 32)
+	subtitle.TextXAlignment = Enum.TextXAlignment.Center
+
+	local form = Instance.new("Frame")
+	form.Name = "Form"
+	form.Size = stacked and UDim2.new(1, -24, 0, 316) or UDim2.new(0.5, -20, 0, 316)
+	form.Position = UDim2.new(0, 12, 0, 80)
+	form.BackgroundTransparency = 1
+	form.BorderSizePixel = 0
+	form.ZIndex = panel.ZIndex + 1
+	form.Parent = panel
+
+	local formLayout = Instance.new("UIListLayout")
+	formLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	formLayout.Padding = UDim.new(0, 10)
+	formLayout.Parent = form
+
+	makeSelectionRow(
+		form,
+		1,
+		"What do you sacrifice?",
+		tostring(sacrifice.Name or "Unknown"),
+		tostring(sacrifice.Line or "Choose what the vow takes from you."),
+		function()
+			selectedSacrificeIndex = cycleIndex(sacrifices, selectedSacrificeIndex, -1)
+			pendingSignCustom = false
+			rebuild()
+		end,
+		function()
+			selectedSacrificeIndex = cycleIndex(sacrifices, selectedSacrificeIndex, 1)
+			pendingSignCustom = false
+			rebuild()
+		end
+	)
+
+	makeSelectionRow(
+		form,
+		2,
+		"What do you gain?",
+		tostring(reward.Name or "Unknown"),
+		tostring(reward.Line or "Choose what the vow gives you."),
+		function()
+			selectedRewardIndex = cycleIndex(rewards, selectedRewardIndex, -1)
+			pendingSignCustom = false
+			rebuild()
+		end,
+		function()
+			selectedRewardIndex = cycleIndex(rewards, selectedRewardIndex, 1)
+			pendingSignCustom = false
+			rebuild()
+		end
+	)
+
+	makeSelectionRow(
+		form,
+		3,
+		"How strict is the vow?",
+		tostring(severity.Name or "Unknown"),
+		tostring(severity.RequirementText or "No requirement listed."),
+		function()
+			selectedSeverityIndex = cycleIndex(severities, selectedSeverityIndex, -1)
+			pendingSignCustom = false
+			rebuild()
+		end,
+		function()
+			selectedSeverityIndex = cycleIndex(severities, selectedSeverityIndex, 1)
+			pendingSignCustom = false
+			rebuild()
+		end
+	)
+
+	local preview = Instance.new("Frame")
+	preview.Name = "PreviewCard"
+	preview.Size = stacked and UDim2.new(1, -24, 0, 316) or UDim2.new(0.5, -20, 0, 316)
+	preview.Position = stacked and UDim2.new(0, 12, 0, 410) or UDim2.new(0.5, 8, 0, 80)
+	preview.BackgroundColor3 = THEME.Panel2
+	preview.BorderSizePixel = 0
+	preview.ZIndex = panel.ZIndex + 1
+	preview.Parent = panel
+	addCorner(preview, 10)
+	addStroke(preview, THEME.StrokeSoft, 1, 0)
+
+	local previewTitle = makeText(preview, "PreviewTitle", "PREVIEW CARD", 11, THEME.Gold, true)
+	previewTitle.Size = UDim2.new(1, -24, 0, 18)
+	previewTitle.Position = UDim2.new(0, 12, 0, 10)
+	previewTitle.TextXAlignment = Enum.TextXAlignment.Center
+
+	local previewName = makeText(preview, "PreviewName", contractName, 16, THEME.Purple, true)
+	previewName.Size = UDim2.new(1, -24, 0, 24)
+	previewName.Position = UDim2.new(0, 12, 0, 35)
+	previewName.TextXAlignment = Enum.TextXAlignment.Center
+	previewName.TextYAlignment = Enum.TextYAlignment.Center
+
+	local statementBox = Instance.new("Frame")
+	statementBox.Name = "StatementBox"
+	statementBox.Size = UDim2.new(1, -24, 0, 58)
+	statementBox.Position = UDim2.new(0, 12, 0, 68)
+	statementBox.BackgroundColor3 = THEME.Panel3
+	statementBox.BorderSizePixel = 0
+	statementBox.ZIndex = preview.ZIndex + 1
+	statementBox.Parent = preview
+	addCorner(statementBox, 9)
+	addStroke(statementBox, THEME.StrokeSoft, 1, 0)
+
+	local statementLabel = makeText(
+		statementBox,
+		"Statement",
+		invalidSameStat and "This contract cancels itself out. Choose a different reward or sacrifice." or statement,
+		12,
+		invalidSameStat and THEME.Bad or THEME.Text,
+		false
+	)
+	statementLabel.Size = UDim2.new(1, -20, 1, -10)
+	statementLabel.Position = UDim2.new(0, 10, 0, 5)
+	statementLabel.TextXAlignment = Enum.TextXAlignment.Center
+	statementLabel.TextYAlignment = Enum.TextYAlignment.Center
+
+	makePreviewLine(preview, 140, "Name", contractName, THEME.Text)
+	makePreviewLine(preview, 174, "Cost", costText, THEME.Bad)
+	makePreviewLine(preview, 208, "Gain", gainText, THEME.Green)
+	makePreviewLine(
+		preview,
+		242,
+		"Requirement",
+		invalidSameStat and "Sacrifice and reward cannot be the same stat." or tostring(severity.RequirementText or "No requirement."),
+		invalidSameStat and THEME.Bad or THEME.SubText
+	)
+
+	local penalty = makeText(preview, "Penalty", "Penalty if broken: " .. penaltyText, 10, THEME.Bad, true)
+	penalty.Size = UDim2.new(1, -24, 0, 40)
+	penalty.Position = UDim2.new(0, 12, 0, 274)
+
+	local footer = Instance.new("Frame")
+	footer.Name = "Footer"
+	footer.Size = UDim2.new(1, -24, 0, 74)
+	footer.Position = UDim2.new(0, 12, 1, -86)
+	footer.BackgroundColor3 = Color3.fromRGB(18, 17, 27)
+	footer.BorderSizePixel = 0
+	footer.ZIndex = panel.ZIndex + 1
+	footer.Parent = panel
+	addCorner(footer, 10)
+	addStroke(footer, THEME.StrokeSoft, 1, 0)
+
+	local note = makeText(
+		footer,
+		"Note",
+		invalidSameStat and "Choose different stats. A vow cannot sacrifice and reward the same thing." or (pendingSignCustom and "Confirm signature to lock this vow into your life." or "Custom vows are self-imposed. Useful, but never free."),
+		11,
+		invalidSameStat and THEME.Bad or (pendingSignCustom and THEME.Gold or THEME.SubText),
+		true
+	)
+
+	note.Size = stacked and UDim2.new(1, -24, 0, 28) or UDim2.new(1, -380, 1, -20)
+	note.Position = UDim2.new(0, 14, 0, 10)
+	note.TextYAlignment = Enum.TextYAlignment.Center
+
+	local cancelButton = makeButton(footer, "Cancel", "CANCEL", THEME.Button)
+	cancelButton.AnchorPoint = Vector2.new(1, 0.5)
+	cancelButton.Size = stacked and UDim2.new(0.42, -10, 0, 34) or UDim2.new(0, 128, 0, 38)
+	cancelButton.Position = stacked and UDim2.new(0.42, 4, 0.72, 0) or UDim2.new(1, -242, 0.5, 0)
+
+	local signButton = makeButton(footer, "Sign", invalidSameStat and "INVALID CONTRACT" or (pendingSignCustom and "CONFIRM SIGNATURE" or "SIGN CONTRACT"), invalidSameStat and THEME.ButtonDisabled or (pendingSignCustom and THEME.RedDark or THEME.Purple))
+	signButton.AnchorPoint = Vector2.new(1, 0.5)
+	signButton.Size = stacked and UDim2.new(0.58, -18, 0, 34) or UDim2.new(0, 218, 0, 38)
+	signButton.Position = stacked and UDim2.new(1, -14, 0.72, 0) or UDim2.new(1, -14, 0.5, 0)
+	signButton.Active = not invalidSameStat
+
+	cancelButton.MouseButton1Click:Connect(function()
+		pendingSignCustom = false
+		setStatus(statusLabel, "Contract draft cleared.", THEME.Muted)
+		rebuild()
+	end)
+
+	signButton.MouseButton1Click:Connect(function()
+		if invalidSameStat then
+			setStatus(statusLabel, "Choose different stats for sacrifice and reward.", THEME.Bad)
+			return
+		end
+
+		if not pendingSignCustom then
+			pendingSignCustom = true
+			pendingMakePresetId = nil
+			pendingBreakPresetId = nil
+			pendingBreakCustomId = nil
+			setStatus(statusLabel, "Confirm your signature to bind the custom vow.", THEME.Gold)
+			rebuild()
+			return
+		end
+
+		pendingSignCustom = false
+		signButton.Text = "SIGNING..."
+		signButton.Active = false
+
+		bindingVowAction:FireServer("MakeCustomVow", {
+			SacrificeId = tostring(sacrifice.Id),
+			RewardId = tostring(reward.Id),
+			SeverityId = tostring(severity.Id),
+		})
+	end)
+end
+
+local function makeCustomVowList()
+	local customVows = typeof(currentPayload) == "table" and currentPayload.CustomVows or nil
+
+	makeSectionTitle("SIGNED CUSTOM CONTRACTS")
+
+	if typeof(customVows) ~= "table" or #customVows <= 0 then
+		makeEmptyCard("No custom vows signed yet. Draft a contract above to create one.")
+		return
+	end
+
+	for index, vow in ipairs(customVows) do
+		makeVowCard(vow, index, true)
+	end
+end
+
+local function makePresetList()
+	local vows = typeof(currentPayload) == "table" and currentPayload.Vows or nil
+
+	makeSectionTitle("PRESET BINDING VOWS")
+
+	if typeof(vows) ~= "table" or #vows <= 0 then
+		makeEmptyCard("No preset Binding Vows are available yet.")
+		return
+	end
+
+	for index, vow in ipairs(vows) do
+		makeVowCard(vow, index, false)
+	end
+end
+
+rebuild = function()
+	clearGuiObjects(content)
+	installContentLayout()
+
+	updateTabs()
+	infoBody.Text = getStatLine()
+
+	if currentTab == "Custom" then
+		makeContractPanel()
+		makeCustomVowList()
+	else
+		makePresetList()
+	end
+
+	updateCanvas()
+end
+
+local function openMenu()
+	if isOpen then
+		return
+	end
+
+	isOpen = true
+	pendingMakePresetId = nil
+	pendingBreakPresetId = nil
+	pendingBreakCustomId = nil
+	pendingSignCustom = false
+
+	layout()
+	currentPayload = fetchPayload()
+	rebuild()
+
+	overlay.Visible = true
+	window.Visible = true
+	overlay.BackgroundTransparency = 1
+	window.BackgroundTransparency = 1
+	window.Position = UDim2.new(0.5, 0, 0.52, 0)
+
+	tween(overlay, 0.18, {
+		BackgroundTransparency = 0.38,
+	})
+
+	tween(window, 0.2, {
+		BackgroundTransparency = 0,
+		Position = UDim2.new(0.5, 0, 0.5, 0),
+	})
+end
+
+local function closeMenu()
+	if not isOpen then
+		return
+	end
+
+	isOpen = false
+	pendingMakePresetId = nil
+	pendingBreakPresetId = nil
+	pendingBreakCustomId = nil
+	pendingSignCustom = false
+
+	tween(overlay, 0.16, {
+		BackgroundTransparency = 1,
+	})
+
+	tween(window, 0.16, {
+		BackgroundTransparency = 1,
+	})
+
+	task.delay(0.18, function()
+		if not isOpen then
+			overlay.Visible = false
+			window.Visible = false
+		end
+	end)
+end
+
+openButton.MouseButton1Click:Connect(function()
+	if isOpen then
+		closeMenu()
+	else
+		openMenu()
+	end
+end)
+
+closeButton.MouseButton1Click:Connect(closeMenu)
+
+customTab.MouseButton1Click:Connect(function()
+	currentTab = "Custom"
+	pendingMakePresetId = nil
+	pendingBreakPresetId = nil
+	pendingBreakCustomId = nil
+	pendingSignCustom = false
+	rebuild()
+end)
+
+presetTab.MouseButton1Click:Connect(function()
+	currentTab = "Preset"
+	pendingMakePresetId = nil
+	pendingBreakPresetId = nil
+	pendingBreakCustomId = nil
+	pendingSignCustom = false
+	rebuild()
+end)
+
+overlay.InputBegan:Connect(function(input)
+	if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.Touch then
+		return
+	end
+
+	local mousePosition = UserInputService:GetMouseLocation()
+	local pos = window.AbsolutePosition
+	local size = window.AbsoluteSize
+
+	local inside =
+		mousePosition.X >= pos.X and
+		mousePosition.X <= pos.X + size.X and
+		mousePosition.Y >= pos.Y and
+		mousePosition.Y <= pos.Y + size.Y
+
+	if not inside then
+		closeMenu()
+	end
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then
+		return
+	end
+
+	if input.KeyCode == Enum.KeyCode.Escape and isOpen then
+		closeMenu()
+	end
+end)
+
+bindingVowAction.OnClientEvent:Connect(function(result)
+	if typeof(result) ~= "table" then
+		setStatus(statusLabel, "Binding vow response was invalid.", THEME.Bad)
+		return
+	end
+
+	pendingMakePresetId = nil
+	pendingBreakPresetId = nil
+	pendingBreakCustomId = nil
+	pendingSignCustom = false
+
+	if typeof(result.Data) == "table" then
+		currentPayload = result.Data
+	else
+		currentPayload = fetchPayload()
+	end
+
+	refreshOpenBadge()
+
+	if result.Success == true then
+		setStatus(statusLabel, tostring(result.Message or "Binding Vow updated."), THEME.Green)
+	else
+		setStatus(statusLabel, tostring(result.Message or "Could not update Binding Vow."), THEME.Bad)
+	end
+
+	if isOpen then
+		rebuild()
+	end
+end)
+
+updateLifeEvent.OnClientEvent:Connect(function(stats)
+	currentStats = stats
+
+	if typeof(stats) ~= "table" then
+		return
+	end
+
+	if isOpen then
+		infoBody.Text = getStatLine()
+	end
+end)
+
+if workspace.CurrentCamera then
+	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(layout)
+end
+
+workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+	task.wait()
+
+	if workspace.CurrentCamera then
+		workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(layout)
+	end
+
+	layout()
+end)
+
+layout()
+
+if game:GetService("RunService"):IsStudio() then print("[BitKaisenBindingVowsUI] Loaded readable dark Binding Vows UI.") end
+

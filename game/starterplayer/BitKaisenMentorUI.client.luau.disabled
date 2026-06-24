@@ -1,0 +1,228 @@
+-- LocalScript: BitKaisenMentorUI
+-- Location: StarterPlayerScripts
+-- Purpose: Jujutsu Mentor career panel (apply, rank, income, students).
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+local getMentor = ReplicatedStorage:WaitForChild("GetMentor")
+local mentorAction = ReplicatedStorage:WaitForChild("MentorAction")
+
+local bitKaisenGui = playerGui:WaitForChild("BitKaisenGui")
+local mainPanel = bitKaisenGui:WaitForChild("MainPanel")
+local navPanel = mainPanel:WaitForChild("NavPanel")
+
+local sourceButton = navPanel:FindFirstChild("ACTIVITIESButton") or navPanel:FindFirstChildWhichIsA("TextButton")
+local mentorButton = navPanel:FindFirstChild("MENTORButton")
+if not mentorButton then
+	mentorButton = sourceButton and sourceButton:Clone() or Instance.new("TextButton")
+	mentorButton.Name = "MENTORButton"
+	mentorButton.Text = "MENTOR"
+	mentorButton.LayoutOrder = 2.7
+	mentorButton.Parent = navPanel
+end
+
+local THEME = {
+	Bg = Color3.fromRGB(8, 8, 13),
+	Panel = Color3.fromRGB(15, 15, 23),
+	Card = Color3.fromRGB(20, 20, 29),
+	Stroke = Color3.fromRGB(58, 52, 76),
+	Text = Color3.fromRGB(242, 240, 250),
+	SubText = Color3.fromRGB(168, 164, 186),
+	Gold = Color3.fromRGB(255, 204, 102),
+	Green = Color3.fromRGB(105, 225, 145),
+	Blue = Color3.fromRGB(95, 165, 255),
+	Purple = Color3.fromRGB(178, 120, 255),
+}
+
+local overlay = bitKaisenGui:FindFirstChild("MentorOverlay")
+if overlay then overlay:Destroy() end
+
+overlay = Instance.new("Frame")
+overlay.Name = "MentorOverlay"
+overlay.Size = UDim2.new(1, 0, 1, 0)
+overlay.BackgroundColor3 = Color3.new(0, 0, 0)
+overlay.BackgroundTransparency = 0.35
+overlay.Visible = false
+overlay.ZIndex = 50
+overlay.Parent = bitKaisenGui
+
+local panel = Instance.new("Frame")
+panel.Name = "MentorPanel"
+panel.AnchorPoint = Vector2.new(0.5, 0.5)
+panel.Position = UDim2.new(0.5, 0, 0.5, 0)
+panel.Size = UDim2.new(0, 480, 0, 540)
+panel.BackgroundColor3 = THEME.Panel
+panel.BorderSizePixel = 0
+panel.ZIndex = 51
+panel.Parent = overlay
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 12)
+corner.Parent = panel
+
+local stroke = Instance.new("UIStroke")
+stroke.Color = THEME.Stroke
+stroke.Thickness = 1.5
+stroke.Parent = panel
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Name = "Title"
+titleLabel.Size = UDim2.new(1, -16, 0, 36)
+titleLabel.Position = UDim2.new(0, 8, 0, 8)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Font = Enum.Font.GothamBlack
+titleLabel.TextSize = 20
+titleLabel.TextColor3 = THEME.Blue
+titleLabel.Text = "JUJUTSU MENTOR"
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.ZIndex = 52
+titleLabel.Parent = panel
+
+local closeButton = Instance.new("TextButton")
+closeButton.Name = "Close"
+closeButton.Size = UDim2.new(0, 32, 0, 32)
+closeButton.Position = UDim2.new(1, -40, 0, 8)
+closeButton.BackgroundColor3 = THEME.Card
+closeButton.Font = Enum.Font.GothamBold
+closeButton.TextSize = 18
+closeButton.TextColor3 = THEME.Text
+closeButton.Text = "X"
+closeButton.ZIndex = 53
+closeButton.Parent = panel
+Instance.new("UICorner", closeButton).CornerRadius = UDim.new(0, 8)
+
+local scroll = Instance.new("ScrollingFrame")
+scroll.Name = "Content"
+scroll.Size = UDim2.new(1, -16, 1, -52)
+scroll.Position = UDim2.new(0, 8, 0, 48)
+scroll.BackgroundTransparency = 1
+scroll.ScrollBarThickness = 4
+scroll.ScrollBarImageColor3 = THEME.Stroke
+scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+scroll.ZIndex = 52
+scroll.Parent = panel
+
+local layout = Instance.new("UIListLayout")
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+layout.Padding = UDim.new(0, 8)
+layout.Parent = scroll
+
+local function createLine(text, order, color, bold)
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, 0, 0, 22)
+	label.BackgroundTransparency = 1
+	label.Font = bold and Enum.Font.GothamBold or Enum.Font.GothamMedium
+	label.TextSize = 14
+	label.TextColor3 = color or THEME.Text
+	label.Text = text
+	label.RichText = true
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.LayoutOrder = order
+	label.ZIndex = 53
+	label.TextWrapped = true
+	label.AutomaticSize = Enum.AutomaticSize.Y
+	label.Parent = scroll
+	return label
+end
+
+local function createButton(text, order, color, callback)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(1, 0, 0, 38)
+	btn.BackgroundColor3 = color or THEME.Blue
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 15
+	btn.TextColor3 = THEME.Text
+	btn.Text = text
+	btn.LayoutOrder = order
+	btn.ZIndex = 53
+	btn.AutoButtonColor = true
+	btn.Parent = scroll
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+	btn.MouseButton1Click:Connect(callback)
+	return btn
+end
+
+local statusLine = nil
+local rankLine = nil
+local xpLine = nil
+local incomeLine = nil
+local studentsLine = nil
+local applyButton = nil
+
+local function clearContent()
+	for _, child in ipairs(scroll:GetChildren()) do
+		if child:IsA("TextLabel") or child:IsA("TextButton") then
+			child:Destroy()
+		end
+	end
+	statusLine = nil
+	rankLine = nil
+	xpLine = nil
+	incomeLine = nil
+	studentsLine = nil
+	applyButton = nil
+end
+
+local function refresh()
+	local ok, payload = pcall(function()
+		return getMentor:InvokeServer()
+	end)
+
+	if not ok or not payload then return end
+
+	clearContent()
+
+	if payload.IsMentor then
+		statusLine = createLine("Status: <b>Active Jujutsu Mentor</b>", 1, THEME.Blue, true)
+		rankLine = createLine("Rank: <b>" .. tostring(payload.MentorRank or "None") .. "</b>", 2, THEME.Gold, false)
+		xpLine = createLine("Mentor XP: <b>" .. tostring(payload.MentorXP or 0) .. "</b>" .. (payload.NextRank and (" / " .. tostring(payload.NextRank.MinXP) .. " for " .. payload.NextRank.Id) or " (Max Rank)"), 3, THEME.Text, false)
+		incomeLine = createLine("Yearly Income: <b>$" .. tostring(payload.MentorIncome or 0) .. "</b>", 4, THEME.Green, false)
+		studentsLine = createLine("Students Mentored: <b>" .. tostring(payload.StudentsMentored or 0) .. "</b>", 5, THEME.SubText, false)
+		createLine("", 6, THEME.SubText, false)
+		createLine("Use <b>Mentor activities</b> in the Activities menu to earn XP and rank up.", 7, THEME.SubText, false)
+	else
+		statusLine = createLine("You are not a Jujutsu Mentor yet.", 1, THEME.SubText, true)
+
+		if payload.CanApply then
+			createLine("", 2, THEME.SubText, false)
+			createLine("Requirements met! You can apply to become a Jujutsu Mentor.", 3, THEME.Green, false)
+			applyButton = createButton("Apply to Become a Mentor", 4, THEME.Blue, function()
+				mentorAction:FireServer("apply")
+			end)
+		else
+			createLine("", 2, THEME.SubText, false)
+			createLine("Cannot apply: " .. tostring(payload.ApplyReason or "Unknown reason."), 3, THEME.SubText, false)
+			createLine("", 4, THEME.SubText, false)
+			createLine("Requirements: Graduate JJH, Age 20+, Grade 2+, recommendations.", 5, THEME.SubText, false)
+		end
+	end
+end
+
+local isOpen = false
+
+local function toggle()
+	isOpen = not isOpen
+	overlay.Visible = isOpen
+	if isOpen then
+		refresh()
+	end
+end
+
+closeButton.MouseButton1Click:Connect(function()
+	isOpen = false
+	overlay.Visible = false
+end)
+
+mentorButton.MouseButton1Click:Connect(toggle)
+
+mentorAction.OnClientEvent:Connect(function()
+	if isOpen then
+		refresh()
+	end
+end)
+
+if game:GetService("RunService"):IsStudio() then print("[BitKaisenMentorUI] Loaded.") end

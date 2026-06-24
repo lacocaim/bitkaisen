@@ -23,7 +23,7 @@ local function getKey(playerOrUserId)
 end
 
 function BK_PlayerData.Init()
-	print("[BK_PlayerData] Loaded.")
+	if game:GetService("RunService"):IsStudio() then print("[BK_PlayerData] Loaded.") end
 end
 
 function BK_PlayerData.GetStats(playerOrUserId)

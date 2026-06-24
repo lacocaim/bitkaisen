@@ -2237,7 +2237,7 @@ BK_AssetService.GetAssetsPayload = getAssetsPayload
 
 function BK_AssetService.Init(ctx)
 	context = ctx or {}
-	print("[BK_AssetService] Phase 4 asset handling loaded.")
+	if context.IS_DEBUG then print("[BK_AssetService] Phase 4 asset handling loaded.") end
 end
 
 return BK_AssetService

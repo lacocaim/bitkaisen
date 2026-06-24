@@ -1861,7 +1861,7 @@ end
 
 function BK_RelationshipService.Init(ctx)
 	context = ctx or {}
-	print("[BK_RelationshipService] Phase 5 relationship handling loaded.")
+	if context.IS_DEBUG then print("[BK_RelationshipService] Phase 5 relationship handling loaded.") end
 end
 
 return BK_RelationshipService

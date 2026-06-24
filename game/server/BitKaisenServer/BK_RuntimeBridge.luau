@@ -32,7 +32,7 @@ function BK_RuntimeBridge.Init(context)
 	savePlayer.Name = "SavePlayer"
 	savePlayer.Parent = bridge
 
-	print("[BK_RuntimeBridge] Loaded.")
+	if game:GetService("RunService"):IsStudio() then print("[BK_RuntimeBridge] Loaded.") end
 end
 
 return BK_RuntimeBridge

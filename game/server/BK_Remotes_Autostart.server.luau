@@ -14,4 +14,4 @@ local BK_Remotes = require(serverFolder:WaitForChild("BK_Remotes"))
 
 BK_Remotes.Init()
 
-print("[BK_Remotes_Autostart] Remotes ready.")
+if game:GetService("RunService"):IsStudio() then print("[BK_Remotes_Autostart] Remotes ready.") end

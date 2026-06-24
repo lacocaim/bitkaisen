@@ -201,7 +201,7 @@ end
 
 function BK_RivalService.Init(ctx)
 	context = ctx or {}
-	print("[BK_RivalService] Update 15 rival reputation service loaded.")
+	if context.IS_DEBUG then print("[BK_RivalService] Update 15 rival reputation service loaded.") end
 end
 
 return BK_RivalService

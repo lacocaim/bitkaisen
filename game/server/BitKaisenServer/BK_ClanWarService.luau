@@ -625,7 +625,7 @@ end
 
 function BK_ClanWarService.Init(serviceContext)
 	context = serviceContext or {}
-	print("[BK_ClanWarService] Loaded clan war service.")
+	if context.IS_DEBUG then print("[BK_ClanWarService] Loaded clan war service.") end
 end
 
 return BK_ClanWarService

@@ -432,7 +432,7 @@ function BK_AchievementService.Init(ctx)
 		end)
 	end
 
-	print("[BK_AchievementService] Loaded real achievement logic.")
+	if context.IS_DEBUG then print("[BK_AchievementService] Loaded real achievement logic.") end
 end
 
 return BK_AchievementService

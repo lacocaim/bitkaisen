@@ -572,7 +572,7 @@ function BK_CodeService.Init(ctx)
 		end
 	end
 
-	print("[BK_CodeService] Loaded real code logic with Update 6.2 codes.")
+	if context.IS_DEBUG then print("[BK_CodeService] Loaded real code logic with Update 6.2 codes.") end
 end
 
 return BK_CodeService

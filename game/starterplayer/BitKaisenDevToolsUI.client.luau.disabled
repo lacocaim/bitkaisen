@@ -1,0 +1,278 @@
+-- LocalScript: BitKaisenDevToolsUI
+-- Staff-only developer tools menu. Not included in update logs.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local TESTING_PLACE_ID = 104206065947170
+if game.PlaceId ~= TESTING_PLACE_ID then
+	return
+end
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+local getDevTools = ReplicatedStorage:WaitForChild("GetDevTools")
+local devToolsAction = ReplicatedStorage:WaitForChild("DevToolsAction")
+
+local gui = playerGui:WaitForChild("BitKaisenGui")
+local mainPanel = gui:WaitForChild("MainPanel")
+local navPanel = mainPanel:WaitForChild("NavPanel")
+
+local ok, payload = pcall(function() return getDevTools:InvokeServer() end)
+if not ok or typeof(payload) ~= "table" or payload.Allowed ~= true then
+	return
+end
+
+local COLORS = {
+	Window = Color3.fromRGB(14, 16, 20),
+	Card = Color3.fromRGB(24, 27, 34),
+	Text = Color3.fromRGB(238, 240, 246),
+	SubText = Color3.fromRGB(168, 174, 190),
+	Gold = Color3.fromRGB(255, 205, 92),
+	Blue = Color3.fromRGB(112, 180, 255),
+	Green = Color3.fromRGB(110, 220, 150),
+	Red = Color3.fromRGB(226, 82, 92),
+	Purple = Color3.fromRGB(154, 95, 242),
+}
+
+local camera = workspace.CurrentCamera
+local viewport = camera and camera.ViewportSize or Vector2.new(1280, 720)
+local isCompactMobile = viewport.X < 900 or viewport.Y < 520
+local outerPad = isCompactMobile and 14 or 24
+local scrollTop = isCompactMobile and 58 or 66
+local scrollBottom = isCompactMobile and 74 or 90
+local clanColumns = isCompactMobile and 3 or 5
+local clanButtonWidth = isCompactMobile and 92 or 84
+local clanButtonGap = isCompactMobile and 8 or 8
+local clanButtonStep = clanButtonWidth + clanButtonGap
+local traitColumns = isCompactMobile and 1 or 2
+local traitColumnWidth = isCompactMobile and 0 or 245
+
+local overlay = Instance.new("Frame")
+overlay.Name = "DevToolsOverlay"
+overlay.Size = UDim2.new(1, 0, 1, 0)
+overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+overlay.BackgroundTransparency = 0.4
+overlay.BorderSizePixel = 0
+overlay.Visible = false
+overlay.ZIndex = 760
+overlay.Parent = gui
+
+local window = Instance.new("Frame")
+window.Name = "DevToolsWindow"
+window.AnchorPoint = Vector2.new(0.5, 0.5)
+window.Position = isCompactMobile and UDim2.new(0.5, 0, 0.60, 0) or UDim2.new(0.5, 0, 0.52, 0)
+window.Size = isCompactMobile and UDim2.new(1, -28, 0.82, 0) or UDim2.new(0.62, 0, 0.76, 0)
+window.BackgroundColor3 = COLORS.Window
+window.BorderSizePixel = 0
+window.ZIndex = 761
+window.Parent = overlay
+
+local function corner(obj, radius)
+	local c = Instance.new("UICorner")
+	c.CornerRadius = UDim.new(0, radius or 8)
+	c.Parent = obj
+end
+local function stroke(obj)
+	local s = Instance.new("UIStroke")
+	s.Color = Color3.fromRGB(65, 70, 86)
+	s.Thickness = 1
+	s.Transparency = 0.14
+	s.Parent = obj
+end
+corner(window, 10)
+stroke(window)
+
+local title = Instance.new("TextLabel")
+title.BackgroundTransparency = 1
+title.Position = UDim2.new(0, outerPad, 0, isCompactMobile and 16 or 18)
+title.Size = UDim2.new(1, -(outerPad + 64), 0, 30)
+title.Text = "DEVELOPER TOOLS"
+title.TextColor3 = COLORS.Gold
+title.TextSize = isCompactMobile and 19 or 22
+title.Font = Enum.Font.GothamBlack
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.ZIndex = 762
+title.Parent = window
+
+local close = Instance.new("TextButton")
+close.Position = UDim2.new(1, -(outerPad + 36), 0, isCompactMobile and 14 or 16)
+close.Size = UDim2.new(0, 38, 0, 34)
+close.Text = "X"
+close.TextColor3 = COLORS.Red
+close.TextSize = 16
+close.Font = Enum.Font.GothamBlack
+close.BackgroundColor3 = Color3.fromRGB(34, 36, 45)
+close.BorderSizePixel = 0
+close.ZIndex = 763
+close.Parent = window
+corner(close, 8)
+close.MouseButton1Click:Connect(function() overlay.Visible = false end)
+
+overlay.InputBegan:Connect(function(input)
+	if input.UserInputType.Name == "MouseButton1" or input.UserInputType.Name == "Touch" then overlay.Visible = false end
+end)
+window.InputBegan:Connect(function() end)
+
+local scroll = Instance.new("ScrollingFrame")
+scroll.Position = UDim2.new(0, outerPad, 0, scrollTop)
+scroll.Size = UDim2.new(1, -(outerPad * 2), 1, -scrollBottom)
+scroll.BackgroundTransparency = 1
+scroll.BorderSizePixel = 0
+scroll.ScrollBarThickness = isCompactMobile and 3 or 5
+scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+scroll.ZIndex = 762
+scroll.Parent = window
+
+local layout = Instance.new("UIListLayout")
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+layout.Padding = UDim.new(0, 10)
+layout.Parent = scroll
+
+local function makeText(parent, value, y, size, color, bold)
+	local t = Instance.new("TextLabel")
+	t.BackgroundTransparency = 1
+	t.Position = UDim2.new(0, 14, 0, y)
+	t.Size = UDim2.new(1, -28, 0, 22)
+	t.Text = value
+	t.TextColor3 = color or COLORS.Text
+	t.TextSize = size or 12
+	t.Font = bold and Enum.Font.GothamBlack or Enum.Font.GothamMedium
+	t.TextXAlignment = Enum.TextXAlignment.Left
+	t.TextWrapped = true
+	t.ZIndex = parent.ZIndex + 1
+	t.Parent = parent
+	return t
+end
+
+local function card(titleText, height)
+	local c = Instance.new("Frame")
+	c.ClipsDescendants = true
+	c.Size = UDim2.new(1, -8, 0, height)
+	c.BackgroundColor3 = COLORS.Card
+	c.BorderSizePixel = 0
+	c.ZIndex = 762
+	c.Parent = scroll
+	corner(c, 8)
+	stroke(c)
+	makeText(c, titleText, 12, 14, COLORS.Gold, true)
+	return c
+end
+
+local function button(parent, text, x, y, w, color, callback)
+	local b = Instance.new("TextButton")
+	b.Position = UDim2.new(0, x, 0, y)
+	b.Size = UDim2.new(0, w, 0, 30)
+	b.Text = text
+	b.TextColor3 = COLORS.Text
+	b.TextSize = 10
+	b.Font = Enum.Font.GothamBlack
+	b.BackgroundColor3 = color or Color3.fromRGB(42, 46, 58)
+	b.BorderSizePixel = 0
+	b.ZIndex = parent.ZIndex + 1
+	b.Parent = parent
+	corner(b, 7)
+	b.MouseButton1Click:Connect(callback)
+	return b
+end
+
+local clans = payload.Clans or {}
+local clanRows = math.max(1, math.ceil(#clans / clanColumns))
+local clanCard = card("Clans", 48 + clanRows * 36)
+for index, clan in ipairs(clans) do
+	local col = (index - 1) % clanColumns
+	local row = math.floor((index - 1) / clanColumns)
+	button(clanCard, tostring(clan), 14 + col * clanButtonStep, 44 + row * 36, clanButtonWidth, COLORS.Blue, function()
+		devToolsAction:FireServer("set_clan", { Clan = clan })
+	end)
+end
+
+local statCard = card("Stat Modification", 162)
+local stats = { "CE", "Reputation", "Fame", "Fear" }
+for index, stat in ipairs(stats) do
+	local y = 42 + (index - 1) * 30
+	makeText(statCard, stat, y + 5, 11, COLORS.SubText, true)
+	button(statCard, "+1K", 132, y, 72, COLORS.Green, function()
+		devToolsAction:FireServer("stat_delta", { Stat = stat, Amount = 1000 })
+	end)
+	button(statCard, "-1K", 212, y, 72, COLORS.Red, function()
+		devToolsAction:FireServer("stat_delta", { Stat = stat, Amount = -1000 })
+	end)
+end
+
+local cursedTools = payload.CursedTools or {}
+local toolRows = math.max(1, math.ceil((#cursedTools + 1) / (isCompactMobile and 1 or 2)))
+local toolCard = card("Cursed Tools", math.max(122, 58 + toolRows * 38))
+makeText(toolCard, "Grant tools for inventory, mission, and combat testing.", 36, 11, COLORS.SubText, false)
+button(toolCard, "GRANT ALL", 14, 64, 96, COLORS.Purple, function()
+	devToolsAction:FireServer("grant_all_cursed_tools")
+end)
+for index, tool in ipairs(cursedTools) do
+	local columns = isCompactMobile and 1 or 2
+	local offsetIndex = index
+	local col = (offsetIndex - 1) % columns
+	local row = math.floor((offsetIndex - 1) / columns)
+	local x = 14 + col * (isCompactMobile and 0 or 230)
+	local y = 102 + row * 38
+	local label = tostring(tool.Name or tool.Id or "Tool")
+	button(toolCard, label, x, y, isCompactMobile and 210 or 172, COLORS.Blue, function()
+		devToolsAction:FireServer("grant_cursed_tool", { ToolId = tool.Id, Equip = true })
+	end)
+end
+
+local warCard = card("Clan War Testing", 126)
+makeText(warCard, "Start or force clan war states for Update 13 testing.", 36, 11, COLORS.SubText, false)
+button(warCard, "START WAR", 14, 68, 92, COLORS.Red, function()
+	devToolsAction:FireServer("dev_start_clan_war")
+end)
+button(warCard, "VICTORY", 116, 68, 82, COLORS.Green, function()
+	devToolsAction:FireServer("dev_finish_clan_war", { Result = "Victory" })
+end)
+button(warCard, "DEFEAT", 208, 68, 82, COLORS.Red, function()
+	devToolsAction:FireServer("dev_finish_clan_war", { Result = "Defeat" })
+end)
+button(warCard, "CLEAR", 300, 68, 76, COLORS.Blue, function()
+	devToolsAction:FireServer("dev_clear_clan_war")
+end)
+
+local traits = payload.Traits or {}
+local traitRows = math.max(1, math.ceil(#traits / traitColumns))
+local traitRowHeight = isCompactMobile and 46 or 40
+local traitCard = card("Trait Editor", math.max(150, 62 + traitRows * traitRowHeight))
+makeText(traitCard, "Add or remove traits from the current life.", 36, 11, COLORS.SubText, false)
+for index, trait in ipairs(traits) do
+	local col = (index - 1) % traitColumns
+	local row = math.floor((index - 1) / traitColumns)
+	local x = 14 + col * traitColumnWidth
+	local y = 66 + row * traitRowHeight
+	local addX = x + (isCompactMobile and 142 or 122)
+	local removeX = x + (isCompactMobile and 202 or 182)
+	local labelWidth = isCompactMobile and 126 or 108
+	local label = makeText(traitCard, tostring(trait.Name or trait.Id), y, 10, COLORS.Text, true)
+	label.Position = UDim2.new(0, x, 0, y)
+	label.Size = UDim2.new(0, labelWidth, 0, isCompactMobile and 30 or 22)
+	label.TextWrapped = false
+	label.TextTruncate = Enum.TextTruncate.AtEnd
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	button(traitCard, "ADD", addX, y - 4, 54, COLORS.Green, function()
+		devToolsAction:FireServer("add_trait", { TraitId = trait.Id })
+	end)
+	button(traitCard, "REMOVE", removeX, y - 4, 64, COLORS.Red, function()
+		devToolsAction:FireServer("remove_trait", { TraitId = trait.Id })
+	end)
+end
+
+local source = navPanel:FindFirstChild("SETTINGSButton") or navPanel:FindFirstChildWhichIsA("TextButton")
+local devButton = navPanel:FindFirstChild("DEVTOOLSButton")
+if not devButton then
+	devButton = source and source:Clone() or Instance.new("TextButton")
+	devButton.Name = "DEVTOOLSButton"
+	devButton.LayoutOrder = 99
+	devButton.Parent = navPanel
+end
+devButton.Text = "DEV"
+devButton.MouseButton1Click:Connect(function() overlay.Visible = true end)
+
+if game:GetService("RunService"):IsStudio() then print("[BitKaisenDevToolsUI] Loaded staff-only dev tools UI.") end
+

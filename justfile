@@ -17,6 +17,11 @@ smart-sync name="game":
 net:
 	blink remotes/bitkaisen.blink --watch
 
+# ---------- CHECK ----------
+check name="game":
+	selene game/ global/
+	rojo build {{name}}.project.json -o /dev/null 2>&1 || rojo build {{name}}.project.json -o NUL
+
 # ---------- UTIL ----------
 alias alias path:
 	zune run Zune/alias.lua {{alias}} {{path}}

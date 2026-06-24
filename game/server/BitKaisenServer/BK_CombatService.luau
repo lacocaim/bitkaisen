@@ -777,7 +777,7 @@ function BK_CombatService.Init(ctx)
 	end
 	combatAction.OnServerEvent:Connect(handleAction)
 	combatMinigameResult.OnServerEvent:Connect(handleMinigame)
-	print("[BK_CombatService] Interactive combat loaded.")
+	if context.IS_DEBUG then print("[BK_CombatService] Interactive combat loaded.") end
 end
 
 function BK_CombatService.PlayerRemoving(player)

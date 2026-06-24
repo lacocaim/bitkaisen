@@ -2090,7 +2090,7 @@ function BK_CommerceService.Init(ctx)
 		end
 	end)
 
-	print("[BK_CommerceService] Loaded Update 6 commerce logic (RCT Revive max 2 per life, 5 new gamepasses registered).")
+	if context.IS_DEBUG then print("[BK_CommerceService] Loaded Update 6 commerce logic (RCT Revive max 2 per life, 5 new gamepasses registered).") end
 end
 
 return BK_CommerceService

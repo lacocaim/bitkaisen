@@ -564,7 +564,7 @@ function BK_DailyLoginService.Init(ctx)
 		claimDailyLogin:FireClient(player, result)
 	end)
 
-	print("[BK_DailyLoginService] Loaded server daily login rewards with account-wide claim state.")
+	if context.IS_DEBUG then print("[BK_DailyLoginService] Loaded server daily login rewards with account-wide claim state.") end
 end
 
 return BK_DailyLoginService

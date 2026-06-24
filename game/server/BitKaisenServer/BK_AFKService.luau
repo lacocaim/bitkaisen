@@ -254,7 +254,7 @@ function BK_AFKService.Init(ctx)
 			task.wait(1)
 		end
 	end)
-	print("[BK_AFKService] AFK Stabilization loaded.")
+	if context.IS_DEBUG then print("[BK_AFKService] AFK Stabilization loaded.") end
 end
 
 function BK_AFKService.PlayerRemoving(player)

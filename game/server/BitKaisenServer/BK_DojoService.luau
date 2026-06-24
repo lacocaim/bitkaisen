@@ -641,7 +641,7 @@ BK_DojoService.GetOrphanRescueChance = getOrphanRescueChance
 
 function BK_DojoService.Init(ctx)
 	context = ctx or {}
-	print("[BK_DojoService] Loaded Phase 3 dojo helpers.")
+	if context.IS_DEBUG then print("[BK_DojoService] Loaded Phase 3 dojo helpers.") end
 end
 
 return BK_DojoService

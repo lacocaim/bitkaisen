@@ -155,7 +155,7 @@ end
 ----------------------------------------------------------------
 -- DEV COMMANDS
 -- Chat commands for testing only.
--- Add your Roblox UserId to DEV_USER_IDS near the top of this script.
+-- Add your Roblox UserId to DEV_USER_IDS in GameManager.server.luau (not this file).
 -- Usage examples:
 --   !bk age 18
 --   !bk race curse
@@ -935,7 +935,7 @@ function BK_DevCommands.Init(ctx)
 
 	if not initialized then
 		initialized = true
-		print("[BK_DevCommands] Loaded.")
+		if context and context.IS_DEBUG then print("[BK_DevCommands] Loaded.") end
 	end
 end
 

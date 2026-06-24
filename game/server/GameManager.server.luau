@@ -40,6 +40,8 @@ local BK_ClanWarService = require(ServerScriptService:WaitForChild("BitKaisenSer
 local BK_DomainService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_DomainService"))
 local BK_GodModeService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_GodModeService"))
 local BK_RivalService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_RivalService"))
+local BK_SchoolService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_SchoolService"))
+local BK_MentorService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_MentorService"))
 BK_WorldHistoryService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_WorldHistoryService"))
 BK_Remotes.Init()
 
@@ -72,6 +74,8 @@ local rivalAction = BK_Remotes.Get("RivalAction")
 local getSuccessorOptions = BK_Remotes.Get("GetSuccessorOptions")
 local chooseSuccessor = BK_Remotes.Get("ChooseSuccessor")
 local updateSettingsEvent = BK_Remotes.Get("UpdateSettingsEvent")
+local getMentor = BK_Remotes.Get("GetMentor")
+local mentorAction = BK_Remotes.Get("MentorAction")
 
 local getSaveSlots = BK_Remotes.Get("GetSaveSlots")
 local selectSaveSlot = BK_Remotes.Get("SelectSaveSlot")
@@ -120,6 +124,8 @@ local BitKaisenSaveSystem = require(ServerScriptService:WaitForChild("BitKaisenS
 local DEV_USER_IDS = {
 	[3575148423] = true,
 }
+
+local IS_DEBUG = RunService:IsStudio() or game.PlaceId == 104206065947170
 
 local AUTOSAVE_INTERVAL = 120
 
@@ -826,7 +832,11 @@ function isOfficialJujutsuSorcerer(stats)
 		return false
 	end
 	local gradeText = tostring(stats.Grade or "Non-Sorcerer")
-	return (stats.InJujutsuHigh == true or stats.RegisteredSorcerer == true)
+	local isRegistered = stats.InJujutsuHigh == true
+		or stats.RegisteredSorcerer == true
+		or stats.GraduatedJujutsuHigh == true
+		or stats.IsJujutsuMentor == true
+	return isRegistered
 		and getGradeValue(gradeText) > 0
 		and string.sub(gradeText, 1, 13) ~= "Unregistered "
 end
@@ -936,9 +946,13 @@ function ensureSorcererRegistrationState(stats)
 	end
 
 	stats.InJujutsuHigh = stats.InJujutsuHigh == true
-	stats.RegisteredSorcerer = stats.InJujutsuHigh == true
+	stats.GraduatedJujutsuHigh = stats.GraduatedJujutsuHigh == true
+	stats.IsJujutsuMentor = stats.IsJujutsuMentor == true
 
-	if stats.InJujutsuHigh then
+	local isOfficiallyRegistered = stats.InJujutsuHigh or stats.GraduatedJujutsuHigh or stats.IsJujutsuMentor
+	stats.RegisteredSorcerer = isOfficiallyRegistered
+
+	if isOfficiallyRegistered then
 		local official = getOfficialGradeName(stats.Grade)
 		if official == "Non-Sorcerer" then
 			official = getEstimatedUnregisteredGrade(stats)
@@ -1179,8 +1193,14 @@ function normalizeCursedSocietyState(stats)
 		if stats.SocietyStatus == "Civilian" or stats.SocietyStatus == "Registered Sorcerer" or stats.SocietyStatus == "Jujutsu Student" then
 			stats.SocietyStatus = "Unregistered Cursed Spirit"
 		end
+	elseif stats.IsJujutsuMentor == true then
+		stats.SocietyStatus = "Jujutsu Mentor"
+		stats.RegisteredSorcerer = true
 	elseif stats.InJujutsuHigh == true then
 		stats.SocietyStatus = "Jujutsu Student"
+		stats.RegisteredSorcerer = true
+	elseif stats.GraduatedJujutsuHigh == true then
+		stats.SocietyStatus = "Registered Sorcerer"
 		stats.RegisteredSorcerer = true
 	elseif tostring(stats.Grade or "Non-Sorcerer") ~= "Non-Sorcerer" then
 		stats.SocietyStatus = stats.RegisteredSorcerer and "Registered Sorcerer" or "Unregistered Sorcerer"
@@ -2345,6 +2365,35 @@ function ensureExtraStats(stats)
 	stats.Settings.ReducedMotion = stats.Settings.ReducedMotion == true
 	stats.Settings.ScreenShake = stats.Settings.ScreenShake ~= false
 	stats.Settings.SkipCombatSkillChecks = stats.Settings.SkipCombatSkillChecks == true
+
+	local age = tonumber(stats.Age) or 0
+	if stats.SchoolStage == nil then
+		if age >= 16 then
+			stats.SchoolStage = "Graduated"
+			stats.GraduatedSchool = true
+		elseif age >= 14 then
+			stats.SchoolStage = "High"
+		elseif age >= 11 then
+			stats.SchoolStage = "Middle"
+		elseif age >= 6 then
+			stats.SchoolStage = "Elementary"
+		else
+			stats.SchoolStage = "None"
+		end
+	end
+	stats.SchoolPerformance = math.clamp(tonumber(stats.SchoolPerformance) or 50, 0, 100)
+	stats.SchoolAttendance = math.clamp(tonumber(stats.SchoolAttendance) or 100, 0, 100)
+	stats.ReportCardGrade = tostring(stats.ReportCardGrade or "N/A")
+	stats.GraduatedSchool = stats.GraduatedSchool == true
+	stats.SchoolClub = tostring(stats.SchoolClub or "None")
+
+	stats.GraduatedJujutsuHigh = stats.GraduatedJujutsuHigh == true
+	stats.IsJujutsuMentor = stats.IsJujutsuMentor == true
+	stats.MentorRank = tostring(stats.MentorRank or "None")
+	stats.MentorXP = math.max(0, tonumber(stats.MentorXP) or 0)
+	stats.MentorIncome = math.max(0, tonumber(stats.MentorIncome) or 0)
+	stats.StudentsMentored = math.max(0, tonumber(stats.StudentsMentored) or 0)
+	stats.MentorApplicationCooldown = math.max(0, tonumber(stats.MentorApplicationCooldown) or 0)
 
 	ensureCharacterAppearance(stats)
 	BitKaisenTraits.EnsureTraits(stats)
@@ -8941,6 +8990,31 @@ function ageUp(player)
 			logMessage = maybeTeacherRecommendation(player, stats, logMessage)
 			logMessage = checkPromotionAndPopup(player, stats, logMessage)
 
+			if stats.InJujutsuHigh == true and (tonumber(stats.Age) or 0) >= 20 then
+				stats.InJujutsuHigh = false
+				stats.GraduatedJujutsuHigh = true
+				stats.RegisteredSorcerer = true
+				stats.SocietyStatus = "Registered Sorcerer"
+				if tostring(stats.Affiliation or "") == "Jujutsu High" then
+					stats.AffiliationRank = "Graduate"
+				end
+				logMessage = logMessage .. "\nYou graduated from Jujutsu High as an official <b>" .. tostring(stats.Grade or "Sorcerer") .. "</b>."
+				fireMajorPopup(
+					player,
+					"JUJUTSU HIGH GRADUATION",
+					"After years of study and missions, you have graduated.",
+					tostring(stats.Grade or "Sorcerer") .. " | Recommendations: " .. tostring(stats.TeacherRecommendations or 0),
+					"You are now a fully registered adult sorcerer."
+				)
+			end
+
+			if stats.IsJujutsuMentor == true then
+				local mentorLog = BK_MentorService.AdvanceYear(player, stats)
+				if mentorLog ~= "" then
+					logMessage = logMessage .. "\n" .. mentorLog
+				end
+			end
+
 			if isCurseLife(stats) then
 				ensureCursedSpiritFlavor(stats)
 				stats.CurseThreat = math.max(0, (stats.CurseThreat or 0) + math.random(0, 3))
@@ -9007,6 +9081,37 @@ function ageUp(player)
 	logMessage = logMessage .. BK_WorldHistoryService.AdvanceYear(player, stats)
 	logMessage = logMessage .. BK_ClanWarService.AdvanceYear(player, stats)
 	logMessage = logMessage .. applyYearlyWorldReputation(stats)
+
+	local schoolText = BK_SchoolService.AdvanceSchoolYear(stats)
+	if schoolText ~= "" then
+		logMessage = logMessage .. "\n" .. schoolText
+	end
+
+	if stats.Age == 16 and stats.GraduatedSchool ~= true then
+		local gradLog, reportCard = BK_SchoolService.Graduate(stats)
+		if gradLog ~= "" then
+			logMessage = logMessage .. "\n" .. gradLog
+		end
+		if reportCard then
+			fireMajorPopup(
+				player,
+				"SCHOOL GRADUATION",
+				"You graduated from high school at age 16.",
+				"Final Grade: " .. tostring(reportCard.Grade) .. " | Performance: " .. tostring(reportCard.Performance) .. "% | Attendance: " .. tostring(reportCard.Attendance) .. "%",
+				reportCard.Club ~= "None" and ("Club: " .. tostring(reportCard.Club)) or "You didn't join any clubs."
+			)
+		end
+
+		local hasAwakened = (stats.CursedTechnique and stats.CursedTechnique ~= "None") or (stats.TechniqueAwakened == true)
+		local isUnreg = isUnregisteredSorcerer(stats)
+		if (hasAwakened or isUnreg) and not isCurseLife(stats) and not isCurseUser(stats) and not stats.InJujutsuHigh then
+			local enrollMsg, enrolled = BK_ActivityService.EnrollInJujutsuHigh(player, stats)
+			if enrolled then
+				logMessage = logMessage .. "\n" .. "Your cursed energy caught the attention of recruiters at graduation. " .. enrollMsg
+			end
+		end
+	end
+
 	local rivalYearText = BK_RivalService.OnAgeUp(player, stats)
 	if rivalYearText ~= "" then
 		logMessage = logMessage .. "\n" .. rivalYearText
@@ -10087,6 +10192,21 @@ jobAction.OnServerEvent:Connect(function(player, actionId, jobId)
 	end
 end)
 
+getMentor.OnServerInvoke = function(player)
+	return BK_MentorService.GetPayload(player)
+end
+
+mentorAction.OnServerEvent:Connect(function(player, actionId)
+	if not checkRateLimit(player, "MentorAction") then
+		return
+	end
+
+	if actionId == "apply" then
+		BK_MentorService.Apply(player)
+	end
+	mentorAction:FireClient(player)
+end)
+
 chooseSuccessor.OnServerEvent:Connect(function(player, successorId)
 	if not checkRateLimit(player, "StartAsSuccessor") then
 		return
@@ -10348,6 +10468,8 @@ local BitKaisenServiceContext = {
 		GOD_MODE_PASS_ID = GOD_MODE_PASS_ID,
 		GO_ROGUE_PASS_ID = GO_ROGUE_PASS_ID,
 	},
+
+	IS_DEBUG = IS_DEBUG,
 }
 
 BK_CommerceService.Init(BitKaisenServiceContext)
@@ -10366,6 +10488,8 @@ BK_RivalService.Init(BitKaisenServiceContext)
 BK_MissionService.Init(BitKaisenServiceContext)
 BK_DailyLoginService.Init(BitKaisenServiceContext)
 BK_JobService.Init(BitKaisenServiceContext)
+BK_SchoolService.Init(BitKaisenServiceContext)
+BK_MentorService.Init(BitKaisenServiceContext)
 BK_WorldHistoryService.Init(BitKaisenServiceContext)
 BK_ActivityService.Init(BitKaisenServiceContext)
 BK_RelationshipService.Init(BitKaisenServiceContext)
@@ -10417,4 +10541,6 @@ game:BindToClose(function()
 	end
 end)
 
-print("[GameManager] Loaded modular BitKaisen GameManager with hard-blocked and Chat-filtered customization names.")
+if IS_DEBUG then
+	print("[GameManager] Loaded modular BitKaisen GameManager with hard-blocked and Chat-filtered customization names.")
+end

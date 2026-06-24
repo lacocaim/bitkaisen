@@ -89,6 +89,120 @@ BitKaisenActivities.Database = {
 	},
 
 	{
+		Id = "school_attend_class",
+		Title = "Attend Class",
+		Description = "Show up, pay attention, and take notes. Steady gains to performance and attendance.",
+		MinAge = 6,
+		MaxAge = 15,
+		RequiresTechnique = false,
+		RequiresSorcerer = false,
+		RequiresJujutsuHigh = false,
+		RequiresSchool = true,
+		ButtonColor = Color3.fromRGB(55, 100, 170),
+		LockedText = "You must be enrolled in school (ages 6-15).",
+		HideWhenLocked = true
+	},
+	{
+		Id = "school_study_exams",
+		Title = "Study for Exams",
+		Description = "Cram for upcoming exams. Large performance boost but costs happiness.",
+		MinAge = 6,
+		MaxAge = 15,
+		RequiresTechnique = false,
+		RequiresSorcerer = false,
+		RequiresJujutsuHigh = false,
+		RequiresSchool = true,
+		ButtonColor = Color3.fromRGB(75, 60, 160),
+		LockedText = "You must be enrolled in school (ages 6-15).",
+		HideWhenLocked = true
+	},
+	{
+		Id = "school_join_club",
+		Title = "Join a Club",
+		Description = "Join or participate in an extracurricular club. Boosts happiness and attendance.",
+		MinAge = 8,
+		MaxAge = 15,
+		RequiresTechnique = false,
+		RequiresSorcerer = false,
+		RequiresJujutsuHigh = false,
+		RequiresSchool = true,
+		ButtonColor = Color3.fromRGB(50, 140, 100),
+		LockedText = "You must be enrolled in school (ages 8-15).",
+		HideWhenLocked = true
+	},
+	{
+		Id = "school_skip",
+		Title = "Skip School",
+		Description = "Blow off school for the day. +Happiness but drops attendance and performance.",
+		MinAge = 6,
+		MaxAge = 15,
+		RequiresTechnique = false,
+		RequiresSorcerer = false,
+		RequiresJujutsuHigh = false,
+		RequiresSchool = true,
+		ButtonColor = Color3.fromRGB(170, 55, 55),
+		LockedText = "You must be enrolled in school (ages 6-15).",
+		HideWhenLocked = true
+	},
+
+	{
+		Id = "mentor_teach_class",
+		Title = "Teach a Class",
+		Description = "Teach young sorcerers about cursed energy theory and fundamentals.",
+		MinAge = 20,
+		MaxAge = 90,
+		RequiresTechnique = false,
+		RequiresSorcerer = true,
+		RequiresJujutsuHigh = false,
+		RequiresMentor = true,
+		ButtonColor = Color3.fromRGB(55, 130, 200),
+		LockedText = "You must be an active Jujutsu Mentor.",
+		HideWhenLocked = true
+	},
+	{
+		Id = "mentor_supervise_mission",
+		Title = "Supervise Student Mission",
+		Description = "Oversee students on a real mission. Risky but great XP for both of you.",
+		MinAge = 20,
+		MaxAge = 90,
+		RequiresTechnique = false,
+		RequiresSorcerer = true,
+		RequiresJujutsuHigh = false,
+		RequiresMentor = true,
+		ButtonColor = Color3.fromRGB(65, 100, 170),
+		LockedText = "You must be an active Jujutsu Mentor.",
+		HideWhenLocked = true
+	},
+	{
+		Id = "mentor_grade_students",
+		Title = "Grade Students",
+		Description = "Evaluate student progress and submit recommendations to the higher-ups.",
+		MinAge = 20,
+		MaxAge = 90,
+		RequiresTechnique = false,
+		RequiresSorcerer = true,
+		RequiresJujutsuHigh = false,
+		RequiresMentor = true,
+		ButtonColor = Color3.fromRGB(80, 80, 160),
+		LockedText = "You must be an active Jujutsu Mentor.",
+		HideWhenLocked = true
+	},
+	{
+		Id = "mentor_prodigy",
+		Title = "Mentor a Prodigy",
+		Description = "Take a promising student under your personal wing. High reward, high stakes.",
+		MinAge = 20,
+		MaxAge = 90,
+		RequiresTechnique = true,
+		RequiresSorcerer = true,
+		RequiresJujutsuHigh = false,
+		RequiresMentor = true,
+		ButtonColor = Color3.fromRGB(95, 75, 190),
+		LockedText = "You must be an active Jujutsu Mentor with a cursed technique.",
+		HideWhenLocked = true
+	},
+
+	{
 		Id = "train_ce",
 		Title = "Train Cursed Energy",
 		Description = "Push your cursed energy reserves through raw training.",
@@ -1504,6 +1618,17 @@ function BitKaisenActivities.CanDoActivity(stats, activity)
 		return false, activity.LockedText ~= "" and activity.LockedText or "You are not enrolled in Jujutsu High."
 	end
 
+	if activity.RequiresSchool then
+		local stage = tostring(stats.SchoolStage or "None")
+		if stage == "None" or stage == "Graduated" then
+			return false, activity.LockedText ~= "" and activity.LockedText or "You must be enrolled in school."
+		end
+	end
+
+	if activity.RequiresMentor and stats.IsJujutsuMentor ~= true then
+		return false, activity.LockedText ~= "" and activity.LockedText or "You must be an active Jujutsu Mentor."
+	end
+
 	if activity.RequiresEra then
 		local currentEra = tostring(stats.CurrentEra or stats.Era or (typeof(stats.BirthPath) == "table" and stats.BirthPath.Era) or "Modern Era")
 		if currentEra ~= activity.RequiresEra then
@@ -1610,6 +1735,141 @@ function BitKaisenActivities.GenerateActivityList(stats)
 		end
 	end
 
+	return list
+end
+
+local CATEGORY_MAP = {
+	play_outside = "Life",
+	spend_time_family = "Life",
+	watch_shadows = "Life",
+	ask_about_curses = "Life",
+	meditate = "Life",
+	rest = "Life",
+	doctor = "Life",
+	socialize = "Social",
+	retirement_reflection = "Life",
+
+	basic_school_study = "School",
+	school_attend_class = "School",
+	school_study_exams = "School",
+	school_join_club = "School",
+	school_skip = "School",
+
+	train_ce = "Training",
+	physical_conditioning = "Training",
+	study_theory = "Training",
+	practice_technique = "Training",
+	bulk_train_ce = "Training",
+	bulk_practice_technique = "Training",
+	evolve_technique = "Training",
+	black_flash_training = "Training",
+	barrier_drills = "Training",
+	cursed_tool_practice = "Training",
+	domain_foundation_study = "Training",
+	binding_vow_research = "Training",
+	rct_memory_training = "Minigames",
+	stabilize_cursed_object_anchor = "Training",
+
+	apply_jujutsu_high = "Jujutsu High",
+	jujutsu_affiliation_duty = "Jujutsu High",
+	request_assistant = "Jujutsu High",
+	train_with_assistant = "Jujutsu High",
+	jujutsu_school_event = "Jujutsu High",
+	goodwill_event = "Jujutsu High",
+	underground_tournament = "Jujutsu High",
+
+	mentor_teach_class = "Mentor",
+	mentor_supervise_mission = "Mentor",
+	mentor_grade_students = "Mentor",
+	mentor_prodigy = "Mentor",
+	mentor_younger_sorcerers = "Mentor",
+
+	mission_review = "Missions",
+	patrol_city = "Missions",
+	bulk_mission_sweep = "Missions",
+	star_plasma_guard = "Missions",
+	assassination_attempt = "Missions",
+	cursed_finger_hunt = "Missions",
+
+	clan_admin = "Dojo/Clan",
+	clan_leadership_council = "Dojo/Clan",
+	clan_merge_request = "Dojo/Clan",
+	dojo_legacy_ceremony = "Dojo/Clan",
+	dojo_raid_defense = "Dojo/Clan",
+	dojo_recovery_work = "Dojo/Clan",
+	rogue_student_incident = "Dojo/Clan",
+	student_training_review = "Dojo/Clan",
+	dojo_send_students_patrol = "Dojo/Clan",
+	dojo_grade_review = "Dojo/Clan",
+	dojo_pair_sparring = "Dojo/Clan",
+	assistant_manage_dojo = "Dojo/Clan",
+	assistant_train_npcs = "Dojo/Clan",
+	assistant_field_support = "Dojo/Clan",
+	join_other_dojo = "Dojo/Clan",
+	train_at_joined_dojo = "Dojo/Clan",
+	dojo_assignment = "Dojo/Clan",
+	leave_joined_dojo = "Dojo/Clan",
+
+	fame_public_audience = "Social",
+	fear_intimidate_network = "Social",
+	world_reputation_cleanup = "Social",
+	society_influence_push = "Social",
+
+	blackjack_table = "Minigames",
+	burglary_job = "Minigames",
+	heirloom_search = "Minigames",
+
+	consume_cursed_fingers = "Curse Spirit",
+	sukuna_vessel_ritual = "Curse Spirit",
+	expand_curse_knowledge = "Curse Spirit",
+	curse_absorb_fear = "Curse Spirit",
+	curse_hide_presence = "Curse Spirit",
+	curse_hunt_remnants = "Curse Spirit",
+	curse_lure_sorcerer = "Curse Spirit",
+	curse_claim_territory = "Curse Spirit",
+	curse_spread_rumor = "Curse Spirit",
+	curse_feed_negative_emotion = "Curse Spirit",
+	curse_stalk_haunt = "Curse Spirit",
+	curse_confuse_trackers = "Curse Spirit",
+	curse_force_evolution = "Curse Spirit",
+	curse_devour_remnant = "Curse Spirit",
+
+	curse_user_black_market = "Curse User",
+	curse_user_hide_society = "Curse User",
+	curse_user_illegal_job = "Curse User",
+	curse_user_secret_training = "Curse User",
+	curse_user_threaten_informant = "Curse User",
+
+	heian_blood_moon = "Era",
+	edo_lightning_duel = "Era",
+	era_lore_encounter = "Era",
+
+	premium_select_clan = "Premium",
+	premium_select_ct = "Premium",
+	idle_add_trait = "Premium",
+	idle_remove_trait = "Premium",
+	dev_awaken = "Premium",
+}
+
+local CATEGORY_ORDER = {
+	"Life", "School", "Training", "Jujutsu High", "Mentor",
+	"Missions", "Dojo/Clan", "Social", "Minigames",
+	"Curse Spirit", "Curse User", "Era", "Premium",
+}
+
+function BitKaisenActivities.GetActivityCategory(activityId)
+	return CATEGORY_MAP[tostring(activityId or "")] or "Life"
+end
+
+function BitKaisenActivities.GetCategoryOrder()
+	return CATEGORY_ORDER
+end
+
+function BitKaisenActivities.GenerateCategorizedActivityList(stats)
+	local list = BitKaisenActivities.GenerateActivityList(stats)
+	for _, entry in ipairs(list) do
+		entry.Category = BitKaisenActivities.GetActivityCategory(entry.Id)
+	end
 	return list
 end
 

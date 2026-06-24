@@ -91,7 +91,7 @@ end
 
 function BK_DomainService.Init(ctx)
 	context = ctx or {}
-	print("[BK_DomainService] Update 14 domain expansion service loaded.")
+	if context.IS_DEBUG then print("[BK_DomainService] Update 14 domain expansion service loaded.") end
 end
 
 return BK_DomainService

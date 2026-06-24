@@ -309,7 +309,7 @@ end
 
 function BK_MissionService.Init(ctx)
 	context = ctx or {}
-	print("[BK_MissionService] Loaded Phase 7 mission handling with Heian Era commissions.")
+	if context.IS_DEBUG then print("[BK_MissionService] Loaded Phase 7 mission handling with Heian Era commissions.") end
 end
 
 return BK_MissionService

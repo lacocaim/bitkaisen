@@ -1,0 +1,198 @@
+-- LocalScript: BitKaisenMenuCoordinator
+-- Location: StarterPlayerScripts
+-- Purpose:
+--   Keeps BitKaisen menus exclusive.
+--   If one page/menu is open and the player clicks another main menu button,
+--   the old page is closed so menus do not stack over each other.
+--
+--   This script is intentionally separate so it can patch the update fast
+--   without replacing BitKaisenUIBuilder, BitKaisenAssetsUI, or Relationships UI.
+
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local function getBitKaisenGui()
+	return playerGui:FindFirstChild("BitKaisenGui") or playerGui:WaitForChild("BitKaisenGui", 10)
+end
+
+local function setGuiObjectHidden(object)
+	if object and object:IsA("GuiObject") then
+		object.Visible = false
+	end
+end
+
+local function hideAssetsMenu(gui)
+	local overlay = gui and gui:FindFirstChild("AssetsOverlay")
+	if overlay and overlay:IsA("GuiObject") then
+		overlay.Visible = false
+		overlay.BackgroundTransparency = 1
+		local window = overlay:FindFirstChild("AssetsWindow")
+		if window and window:IsA("GuiObject") then
+			window.Visible = false
+			window.BackgroundTransparency = 1
+		end
+	end
+end
+
+local function hideBuilderModal(gui, keepWindowName)
+	local overlayPanel = gui and gui:FindFirstChild("OverlayPanel")
+	if not overlayPanel or not overlayPanel:IsA("GuiObject") then
+		return
+	end
+
+	local missionWindow = overlayPanel:FindFirstChild("MissionWindow")
+	local activityWindow = overlayPanel:FindFirstChild("ActivityWindow")
+	local settingsWindow = overlayPanel:FindFirstChild("SettingsWindow")
+
+	if keepWindowName ~= "MissionWindow" then setGuiObjectHidden(missionWindow) end
+	if keepWindowName ~= "ActivityWindow" then setGuiObjectHidden(activityWindow) end
+	if keepWindowName ~= "SettingsWindow" then setGuiObjectHidden(settingsWindow) end
+
+	local keepVisible = false
+	if keepWindowName then
+		local kept = overlayPanel:FindFirstChild(keepWindowName)
+		keepVisible = kept and kept:IsA("GuiObject") and kept.Visible == true
+	end
+
+	if not keepVisible then
+		overlayPanel.Visible = false
+		overlayPanel.BackgroundTransparency = 1
+	end
+end
+
+local function fireForceClose(container)
+	if not container then return end
+	local forceClose = container:FindFirstChild("ForceClose")
+	if forceClose and forceClose:IsA("BindableEvent") then
+		forceClose:Fire()
+	end
+end
+
+local function hideRelationshipMenus(gui)
+	if not gui then return end
+
+	local possibleNames = {
+		"RelationshipsOverlay",
+		"RelationshipOverlay",
+		"RelationshipsWindow",
+		"RelationshipWindow",
+		"BitKaisenRelationshipsOverlay",
+		"BitKaisenRelationshipsWindow",
+	}
+
+	for _, name in ipairs(possibleNames) do
+		local object = gui:FindFirstChild(name, true)
+		if object and object:IsA("GuiObject") then
+			fireForceClose(object)
+			object.Visible = false
+		end
+	end
+end
+
+local function hideAffiliationMenus(gui)
+	if not gui then return end
+
+	local possibleNames = {
+		"AffiliationsOverlay",
+		"AffiliationsWindow",
+		"BitKaisenAffiliationsOverlay",
+		"BitKaisenAffiliationsWindow",
+	}
+
+	for _, name in ipairs(possibleNames) do
+		local object = gui:FindFirstChild(name, true)
+		if object and object:IsA("GuiObject") then
+			fireForceClose(object)
+			object.Visible = false
+		end
+	end
+end
+
+local function hideSettingsMenus(gui)
+	if not gui then return end
+
+	local possibleNames = {
+		"SettingsOverlay",
+		"MenuOverlay",
+		"AchievementsOverlay",
+		"BitKaisenSettingsOverlay",
+		"BitKaisenSettingsWindow",
+	}
+
+	for _, name in ipairs(possibleNames) do
+		local object = gui:FindFirstChild(name, true)
+		if object and object:IsA("GuiObject") then
+			object.Visible = false
+		end
+	end
+end
+
+local function closeEverythingExcept(target)
+	local gui = getBitKaisenGui()
+	if not gui then return end
+
+	if target ~= "Assets" then
+		hideAssetsMenu(gui)
+	end
+
+	if target == "Missions" then
+		hideBuilderModal(gui, "MissionWindow")
+	elseif target == "Activities" then
+		hideBuilderModal(gui, "ActivityWindow")
+	elseif target == "MainMenu" or target == "Settings" then
+		hideBuilderModal(gui, "SettingsWindow")
+	else
+		hideBuilderModal(gui, nil)
+	end
+
+	if target ~= "Relationships" then
+		hideRelationshipMenus(gui)
+	end
+
+	if target ~= "Affiliations" then
+		hideAffiliationMenus(gui)
+	end
+
+	if target ~= "MainMenu" and target ~= "Settings" then
+		hideSettingsMenus(gui)
+	end
+end
+
+local function connectButton(button, target)
+	if not button or not button:IsA("GuiButton") then
+		return
+	end
+
+	button.MouseButton1Click:Connect(function()
+		task.defer(function()
+			closeEverythingExcept(target)
+		end)
+	end)
+end
+
+local function wireNavButtons()
+	local gui = getBitKaisenGui()
+	if not gui then return end
+
+	local mainPanel = gui:FindFirstChild("MainPanel")
+	local navPanel = mainPanel and mainPanel:FindFirstChild("NavPanel")
+	if not navPanel then return end
+
+	connectButton(navPanel:FindFirstChild("MISSIONSButton"), "Missions")
+	connectButton(navPanel:FindFirstChild("ACTIVITIESButton"), "Activities")
+	connectButton(navPanel:FindFirstChild("ASSETSButton"), "Assets")
+	connectButton(navPanel:FindFirstChild("RELATIONSHIPSButton"), "Relationships")
+	connectButton(navPanel:FindFirstChild("AFFILIATIONSButton"), "Affiliations")
+
+	local settingsButton = mainPanel:FindFirstChild("MainMenuButton")
+	connectButton(settingsButton, "MainMenu")
+end
+
+wireNavButtons()
+
+task.delay(2, wireNavButtons)
+
+task.delay(5, wireNavButtons)
+
+if game:GetService("RunService"):IsStudio() then print("[BitKaisenMenuCoordinator] Loaded exclusive menu guard.") end

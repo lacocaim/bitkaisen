@@ -149,6 +149,65 @@ local function isUnregisteredSorcerer(stats)
 	return false
 end
 
+local function enrollInJujutsuHigh(player, stats)
+	if not stats then return "", false end
+	local getEstimatedUnregisteredGrade = context.GetEstimatedUnregisteredGrade
+	local adjustWorldReputation = context.AdjustWorldReputation
+	local fireMajorPopup = context.FireMajorPopup
+
+	local officialGrade = getEstimatedUnregisteredGrade and getEstimatedUnregisteredGrade(stats) or tostring(stats.Grade or "Grade 4")
+
+	stats.InJujutsuHigh = true
+	stats.RegisteredSorcerer = true
+	stats.Grade = officialGrade
+	stats.OfficialGrade = officialGrade
+	stats.UnregisteredGrade = nil
+	stats.UnregisteredProgress = 0
+	stats.UnregisteredGradeUps = 0
+	stats.Reputation = (tonumber(stats.Reputation) or 0) + 10
+	stats.Happiness = math.clamp((tonumber(stats.Happiness) or 100) + 12, 0, 100)
+	stats.Affiliation = "Jujutsu High"
+	stats.AffiliationRank = "Student"
+	stats.AffiliationReputation = math.clamp((tonumber(stats.AffiliationReputation) or 0) + 10, 0, 100)
+	stats.LifePath = "Jujutsu High"
+
+	local repText = ""
+	if adjustWorldReputation then
+		repText = adjustWorldReputation(stats, 3, 0, 4) or ""
+	end
+
+	local logMsg = "You were accepted into Jujutsu High and officially registered as <b>" .. tostring(officialGrade) .. "</b>." .. repText
+
+	local teacher = BitKaisenRelationships.AddTeacher(stats)
+
+	if fireMajorPopup then
+		fireMajorPopup(
+			player,
+			"JUJUTSU HIGH ACCEPTANCE",
+			"Your application was reviewed by the jujutsu world.",
+			"Accepted",
+			"Your unregistered grade became official."
+		)
+	end
+
+	if teacher then
+		logMsg = logMsg .. "\n" .. teacher.Name .. " was assigned as one of your instructors."
+		if fireMajorPopup then
+			fireMajorPopup(
+				player,
+				"TEACHER ASSIGNED",
+				"Someone at Jujutsu High will be watching your progress.",
+				teacher.Name,
+				"Teachers can submit promotion recommendations."
+			)
+		end
+	end
+
+	return logMsg, true
+end
+
+BK_ActivityService.EnrollInJujutsuHigh = enrollInJujutsuHigh
+
 local DOJO_RAID_VARIANTS = {
 	{
 		Id = "Rival Clan Raid",
@@ -1225,6 +1284,10 @@ end
 local HEIAN_BLOCKED_ACTIVITY_IDS = {
 	apply_jujutsu_high = true,
 	basic_school_study = true,
+	school_attend_class = true,
+	school_study_exams = true,
+	school_join_club = true,
+	school_skip = true,
 	doctor = true,
 
 	join_other_dojo = true,
@@ -1574,6 +1637,71 @@ local function processActivity(player, activityId)
 		stats.Smarts = math.clamp((stats.Smarts or 0) + update16Gain(stats, 3, 7, true), 0, 100)
 		stats.Happiness = math.clamp((stats.Happiness or 100) - math.random(0, 3), 0, 100)
 		logMessage = "You focused on schoolwork and improved your general knowledge."
+
+	elseif activityId == "school_attend_class" then
+		stats.SchoolPerformance = math.clamp((tonumber(stats.SchoolPerformance) or 50) + math.random(3, 7), 0, 100)
+		stats.SchoolAttendance = math.clamp((tonumber(stats.SchoolAttendance) or 100) + math.random(2, 5), 0, 100)
+		stats.Smarts = math.clamp((stats.Smarts or 0) + math.random(1, 3), 0, 100)
+		logMessage = "You attended class and paid attention. Your grades improved."
+
+	elseif activityId == "school_study_exams" then
+		stats.SchoolPerformance = math.clamp((tonumber(stats.SchoolPerformance) or 50) + math.random(8, 15), 0, 100)
+		stats.Smarts = math.clamp((stats.Smarts or 0) + math.random(2, 5), 0, 100)
+		stats.Happiness = math.clamp((stats.Happiness or 100) - math.random(3, 8), 0, 100)
+		logMessage = "You crammed for exams. Your test scores jumped, but you felt drained."
+
+	elseif activityId == "school_join_club" then
+		local clubOptions = { "Kendo Club", "Science Club", "Art Club", "Athletics Club", "Cooking Club", "Drama Club", "Student Council", "Library Committee" }
+		local pick = clubOptions[math.random(1, #clubOptions)]
+		stats.SchoolClub = pick
+		stats.Happiness = math.clamp((stats.Happiness or 100) + math.random(3, 8), 0, 100)
+		stats.SchoolAttendance = math.clamp((tonumber(stats.SchoolAttendance) or 100) + math.random(2, 4), 0, 100)
+		stats.SchoolPerformance = math.clamp((tonumber(stats.SchoolPerformance) or 50) + math.random(1, 3), 0, 100)
+		logMessage = "You joined " .. pick .. "! School feels more fun now."
+
+	elseif activityId == "school_skip" then
+		stats.Happiness = math.clamp((stats.Happiness or 100) + math.random(3, 8), 0, 100)
+		stats.SchoolAttendance = math.clamp((tonumber(stats.SchoolAttendance) or 100) - math.random(8, 15), 0, 100)
+		stats.SchoolPerformance = math.clamp((tonumber(stats.SchoolPerformance) or 50) - math.random(3, 7), 0, 100)
+		logMessage = "You skipped school. It felt good, but your grades took a hit."
+
+	elseif activityId == "mentor_teach_class" then
+		local xpGain = math.random(8, 16) + math.floor((tonumber(stats.Smarts) or 0) * 0.08)
+		stats.MentorXP = math.max(0, (tonumber(stats.MentorXP) or 0) + xpGain)
+		stats.Reputation = (tonumber(stats.Reputation) or 0) + math.random(1, 3)
+		stats.Smarts = math.clamp((stats.Smarts or 0) + math.random(0, 2), 0, 100)
+		local pay = math.random(500, 1200)
+		stats.Money = math.max(0, (tonumber(stats.Money) or 0) + pay)
+		logMessage = "You taught a class on cursed energy fundamentals. Mentor XP <b>+" .. tostring(xpGain) .. "</b>, earned <b>$" .. tostring(pay) .. "</b>."
+
+	elseif activityId == "mentor_supervise_mission" then
+		local xpGain = math.random(12, 25)
+		local ceGain = math.random(3, 8)
+		local damage = math.random(2, 8)
+		stats.MentorXP = math.max(0, (tonumber(stats.MentorXP) or 0) + xpGain)
+		stats.CursedEnergy = math.max(0, (tonumber(stats.CursedEnergy) or 0) + ceGain)
+		stats.Health = math.clamp((stats.Health or 100) - damage, 0, 100)
+		stats.StudentsMentored = math.max(0, (tonumber(stats.StudentsMentored) or 0) + 1)
+		stats.Reputation = (tonumber(stats.Reputation) or 0) + math.random(2, 5)
+		logMessage = "You supervised students on a real mission. Mentor XP <b>+" .. tostring(xpGain) .. "</b>, CE <b>+" .. tostring(ceGain) .. "</b>, Health <b>-" .. tostring(damage) .. "</b>."
+
+	elseif activityId == "mentor_grade_students" then
+		local xpGain = math.random(6, 12)
+		stats.MentorXP = math.max(0, (tonumber(stats.MentorXP) or 0) + xpGain)
+		stats.Recommendations = math.max(0, (tonumber(stats.Recommendations) or 0) + math.random(0, 1))
+		stats.Smarts = math.clamp((stats.Smarts or 0) + math.random(0, 1), 0, 100)
+		logMessage = "You evaluated student progress and filed reports. Mentor XP <b>+" .. tostring(xpGain) .. "</b>."
+
+	elseif activityId == "mentor_prodigy" then
+		local xpGain = math.random(18, 35)
+		local ceGain = math.random(5, 12)
+		local repGain = math.random(3, 8)
+		stats.MentorXP = math.max(0, (tonumber(stats.MentorXP) or 0) + xpGain)
+		stats.CursedEnergy = math.max(0, (tonumber(stats.CursedEnergy) or 0) + ceGain)
+		stats.Reputation = (tonumber(stats.Reputation) or 0) + repGain
+		stats.StudentsMentored = math.max(0, (tonumber(stats.StudentsMentored) or 0) + 1)
+		stats.Happiness = math.clamp((stats.Happiness or 100) + math.random(2, 6), 0, 100)
+		logMessage = "You personally mentored a prodigious student. Mentor XP <b>+" .. tostring(xpGain) .. "</b>, CE <b>+" .. tostring(ceGain) .. "</b>, Reputation <b>+" .. tostring(repGain) .. "</b>."
 
 	elseif activityId == "train_ce" then
 		local assetBonuses = BitKaisenAssets.GetPassiveBonuses(stats)
@@ -2366,45 +2494,8 @@ local function processActivity(player, activityId)
 			end
 
 			if acceptancePower >= 55 then
-				local officialGrade = getEstimatedUnregisteredGrade(stats)
-
-				stats.InJujutsuHigh = true
-				stats.RegisteredSorcerer = true
-				stats.Grade = officialGrade
-				stats.OfficialGrade = officialGrade
-				stats.UnregisteredGrade = nil
-				stats.UnregisteredProgress = 0
-				stats.UnregisteredGradeUps = 0
-
-				stats.Reputation += 10
-				stats.Happiness = math.clamp((stats.Happiness or 100) + 12, 0, 100)
-				stats.Affiliation = "Jujutsu High"
-				stats.AffiliationRank = "Student"
-				stats.AffiliationReputation = math.clamp((tonumber(stats.AffiliationReputation) or 0) + 10, 0, 100)
-				stats.LifePath = "Jujutsu High"
-				logMessage = "You were accepted into Jujutsu High and officially registered as <b>" .. tostring(officialGrade) .. "</b>." .. adjustWorldReputation(stats, 3, 0, 4)
-
-				local teacher = BitKaisenRelationships.AddTeacher(stats)
-
-				fireMajorPopup(
-					player,
-					"JUJUTSU HIGH ACCEPTANCE",
-					"Your application was reviewed by the jujutsu world.",
-					"Accepted",
-					"Your unregistered grade became official."
-				)
-
-				if teacher then
-					logMessage = logMessage .. "\n" .. teacher.Name .. " was assigned as one of your instructors."
-
-					fireMajorPopup(
-						player,
-						"TEACHER ASSIGNED",
-						"Someone at Jujutsu High will be watching your progress.",
-						teacher.Name,
-						"Teachers can submit promotion recommendations."
-					)
-				end
+				local enrollMsg = enrollInJujutsuHigh(player, stats)
+				logMessage = enrollMsg
 			else
 				stats.Happiness = math.clamp((stats.Happiness or 100) - 10, 0, 100)
 				logMessage = "Jujutsu High rejected your application. Your unregistered grade was noted, but your cursed energy control was not convincing enough yet."
@@ -3638,7 +3729,7 @@ function BK_ActivityService.GetActivityListPayload(player)
 
 	ensureExtraStats(stats)
 
-	local list = BitKaisenActivities.GenerateActivityList(stats)
+	local list = BitKaisenActivities.GenerateCategorizedActivityList(stats)
 	local filtered = {}
 
 	for _, activity in ipairs(list) do
@@ -3679,7 +3770,7 @@ function BK_ActivityService.Init(ctx)
 		end)
 	end
 
-	print("[BK_ActivityService] Phase 6 activity handling loaded with full Heian modern-activity lock.")
+	if context.IS_DEBUG then print("[BK_ActivityService] Phase 6 activity handling loaded with full Heian modern-activity lock.") end
 end
 
 return BK_ActivityService

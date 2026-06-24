@@ -1,0 +1,151 @@
+-- LocalScript: BitKaisenRatesUI
+-- Adds a small % button beside Clan/CT profile info with rarity rates.
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+local gui = playerGui:WaitForChild("BitKaisenGui")
+local mainPanel = gui:WaitForChild("MainPanel")
+
+local overlay = Instance.new("Frame")
+overlay.Name = "RatesOverlay"
+overlay.Size = UDim2.new(1, 0, 1, 0)
+overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+overlay.BackgroundTransparency = 0.42
+overlay.BorderSizePixel = 0
+overlay.Visible = false
+overlay.ZIndex = 730
+overlay.Parent = gui
+
+local panel = Instance.new("Frame")
+panel.AnchorPoint = Vector2.new(0.5, 0.5)
+panel.Position = UDim2.new(0.5, 0, 0.52, 0)
+panel.Size = UDim2.new(0, 430, 0, 420)
+panel.BackgroundColor3 = Color3.fromRGB(17, 17, 24)
+panel.BorderSizePixel = 0
+panel.ZIndex = 731
+panel.Parent = overlay
+
+local function corner(obj, radius)
+	local c = Instance.new("UICorner")
+	c.CornerRadius = UDim.new(0, radius or 8)
+	c.Parent = obj
+end
+local function stroke(obj)
+	local s = Instance.new("UIStroke")
+	s.Color = Color3.fromRGB(70, 70, 90)
+	s.Thickness = 1
+	s.Transparency = 0.15
+	s.Parent = obj
+end
+corner(panel, 10)
+stroke(panel)
+
+local title = Instance.new("TextLabel")
+title.BackgroundTransparency = 1
+title.Position = UDim2.new(0, 22, 0, 18)
+title.Size = UDim2.new(1, -78, 0, 28)
+title.Text = "CLAN / CT RATES"
+title.TextColor3 = Color3.fromRGB(255, 215, 120)
+title.TextSize = 20
+title.Font = Enum.Font.GothamBlack
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.ZIndex = 732
+title.Parent = panel
+
+local close = Instance.new("TextButton")
+close.Position = UDim2.new(1, -54, 0, 14)
+close.Size = UDim2.new(0, 34, 0, 30)
+close.Text = "X"
+close.TextColor3 = Color3.fromRGB(230, 90, 96)
+close.TextSize = 15
+close.Font = Enum.Font.GothamBlack
+close.BackgroundColor3 = Color3.fromRGB(35, 35, 46)
+close.BorderSizePixel = 0
+close.ZIndex = 733
+close.Parent = panel
+corner(close, 8)
+close.MouseButton1Click:Connect(function() overlay.Visible = false end)
+
+overlay.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then overlay.Visible = false end
+end)
+panel.InputBegan:Connect(function() end)
+
+local body = Instance.new("TextLabel")
+body.BackgroundTransparency = 1
+body.Position = UDim2.new(0, 24, 0, 62)
+body.Size = UDim2.new(1, -48, 1, -84)
+body.TextColor3 = Color3.fromRGB(230, 230, 240)
+body.TextSize = 13
+body.Font = Enum.Font.GothamMedium
+body.TextXAlignment = Enum.TextXAlignment.Left
+body.TextYAlignment = Enum.TextYAlignment.Top
+body.TextWrapped = true
+body.RichText = true
+body.ZIndex = 732
+body.Parent = panel
+body.Text = [[<b>Clan Rates</b>
+Common Clan - 65%
+Uncommon Clan - 20%
+Rare Clan - 10%
+Epic Clan - 3.5%
+Legendary Clan - 1.4%  Example: Itadori
+Honored Clan - 0.09%  Example: Gojo
+Secret Clan - ???  Examples: Pumpkin, Ryomen
+
+<b>Cursed Technique Rates</b>
+Common CT - 65%
+Uncommon CT - 20%
+Rare CT - 10%
+Epic CT - 3.5%
+Legendary CT - 1.4%
+Honored CT - 0.09%
+Secret CT - ???
+
+Secret rates are intentionally hidden.]]
+
+local function attachButton()
+	local profileCard = mainPanel:FindFirstChild("ProfileCard", true)
+	local techRow = profileCard and profileCard:FindFirstChild("TechniqueRow", true)
+	if not techRow or techRow:FindFirstChild("RatesButton") then return false end
+	local button = Instance.new("TextButton")
+	button.Name = "RatesButton"
+	button.AnchorPoint = Vector2.new(1, 0.5)
+	button.Position = UDim2.new(1, 0, 0.5, 0)
+	button.Size = UDim2.new(0, 24, 0, 22)
+	button.Text = "%"
+	button.TextColor3 = Color3.fromRGB(255, 230, 165)
+	button.TextSize = 13
+	button.Font = Enum.Font.GothamBlack
+	button.BackgroundColor3 = Color3.fromRGB(45, 36, 64)
+	button.BorderSizePixel = 0
+	button.ZIndex = 20
+	button.Parent = techRow
+	corner(button, 7)
+	button.MouseButton1Click:Connect(function() overlay.Visible = true end)
+	return true
+end
+
+if not attachButton() then
+	task.spawn(function()
+		for _ = 1, 40 do
+			if attachButton() then break end
+			task.wait(0.25)
+		end
+	end)
+end
+
+local function resize()
+	local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
+	if viewport.X < 780 or UserInputService.TouchEnabled then
+		panel.Size = UDim2.new(0.84, 0, 0, 420)
+	else
+		panel.Size = UDim2.new(0, 430, 0, 420)
+	end
+end
+resize()
+
+if game:GetService("RunService"):IsStudio() then print("[BitKaisenRatesUI] Loaded clan and CT rates UI.") end

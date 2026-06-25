@@ -296,8 +296,24 @@ local function init()
 
 	UserInputService:GetPropertyChangedSignal("TouchEnabled"):Connect(refresh)
 
+	button.Visible = false
+
 	gui.Enabled = true
 	fetch()
 end
 
-return { init = init }
+local function open()
+	if not gui then return end
+	gui.Enabled = true
+	local getAFK = ReplicatedStorage:FindFirstChild("GetAFKStabilization")
+	if getAFK then
+		local ok2, p2 = pcall(function() return getAFK:InvokeServer() end)
+		if ok2 and typeof(p2) == "table" then
+			state = p2
+			refresh()
+		end
+	end
+	if panel then panel.Visible = true end
+end
+
+return { init = init, open = open }

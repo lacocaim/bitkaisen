@@ -46,6 +46,8 @@ local DOUBLE_MONEY_PASS_ID = 1849510820
 local DOUBLE_TRAINING_PASS_ID = 1849210885 -- Displayed as 2x Progress in the shop.
 local LUCKY_BIRTH_PASS_ID = 1859848647
 local EXTRA_DOJO_STUDENTS_PASS_ID = 1862959768
+local GOD_MODE_PASS_ID = 1861509054
+local GO_ROGUE_PASS_ID = 1887460270
 
 ----------------------------------------------------------------
 -- UPDATE 6 GAMEPASS IDS
@@ -2022,7 +2024,9 @@ function BK_CommerceService.Init(ctx)
 			and purchasedPassId ~= MISSION_INVESTOR_PASS_ID
 			and purchasedPassId ~= LEGACY_BLESSING_PASS_ID
 			and purchasedPassId ~= DOJO_EXPANSION_PASS_ID
-			and purchasedPassId ~= AFK_STABILIZATION_GAMEPASS_ID then
+			and purchasedPassId ~= AFK_STABILIZATION_GAMEPASS_ID
+			and purchasedPassId ~= GOD_MODE_PASS_ID
+			and purchasedPassId ~= GO_ROGUE_PASS_ID then
 			return
 		end
 
@@ -2086,6 +2090,14 @@ function BK_CommerceService.Init(ctx)
 				fireLifeUpdate(player, stats, "<font color='#ffcd69'><b>[ GAMEPASS ]</b></font> Dojo Expansion active. Your dojo starter recruit options increased.")
 			elseif purchasedPassId == AFK_STABILIZATION_GAMEPASS_ID then
 				grantAFKStabilization(player, stats)
+
+			elseif purchasedPassId == GOD_MODE_PASS_ID then
+				fireMajorPopup(player, "GOD MODE UNLOCKED", "Trait edits, clan rerolls, start boosts, and reset life are now available.", "God Mode", "Open God Mode to start customizing.")
+				fireLifeUpdate(player, stats, "<font color='#ffcd69'><b>[ GOD MODE ]</b></font> God Mode unlocked.")
+
+			elseif purchasedPassId == GO_ROGUE_PASS_ID then
+				fireMajorPopup(player, "GO ROGUE UNLOCKED", "You can now become a Rogue Sorcerer.", "Go Rogue", "Open Jobs to see the rogue path.")
+				fireLifeUpdate(player, stats, "<font color='#e53935'><b>[ GO ROGUE ]</b></font> Go Rogue unlocked.")
 			end
 		end
 	end)

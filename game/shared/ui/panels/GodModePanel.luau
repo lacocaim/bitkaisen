@@ -9,6 +9,8 @@ local playerGui = player:WaitForChild("PlayerGui")
 local getGodMode = ReplicatedStorage:WaitForChild("GetGodMode")
 local godModeAction = ReplicatedStorage:WaitForChild("GodModeAction")
 
+local GOD_MODE_GAMEPASS_ID = 1861509054
+
 local THEME = {
 	Bg = Color3.fromRGB(13, 13, 20),
 	Panel = Color3.fromRGB(19, 19, 29),
@@ -43,6 +45,7 @@ openButton.TextColor3 = THEME.Gold
 openButton.Font = Enum.Font.GothamBlack
 openButton.TextSize = 11
 openButton.AutoButtonColor = true
+openButton.Visible = false
 openButton.Parent = gui
 
 local openCorner = Instance.new("UICorner")
@@ -351,8 +354,26 @@ close.Activated:Connect(function()
 	overlay.Visible = false
 end)
 
+MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(purchasePlayer, purchasedPassId, wasPurchased)
+	if purchasePlayer ~= player then return end
+	if purchasedPassId ~= GOD_MODE_GAMEPASS_ID then return end
+	task.delay(0.5, function()
+		fetchPayload()
+		if overlay.Visible then
+			render()
+		end
+	end)
+end)
+
+local function open()
+	fetchPayload()
+	render()
+	overlay.Visible = true
+	gui.Enabled = true
+end
+
 local function init()
 	gui.Enabled = true
 end
 
-return { init = init }
+return { init = init, open = open }

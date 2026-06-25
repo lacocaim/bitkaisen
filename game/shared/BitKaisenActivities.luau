@@ -607,6 +607,20 @@ BitKaisenActivities.Database = {
 	},
 
 	{
+		Id = "body_hop",
+		Title = "Body Hop",
+		Description = "Transplant your brain into a fresh young host, cheating death while keeping your cursed energy, technique, and knowledge intact.",
+		MinAge = 25,
+		MaxAge = 120,
+		RequiresTechnique = true,
+		RequiresSorcerer = true,
+		RequiresJujutsuHigh = false,
+		ButtonColor = Color3.fromRGB(120, 40, 160),
+		LockedText = "Evolve Brain Transplant to its Body Hopping stage first.",
+		HideWhenLocked = true
+	},
+
+	{
 		Id = "jujutsu_school_event",
 		Title = "Jujutsu High Event",
 		Description = "Attend a school event, meet peers, and build your Jujutsu High popularity.",
@@ -1696,6 +1710,17 @@ function BitKaisenActivities.CanDoActivity(stats, activity)
 			return false, "Reach 75 Technique Mastery to pursue a maximum technique."
 		elseif stage == "Refined Form" and mastery < 50 then
 			return false, "Reach 50 Technique Mastery to pursue an extension technique."
+		end
+	end
+
+	if activity.Id == "body_hop" then
+		local tech = string.lower(tostring(stats.CursedTechnique or stats.InnateTechnique or ""))
+		if not (string.find(tech, "brain", 1, true) or string.find(tech, "transplant", 1, true)) then
+			return false, "Only Brain Transplant users can body hop."
+		end
+		local stage = tostring(stats.TechniqueEvolutionStage or "Dormant")
+		if stage ~= "Extension Technique" and stage ~= "Maximum Technique" and stage ~= "Domain Seed" and stage ~= "Complete Domain" then
+			return false, "Evolve Brain Transplant to its Body Hopping stage first."
 		end
 	end
 

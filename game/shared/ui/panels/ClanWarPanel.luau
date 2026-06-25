@@ -47,6 +47,7 @@ warButton.Text = "WAR"
 warButton.TextColor3 = THEME.Gold
 warButton.TextScaled = true
 warButton.Visible = false
+warButton.Active = false
 warButton.Parent = screenGui
 
 local warButtonCorner = Instance.new("UICorner")
@@ -366,9 +367,20 @@ end)
 
 UserInputService.WindowFocused:Connect(refresh)
 
+local function open()
+	panelOpen = true
+	overlay.Visible = true
+	screenGui.Enabled = true
+	refresh()
+end
+
+local function isAvailable()
+	return warButton.Visible
+end
+
 local function init()
 	screenGui.Enabled = true
 	refresh()
 end
 
-return { init = init }
+return { init = init, open = open, isAvailable = isAvailable }

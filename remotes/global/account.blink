@@ -3,7 +3,7 @@ event sync {
     From: Server,
     Type: Reliable,
     Call: SingleAsync,
-    Data: buffer
+    Data: unknown
 }
 
 event ready {

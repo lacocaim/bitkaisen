@@ -9,48 +9,122 @@ BitLife-style Jujutsu Kaisen life simulator. **Rojo** is the source of truth -- 
 
 ## Game Features
 
-Life simulation with JJK theming: aging, clans, cursed techniques, technique mastery, traits, missions, relationships, civilian jobs, combat, domain expansion, binding vows, rivals, achievements, daily login rewards, and world history progression through Heian/modern eras.
+Life simulation with JJK theming: aging, clans, cursed techniques, technique mastery, traits, missions, relationships, civilian jobs, combat, domain expansion, binding vows, rivals, achievements, daily login rewards, body hopping (Kenjaku), and world history progression through Heian/modern eras.
 
 ## Tech Stack
 
 - **Language**: Luau (`.luau` only, never `.lua`)
 - **Sync**: Rojo (`game.project.json`)
 - **Networking**: Blink (codegen from `.blink` definitions) for RemoteEvent/RemoteFunction; BK_Remotes module for classic remotes
-- **UI**: Vide (Bravo's fork) -- reactive component tree, single `vide.mount()` bootstrap replaces ~40 imperative scripts. Fusion 0.2 is installed for a future Hydrate migration.
-- **Scaling**: Vide `px.luau` (getter-based) -- design at 1920×1080, logarithmic scaling to all devices. Legacy Fusion `px.luau` remains in `global/shared/utils/`.
+- **UI**: Vide (lacocaim fork) -- reactive component tree, `vide.mount()` bootstrap for both PC and Mobile shells
+- **Scaling**: Vide `px.luau` (getter-based) -- design at 1920x1080, logarithmic scaling to all devices. `responsiveScale.luau` provides `UIScale`-based uniform scaling for imperative panels
 - **Data**: ProfileStore + Charm (atoms/signals) + Delta-Compress (replication diffs)
 - **Validation**: GreenTea schemas
-- **Build**: Darklua + Selene (lint) + Rokit (toolchain) + Pesde/Wally (packages)
+- **Topbar**: TopbarPlus v3 (`1foreverhd/topbarplus` via Wally/pesde) for Settings, God Mode, War, and AFK icons on the native Roblox topbar
+- **Build**: Darklua (smart-sync) + Selene (lint) + Rokit (toolchain) + Pesde/Wally (packages)
 - **Task runner**: `just` (see `justfile`)
 
 ## Architecture
 
 The game uses a traditional Roblox scripting architecture (not ECS):
-- **Server**: `GameManager.server.luau` is the central server script orchestrating all `BK_*` service modules
-- **Client**: `BitKaisenClient/init.client.luau` bootstraps the UI. It mounts the Vide reactive shell (ProfileCard, LifeLog, NavPanel, AgeUpButton, SettingsButton, MajorPopup, NotificationHolder) via `vide.mount()`, then initializes all panel modules
-- **Panels**: Each panel is a standalone module at `game/shared/ui/panels/` that owns its own ScreenGui, uses `Instance.new()` for all UI construction, and wires to `uiState.subscribe()` for route-driven open/close or listens for remote events for event-driven panels. Panels use imperative `refresh()` methods and `:Connect()` for events -- no Vide reactive primitives
-- **State**: `playerState` (reactive source from `UpdateLifeEvent`), `uiState` (route/modal stack + imperative `subscribe(fn)->disconnect` observers for panels), `navRegistry` (dynamic nav entries), `remotes` (centralized remote access)
-- **Controllers**: `TopBarController`, `SFXController`, `ConsoleSupport` provide cross-cutting concerns (top bar layout, sound effects, gamepad support)
+
+### Server
+- `GameManager.server.luau` is the central server script orchestrating all `BK_*` service modules (combat, activities, jobs, domains, relationships, missions, etc.)
+
+### Client boot flow
+1. `globalClientBootstrap.client.luau` runs first (global init)
+2. Both `BitKaisenClient` (PC) and `BitKaisenMobileClient` (Mobile) call `experienceMode.resolve()` which waits for the first `UpdateLifeEvent` from the server, then shows the **ModeSelect** picker ("CHOOSE YOUR EXPERIENCE": Computer or Mobile). The chosen mode is persisted to `stats.Settings.UIMode`
+3. After the pick, `loadingScreen.show(mode)` displays an animated loading screen (centered logo with boat-rock animation, progress bar) covering the boot phase
+4. The matching client continues; the other returns immediately
+5. Panels and nav are initialized, `vide.mount()` builds the shell, initial life data is applied, then `loadingScreen.finish()` fades the loader out
+
+### PC Client (`BitKaisenClient/init.client.luau`)
+- Mounts the Vide reactive shell: ProfileCard, LifeLog, AgeUpButton, NavPanel, MajorPopup, NotificationHolder
+- Includes `applyResponsiveLayout()` that reflows for portrait/landscape/desktop viewports
+- Initializes all PC panel modules from `game/shared/ui/panels/`
+
+### Mobile Client (`BitKaisenMobileClient/init.client.luau`)
+- Forces **portrait** orientation (`Enum.ScreenOrientation.Portrait`)
+- Mounts `mobileShell.create(playerGui)` -- a fixed vertical layout (non-scrolling root `Frame`): MobileProfileHeader, MobileLifeLog (internal scroll), MobileAgeButton, MobileNavPanel (internal scroll). The shell's `ScreenGui` uses `IgnoreGuiInset = false` to sit below the Roblox topbar
+- Initializes all `Mobile*Panel` modules from `game/shared/ui/mobile/panels/`
+
+### Orientation
+- Mobile is **portrait-locked**. `BitKaisenMobileOrientationLock.client.luau` is mode-aware: sets Portrait for Mobile, Sensor (free) for Computer
+- PC supports both landscape and portrait via responsive layout
+
+### Panels
+- **PC panels** (`game/shared/ui/panels/`): each is a standalone module with its own ScreenGui, uses `Instance.new()` for all UI construction, wires to `uiState.subscribe()` for route-driven open/close or listens for remote events. Panels use imperative `refresh()` methods and `:Connect()` for events
+- **Mobile panels** (`game/shared/ui/mobile/panels/`): each `Mobile*Panel` module follows the same pattern (own ScreenGui, route-driven via `uiState.subscribe`), using `mobileComponents` helpers for mobile-native sheets and buttons
+- **God Mode** (PC and Mobile): standalone overlay, opened via TopbarPlus topbar icon (not nav-routed). Close hides the sheet overlay only
+
+### State
+- `playerState` -- reactive source populated by `UpdateLifeEvent`
+- `uiState` -- route/modal stack + imperative `subscribe(fn)->disconnect` observers for panels
+- `navRegistry` -- dynamic nav entries (missions, activities, relationships, assets, jobs, affiliations, domain, rivals, history, mentor)
+- `remotes` -- centralized remote access with lazy WaitForChild + cache
+- `experienceMode` -- singleton that resolves Computer/Mobile choice, caches initial life event
+
+### Topbar
+- `topbarIcons.luau` creates TopbarPlus icons for **Settings** (gear emoji), **God Mode** (lightning), **War** (crossed swords), and **AFK** (sleep/zzz), wired to existing panel `open()` methods. Initialized from both PC and Mobile client bootstraps
+- `TopBarController` manages the custom second-row topbar buttons (Daily, Shop, Vows, etc.)
+
+### DisplayOrder layering
+- TopbarPlus container: **10** (default). Shell GUIs (`BitKaisenGui`, `MobileGui`): **15** (above TopbarPlus holders so touch events reach shell buttons). Panel ScreenGuis: **639+** (above everything). Loading screen: **6000**. TopBarController: **1400**
+
+### Input debugging
+- `inputDebug.luau` (Studio-only, dev-gated) provides on-tap hit-test logging (`GetGuiObjectsAtPosition` stack) and `dumpScreenGuis()` for diagnosing touch-blocking layers. Warns if both PC and Mobile shells exist simultaneously (cross-mode bleed)
+
+### Controllers
+`TopBarController`, `SFXController` provide cross-cutting concerns (top bar layout, sound effects)
 
 ## Folder Layout
 
 ```
-game/server/                -> ServerScriptService (GameManager, BK_* services)
-game/server/BitKaisenServer/ -> Server service modules (BK_Remotes, BK_CombatService, etc.)
-game/shared/                -> ReplicatedStorage (hooks, controllers, config)
-game/shared/ui/             -> UI tree: shell components (Vide), panels (imperative modules), state/, hooks/, theme, helpers, px
-game/shared/ui/panels/      -> All panel modules (30+), each with own ScreenGui, imperative Instance.new() code
-game/shared/ui/components/  -> Vide reactive shell components (ProfileCard, LifeLog, NavPanel, etc.)
-game/shared/ui/state/       -> Shared state: playerState, uiState (with subscribe), navRegistry, remotes
-game/starterplayer/         -> StarterPlayerScripts (BitKaisenClient bootstrap, MobileOrientationLock, GroupJoin)
-global/server/              -> ServerScriptService/global (accountService, commands)
-global/shared/              -> ReplicatedStorage/global (types, utils, constants, controllers)
-global/client/              -> StarterPlayerScripts/global
-remotes/                    -> Blink .blink definitions (codegen output in remotes/out/, git-ignored)
+game/server/                         -> ServerScriptService (GameManager, BK_* services)
+game/server/BitKaisenServer/         -> Server service modules (BK_Remotes, BK_CombatService, BK_ActivityService, etc.)
+game/shared/                         -> ReplicatedStorage (hooks, controllers, config modules)
+game/shared/ui/                      -> UI tree root
+game/shared/ui/panels/               -> PC panel modules (30+), each with own ScreenGui
+game/shared/ui/components/           -> Vide reactive shell components (ProfileCard, LifeLog, NavPanel, ModeSelect, etc.)
+game/shared/ui/components/shell/     -> Shell-level Vide components (ModeSelect, ProfileCard, LifeLog, NavPanel, AgeUpButton, etc.)
+game/shared/ui/state/                -> Shared state: playerState, uiState, navRegistry, remotes, experienceMode
+game/shared/ui/mobile/               -> Mobile shell + components (mobileShell, mobileComponents, mobilePopup, mobileNotifications, mobileRouter)
+game/shared/ui/mobile/panels/        -> Mobile*Panel modules (route-driven, own ScreenGui)
+game/shared/ui/hooks/                -> UI hooks (setTimeout, useEvent, useRefresh, useTween)
+game/shared/ui/topbarIcons.luau      -> TopbarPlus icon setup (Settings, God Mode, War, AFK) with emoji labels
+game/shared/ui/inputDebug.luau       -> Studio-only input diagnostics (hit-test + ScreenGui dump)
+game/shared/ui/loadingScreen.luau    -> Post-pick animated loading screen (centered logo + bar, boat-rock animation)
+game/shared/ui/responsiveScale.luau  -> UIScale-based uniform scaling helper for imperative panels
+game/shared/ui/theme.luau            -> Shared color/font theme constants
+game/shared/ui/helpers.luau          -> UI utility functions
+game/shared/ui/px.luau               -> Vide-integrated logarithmic px scaling (design 1920x1080)
+game/starterplayer/                  -> StarterPlayerScripts
+game/starterplayer/BitKaisenClient/  -> PC client bootstrap (init.client.luau)
+game/starterplayer/BitKaisenMobileClient/ -> Mobile client bootstrap (init.client.luau)
+game/starterplayer/BitKaisenCoreUI.client.luau                -> Disables Roblox chat/mic CoreGui (runs for both PC and Mobile)
+game/starterplayer/BitKaisenMobileOrientationLock.client.luau -> Mode-aware orientation lock
+game/starterplayer/BitKaisenGroupJoinClient.client.luau       -> Group join prompt
+global/server/                       -> ServerScriptService/global (accountService, commands, transaction)
+global/shared/                       -> ReplicatedStorage/global (types, utils, constants, controllers)
+global/client/                       -> StarterPlayerScripts/global
+remotes/                             -> Blink .blink definitions (codegen output in remotes/out/, git-ignored)
 ```
 
 ## Key Commands
 
+- `just setup` -- bootstrap: install rokit tools + pesde deps + generate sourcemap
 - `just packages` -- install deps + generate sourcemap
-- `just dev` -- start dev (rojo serve + blink watch)
+- `just dev` -- start dev (rojo serve + darklua smart-sync watch + blink watch)
 - `just net` -- compile blink networking only
+
+## Keeping These Rules Current
+
+This file is the single source of truth for project architecture. **Every dev must update it in the same PR** whenever they:
+
+- Add, move, or remove a **panel** (PC and its `Mobile*` counterpart)
+- Add or rename a **server service** (`BK_*`)
+- Add or modify a **client bootstrap** or **state module**
+- Add or rename a **top-level folder** in the layout
+- Add or change a **`just` command** or build step
+
+Keep it concise and high-level (architecture + folder map + commands). Do not list every file -- only structural patterns and key modules. If you're unsure whether a change warrants an update here, err on the side of updating.

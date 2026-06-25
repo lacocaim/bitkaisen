@@ -14,10 +14,8 @@ local function createCardList(parent: Frame, title: string)
 		Font = Enum.Font.GothamBlack,
 		Text = title,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		TextScaled = true,
 		ZIndex = 55,
 		Parent = parent,
-		create("UITextSizeConstraint") { MaxTextSize = 20, MinTextSize = 12 },
 	}
 
 	local scroll = create("ScrollingFrame") {
@@ -80,12 +78,10 @@ local function createCard(parent: Frame, order: number, props: {
 			Text = props.title,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			TextWrapped = true,
-			TextScaled = true,
 			AutomaticSize = Enum.AutomaticSize.Y,
 			LayoutOrder = 1,
 			ZIndex = 54,
 			Parent = card,
-			create("UITextSizeConstraint") { MaxTextSize = 16, MinTextSize = 11 },
 		}
 	end
 
@@ -99,12 +95,10 @@ local function createCard(parent: Frame, order: number, props: {
 			Text = props.subtitle,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			TextWrapped = true,
-			TextScaled = true,
 			AutomaticSize = Enum.AutomaticSize.Y,
 			LayoutOrder = 2,
 			ZIndex = 54,
 			Parent = card,
-			create("UITextSizeConstraint") { MaxTextSize = 13, MinTextSize = 9 },
 		}
 	end
 
@@ -118,13 +112,11 @@ local function createCard(parent: Frame, order: number, props: {
 			Text = props.body,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			TextWrapped = true,
-			TextScaled = true,
 			RichText = true,
 			AutomaticSize = Enum.AutomaticSize.Y,
 			LayoutOrder = 3,
 			ZIndex = 54,
 			Parent = card,
-			create("UITextSizeConstraint") { MaxTextSize = 12, MinTextSize = 9 },
 		}
 	end
 
@@ -150,13 +142,11 @@ local function createCard(parent: Frame, order: number, props: {
 				TextSize = 12,
 				Font = Enum.Font.GothamBold,
 				Text = act.label,
-				TextScaled = true,
 				AutoButtonColor = false,
 				LayoutOrder = i,
 				ZIndex = 55,
 				Parent = actionRow,
 				create("UICorner") { CornerRadius = UDim.new(0, 6) },
-				create("UITextSizeConstraint") { MaxTextSize = 12, MinTextSize = 8 },
 				[vide.action(function(btn)
 					btn.MouseButton1Click:Connect(act.callback)
 				end)] = true,
@@ -176,11 +166,9 @@ local function createMessageCard(parent: Frame, text: string, order: number?)
 		Font = Enum.Font.GothamMedium,
 		Text = text,
 		TextWrapped = true,
-		TextScaled = true,
 		LayoutOrder = order or 0,
 		ZIndex = 53,
 		Parent = parent,
-		create("UITextSizeConstraint") { MaxTextSize = 14, MinTextSize = 9 },
 	}
 end
 

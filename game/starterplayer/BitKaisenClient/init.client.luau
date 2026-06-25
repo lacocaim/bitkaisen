@@ -1,12 +1,15 @@
 local Players = game:GetService("Players")
 
+local experienceMode = require("@ui-state/experienceMode")
+local mode = experienceMode.resolve()
+if mode ~= "Computer" then return end
+
 local vide = require("@packages/vide")
 local theme = require("@ui/theme")
 local playerState = require("@ui-state/playerState")
 local uiState = require("@ui-state/uiState")
 local navRegistry = require("@ui-state/navRegistry")
 local remotes = require("@ui-state/remotes")
-local device = require("@ui-state/device")
 local px = require("@ui/px")
 
 local ProfileCard = require("@ui-components/shell/ProfileCard")
@@ -15,9 +18,6 @@ local AgeUpButton = require("@ui-components/shell/AgeUpButton")
 local NavPanel = require("@ui-components/shell/NavPanel")
 local NotificationHolder = require("@ui-components/shell/NotificationHolder")
 local MajorPopup = require("@ui-components/shell/MajorPopup")
-local SettingsButton = require("@ui-components/shell/SettingsButton")
-local ServerSelection = require("@ui-components/shell/ServerSelection")
-
 local MissionsPanel = require("@ui-panels/MissionsPanel")
 local ActivitiesPanel = require("@ui-panels/ActivitiesPanel")
 local RelationshipsPanel = require("@ui-panels/RelationshipsPanel")
@@ -50,12 +50,18 @@ local IncidentMapPanel = require("@ui-panels/IncidentMapPanel")
 
 local TopBarController = require("@ui-panels/TopBarController")
 local SFXController = require("@ui/SFXController")
-local ConsoleSupport = require("@ui/ConsoleSupport")
+local topbarIcons = require("@ui/topbarIcons")
+local inputDebug = require("@ui/inputDebug")
+local loadingScreen = require("@ui/loadingScreen")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
 local create = vide.create
+
+print("[BK] Booting Computer shell")
+
+loadingScreen.bump("Registering navigation...")
 
 navRegistry.register({ id = "missions", label = "MISSIONS", order = 1, color = theme.Red })
 navRegistry.register({ id = "activities", label = "ACTIVITIES", order = 2, color = theme.Red })
@@ -68,11 +74,18 @@ navRegistry.register({ id = "rivals", label = "RIVALS", order = 8, color = theme
 navRegistry.register({ id = "history", label = "HISTORY", order = 9, color = theme.Blue })
 navRegistry.register({ id = "mentor", label = "MENTOR", order = 10, color = Color3.fromRGB(55, 180, 220) })
 
+local function isMobile()
+	local camera = workspace.CurrentCamera
+	if not camera then return false end
+	local viewport = camera.ViewportSize
+	return viewport.X < 900 or viewport.Y > viewport.X
+end
+
 local function applyResponsiveLayout(mainPanel: Frame)
 	local camera = workspace.CurrentCamera
 	if not camera then return end
 	local viewport = camera.ViewportSize
-	local mobile = device.isMobileLayout()
+	local mobile = isMobile()
 	local smallMobile = viewport.X < 520
 	local portrait = mobile and viewport.Y > viewport.X
 
@@ -132,6 +145,7 @@ local function BitKaisenGui()
 		Name = "BitKaisenGui",
 		ResetOnSpawn = false,
 		IgnoreGuiInset = true,
+		DisplayOrder = 15,
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 	}
 
@@ -146,7 +160,6 @@ local function BitKaisenGui()
 		LifeLog(),
 		AgeUpButton(),
 		NavPanel(),
-		SettingsButton(),
 	}
 
 	local popupLayer = create("ScreenGui") {
@@ -171,24 +184,9 @@ local function BitKaisenGui()
 	local notifHolder = NotificationHolder()
 	notifHolder.Parent = notifLayer
 
-	local selectionLayer = create("ScreenGui") {
-		Name = "BitKaisenSelectionLayer",
-		ResetOnSpawn = false,
-		IgnoreGuiInset = true,
-		DisplayOrder = 2000,
-		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-		Parent = playerGui,
-	}
-	local selectionScreen = ServerSelection.create()
-	selectionScreen.Parent = selectionLayer
-
 	applyResponsiveLayout(mainPanel)
 	task.defer(function() applyResponsiveLayout(mainPanel) end)
 	task.delay(0.25, function() applyResponsiveLayout(mainPanel) end)
-
-	device.subscribe(function()
-		applyResponsiveLayout(mainPanel)
-	end)
 
 	if workspace.CurrentCamera then
 		workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
@@ -209,6 +207,8 @@ local function BitKaisenGui()
 
 	return gui
 end
+
+loadingScreen.bump("Preparing panels...")
 
 MissionsPanel.init()
 ActivitiesPanel.init()
@@ -232,7 +232,8 @@ AFKPanel.init()
 IncidentMapPanel.init()
 
 px.usePx()
-device.init()
+
+loadingScreen.bump("Building your world...")
 
 vide.mount(function()
 	return BitKaisenGui()
@@ -251,7 +252,14 @@ FirstTimeGuidancePanel.init(playerGui)
 
 TopBarController.init()
 SFXController.init()
-ConsoleSupport.init()
+
+topbarIcons.init({
+	godMode = GodModePanel,
+	clanWar = ClanWarPanel,
+	afk = AFKPanel,
+})
+
+inputDebug.init()
 
 local helpers = require("@ui/helpers")
 
@@ -260,74 +268,70 @@ local lastLogTimeKey = ""
 local lastLogClock = 0
 local lastLoggedAge = ""
 local lastLifeWasDead = false
-local serverSelectionHandled = false
+
+local function handleLifeUpdate(updatedStats, logMessage, forceResetLog)
+	if not updatedStats then return end
+
+	if forceResetLog == true then
+		lastLifeWasDead = false
+		playerState.clearLog()
+	end
+
+	if updatedStats.Alive and lastLifeWasDead then
+		playerState.clearLog()
+		lastLifeWasDead = false
+	end
+
+	playerState.update(updatedStats, nil, forceResetLog)
+
+	if logMessage then
+		local currentTimeKey = helpers.getLogTimeKey(updatedStats)
+		local formattedAge = helpers.getLogTimeLabel(updatedStats)
+		local now = os.clock()
+		logMessage = tostring(logMessage)
+
+		if lastLogMessage == logMessage and lastLogTimeKey == currentTimeKey and (now - lastLogClock) < 0.85 then
+			return
+		end
+		lastLogMessage = logMessage
+		lastLogTimeKey = currentTimeKey
+		lastLogClock = now
+
+		local log = playerState.lifeLog()
+		if #log == 0 then
+			playerState.pushLog(formattedAge)
+			playerState.pushLog(logMessage)
+			lastLoggedAge = currentTimeKey
+			return
+		end
+
+		if lastLoggedAge == currentTimeKey then
+			playerState.pushLog(logMessage)
+		else
+			playerState.pushLog("")
+			playerState.pushLog(formattedAge)
+			playerState.pushLog(logMessage)
+			lastLoggedAge = currentTimeKey
+		end
+	end
+
+	if updatedStats and updatedStats.Alive == false then
+		lastLifeWasDead = true
+	end
+end
+
+local s0, m0, f0 = experienceMode.getInitialLifeEvent()
+if s0 then
+	handleLifeUpdate(s0, m0, f0)
+end
+
+task.defer(function()
+	loadingScreen.finish()
+end)
 
 local ule = remotes.updateLifeEvent()
 if ule then
-	ule.OnClientEvent:Connect(function(updatedStats, logMessage, forceResetLog)
-		if not updatedStats then return end
-
-		if not serverSelectionHandled then
-			serverSelectionHandled = true
-			local savedMode = nil
-			if typeof(updatedStats) == "table" and typeof(updatedStats.Settings) == "table" then
-				savedMode = updatedStats.Settings.PlatformMode
-			end
-			if typeof(savedMode) == "string" and (savedMode == "CrossPlatform" or savedMode == "Mobile") then
-				device.setUiMode(savedMode :: device.UiMode)
-			end
-			if ServerSelection.shouldShow(savedMode) then
-				ServerSelection.show()
-			end
-		end
-
-		if forceResetLog == true then
-			lastLifeWasDead = false
-			playerState.clearLog()
-		end
-
-		if updatedStats.Alive and lastLifeWasDead then
-			playerState.clearLog()
-			lastLifeWasDead = false
-		end
-
-		playerState.update(updatedStats, nil, forceResetLog)
-
-		if logMessage then
-			local currentTimeKey = helpers.getLogTimeKey(updatedStats)
-			local formattedAge = helpers.getLogTimeLabel(updatedStats)
-			local now = os.clock()
-			logMessage = tostring(logMessage)
-
-			if lastLogMessage == logMessage and lastLogTimeKey == currentTimeKey and (now - lastLogClock) < 0.85 then
-				return
-			end
-			lastLogMessage = logMessage
-			lastLogTimeKey = currentTimeKey
-			lastLogClock = now
-
-			local log = playerState.lifeLog()
-			if #log == 0 then
-				playerState.pushLog(formattedAge)
-				playerState.pushLog(logMessage)
-				lastLoggedAge = currentTimeKey
-				return
-			end
-
-			if lastLoggedAge == currentTimeKey then
-				playerState.pushLog(logMessage)
-			else
-				playerState.pushLog("")
-				playerState.pushLog(formattedAge)
-				playerState.pushLog(logMessage)
-				lastLoggedAge = currentTimeKey
-			end
-		end
-
-		if updatedStats and updatedStats.Alive == false then
-			lastLifeWasDead = true
-		end
-	end)
+	ule.OnClientEvent:Connect(handleLifeUpdate)
 end
 
 

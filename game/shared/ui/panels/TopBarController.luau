@@ -76,17 +76,6 @@ local BUTTON_ORDER = {
 		TextColor = THEME.Green,
 		StrokeColor = THEME.Green,
 	},
-	{
-		Key = "AFK",
-		TextMatches = { "AFK", "AFK ON" },
-		NameMatches = { "AFKButton", "OpenAFKStabilization" },
-		Text = "AFK",
-		Width = 86,
-		SmallWidth = 62,
-		Color = Color3.fromRGB(33, 28, 48),
-		TextColor = THEME.Gold,
-		StrokeColor = THEME.Purple,
-	},
 }
 
 local state = {

@@ -2346,7 +2346,7 @@ function ensureExtraStats(stats)
 		ReducedMotion = false,
 		ScreenShake = true,
 		SkipCombatSkillChecks = false,
-		PlatformMode = "",
+		UIMode = "",
 	}
 
 	for settingName, defaultValue in pairs(defaultSettings) do
@@ -2367,8 +2367,8 @@ function ensureExtraStats(stats)
 	stats.Settings.ScreenShake = stats.Settings.ScreenShake ~= false
 	stats.Settings.SkipCombatSkillChecks = stats.Settings.SkipCombatSkillChecks == true
 
-	if stats.Settings.PlatformMode ~= "CrossPlatform" and stats.Settings.PlatformMode ~= "Mobile" and stats.Settings.PlatformMode ~= "" then
-		stats.Settings.PlatformMode = ""
+	if stats.Settings.UIMode ~= "Computer" and stats.Settings.UIMode ~= "Mobile" and stats.Settings.UIMode ~= "" then
+		stats.Settings.UIMode = ""
 	end
 
 	local age = tonumber(stats.Age) or 0
@@ -9669,6 +9669,7 @@ domainAction.OnServerEvent:Connect(function(player, actionId)
 end)
 
 getGodMode.OnServerInvoke = function(player)
+	godModeOwnershipCache[player.UserId] = nil
 	return BK_GodModeService.GetPayload(player)
 end
 
@@ -10320,11 +10321,11 @@ local ALLOWED_SETTINGS = {
 	ReducedMotion = "boolean",
 	ScreenShake = "boolean",
 	SkipCombatSkillChecks = "boolean",
-	PlatformMode = "string",
+	UIMode = "string",
 }
 
 local ALLOWED_STRING_VALUES = {
-	PlatformMode = { CrossPlatform = true, Mobile = true },
+	UIMode = { Computer = true, Mobile = true },
 }
 
 updateSettingsEvent.OnServerEvent:Connect(function(player, settingName, value)

@@ -14,6 +14,7 @@ local BitKaisenTraits = require(ReplicatedStorage:WaitForChild("BitKaisenTraits"
 local BitKaisenTechniqueEvolution = require(ReplicatedStorage:WaitForChild("BitKaisenTechniqueEvolution"))
 local BitKaisenCurseEvolution = require(ReplicatedStorage:WaitForChild("BitKaisenCurseEvolution"))
 local BitKaisenCombat = require(ReplicatedStorage:WaitForChild("BitKaisenCombat"))
+local BitKaisenStats = require(ReplicatedStorage:WaitForChild("BitKaisenStats"))
 
 local BK_ActivityService = {}
 local context = {}
@@ -2629,6 +2630,70 @@ local function processActivity(player, activityId)
 		stats.Reputation += math.random(2, 5)
 		logMessage = "You evolved <b>" .. technique .. "</b> from <b>" .. oldStage .. "</b> into <b>" .. branchName .. "</b>. Health <b>-" .. tostring(strain) .. "</b>." .. adjustWorldReputation(stats, 2, math.random(0, 2), 3)
 		fireMajorPopup(player, "TECHNIQUE EVOLUTION", "Your innate technique reached a new application.", branchName, "Further evolution unlocks at higher mastery thresholds.")
+
+	elseif activityId == "body_hop" then
+		local technique = tostring(stats.CursedTechnique or stats.InnateTechnique or "")
+		local techLower = string.lower(technique)
+		if not (string.find(techLower, "brain", 1, true) or string.find(techLower, "transplant", 1, true)) then
+			stats.ActivitiesDoneThisAge = math.max(0, (stats.ActivitiesDoneThisAge or 1) - 1)
+			fireLifeUpdate(player, stats, "Only Brain Transplant users can body hop.")
+			return
+		end
+		local stage = tostring(stats.TechniqueEvolutionStage or "Dormant")
+		if stage ~= "Extension Technique" and stage ~= "Maximum Technique" and stage ~= "Domain Seed" and stage ~= "Complete Domain" then
+			stats.ActivitiesDoneThisAge = math.max(0, (stats.ActivitiesDoneThisAge or 1) - 1)
+			fireLifeUpdate(player, stats, "Evolve Brain Transplant to its Body Hopping stage first.")
+			return
+		end
+
+		local oldName = tostring(stats.Name or "Unknown")
+		local oldAge = tonumber(stats.Age) or 0
+
+		local originData = nil
+		for _, origin in ipairs(BitKaisenStats.Origins or {}) do
+			if origin.DisplayName == stats.Clan or origin.DisplayName == stats.Origin then
+				originData = origin
+				break
+			end
+		end
+
+		local gender = tostring(stats.Gender or "Unknown")
+		local identity = BitKaisenStats.GenerateRandomIdentity(originData, gender)
+		stats.PreviousLifeName = oldName
+		stats.FirstName = identity.FirstName
+		stats.FamilyName = identity.FamilyName
+		stats.Name = identity.FullName
+		stats.Gender = identity.Gender
+
+		stats.Age = math.random(16, 20)
+		stats.MonthsIntoAge = 0
+		stats.CurrentMonth = 1
+		stats.ActivitiesDoneThisAge = 0
+		stats.Health = 100
+		stats.Happiness = math.clamp(math.random(70, 90), 0, 100)
+
+		stats.RCTOldAgeYearsRemaining = 0
+		stats.RCTRevivesThisLife = 0
+
+		stats.InJujutsuHigh = false
+		stats.JujutsuHighYear = 0
+		stats.JujutsuHighPopularity = 0
+
+		stats.JobTitle = "Unemployed"
+		stats.JobLevel = 0
+		stats.JobExperience = 0
+		stats.JobYearsWorked = 0
+		stats.JobSalary = 0
+		stats.JobApplicationsThisYear = 0
+
+		stats.BodyHopsUsed = (tonumber(stats.BodyHopsUsed) or 0) + 1
+
+		logMessage = "<font color='#b27aff'><b>[ BODY HOP ]</b></font> You abandoned <b>" .. oldName .. "</b> (age " .. tostring(oldAge) .. ") and transplanted your brain into a new host."
+		logMessage = logMessage .. "\nNew identity: <b>" .. tostring(stats.Name) .. "</b>, age <b>" .. tostring(stats.Age) .. "</b>."
+		logMessage = logMessage .. "\nYour cursed energy, technique mastery, and knowledge carried over."
+		logMessage = logMessage .. "\nTotal body hops: <b>" .. tostring(stats.BodyHopsUsed) .. "</b>."
+
+		fireMajorPopup(player, "BODY HOP", "Your brain found a new host.", tostring(stats.Name) .. ", Age " .. tostring(stats.Age), "CE, technique, mastery, and smarts preserved. Body hops: " .. tostring(stats.BodyHopsUsed))
 
 	elseif activityId == "jujutsu_school_event" then
 		if stats.InJujutsuHigh ~= true then

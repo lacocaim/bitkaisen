@@ -1,4 +1,46 @@
+local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+
+local TAP_MAX_MOVE = 12
+local TAP_MAX_TIME = 0.5
+local TAP_DEBOUNCE = 0.25
+
+-- Reliable tap detection that works inside ScrollingFrames on touch devices.
+-- ScrollingFrame swallows Activated when the finger moves even slightly, so we
+-- track InputBegan/InputEnded ourselves and only fire the callback when the
+-- finger stayed within TAP_MAX_MOVE pixels for < TAP_MAX_TIME seconds.
+local function bindTap(button: GuiButton, callback: () -> ())
+	local startPos: Vector3? = nil
+	local startTime = 0
+	local lastFire = 0
+
+	button.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.Touch
+			or input.UserInputType == Enum.UserInputType.MouseButton1 then
+			startPos = input.Position
+			startTime = os.clock()
+		end
+	end)
+
+	button.InputEnded:Connect(function(input)
+		if input.UserInputType ~= Enum.UserInputType.Touch
+			and input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+			return
+		end
+		if not startPos then return end
+
+		local now = os.clock()
+		local dx = math.abs(input.Position.X - startPos.X)
+		local dy = math.abs(input.Position.Y - startPos.Y)
+		startPos = nil
+
+		if dx > TAP_MAX_MOVE or dy > TAP_MAX_MOVE then return end
+		if (now - startTime) > TAP_MAX_TIME then return end
+		if (now - lastFire) < TAP_DEBOUNCE then return end
+		lastFire = now
+		callback()
+	end)
+end
 
 local theme = {
 	Bg = Color3.fromRGB(7, 7, 10),
@@ -69,7 +111,7 @@ local function mobileButton(props: {
 	btn.MouseLeave:Connect(function()
 		TweenService:Create(btn, TWEEN_FAST, { BackgroundColor3 = props.color or theme.Button }):Play()
 	end)
-	btn.MouseButton1Click:Connect(props.callback)
+	bindTap(btn, props.callback)
 
 	return btn
 end
@@ -212,7 +254,7 @@ local function mobileHeader(parent: GuiObject, titleText: string, onClose: () ->
 	closeBtn.AutoButtonColor = false
 	closeBtn.Parent = header
 	corner(closeBtn, 999)
-	closeBtn.MouseButton1Click:Connect(onClose)
+	closeBtn.Activated:Connect(onClose)
 
 	return header
 end
@@ -223,6 +265,13 @@ local function mobileSheet(props: {
 	title: string,
 	onClose: () -> (),
 }): Frame
+	-- Safe area: keep the sheet (and its title) below the Roblox topbar. The
+	-- panel's ScreenGui is passed as props.parent. CoreGui can't be drawn over,
+	-- so we inset instead of trying to z-index above it.
+	if props.parent:IsA("ScreenGui") then
+		(props.parent :: ScreenGui).IgnoreGuiInset = false
+	end
+
 	local sheet = Instance.new("Frame")
 	sheet.Name = props.name
 	sheet.Size = UDim2.fromScale(1, 1)
@@ -242,6 +291,7 @@ return {
 	theme = theme,
 	corner = corner,
 	stroke = stroke,
+	bindTap = bindTap,
 	mobileButton = mobileButton,
 	mobileCard = mobileCard,
 	mobileLabel = mobileLabel,

@@ -1,5 +1,6 @@
 local Icon = require("@packages/topbarplus")
 local uiState = require("@ui-state/uiState")
+local overlayManager = require("@ui-state/overlayManager")
 
 local topbarIcons = {}
 
@@ -9,6 +10,7 @@ function topbarIcons.init(panelRefs)
 	settingsIcon:setRight()
 	settingsIcon:setOrder(100)
 	settingsIcon:bindEvent("selected", function()
+		overlayManager.closeAll()
 		uiState.navigate("settings")
 		settingsIcon:deselect()
 	end)
@@ -18,8 +20,8 @@ function topbarIcons.init(panelRefs)
 	godModeIcon:setRight()
 	godModeIcon:setOrder(101)
 	godModeIcon:bindEvent("selected", function()
-		if panelRefs.godMode and panelRefs.godMode.open then
-			panelRefs.godMode.open()
+		if panelRefs.godMode then
+			overlayManager.show("godMode", panelRefs.godMode.open, panelRefs.godMode.close)
 		end
 		godModeIcon:deselect()
 	end)
@@ -30,8 +32,8 @@ function topbarIcons.init(panelRefs)
 	warIcon:setOrder(102)
 	warIcon:setEnabled(false)
 	warIcon:bindEvent("selected", function()
-		if panelRefs.clanWar and panelRefs.clanWar.open then
-			panelRefs.clanWar.open()
+		if panelRefs.clanWar then
+			overlayManager.show("clanWar", panelRefs.clanWar.open, panelRefs.clanWar.close)
 		end
 		warIcon:deselect()
 	end)
@@ -51,8 +53,8 @@ function topbarIcons.init(panelRefs)
 	afkIcon:setRight()
 	afkIcon:setOrder(103)
 	afkIcon:bindEvent("selected", function()
-		if panelRefs.afk and panelRefs.afk.open then
-			panelRefs.afk.open()
+		if panelRefs.afk then
+			overlayManager.show("afk", panelRefs.afk.open, panelRefs.afk.close)
 		end
 		afkIcon:deselect()
 	end)

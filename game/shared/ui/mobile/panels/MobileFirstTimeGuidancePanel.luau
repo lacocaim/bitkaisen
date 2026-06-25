@@ -96,7 +96,7 @@ local function init()
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "BitKaisenMobileFirstTimeGuidanceGui"
 	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
+	gui.IgnoreGuiInset = false
 	gui.DisplayOrder = 680
 	gui.Enabled = false
 	gui.Parent = playerGui
@@ -109,7 +109,9 @@ local function init()
 	card.BackgroundColor3 = theme.Panel
 	card.BorderSizePixel = 0
 	card.Visible = false
-	card.Active = true
+	-- Active=false so the hint card never intercepts taps meant for the +AGE /
+	-- nav buttons it sits over. Its own Skip/Next buttons stay interactive.
+	card.Active = false
 	card.ClipsDescendants = true
 	card.Parent = gui
 	mc.corner(card, 14)
@@ -253,13 +255,13 @@ local function init()
 		end)
 	end
 
-	skipButton.MouseButton1Click:Connect(function()
+	skipButton.Activated:Connect(function()
 		state.Finished = true
 		markSeen()
 		setStep(#STEPS + 1)
 	end)
 
-	nextButton.MouseButton1Click:Connect(function()
+	nextButton.Activated:Connect(function()
 		setStep(state.StepIndex + 1)
 	end)
 

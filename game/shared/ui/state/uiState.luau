@@ -1,4 +1,5 @@
 local vide = require("@packages/vide")
+local overlayManager = require("@ui-state/overlayManager")
 
 local source = vide.source
 
@@ -45,6 +46,7 @@ local function topModal()
 end
 
 local function navigate(route: Route)
+	overlayManager.closeAll()
 	if activeRoute() == route then
 		activeRoute("")
 		notifySubscribers()

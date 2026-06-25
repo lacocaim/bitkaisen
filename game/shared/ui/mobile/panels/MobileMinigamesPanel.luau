@@ -271,7 +271,7 @@ local function openBlackFlashTiming(payload)
 		marker.Position = UDim2.new(progress, 0, 0.5, 0)
 	end)
 
-	hitButton.MouseButton1Click:Connect(function()
+	hitButton.Activated:Connect(function()
 		submitActive(false)
 	end)
 end
@@ -329,13 +329,13 @@ local function openBlackjack(payload)
 		stand.TextTransparency = 0.45
 	end
 
-	hit.MouseButton1Click:Connect(function()
+	hit.Activated:Connect(function()
 		sendBlackjackAction("hit")
 	end)
-	stand.MouseButton1Click:Connect(function()
+	stand.Activated:Connect(function()
 		sendBlackjackAction("stand")
 	end)
-	leave.MouseButton1Click:Connect(function()
+	leave.Activated:Connect(function()
 		if payload.Done == true then
 			destroyActive()
 		else
@@ -382,7 +382,7 @@ local function openBurglary(payload)
 
 	local leaveBtn = makeActionButton(panel, "LEAVE", UDim2.new(1, -90, 0, 14), UDim2.new(0, 72, 0, 32), Color3.fromRGB(105, 54, 54))
 	leaveBtn.TextSize = 12
-	leaveBtn.MouseButton1Click:Connect(function()
+	leaveBtn.Activated:Connect(function()
 		sendBurglaryResult("fled")
 	end)
 
@@ -478,10 +478,10 @@ local function openBurglary(payload)
 	local down = makeActionButton(panel, "DOWN", UDim2.new(dpadCenter, -36, 0, dpadY + 56), dpadBtnSize, Color3.fromRGB(75, 70, 68))
 	local right = makeActionButton(panel, "RIGHT", UDim2.new(dpadCenter, 40, 0, dpadY + 56), dpadBtnSize, Color3.fromRGB(75, 70, 68))
 
-	up.MouseButton1Click:Connect(function() step(0, -1) end)
-	down.MouseButton1Click:Connect(function() step(0, 1) end)
-	left.MouseButton1Click:Connect(function() step(-1, 0) end)
-	right.MouseButton1Click:Connect(function() step(1, 0) end)
+	up.Activated:Connect(function() step(0, -1) end)
+	down.Activated:Connect(function() step(0, 1) end)
+	left.Activated:Connect(function() step(-1, 0) end)
+	right.Activated:Connect(function() step(1, 0) end)
 
 	active = { Kind = "Burglary", Token = token, Root = root }
 	redraw()
@@ -548,7 +548,7 @@ local function openHeirloom(payload)
 		corner(button, 10)
 		stroke(button, Color3.fromRGB(190, 143, 82))
 
-		button.MouseButton1Click:Connect(function()
+		button.Activated:Connect(function()
 			if not active or active.Kind ~= "Heirloom" or button:GetAttribute("Opened") == true then
 				return
 			end
@@ -706,10 +706,10 @@ local function openCursedFingerHunt(payload)
 	local down = makeActionButton(panel, "DOWN", UDim2.new(dpadCenter, -36, 0, dpadY + 56), dpadBtnSize, Color3.fromRGB(72, 46, 54))
 	local right = makeActionButton(panel, "RIGHT", UDim2.new(dpadCenter, 40, 0, dpadY + 56), dpadBtnSize, Color3.fromRGB(72, 46, 54))
 
-	up.MouseButton1Click:Connect(function() step(0, -1) end)
-	down.MouseButton1Click:Connect(function() step(0, 1) end)
-	left.MouseButton1Click:Connect(function() step(-1, 0) end)
-	right.MouseButton1Click:Connect(function() step(1, 0) end)
+	up.Activated:Connect(function() step(0, -1) end)
+	down.Activated:Connect(function() step(0, 1) end)
+	left.Activated:Connect(function() step(-1, 0) end)
+	right.Activated:Connect(function() step(1, 0) end)
 
 	active = { Kind = "CursedFinger", Token = token, Root = root }
 	redraw()
@@ -775,7 +775,7 @@ local function openRCTMemory(payload)
 		corner(button, 12)
 		stroke(button, Color3.fromRGB(230, 250, 250))
 
-		button.MouseButton1Click:Connect(function()
+		button.Activated:Connect(function()
 			if not active or active.Kind ~= "RCTMemory" then
 				return
 			end
@@ -797,7 +797,7 @@ function MobileMinigamesPanel.init(playerGui: PlayerGui)
 	gui = Instance.new("ScreenGui")
 	gui.Name = "MobileMinigamesGui"
 	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
+	gui.IgnoreGuiInset = false
 	gui.Enabled = false
 	gui.DisplayOrder = 660
 	gui.Parent = playerGui

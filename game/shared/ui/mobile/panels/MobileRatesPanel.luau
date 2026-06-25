@@ -152,7 +152,7 @@ local function init()
 	gui = Instance.new("ScreenGui")
 	gui.Name = "MobileRatesGui"
 	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
+	gui.IgnoreGuiInset = false
 	gui.DisplayOrder = 644
 	gui.Enabled = false
 	gui.Parent = playerGui

@@ -375,7 +375,7 @@ local function init(playerGui: Instance)
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "BitKaisenMobileCharacterCustomizationGui"
 	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
+	gui.IgnoreGuiInset = false
 	gui.DisplayOrder = 650
 	gui.Enabled = false
 	gui.Parent = playerGui
@@ -824,8 +824,8 @@ local function init(playerGui: Instance)
 			task.delay(0.08, function() busy = false end)
 		end
 
-		leftBtn.MouseButton1Click:Connect(function() applyCycle(-1) end)
-		rightBtn.MouseButton1Click:Connect(function() applyCycle(1) end)
+		leftBtn.Activated:Connect(function() applyCycle(-1) end)
+		rightBtn.Activated:Connect(function() applyCycle(1) end)
 
 		return row
 	end
@@ -993,7 +993,7 @@ local function init(playerGui: Instance)
 	-- Button callbacks
 	-----------------------------------------------------------------------
 
-	randomizeBtn.MouseButton1Click:Connect(function()
+	randomizeBtn.Activated:Connect(function()
 		clearStatus()
 		if currentPage == 1 then
 			lockedIdentityState = nil
@@ -1004,14 +1004,14 @@ local function init(playerGui: Instance)
 		refreshPage()
 	end)
 
-	backBtn.MouseButton1Click:Connect(function()
+	backBtn.Activated:Connect(function()
 		clearStatus()
 		lockedIdentityState = nil
 		currentPage = 1
 		refreshPage()
 	end)
 
-	continueBtn.MouseButton1Click:Connect(function()
+	continueBtn.Activated:Connect(function()
 		clearStatus()
 
 		if submitting then return end

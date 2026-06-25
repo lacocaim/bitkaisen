@@ -6,10 +6,11 @@ local playerState = require("@ui-state/playerState")
 local uiState = require("@ui-state/uiState")
 local navRegistry = require("@ui-state/navRegistry")
 local remotes = require("@ui-state/remotes")
+local mc = require("@ui/mobile/mobileComponents")
+local bindTap = mc.bindTap
 
 local create = vide.create
 local derive = vide.derive
-local source = vide.source
 local indexes = vide.indexes
 
 local TWEEN_QUICK = TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
@@ -446,8 +447,6 @@ local function MobileLifeLog()
 end
 
 local function MobileAgeButton()
-	local busy = source(false)
-
 	return create("TextButton") {
 		Name = "AgeUpButton",
 		Size = UDim2.new(0.94, 0, 0, 48),
@@ -466,14 +465,11 @@ local function MobileAgeButton()
 		create("UIStroke") { Color = theme.Red },
 
 		[vide.action(function(btn: TextButton)
-			btn.MouseButton1Click:Connect(function()
-				if busy() then return end
-				busy(true)
+			bindTap(btn, function()
 				local ule = remotes.updateLifeEvent()
 				if ule then
 					ule:FireServer("AgeUp")
 				end
-				task.delay(0.35, function() busy(false) end)
 			end)
 		end)] = true,
 	}
@@ -537,11 +533,11 @@ local function MobileNavPanel()
 				create("UICorner") { CornerRadius = UDim.new(0, 8) },
 				create("UIStroke") { Color = entry.color or theme.Stroke },
 
-				[vide.action(function(b: TextButton)
-					b.MouseButton1Click:Connect(function()
-						uiState.navigate(entry.id)
-					end)
-				end)] = true,
+			[vide.action(function(b: TextButton)
+				bindTap(b, function()
+					uiState.navigate(entry.id)
+				end)
+			end)] = true,
 			}
 
 			return btn

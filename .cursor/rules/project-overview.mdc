@@ -33,9 +33,9 @@ The game uses a traditional Roblox scripting architecture (not ECS):
 
 ### Client boot flow
 1. `globalClientBootstrap.client.luau` runs first (global init)
-2. Both `BitKaisenClient` (PC) and `BitKaisenMobileClient` (Mobile) call `experienceMode.resolve()` which waits for the first `UpdateLifeEvent` from the server, then shows the **ModeSelect** picker ("CHOOSE YOUR EXPERIENCE": Computer or Mobile). The chosen mode is persisted to `stats.Settings.UIMode`
-3. After the pick, `loadingScreen.show(mode)` displays an animated loading screen (centered logo with boat-rock animation, progress bar) covering the boot phase
-4. The matching client continues; the other returns immediately
+2. Both `BitKaisenClient` (PC) and `BitKaisenMobileClient` (Mobile) call `experienceMode.resolve()`, which **auto-detects** the device (no picker): Mobile when `UserInputService.TouchEnabled` and no physical mouse+keyboard, or a touch device with a small/portrait viewport; otherwise Computer. There is **no "Choose your experience" screen**. The detected mode is persisted to `stats.Settings.UIMode` and there is no manual UI-mode switch
+3. `resolve()` immediately calls `loadingScreen.show(mode)` (centered logo with boat-rock animation, progress bar), then captures the first `UpdateLifeEvent` (so the first frame is populated) while the loader covers boot
+4. The matching client continues; the other returns immediately (`if mode ~= "Computer"/"Mobile" then return end`)
 5. Panels and nav are initialized, `vide.mount()` builds the shell, initial life data is applied, then `loadingScreen.finish()` fades the loader out
 
 ### PC Client (`BitKaisenClient/init.client.luau`)
@@ -56,6 +56,8 @@ The game uses a traditional Roblox scripting architecture (not ECS):
 - **PC panels** (`game/shared/ui/panels/`): each is a standalone module with its own ScreenGui, uses `Instance.new()` for all UI construction, wires to `uiState.subscribe()` for route-driven open/close or listens for remote events. Panels use imperative `refresh()` methods and `:Connect()` for events
 - **Mobile panels** (`game/shared/ui/mobile/panels/`): each `Mobile*Panel` module follows the same pattern (own ScreenGui, route-driven via `uiState.subscribe`), using `mobileComponents` helpers for mobile-native sheets and buttons
 - **Critical**: every panel ScreenGui **must** start with `gui.Enabled = false` at init and only set `Enabled = true` when the panel is actively displayed. An `Enabled = true` ScreenGui with idle children (especially `ScrollingFrame`s) silently consumes all input within its bounds, even if those children are `Visible = false`
+- **Button events**: buttons **inside a `ScrollingFrame`** must use `bindTap(button, callback)` from `mobileComponents.luau` -- NOT `Activated` or `MouseButton1Click`. On touch, `ScrollingFrame` claims the gesture as a scroll and `Activated` never fires; `bindTap` tracks `InputBegan`/`InputEnded` with a movement+time threshold to reliably distinguish taps from scrolls. Buttons **outside** scroll frames (e.g. header "X", topbar icons) may use `Activated` as before. `mobileButton()` already uses `bindTap` internally. Nav buttons in `mobileShell.luau` and `+ AGE` also use `bindTap`
+- **Mobile safe area**: every mobile panel ScreenGui uses `IgnoreGuiInset = false` so titles/content sit below the Roblox topbar (CoreGui can't be drawn over). `mobileSheet` also enforces this on its parent ScreenGui. Any non-interactive hint/overlay placed over shell buttons (e.g. FirstTimeGuidance `GuidanceCard`) must be `Active = false` so it never eats taps
 - **God Mode** (PC and Mobile): standalone overlay, opened via TopbarPlus topbar icon (not nav-routed). Close hides the sheet overlay only
 
 ### State
@@ -63,17 +65,26 @@ The game uses a traditional Roblox scripting architecture (not ECS):
 - `uiState` -- route/modal stack + imperative `subscribe(fn)->disconnect` observers for panels
 - `navRegistry` -- dynamic nav entries (missions, activities, relationships, assets, jobs, affiliations, domain, rivals, history, mentor)
 - `remotes` -- centralized remote access with lazy WaitForChild + cache
-- `experienceMode` -- singleton that resolves Computer/Mobile choice, caches initial life event
+- `overlayManager` -- single-overlay enforcer: `show(name, openFn, closeFn)` auto-closes the previous full-screen overlay before opening the new one; `closeAll()` closes whatever is open. Used by topbar icons (God Mode, AFK, War) and route navigation (`uiState.navigate` calls `closeAll()`). Prevents the opaque-stack "black screen" problem
+- `experienceMode` -- singleton that **auto-detects** Computer/Mobile (UserInputService + viewport), shows the loading screen, and caches the initial life event. No picker, no manual switch
 
 ### Topbar
-- `topbarIcons.luau` creates TopbarPlus icons for **Settings** (gear emoji), **God Mode** (lightning), **War** (crossed swords), and **AFK** (sleep/zzz), wired to existing panel `open()` methods. Initialized from both PC and Mobile client bootstraps
+- `topbarIcons.luau` creates TopbarPlus icons for **Settings** (gear emoji), **God Mode** (lightning), **War** (crossed swords), and **AFK** (sleep/zzz). God Mode, AFK, and War are routed through `overlayManager.show()` so only one can be open at a time. Settings navigates via `uiState.navigate("settings")` which also calls `overlayManager.closeAll()`. Initialized from both PC and Mobile client bootstraps
 - `TopBarController` manages the custom second-row topbar buttons (Daily, Shop, Vows, etc.)
 
 ### DisplayOrder layering
 - TopbarPlus container: **10** (default). Shell GUIs (`BitKaisenGui`, `MobileGui`): **15** (above TopbarPlus holders so touch events reach shell buttons). Panel ScreenGuis: **639+** (above everything). Loading screen: **6000**. TopBarController: **1400**
 
 ### Input debugging
-- `inputDebug.luau` (Studio-only, dev-gated) provides on-tap hit-test logging (`GetGuiObjectsAtPosition` stack) and `dumpScreenGuis()` for diagnosing touch-blocking layers. Warns if both PC and Mobile shells exist simultaneously (cross-mode bleed)
+- `inputDebug.luau` provides an **on-screen debug HUD** (works on real devices, not just Studio):
+  - Tiny "D" toggle button (top-left) shows/hides the HUD panel
+  - HUD shows: last tap target name+class+Active, current overlay (from `overlayManager`), all enabled ScreenGuis
+  - Large red "RESET UI" button calls `overlayManager.closeAll()` + `uiState.closeAll()` + disables stray ScreenGuis -- escape hatch from black-screen scenarios
+  - "LOG" toggle enables/disables console output (disabled by default to avoid touch-input lag from spam)
+- Note: `execute_luau` (Studio MCP) runs in a **separate Luau VM** that shares the DataModel but has its own `require` cache / `_G`. Requiring `uiState`/panels from it gives different module instances than the running game, so pub/sub and `_G` guards can't be tested that way -- inspect/instrument live instances instead
+
+### Studio / repo sync
+- `game.project.json` sets `$ignoreUnknownInstances: true` on ServerScriptService, ReplicatedStorage, and StarterPlayerScripts, so Rojo will **not** delete instances it doesn't manage. Orphan/duplicate scripts saved in the place can therefore linger -- periodically audit (scan those services for duplicate script names) to keep the place in sync with the repo. Server services may print their load banner more than once in Studio Play output; `GameManager` is guarded by `_G.__GameManagerLoaded` and runs once
 
 ### Controllers
 `TopBarController`, `SFXController` provide cross-cutting concerns (top bar layout, sound effects)
@@ -86,15 +97,15 @@ game/server/BitKaisenServer/         -> Server service modules (BK_Remotes, BK_C
 game/shared/                         -> ReplicatedStorage (hooks, controllers, config modules)
 game/shared/ui/                      -> UI tree root
 game/shared/ui/panels/               -> PC panel modules (30+), each with own ScreenGui
-game/shared/ui/components/           -> Vide reactive shell components (ProfileCard, LifeLog, NavPanel, ModeSelect, etc.)
-game/shared/ui/components/shell/     -> Shell-level Vide components (ModeSelect, ProfileCard, LifeLog, NavPanel, AgeUpButton, etc.)
-game/shared/ui/state/                -> Shared state: playerState, uiState, navRegistry, remotes, experienceMode
+game/shared/ui/components/           -> Vide reactive shell components (ProfileCard, LifeLog, NavPanel, etc.)
+game/shared/ui/components/shell/     -> Shell-level Vide components (ProfileCard, LifeLog, NavPanel, AgeUpButton, etc.)
+game/shared/ui/state/                -> Shared state: playerState, uiState, navRegistry, remotes, experienceMode, overlayManager
 game/shared/ui/mobile/               -> Mobile shell + components (mobileShell, mobileComponents, mobilePopup, mobileNotifications, mobileRouter)
 game/shared/ui/mobile/panels/        -> Mobile*Panel modules (route-driven, own ScreenGui)
 game/shared/ui/hooks/                -> UI hooks (setTimeout, useEvent, useRefresh, useTween)
 game/shared/ui/topbarIcons.luau      -> TopbarPlus icon setup (Settings, God Mode, War, AFK) with emoji labels
-game/shared/ui/inputDebug.luau       -> Studio-only input diagnostics (hit-test + ScreenGui dump)
-game/shared/ui/loadingScreen.luau    -> Post-pick animated loading screen (centered logo + bar, boat-rock animation)
+game/shared/ui/inputDebug.luau       -> On-screen debug HUD (tap target, overlay status, RESET UI escape hatch)
+game/shared/ui/loadingScreen.luau    -> Animated loading screen shown right after auto-detect (centered logo + bar, boat-rock animation)
 game/shared/ui/responsiveScale.luau  -> UIScale-based uniform scaling helper for imperative panels
 game/shared/ui/theme.luau            -> Shared color/font theme constants
 game/shared/ui/helpers.luau          -> UI utility functions

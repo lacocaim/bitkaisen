@@ -9,6 +9,7 @@ local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 
 local mobileComponents = require(script.Parent.Parent.mobileComponents)
+local overlayManager = require(script.Parent.Parent.Parent.state.overlayManager)
 local theme = mobileComponents.theme
 local corner = mobileComponents.corner
 local stroke = mobileComponents.stroke
@@ -114,7 +115,7 @@ local function init(playerGui: Instance)
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "BitKaisenMobileCombatGui"
 	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
+	gui.IgnoreGuiInset = false
 	gui.Enabled = false
 	gui.DisplayOrder = 650
 	gui.Parent = playerGui
@@ -625,7 +626,7 @@ local function init(playerGui: Instance)
 			end)
 		end
 
-		stop.MouseButton1Click:Connect(function() submit(false) end)
+		stop.Activated:Connect(function() submit(false) end)
 		root.InputBegan:Connect(function(input)
 			if input.UserInputType == Enum.UserInputType.Touch then submit(false) end
 		end)
@@ -716,7 +717,7 @@ local function init(playerGui: Instance)
 			stroke(button, Color3.fromRGB(255, 255, 255), 2)
 
 			startedAt = os.clock()
-			button.MouseButton1Click:Connect(function()
+			button.Activated:Connect(function()
 				if finished or hitId ~= activeHitId then return end
 				local elapsed = os.clock() - startedAt
 				local success = elapsed <= windowSeconds
@@ -800,7 +801,7 @@ local function init(playerGui: Instance)
 		heartbeatPulse()
 
 		local clicked = false
-		button.MouseButton1Click:Connect(function()
+		button.Activated:Connect(function()
 			if clicked then return end
 			clicked = true
 			pulseAlive = false
@@ -895,6 +896,9 @@ local function init(playerGui: Instance)
 		state = newState or { Active = false }
 		overlay.Visible = state.Active == true
 		gui.Enabled = state.Active == true
+		if state.Active then
+			overlayManager.closeAll()
+		end
 		if not state.Active then
 			destroyMinigame()
 			return
@@ -992,22 +996,22 @@ local function init(playerGui: Instance)
 	end
 
 	-- Button connections
-	attackButton.MouseButton1Click:Connect(function()
+	attackButton.Activated:Connect(function()
 		if state.Phase == "player_turn" then combatAction:FireServer("attack") end
 	end)
-	techniqueButton.MouseButton1Click:Connect(function()
+	techniqueButton.Activated:Connect(function()
 		if state.Phase == "player_turn" then combatAction:FireServer("technique") end
 	end)
-	domainButton.MouseButton1Click:Connect(function()
+	domainButton.Activated:Connect(function()
 		if state.Phase == "player_turn" then combatAction:FireServer("domain") end
 	end)
-	defendButton.MouseButton1Click:Connect(function()
+	defendButton.Activated:Connect(function()
 		if state.Phase == "player_turn" then combatAction:FireServer("defend") end
 	end)
-	fleeButton.MouseButton1Click:Connect(function()
+	fleeButton.Activated:Connect(function()
 		if state.Phase == "player_turn" then combatAction:FireServer("flee") end
 	end)
-	resetButton.MouseButton1Click:Connect(function()
+	resetButton.Activated:Connect(function()
 		if not state.Active then return end
 		local productId = tonumber(state.ResetProductId) or 0
 		if game.PlaceId == TEST_PURCHASE_PLACE_ID or RunService:IsStudio() then

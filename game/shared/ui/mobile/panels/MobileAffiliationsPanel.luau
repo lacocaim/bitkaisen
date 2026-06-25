@@ -29,7 +29,7 @@ local GROUPS = {
 local gui = Instance.new("ScreenGui")
 gui.Name = "BitKaisenMobileAffiliationsGui"
 gui.ResetOnSpawn = false
-gui.IgnoreGuiInset = true
+gui.IgnoreGuiInset = false
 gui.DisplayOrder = 622
 gui.Enabled = false
 gui.Parent = playerGui
@@ -165,7 +165,7 @@ local function createPageControls(groupKey: string, totalCount: number, currentP
 	prev.Parent = controls
 	mc.corner(prev, 8)
 	if currentPage > 1 then
-		prev.MouseButton1Click:Connect(function()
+		prev.Activated:Connect(function()
 			groupPages[groupKey] = math.clamp(currentPage - 1, 1, totalPages)
 			refresh()
 		end)
@@ -186,7 +186,7 @@ local function createPageControls(groupKey: string, totalCount: number, currentP
 	nxt.Parent = controls
 	mc.corner(nxt, 8)
 	if currentPage < totalPages then
-		nxt.MouseButton1Click:Connect(function()
+		nxt.Activated:Connect(function()
 			groupPages[groupKey] = math.clamp(currentPage + 1, 1, totalPages)
 			refresh()
 		end)

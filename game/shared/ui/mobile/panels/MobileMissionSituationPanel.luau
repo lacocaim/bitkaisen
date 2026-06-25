@@ -78,7 +78,7 @@ local function init()
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "BitKaisenMobileMissionSituationGui"
 	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
+	gui.IgnoreGuiInset = false
 	gui.DisplayOrder = 660
 	gui.Enabled = false
 	gui.Parent = playerGui
@@ -341,7 +341,7 @@ local function init()
 		btn.MouseLeave:Connect(function()
 			TweenService:Create(btn, TWEEN_FAST, { BackgroundColor3 = style.Button }):Play()
 		end)
-		btn.MouseButton1Click:Connect(function()
+		btn.Activated:Connect(function()
 			chooseOption(optionData, index)
 		end)
 	end
@@ -400,12 +400,12 @@ local function init()
 		TweenService:Create(sheet, TWEEN_FAST, { Position = UDim2.new(0.5, 0, 1, -8) }):Play()
 	end
 
-	closeBtn.MouseButton1Click:Connect(function()
+	closeBtn.Activated:Connect(function()
 		playSFX("ChoiceSelect")
 		closeWindow(true)
 	end)
 
-	fateButton.MouseButton1Click:Connect(pickRandomOption)
+	fateButton.Activated:Connect(pickRandomOption)
 
 	showMissionSituation.OnClientEvent:Connect(openWindow)
 end

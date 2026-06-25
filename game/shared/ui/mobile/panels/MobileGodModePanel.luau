@@ -3,6 +3,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local MarketplaceService = game:GetService("MarketplaceService")
 
 local mc = require("@ui/mobile/mobileComponents")
+local overlayManager = require("@ui-state/overlayManager")
 
 local theme = mc.theme
 local player = Players.LocalPlayer
@@ -313,11 +314,17 @@ render = function()
 	})
 end
 
+local function close()
+	if not gui then return end
+	if sheet then sheet.Visible = false end
+	gui.Enabled = false
+end
+
 local function init()
 	gui = Instance.new("ScreenGui")
 	gui.Name = "MobileGodModeGui"
 	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
+	gui.IgnoreGuiInset = false
 	gui.DisplayOrder = 641
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Enabled = false
@@ -328,8 +335,8 @@ local function init()
 		parent = gui,
 		title = "GOD MODE",
 		onClose = function()
-			sheet.Visible = false
-			gui.Enabled = false
+			close()
+			overlayManager.closeAll()
 		end,
 	})
 
@@ -356,4 +363,4 @@ local function open()
 	gui.Enabled = true
 end
 
-return { init = init, open = open }
+return { init = init, open = open, close = close }

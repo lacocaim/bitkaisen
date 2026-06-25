@@ -47,7 +47,7 @@ local CATEGORY_ORDER = {
 local gui = Instance.new("ScreenGui")
 gui.Name = "MobileActivitiesGui"
 gui.ResetOnSpawn = false
-gui.IgnoreGuiInset = true
+gui.IgnoreGuiInset = false
 gui.DisplayOrder = 621
 gui.Enabled = false
 gui.Parent = playerGui
@@ -352,7 +352,7 @@ local function buildPills(categories: { string })
 		pad.PaddingRight = UDim.new(0, 14)
 		pad.Parent = pill
 
-		pill.MouseButton1Click:Connect(function()
+		pill.Activated:Connect(function()
 			selectedCategory = cat
 			updatePillHighlight()
 			if activityCache then

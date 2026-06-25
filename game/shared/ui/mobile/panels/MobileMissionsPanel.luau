@@ -158,7 +158,7 @@ local function init()
 	gui = Instance.new("ScreenGui")
 	gui.Name = "BitKaisenMobileMissionsGui"
 	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
+	gui.IgnoreGuiInset = false
 	gui.DisplayOrder = 620
 	gui.Enabled = false
 	gui.Parent = playerGui

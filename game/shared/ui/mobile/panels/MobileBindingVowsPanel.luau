@@ -348,7 +348,7 @@ local function makeSelectorRow(parent: Frame, sectionNum: number, title: string,
 	prevBtn.AutoButtonColor = false
 	prevBtn.Parent = selectorFrame
 	mc.corner(prevBtn, 8)
-	prevBtn.MouseButton1Click:Connect(onPrev)
+	prevBtn.Activated:Connect(onPrev)
 
 	local valueLabel = Instance.new("TextLabel")
 	valueLabel.Size = UDim2.new(1, -96, 1, 0)
@@ -374,7 +374,7 @@ local function makeSelectorRow(parent: Frame, sectionNum: number, title: string,
 	nextBtn.AutoButtonColor = false
 	nextBtn.Parent = selectorFrame
 	mc.corner(nextBtn, 8)
-	nextBtn.MouseButton1Click:Connect(onNext)
+	nextBtn.Activated:Connect(onNext)
 
 	mc.mobileLabel({
 		parent = card,
@@ -932,7 +932,7 @@ local function init()
 	gui = Instance.new("ScreenGui")
 	gui.Name = "BitKaisenMobileBindingVowsGui"
 	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
+	gui.IgnoreGuiInset = false
 	gui.DisplayOrder = 625
 	gui.Enabled = false
 	gui.Parent = playerGui

@@ -4,6 +4,7 @@ local MarketplaceService = game:GetService("MarketplaceService")
 local UserInputService = game:GetService("UserInputService")
 
 local mc = require("@ui/mobile/mobileComponents")
+local overlayManager = require("@ui-state/overlayManager")
 
 local theme = mc.theme
 local player = Players.LocalPlayer
@@ -73,6 +74,12 @@ local function isAFKUiInput(input)
 	return isPointInside(sheet, point) or isPointInside(openButton, point)
 end
 
+local function close()
+	if not gui then return end
+	if sheet then sheet.Visible = false end
+	gui.Enabled = false
+end
+
 local function init()
 	local getAFK = ReplicatedStorage:WaitForChild("GetAFKStabilization", 20)
 	local afkAction = ReplicatedStorage:WaitForChild("AFKStabilizationAction", 20)
@@ -86,7 +93,7 @@ local function init()
 	gui = Instance.new("ScreenGui")
 	gui.Name = "MobileAFKStabilizationGui"
 	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
+	gui.IgnoreGuiInset = false
 	gui.DisplayOrder = 642
 	gui.Enabled = false
 	gui.Parent = playerGui
@@ -96,8 +103,8 @@ local function init()
 		parent = gui,
 		title = "AFK STABILIZATION",
 		onClose = function()
-			sheet.Visible = false
-			gui.Enabled = false
+			close()
+			overlayManager.closeAll()
 		end,
 	})
 
@@ -242,4 +249,4 @@ local function open()
 	if sheet then sheet.Visible = true end
 end
 
-return { init = init, open = open }
+return { init = init, open = open, close = close }

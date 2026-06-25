@@ -268,7 +268,7 @@ local function buildHeader(parent)
 	refreshBtn.AutoButtonColor = false
 	refreshBtn.Parent = header
 	mc.corner(refreshBtn, 8)
-	refreshBtn.MouseButton1Click:Connect(loadMap)
+	refreshBtn.Activated:Connect(loadMap)
 
 	local closeBtn = Instance.new("TextButton")
 	closeBtn.AnchorPoint = Vector2.new(1, 0.5)
@@ -283,7 +283,7 @@ local function buildHeader(parent)
 	closeBtn.AutoButtonColor = false
 	closeBtn.Parent = header
 	mc.corner(closeBtn, 999)
-	closeBtn.MouseButton1Click:Connect(closeMap)
+	closeBtn.Activated:Connect(closeMap)
 end
 
 local function init()
@@ -293,7 +293,7 @@ local function init()
 	gui = Instance.new("ScreenGui")
 	gui.Name = "BitKaisenMobileIncidentMapGui"
 	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
+	gui.IgnoreGuiInset = false
 	gui.DisplayOrder = 638
 	gui.Enabled = false
 	gui.Parent = playerGui

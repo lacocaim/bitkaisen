@@ -237,7 +237,7 @@ local function init()
 	gui = Instance.new("ScreenGui")
 	gui.Name = "BitKaisenMobileFreeRewardsGui"
 	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
+	gui.IgnoreGuiInset = false
 	gui.DisplayOrder = 636
 	gui.Enabled = false
 	gui.Parent = playerGui

@@ -33,7 +33,7 @@ local function hookButton(button: Instance)
 	if button:GetAttribute("BitKaisenSFXHooked") then return end
 	button:SetAttribute("BitKaisenSFXHooked", true)
 
-	button.MouseButton1Click:Connect(function()
+	button.Activated:Connect(function()
 		local text = ""
 		if button:IsA("TextButton") then text = string.upper(button.Text or "") end
 

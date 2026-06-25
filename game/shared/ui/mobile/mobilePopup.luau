@@ -205,7 +205,7 @@ local function init(playerGui: PlayerGui)
 	continueBtn.ZIndex = 102
 	continueBtn.Parent = window
 	mc.corner(continueBtn, 8)
-	continueBtn.MouseButton1Click:Connect(closeCurrentPopup)
+	continueBtn.Activated:Connect(closeCurrentPopup)
 
 	overlay.InputBegan:Connect(function(input)
 		if not isShowing then return end

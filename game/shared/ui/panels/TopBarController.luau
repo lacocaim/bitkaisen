@@ -582,7 +582,7 @@ local function installButtonGuards(button, definition)
 		task.defer(forceLockedPositions)
 	end)
 
-	button.MouseButton1Click:Connect(function()
+	button.Activated:Connect(function()
 		requestHardLock(1.25)
 		task.defer(forceLockedPositions)
 		task.delay(0.03, forceLockedPositions)

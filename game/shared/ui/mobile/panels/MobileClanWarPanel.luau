@@ -2,6 +2,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local uiState = require("@ui-state/uiState")
+local overlayManager = require("@ui-state/overlayManager")
 local mc = require("@ui/mobile/mobileComponents")
 
 local theme = mc.theme
@@ -16,10 +17,12 @@ local getClanWar = ReplicatedStorage:WaitForChild("GetClanWar")
 local clanWarAction = ReplicatedStorage:WaitForChild("ClanWarAction")
 local updateLifeEvent = ReplicatedStorage:WaitForChild("UpdateLifeEvent")
 
+local closePanel: () -> ()
+
 local gui = Instance.new("ScreenGui")
 gui.Name = "BitKaisenMobileClanWarGui"
 gui.ResetOnSpawn = false
-gui.IgnoreGuiInset = true
+gui.IgnoreGuiInset = false
 gui.DisplayOrder = 724
 gui.Enabled = false
 gui.Parent = playerGui
@@ -29,6 +32,8 @@ local sheet = mobileSheet({
 	parent = gui,
 	title = "CLAN WAR",
 	onClose = function()
+		closePanel()
+		overlayManager.closeAll()
 		uiState.closeRoute()
 	end,
 })
@@ -289,7 +294,7 @@ local function openPanel()
 	refresh()
 end
 
-local function closePanel()
+closePanel = function()
 	isOpen = false
 	sheet.Visible = false
 	gui.Enabled = false
@@ -331,4 +336,4 @@ local function isAvailable()
 	return data.Active == true or data.Eligible == true
 end
 
-return { init = init, open = openPanel, isAvailable = isAvailable }
+return { init = init, open = openPanel, close = closePanel, isAvailable = isAvailable }

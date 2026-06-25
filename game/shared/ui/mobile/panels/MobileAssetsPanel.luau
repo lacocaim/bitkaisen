@@ -158,7 +158,7 @@ local function buildTabs()
 		btn.Parent = tabHolder
 		corner(btn, 8)
 		stroke(btn, theme.Stroke)
-		btn.MouseButton1Click:Connect(function()
+		btn.Activated:Connect(function()
 			setTab(tabName)
 			dojoSubPage = "Overview"
 			refresh()
@@ -1083,7 +1083,7 @@ local function init()
 	gui = Instance.new("ScreenGui")
 	gui.Name = "MobileAssetsGui"
 	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
+	gui.IgnoreGuiInset = false
 	gui.DisplayOrder = 622
 	gui.Enabled = false
 	gui.Parent = playerGui

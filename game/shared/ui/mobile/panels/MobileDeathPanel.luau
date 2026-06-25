@@ -112,7 +112,7 @@ local function init(playerGui: Instance)
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "BitKaisenMobileDeathGui"
 	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
+	gui.IgnoreGuiInset = false
 	gui.DisplayOrder = 670
 	gui.Enabled = false
 	gui.Parent = playerGui
@@ -586,7 +586,7 @@ local function init(playerGui: Instance)
 	-- Wire close button on picker header
 	for _, child in ipairs(pickerHeader:GetChildren()) do
 		if child:IsA("TextButton") then
-			child.MouseButton1Click:Connect(function()
+			child.Activated:Connect(function()
 				hidePicker()
 			end)
 			break
@@ -594,7 +594,7 @@ local function init(playerGui: Instance)
 	end
 
 	-- Button actions
-	newLifeBtn.MouseButton1Click:Connect(function()
+	newLifeBtn.Activated:Connect(function()
 		newLifeBtn.Text = "STARTING..."
 		updateLifeEvent:FireServer("StartNewLife")
 		task.delay(0.25, function()
@@ -603,11 +603,11 @@ local function init(playerGui: Instance)
 		end)
 	end)
 
-	successorBtn.MouseButton1Click:Connect(function()
+	successorBtn.Activated:Connect(function()
 		showPicker()
 	end)
 
-	rctBtn.MouseButton1Click:Connect(function()
+	rctBtn.Activated:Connect(function()
 		if getRCTReviveUses(lastDeathStats) >= RCT_REVIVE_MAX_PER_LIFE then
 			updateRCTButton(lastDeathStats)
 			return
@@ -629,7 +629,7 @@ local function init(playerGui: Instance)
 		end)
 	end)
 
-	curseBtn.MouseButton1Click:Connect(function()
+	curseBtn.Activated:Connect(function()
 		curseBtn.Text = "REBIRTHING..."
 		updateLifeEvent:FireServer("BecomeVengefulSpirit")
 		task.delay(0.45, function()
@@ -637,7 +637,7 @@ local function init(playerGui: Instance)
 		end)
 	end)
 
-	reincarnateBtn.MouseButton1Click:Connect(function()
+	reincarnateBtn.Activated:Connect(function()
 		reincarnateBtn.Text = "REINCARNATING..."
 		updateLifeEvent:FireServer("Reincarnate")
 		task.delay(0.45, function()

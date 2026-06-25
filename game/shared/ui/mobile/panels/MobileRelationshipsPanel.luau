@@ -229,7 +229,7 @@ local function promptChildName(callback: (string?) -> ())
 	local promptGui = Instance.new("ScreenGui")
 	promptGui.Name = "MobileChildNamePrompt"
 	promptGui.ResetOnSpawn = false
-	promptGui.IgnoreGuiInset = true
+	promptGui.IgnoreGuiInset = false
 	promptGui.DisplayOrder = 998
 	promptGui.Parent = playerGui
 
@@ -389,7 +389,7 @@ local function createActionsGrid(parent: GuiObject, relationship, order: number)
 			TweenService:Create(btn, TWEEN_FAST, { BackgroundColor3 = theme.Button }):Play()
 		end)
 
-		btn.MouseButton1Click:Connect(function()
+		btn.Activated:Connect(function()
 			if busyAction then return end
 
 			if action.Confirm and btn:GetAttribute("Confirmed") ~= true then
@@ -518,7 +518,7 @@ local function createRelationshipCard(parent: GuiObject, relationship, order: nu
 	expandBtn.Parent = card
 	corner(expandBtn, 8)
 
-	expandBtn.MouseButton1Click:Connect(function()
+	expandBtn.Activated:Connect(function()
 		if expandedCardId == relationship.Id then
 			expandedCardId = nil
 			if actionsHolder then actionsHolder:Destroy() end
@@ -674,7 +674,7 @@ local function init()
 	gui = Instance.new("ScreenGui")
 	gui.Name = "MobileRelationshipsGui"
 	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
+	gui.IgnoreGuiInset = false
 	gui.DisplayOrder = 621
 	gui.Enabled = false
 	gui.Parent = playerGui

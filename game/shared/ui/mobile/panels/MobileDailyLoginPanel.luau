@@ -222,7 +222,7 @@ local function buildUI()
 	gui = Instance.new("ScreenGui")
 	gui.Name = GUI_NAME
 	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
+	gui.IgnoreGuiInset = false
 	gui.DisplayOrder = 636
 	gui.Enabled = false
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling

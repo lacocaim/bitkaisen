@@ -859,7 +859,7 @@ local function makeSmallButton(parent, text, color, callback)
 	button.MouseLeave:Connect(function()
 		tween(button, 0.12, { BackgroundColor3 = color or THEME.RedDark })
 	end)
-	button.MouseButton1Click:Connect(function()
+	button.Activated:Connect(function()
 		playSFX("Click")
 		if callback then callback() end
 	end)
@@ -965,7 +965,7 @@ local function makeToggleRow(titleText, descText, key)
 		toggle.BackgroundColor3 = enabled and THEME.RedDark or THEME.Panel3
 	end
 
-	toggle.MouseButton1Click:Connect(function()
+	toggle.Activated:Connect(function()
 		saveSetting(key, not (currentSettings[key] == true))
 		playSFX("Tick")
 		refreshToggle()
@@ -1187,27 +1187,6 @@ buildGameplayPage = function()
 
 	makeSectionLabel("Display")
 	makeToggleRow("High Contrast Text", "Makes life log text larger and easier to read.", "HighContrastText")
-
-	makeSectionLabel("Platform")
-	local experienceMode = require("@ui-state/experienceMode")
-	local currentModeLabel = experienceMode.get() or "Not Set"
-	makeActionRow(
-		"\xF0\x9F\x93\xB1",
-		"UI Mode",
-		"Current: " .. currentModeLabel .. ". Switch between Computer and Mobile UI.",
-		Color3.fromRGB(120, 190, 255),
-		"CHANGE",
-		function()
-			uiState.closeRoute()
-			task.defer(function()
-				local ModeSelect = require("@ui-components/shell/ModeSelect")
-				local newMode = ModeSelect.prompt()
-				if newMode then
-					experienceMode.setMode(newMode)
-				end
-			end)
-		end
-	)
 end
 
 local function makeSlotCard(slot, selectedSlot)
@@ -1721,11 +1700,11 @@ local function promptGiftRecipient(item)
 	giftButton.Text = "GIFT"
 	giftButton.Parent = box
 
-	cancel.MouseButton1Click:Connect(function()
+	cancel.Activated:Connect(function()
 		giftOverlay:Destroy()
 	end)
 
-	giftButton.MouseButton1Click:Connect(function()
+	giftButton.Activated:Connect(function()
 		local receiverName = tostring(giftInput.Text or ""):gsub("^%s+", ""):gsub("%s+$", "")
 		if receiverName == "" then
 			showGiftStatusPopup(false, "GIFT ERROR", "Enter the receiver's Roblox username first.")
@@ -1880,7 +1859,7 @@ for tabId, button in pairs(tabs) do
 	button.MouseLeave:Connect(function()
 		setTabVisuals()
 	end)
-	button.MouseButton1Click:Connect(function()
+	button.Activated:Connect(function()
 		playSFX("Click")
 		confirmingDeleteSlotId = nil
 		local builder = PAGE_BUILDERS[tabId] or buildHomePage
@@ -1888,7 +1867,7 @@ for tabId, button in pairs(tabs) do
 	end)
 end
 
-closeButton.MouseButton1Click:Connect(function()
+closeButton.Activated:Connect(function()
 	playSFX("Click")
 	uiState.closeRoute()
 end)

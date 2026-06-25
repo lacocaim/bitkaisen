@@ -1,10 +1,27 @@
-local Icon = require("@packages/topbarplus")
+local iconOk, Icon = pcall(require, "@packages/topbarplus")
+if not iconOk then
+	local packagesFolder = game:GetService("ReplicatedStorage"):FindFirstChild("Packages")
+	if packagesFolder then
+		local topbarplusMod = packagesFolder:FindFirstChild("topbarplus")
+		if topbarplusMod then
+			iconOk, Icon = pcall(require, topbarplusMod)
+		end
+	end
+end
+if not iconOk then
+	warn("[topbarIcons] Could not load TopbarPlus: " .. tostring(Icon))
+	Icon = nil
+end
 local uiState = require("@ui-state/uiState")
 local overlayManager = require("@ui-state/overlayManager")
 
 local topbarIcons = {}
 
 function topbarIcons.init(panelRefs)
+	if not Icon or not Icon.new then
+		warn("[topbarIcons] Icon module missing or has no .new - cannot create topbar icons")
+		return
+	end
 	local settingsIcon = Icon.new()
 	settingsIcon:setLabel(utf8.char(0x2699))
 	settingsIcon:setRight()
@@ -30,23 +47,12 @@ function topbarIcons.init(panelRefs)
 	warIcon:setLabel(utf8.char(0x2694))
 	warIcon:setRight()
 	warIcon:setOrder(102)
-	warIcon:setEnabled(false)
 	warIcon:bindEvent("selected", function()
 		if panelRefs.clanWar then
 			overlayManager.show("clanWar", panelRefs.clanWar.open, panelRefs.clanWar.close)
 		end
 		warIcon:deselect()
 	end)
-
-	if panelRefs.clanWar and panelRefs.clanWar.isAvailable then
-		task.spawn(function()
-			while true do
-				local ok, avail = pcall(panelRefs.clanWar.isAvailable)
-				warIcon:setEnabled(ok and avail == true)
-				task.wait(2)
-			end
-		end)
-	end
 
 	local afkIcon = Icon.new()
 	afkIcon:setLabel(utf8.char(0x1F4A4))
@@ -57,6 +63,17 @@ function topbarIcons.init(panelRefs)
 			overlayManager.show("afk", panelRefs.afk.open, panelRefs.afk.close)
 		end
 		afkIcon:deselect()
+	end)
+
+	local freeRewardsIcon = Icon.new()
+	freeRewardsIcon:setLabel(utf8.char(0x1F381))
+	freeRewardsIcon:setRight()
+	freeRewardsIcon:setOrder(99)
+	freeRewardsIcon:bindEvent("selected", function()
+		if panelRefs.freeRewards then
+			overlayManager.show("freeRewards", panelRefs.freeRewards.open, panelRefs.freeRewards.close)
+		end
+		freeRewardsIcon:deselect()
 	end)
 end
 

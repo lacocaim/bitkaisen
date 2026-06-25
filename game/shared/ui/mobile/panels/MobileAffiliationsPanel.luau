@@ -15,6 +15,7 @@ local relationshipAction = ReplicatedStorage:WaitForChild("RelationshipAction")
 local refreshStamp = 0
 local isOpen = false
 local groupPages: { [string]: number } = {}
+local expandedAffId: string? = nil
 
 local PAGE_SIZE = 4
 
@@ -76,31 +77,33 @@ end
 
 local refresh: () -> ()
 
-local function makeActionRow(parent: Frame, rel: any, layoutOrder: number)
-	local row = Instance.new("Frame")
-	row.Size = UDim2.new(1, 0, 0, 48)
-	row.BackgroundTransparency = 1
-	row.LayoutOrder = layoutOrder
-	row.Parent = parent
+local ACTIONS = {
+	{ text = "HANG OUT", color = theme.Button, id = "spend_time" },
+	{ text = "TRAIN", color = Color3.fromRGB(45, 80, 55), id = "train_together" },
+	{ text = "RIVALRY", color = Color3.fromRGB(80, 55, 35), id = "challenge" },
+	{ text = "BULLY", color = Color3.fromRGB(90, 35, 45), id = "argue" },
+}
+
+local function createAffActionsGrid(parent: Frame, rel: any, layoutOrder: number): Frame
+	local holder = Instance.new("Frame")
+	holder.Name = "ActionsGrid"
+	holder.Size = UDim2.new(1, 0, 0, 0)
+	holder.AutomaticSize = Enum.AutomaticSize.Y
+	holder.BackgroundTransparency = 1
+	holder.LayoutOrder = layoutOrder
+	holder.Parent = parent
 
 	local grid = Instance.new("UIGridLayout")
-	grid.CellSize = UDim2.new(0.48, 0, 0, 44)
-	grid.CellPadding = UDim2.new(0.04, 0, 0, 4)
+	grid.CellSize = UDim2.new(0.5, -4, 0, 46)
+	grid.CellPadding = UDim2.new(0, 8, 0, 8)
 	grid.SortOrder = Enum.SortOrder.LayoutOrder
-	grid.Parent = row
+	grid.Parent = holder
 
-	local actions = {
-		{ text = "HANG OUT", color = theme.Button, id = "spend_time" },
-		{ text = "TRAIN", color = Color3.fromRGB(45, 80, 55), id = "train_together" },
-		{ text = "RIVALRY", color = Color3.fromRGB(80, 55, 35), id = "challenge" },
-		{ text = "BULLY", color = Color3.fromRGB(90, 35, 45), id = "argue" },
-	}
-
-	for i, action in actions do
+	for i, action in ACTIONS do
 		mc.mobileButton({
-			parent = row,
+			parent = holder,
 			text = action.text,
-			size = UDim2.new(0.48, 0, 0, 44),
+			size = UDim2.new(0.5, -4, 0, 46),
 			color = action.color,
 			textSize = 13,
 			order = i,
@@ -116,7 +119,44 @@ local function makeActionRow(parent: Frame, rel: any, layoutOrder: number)
 		})
 	end
 
-	return row
+	return holder
+end
+
+local function addExpandButton(card: Frame, rel: any, layoutOrder: number)
+	local id = relationId(rel)
+	local actionsHolder: Frame? = nil
+
+	local expandBtn = Instance.new("TextButton")
+	expandBtn.Name = "ExpandBtn"
+	expandBtn.Size = UDim2.new(1, 0, 0, 36)
+	expandBtn.BackgroundColor3 = theme.Button
+	expandBtn.BorderSizePixel = 0
+	expandBtn.Text = expandedAffId == id and "\226\150\178  Hide Actions" or "\226\150\188  Actions"
+	expandBtn.TextColor3 = theme.SubText
+	expandBtn.TextSize = 13
+	expandBtn.Font = Enum.Font.GothamBold
+	expandBtn.AutoButtonColor = false
+	expandBtn.LayoutOrder = layoutOrder
+	expandBtn.ZIndex = 5
+	expandBtn.Parent = card
+	mc.corner(expandBtn, 8)
+
+	if expandedAffId == id then
+		actionsHolder = createAffActionsGrid(card, rel, layoutOrder - 1)
+	end
+
+	bindTap(expandBtn, function()
+		if expandedAffId == id then
+			expandedAffId = nil
+			if actionsHolder then actionsHolder:Destroy(); actionsHolder = nil end
+			expandBtn.Text = "\226\150\188  Actions"
+		else
+			expandedAffId = id
+			if actionsHolder then actionsHolder:Destroy() end
+			actionsHolder = createAffActionsGrid(card, rel, layoutOrder - 1)
+			expandBtn.Text = "\226\150\178  Hide Actions"
+		end
+	end)
 end
 
 local function createStatusCard(text: string, color: Color3?)
@@ -163,6 +203,7 @@ local function createPageControls(groupKey: string, totalCount: number, currentP
 	prev.Font = Enum.Font.GothamBold
 	prev.Active = currentPage > 1
 	prev.AutoButtonColor = currentPage > 1
+	prev.ZIndex = 5
 	prev.Parent = controls
 	mc.corner(prev, 8)
 	if currentPage > 1 then
@@ -182,6 +223,7 @@ local function createPageControls(groupKey: string, totalCount: number, currentP
 	nxt.TextColor3 = currentPage < totalPages and theme.Text or theme.Muted
 	nxt.TextSize = 14
 	nxt.Font = Enum.Font.GothamBold
+	nxt.ZIndex = 5
 	nxt.Active = currentPage < totalPages
 	nxt.AutoButtonColor = currentPage < totalPages
 	nxt.Parent = controls
@@ -311,7 +353,7 @@ function refresh()
 					})
 
 					if rel.ReadOnly ~= true then
-						makeActionRow(card, rel, 4)
+						addExpandButton(card, rel, 4)
 					end
 
 					rendered += 1

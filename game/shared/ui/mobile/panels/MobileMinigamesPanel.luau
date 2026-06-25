@@ -801,6 +801,7 @@ function MobileMinigamesPanel.init(playerGui: PlayerGui)
 	gui.IgnoreGuiInset = false
 	gui.Enabled = false
 	gui.DisplayOrder = 660
+	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Parent = playerGui
 
 	startMinigame = ReplicatedStorage:WaitForChild("StartMinigame", 20)

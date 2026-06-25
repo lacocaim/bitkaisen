@@ -347,6 +347,7 @@ local function makeSelectorRow(parent: Frame, sectionNum: number, title: string,
 	prevBtn.TextSize = 16
 	prevBtn.Font = Enum.Font.GothamBold
 	prevBtn.AutoButtonColor = false
+	prevBtn.ZIndex = 5
 	prevBtn.Parent = selectorFrame
 	mc.corner(prevBtn, 8)
 	bindTap(prevBtn, onPrev)
@@ -372,6 +373,7 @@ local function makeSelectorRow(parent: Frame, sectionNum: number, title: string,
 	nextBtn.TextColor3 = theme.Text
 	nextBtn.TextSize = 16
 	nextBtn.Font = Enum.Font.GothamBold
+	nextBtn.ZIndex = 5
 	nextBtn.AutoButtonColor = false
 	nextBtn.Parent = selectorFrame
 	mc.corner(nextBtn, 8)

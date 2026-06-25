@@ -1,11 +1,74 @@
 local TweenService = game:GetService("TweenService")
-local tapRouter = require("@ui-state/tapRouter")
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
 
--- Register a button for global tap routing. The tap router uses a single
--- UIS InputBegan/InputEnded pair and GetGuiObjectsAtPosition to dispatch
--- taps, which reliably works inside ScrollingFrames on touch.
+local registeredButtons: { [GuiButton]: () -> () } = {}
+local tapRouterReady = false
+local lastFireTime: { [GuiButton]: number } = {}
+
+local TAP_MOVE_LIMIT = 12
+local TAP_TIME_LIMIT = 0.5
+local TAP_DEBOUNCE = 0.2
+
+local function setupTapRouter()
+	if tapRouterReady then return end
+	tapRouterReady = true
+
+	local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
+	local pending: { [InputObject]: { pos: Vector3, t: number } } = {}
+
+	UserInputService.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.Touch
+			or input.UserInputType == Enum.UserInputType.MouseButton1 then
+			pending[input] = { pos = input.Position, t = tick() }
+		end
+	end)
+
+	UserInputService.InputEnded:Connect(function(input)
+		local rec = pending[input]
+		pending[input] = nil
+		if not rec then return end
+		if input.UserInputType ~= Enum.UserInputType.Touch
+			and input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+			return
+		end
+
+		local dist = (input.Position - rec.pos).Magnitude
+		local dt = tick() - rec.t
+
+		if dist > TAP_MOVE_LIMIT or dt > TAP_TIME_LIMIT then return end
+
+		local p = input.Position
+		local ok, objs = pcall(function()
+			return playerGui:GetGuiObjectsAtPosition(p.X, p.Y)
+		end)
+		if not ok or not objs then return end
+
+		for _, obj in ipairs(objs) do
+			local cb = registeredButtons[obj]
+			if cb then
+				local sg = obj:FindFirstAncestorWhichIsA("ScreenGui")
+				if sg and sg.Enabled and obj.Visible then
+					local now = tick()
+					if lastFireTime[obj] and (now - lastFireTime[obj]) < TAP_DEBOUNCE then return end
+					lastFireTime[obj] = now
+						task.spawn(cb)
+					return
+				end
+			end
+		end
+	end)
+end
+
 local function bindTap(button: GuiButton, callback: () -> ())
-	tapRouter.register(button, callback)
+	setupTapRouter()
+	registeredButtons[button] = callback
+	pcall(function()
+		button.Destroying:Connect(function()
+			registeredButtons[button] = nil
+			lastFireTime[button] = nil
+		end)
+	end)
 end
 
 local theme = {
@@ -67,6 +130,7 @@ local function mobileButton(props: {
 	btn.Font = Enum.Font.GothamBold
 	btn.AutoButtonColor = false
 	btn.TextWrapped = true
+	btn.ZIndex = 5
 	btn.LayoutOrder = props.order or 0
 	btn.Parent = props.parent
 	corner(btn, 10)
@@ -96,6 +160,7 @@ local function mobileCard(props: {
 	end
 	card.BackgroundColor3 = props.color or theme.Card
 	card.BorderSizePixel = 0
+	card.ZIndex = 3
 	card.LayoutOrder = props.order or 0
 	card.Parent = props.parent
 	corner(card, 10)
@@ -172,6 +237,7 @@ local function mobileList(parent: GuiObject): ScrollingFrame
 	scroll.ScrollBarImageColor3 = theme.Stroke
 	scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 	scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	scroll.ZIndex = 1
 	scroll.Parent = parent
 
 	local layout = Instance.new("UIListLayout")
@@ -194,6 +260,7 @@ local function mobileHeader(parent: GuiObject, titleText: string, onClose: () ->
 	header.Size = UDim2.new(1, 0, 0, 48)
 	header.BackgroundColor3 = theme.Panel
 	header.BorderSizePixel = 0
+	header.ZIndex = 10
 	header.Parent = parent
 	corner(header, 10)
 
@@ -218,6 +285,7 @@ local function mobileHeader(parent: GuiObject, titleText: string, onClose: () ->
 	closeBtn.Font = Enum.Font.GothamBlack
 	closeBtn.Text = "X"
 	closeBtn.AutoButtonColor = false
+	closeBtn.ZIndex = 11
 	closeBtn.Parent = header
 	corner(closeBtn, 999)
 	bindTap(closeBtn, onClose)
@@ -236,6 +304,7 @@ local function mobileSheet(props: {
 	-- so we inset instead of trying to z-index above it.
 	if props.parent:IsA("ScreenGui") then
 		(props.parent :: ScreenGui).IgnoreGuiInset = false
+		(props.parent :: ScreenGui).ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	end
 
 	local sheet = Instance.new("Frame")

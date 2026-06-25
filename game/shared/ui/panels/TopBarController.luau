@@ -175,6 +175,19 @@ local function isInsideMenuContent(instance)
 	return false
 end
 
+local function isInsideMobilePanel(instance)
+	local current = instance
+	while current and current ~= playerGui do
+		if current:IsA("ScrollingFrame") then return true end
+		if current:IsA("ScreenGui") then
+			local sgName = tostring(current.Name or "")
+			if sgName:find("Mobile", 1, true) then return true end
+		end
+		current = current.Parent
+	end
+	return false
+end
+
 local function getDefinitionByKey(key)
 	for _, definition in ipairs(BUTTON_ORDER) do
 		if definition.Key == key then return definition end
@@ -198,7 +211,9 @@ end
 
 local function findButtonByName(buttonName)
 	for _, descendant in ipairs(playerGui:GetDescendants()) do
-		if isButtonCandidate(descendant) and descendant.Name == buttonName then return descendant end
+		if isButtonCandidate(descendant) and descendant.Name == buttonName and not isInsideMobilePanel(descendant) then
+			return descendant
+		end
 	end
 	return nil
 end
@@ -356,7 +371,7 @@ end
 local function collectButtons()
 	local candidates = {}
 	for _, descendant in ipairs(playerGui:GetDescendants()) do
-		if isButtonCandidate(descendant) and not isInsideMenuContent(descendant) then
+		if isButtonCandidate(descendant) and not isInsideMenuContent(descendant) and not isInsideMobilePanel(descendant) then
 			local definition = identifyButton(descendant)
 			if definition then
 				candidates[definition.Key] = candidates[definition.Key] or {}

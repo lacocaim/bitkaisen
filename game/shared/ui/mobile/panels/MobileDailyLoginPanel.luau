@@ -3,6 +3,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
 local mc = require("@ui/mobile/mobileComponents")
+local overlayManager = require("@ui-state/overlayManager")
 
 local theme = mc.theme
 local player = Players.LocalPlayer
@@ -135,6 +136,18 @@ local function render(data)
 	setClaimButton(canClaim)
 end
 
+local function doClose()
+	state.Open = false
+	sheet.Visible = false
+	gui.Enabled = false
+end
+
+local function doOpen()
+	gui.Enabled = true
+	sheet.Visible = true
+	sheet.BackgroundTransparency = 0
+end
+
 local function openPanel(autoOpen: boolean?)
 	if state.Open then return end
 	state.Open = true
@@ -142,22 +155,13 @@ local function openPanel(autoOpen: boolean?)
 	local data = fetchDailyLogin()
 	render(data)
 
-	gui.Enabled = true
-	sheet.Visible = true
-	sheet.BackgroundTransparency = 1
-	TweenService:Create(sheet, TWEEN_INFO, { BackgroundTransparency = 0 }):Play()
+	overlayManager.show("daily_login", doOpen, doClose)
 end
 
 local function closePanel()
 	if not state.Open then return end
-	state.Open = false
-	TweenService:Create(sheet, TWEEN_INFO, { BackgroundTransparency = 1 }):Play()
-	task.delay(0.2, function()
-		if not state.Open then
-			sheet.Visible = false
-			gui.Enabled = false
-		end
-	end)
+	doClose()
+	overlayManager.closeAll()
 end
 
 local function makeRewardCard(parent: GuiObject, index: number)

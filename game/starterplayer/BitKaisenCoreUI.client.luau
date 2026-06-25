@@ -13,6 +13,19 @@ end
 
 disableCoreGui(Enum.CoreGuiType.Chat)
 
+-- Remove the Roblox "Reset Character" / respawn option. This is a life-sim with
+-- no physical character, so respawning has no meaning. SetCore can fail before
+-- CoreScripts load, so retry until it sticks.
+task.spawn(function()
+	for _ = 1, 20 do
+		local ok = pcall(function()
+			StarterGui:SetCore("ResetButtonCallback", false)
+		end)
+		if ok then return end
+		task.wait(0.5)
+	end
+end)
+
 pcall(function()
 	local chatWindow = TextChatService:FindFirstChildOfClass("ChatWindowConfiguration")
 	if chatWindow then

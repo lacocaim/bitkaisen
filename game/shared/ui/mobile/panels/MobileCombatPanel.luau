@@ -10,6 +10,7 @@ local player = Players.LocalPlayer
 
 local mobileComponents = require(script.Parent.Parent.mobileComponents)
 local overlayManager = require(script.Parent.Parent.Parent.state.overlayManager)
+local uiState = require(script.Parent.Parent.Parent.state.uiState)
 local theme = mobileComponents.theme
 local corner = mobileComponents.corner
 local stroke = mobileComponents.stroke
@@ -118,7 +119,8 @@ local function init(playerGui: Instance)
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = false
 	gui.Enabled = false
-	gui.DisplayOrder = 650
+	gui.DisplayOrder = 730
+	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Parent = playerGui
 
 	local state = { Active = false }
@@ -899,6 +901,7 @@ local function init(playerGui: Instance)
 		gui.Enabled = state.Active == true
 		if state.Active then
 			overlayManager.closeAll()
+			uiState.closeRoute()
 		end
 		if not state.Active then
 			destroyMinigame()

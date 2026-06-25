@@ -113,19 +113,17 @@ do
 	local godModeRef = nil
 	local clanWarRef = nil
 	local afkRef = nil
+	local freeRewardsRef = nil
 	pcall(function() godModeRef = require("@ui/mobile/panels/MobileGodModePanel") end)
 	pcall(function() clanWarRef = require("@ui/mobile/panels/MobileClanWarPanel") end)
 	pcall(function() afkRef = require("@ui/mobile/panels/MobileAFKPanel") end)
+	pcall(function() freeRewardsRef = require("@ui/mobile/panels/MobileFreeRewardsPanel") end)
 	topbarIcons.init({
 		godMode = godModeRef,
 		clanWar = clanWarRef,
 		afk = afkRef,
+		freeRewards = freeRewardsRef,
 	})
-end
-
-do
-	local inputDebug = require("@ui/inputDebug")
-	inputDebug.init()
 end
 
 local helpers = require("@ui/helpers")

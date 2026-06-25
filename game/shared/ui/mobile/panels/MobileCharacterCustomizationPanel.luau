@@ -379,6 +379,7 @@ local function init(playerGui: Instance)
 	gui.IgnoreGuiInset = false
 	gui.DisplayOrder = 650
 	gui.Enabled = false
+	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Parent = playerGui
 
 	local overlay = Instance.new("Frame")

@@ -519,4 +519,4 @@ local function init()
 	-- Free rewards opens via button/remote; expose open for external callers.
 end
 
-return { init = init, open = open }
+return { init = init, open = open, close = close }

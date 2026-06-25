@@ -116,6 +116,7 @@ local function init(playerGui: Instance)
 	gui.IgnoreGuiInset = false
 	gui.DisplayOrder = 670
 	gui.Enabled = false
+	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Parent = playerGui
 
 	-- Full-screen overlay

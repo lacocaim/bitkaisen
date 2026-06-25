@@ -405,6 +405,7 @@ local function MobileLifeLog()
 			ScrollBarImageColor3 = theme.RedSoft,
 			CanvasSize = UDim2.new(0, 0, 0, 0),
 			AutomaticCanvasSize = Enum.AutomaticSize.Y,
+			ZIndex = 1,
 
 			create("UIListLayout") {
 				SortOrder = Enum.SortOrder.LayoutOrder,
@@ -459,6 +460,7 @@ local function MobileAgeButton()
 		TextSize = 20,
 		Font = Enum.Font.GothamBlack,
 		AutoButtonColor = false,
+		ZIndex = 6,
 		LayoutOrder = 3,
 
 		create("UICorner") { CornerRadius = UDim.new(0, 10) },
@@ -488,6 +490,7 @@ local function MobileNavPanel()
 		CanvasSize = UDim2.new(0, 0, 0, 0),
 		AutomaticCanvasSize = Enum.AutomaticSize.Y,
 		ScrollingDirection = Enum.ScrollingDirection.Y,
+		ZIndex = 1,
 		LayoutOrder = 4,
 
 		create("UICorner") { CornerRadius = UDim.new(0, 10) },
@@ -529,6 +532,7 @@ local function MobileNavPanel()
 				TextSize = 13,
 				Font = Enum.Font.GothamBlack,
 				AutoButtonColor = false,
+				ZIndex = 5,
 
 				create("UICorner") { CornerRadius = UDim.new(0, 8) },
 				create("UIStroke") { Color = entry.color or theme.Stroke },
@@ -576,6 +580,37 @@ local function create_(playerGui: PlayerGui)
 		MobileAgeButton(),
 		MobileNavPanel(),
 	}
+
+	-- vide.action callbacks don't fire for Vide-created buttons in this tree,
+	-- so register shell buttons in the tap router imperatively.
+	do
+		local mainPanel = gui:FindFirstChild("MainPanel")
+		if mainPanel then
+			local ageBtn = mainPanel:FindFirstChild("AgeUpButton")
+			if ageBtn and ageBtn:IsA("TextButton") then
+				bindTap(ageBtn, function()
+					local ule = remotes.updateLifeEvent()
+					if ule then
+						ule:FireServer("AgeUp")
+					end
+				end)
+			end
+
+			local navPanel = mainPanel:FindFirstChild("NavPanel")
+			if navPanel then
+				local function registerNavBtn(child)
+					if not child:IsA("TextButton") then return end
+					bindTap(child, function()
+						uiState.navigate(child.Name)
+					end)
+				end
+				for _, child in ipairs(navPanel:GetChildren()) do
+					registerNavBtn(child)
+				end
+				navPanel.ChildAdded:Connect(registerNavBtn)
+			end
+		end
+	end
 
 	return gui
 end

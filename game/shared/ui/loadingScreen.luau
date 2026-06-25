@@ -9,8 +9,8 @@ local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
 local LOGO_ASSET = "rbxassetid://118796008605770"
-local MIN_SHOW_TIME = 1.2
-local SAFETY_TIMEOUT = if RunService:IsStudio() then 4 else 10
+local MIN_SHOW_TIME = 5
+local SAFETY_TIMEOUT = if RunService:IsStudio() then 8 else 12
 
 local BG = theme.Bg
 local BAR_BG = Color3.fromRGB(25, 25, 35)
@@ -92,7 +92,7 @@ local function buildUI(mode)
 	barTrack.Name = "BarTrack"
 	barTrack.Size = UDim2.new(barWidth, 0, 0, 10)
 	barTrack.AnchorPoint = Vector2.new(0.5, 0)
-	barTrack.Position = UDim2.new(0.5, 0, 0.42, (if isMobile then 165 else 235))
+	barTrack.Position = UDim2.new(0.5, 0, 0.42, (if isMobile then 110 else 150))
 	barTrack.BackgroundColor3 = BAR_BG
 	barTrack.BorderSizePixel = 0
 	barTrack.ZIndex = 3

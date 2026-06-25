@@ -292,10 +292,17 @@ end
 local function render()
 	local data = currentData or fetchClanWar()
 	local visible = data.Active == true or data.Eligible == true
-	warButton.Visible = visible
+	warButton.Visible = false
 	if not visible then
+		if panelOpen then
+			tensionFill.Size = UDim2.fromScale(0, 1)
+			summary.Text = tostring(data.PlayerClanName or "Your clan") .. " is not currently involved in a clan war.\nGrow your clan's power and provoke a rival to start one."
+			clearChildren(actionFrame, { UIGridLayout = true })
+			clearChildren(historyBox, { UIListLayout = true, UIPadding = true, UICorner = true })
+			makeHistoryLine("No clan war history yet.", 1)
+			return
+		end
 		overlay.Visible = false
-		panelOpen = false
 		return
 	end
 
@@ -374,6 +381,11 @@ local function open()
 	refresh()
 end
 
+local function close()
+	panelOpen = false
+	overlay.Visible = false
+end
+
 local function isAvailable()
 	return warButton.Visible
 end
@@ -383,4 +395,4 @@ local function init()
 	refresh()
 end
 
-return { init = init, open = open, isAvailable = isAvailable }
+return { init = init, open = open, close = close, isAvailable = isAvailable }

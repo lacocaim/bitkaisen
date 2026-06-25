@@ -99,7 +99,7 @@ local function init(playerGui: PlayerGui)
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "MobileNotifLayer"
 	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
+	gui.IgnoreGuiInset = false
 	gui.DisplayOrder = 990
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Parent = playerGui
@@ -107,8 +107,8 @@ local function init(playerGui: PlayerGui)
 	local frame = Instance.new("Frame")
 	frame.Name = "MobileNotificationHolder"
 	frame.Size = UDim2.new(0.85, 0, 0, 120)
-	frame.AnchorPoint = Vector2.new(0.5, 1)
-	frame.Position = UDim2.new(0.5, 0, 1, -140)
+	frame.AnchorPoint = Vector2.new(0.5, 0)
+	frame.Position = UDim2.new(0.5, 0, 0, 8)
 	frame.BackgroundTransparency = 1
 	frame.ZIndex = 200
 	frame.Parent = gui
@@ -116,7 +116,7 @@ local function init(playerGui: PlayerGui)
 	local layout = Instance.new("UIListLayout")
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
 	layout.Padding = UDim.new(0, 6)
-	layout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+	layout.VerticalAlignment = Enum.VerticalAlignment.Top
 	layout.Parent = frame
 
 	holder = frame

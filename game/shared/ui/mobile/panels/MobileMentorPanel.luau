@@ -28,7 +28,7 @@ local sheet = mc.mobileSheet({
 	end,
 })
 
-local scroll = sheet:FindFirstChild("Content") :: ScrollingFrame
+local scroll = sheet:FindFirstChildOfClass("ScrollingFrame") :: ScrollingFrame
 
 local isOpen = false
 
@@ -229,7 +229,19 @@ local function refresh()
 		return getMentor:InvokeServer()
 	end)
 
-	if not ok or not payload then return end
+	if not ok or not payload then
+		clearContent()
+		local card = mc.mobileCard({ parent = scroll, order = 1 })
+		mc.mobileLabel({
+			parent = card,
+			text = "Mentor data unavailable. Please try again later.",
+			size = 14,
+			color = theme.SubText,
+			font = Enum.Font.GothamBold,
+			order = 1,
+		})
+		return
+	end
 
 	clearContent()
 

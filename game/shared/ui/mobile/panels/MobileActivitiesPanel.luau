@@ -51,6 +51,7 @@ gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = false
 gui.DisplayOrder = 621
 gui.Enabled = false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = playerGui
 
 -- Root sheet (full-screen)
@@ -187,16 +188,6 @@ local function createActivityCard(activityData: any, order: number)
 		accentColor = canDo and theme.Stroke or Color3.fromRGB(70, 35, 42),
 		order = order,
 	})
-
-	-- Accent bar
-	local accent = Instance.new("Frame")
-	accent.Size = UDim2.new(0, 4, 1, -8)
-	accent.Position = UDim2.new(0, -8, 0, -6)
-	accent.BackgroundColor3 = canDo and (activityData.ButtonColor or catColor) or theme.Muted
-	accent.BackgroundTransparency = if canDo then 0 else 0.4
-	accent.BorderSizePixel = 0
-	accent.Parent = card
-	corner(accent, 999)
 
 	-- Title
 	mobileLabel({
@@ -344,6 +335,7 @@ local function buildPills(categories: { string })
 		pill.TextSize = 13
 		pill.Font = Enum.Font.GothamBold
 		pill.AutoButtonColor = false
+		pill.ZIndex = 5
 		pill.LayoutOrder = i
 		pill.Parent = pillBar
 		corner(pill, 999)

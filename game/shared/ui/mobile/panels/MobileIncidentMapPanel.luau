@@ -297,6 +297,7 @@ local function init()
 	gui.IgnoreGuiInset = false
 	gui.DisplayOrder = 638
 	gui.Enabled = false
+	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Parent = playerGui
 
 	sheet = Instance.new("Frame")

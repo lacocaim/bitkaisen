@@ -4,6 +4,7 @@ local GroupService = game:GetService("GroupService")
 
 local uiState = require("@ui-state/uiState")
 local mc = require("@ui/mobile/mobileComponents")
+local overlayManager = require("@ui-state/overlayManager")
 
 local theme = mc.theme
 local player = Players.LocalPlayer
@@ -224,13 +225,23 @@ local function refresh()
 	updateVisuals()
 end
 
-local function openPanel()
+local function doClose()
+	sheet.Visible = false
+	gui.Enabled = false
+end
+
+local function doOpen()
 	gui.Enabled = true
+	sheet.Visible = true
 	refresh()
 end
 
+local function openPanel()
+	overlayManager.show("free_rewards", doOpen, doClose)
+end
+
 local function closePanel()
-	gui.Enabled = false
+	doClose()
 end
 
 local function init()
@@ -255,13 +266,11 @@ local function init()
 
 	uiState.subscribe(function(route)
 		if route == "free_rewards" then
-			sheet.Visible = true
 			openPanel()
 		else
-			sheet.Visible = false
 			closePanel()
 		end
 	end)
 end
 
-return { init = init }
+return { init = init, open = doOpen, close = doClose }

@@ -232,6 +232,7 @@ local function promptChildName(callback: (string?) -> ())
 	promptGui.ResetOnSpawn = false
 	promptGui.IgnoreGuiInset = false
 	promptGui.DisplayOrder = 998
+	promptGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	promptGui.Parent = playerGui
 
 	local shade = Instance.new("Frame")
@@ -378,6 +379,7 @@ local function createActionsGrid(parent: GuiObject, relationship, order: number)
 		btn.Font = Enum.Font.GothamBold
 		btn.Text = action.Text
 		btn.AutoButtonColor = false
+		btn.ZIndex = 5
 		btn.LayoutOrder = index
 		btn.Parent = holder
 		corner(btn, 9)
@@ -515,6 +517,7 @@ local function createRelationshipCard(parent: GuiObject, relationship, order: nu
 	expandBtn.Font = Enum.Font.GothamBold
 	expandBtn.Text = isExpanded and "▲  Hide Actions" or "▼  Actions"
 	expandBtn.AutoButtonColor = false
+	expandBtn.ZIndex = 5
 	expandBtn.LayoutOrder = 6
 	expandBtn.Parent = card
 	corner(expandBtn, 8)
@@ -678,6 +681,7 @@ local function init()
 	gui.IgnoreGuiInset = false
 	gui.DisplayOrder = 621
 	gui.Enabled = false
+	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Parent = playerGui
 
 	local root = Instance.new("Frame")

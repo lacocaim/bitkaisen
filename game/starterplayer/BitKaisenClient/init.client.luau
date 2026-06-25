@@ -51,13 +51,17 @@ local IncidentMapPanel = require("@ui-panels/IncidentMapPanel")
 local TopBarController = require("@ui-panels/TopBarController")
 local SFXController = require("@ui/SFXController")
 local topbarIcons = require("@ui/topbarIcons")
-local inputDebug = require("@ui/inputDebug")
 local loadingScreen = require("@ui/loadingScreen")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
 local create = vide.create
+
+local function safeInit(label, fn)
+	local ok, err = pcall(fn)
+	if not ok then warn("[BKClient] init failed: " .. label .. " -> " .. tostring(err)) end
+end
 
 print("[BK] Booting Computer shell")
 
@@ -113,10 +117,13 @@ local function applyResponsiveLayout(mainPanel: Frame)
 		navPanelObj.Size = UDim2.new(0.94, 0, portrait and 0.105 or 0.095, 0)
 		navPanelObj.Position = UDim2.new(0.03, 0, 1 - (portrait and 0.115 or 0.105), 0)
 
-		local layout = navPanelObj:FindFirstChildWhichIsA("UIListLayout")
+		local navScrollMob = navPanelObj:FindFirstChild("NavScroll") or navPanelObj:FindFirstChildWhichIsA("ScrollingFrame")
+		local layoutParentMob = navScrollMob or navPanelObj
+		local layout = layoutParentMob:FindFirstChildWhichIsA("UIListLayout")
 		if layout then
 			layout.FillDirection = Enum.FillDirection.Horizontal
 			layout.Padding = UDim.new(0, 6)
+			layout.VerticalAlignment = Enum.VerticalAlignment.Center
 		end
 	else
 		profileCard.Size = UDim2.new(0.30, 0, 0.60, 0)
@@ -132,10 +139,14 @@ local function applyResponsiveLayout(mainPanel: Frame)
 		navPanelObj.Size = UDim2.new(0.30, 0, 0.28, 0)
 		navPanelObj.Position = UDim2.new(0.67, 0, 0.68, 0)
 
-		local layout = navPanelObj:FindFirstChildWhichIsA("UIListLayout")
+		local navScroll = navPanelObj:FindFirstChild("NavScroll") or navPanelObj:FindFirstChildWhichIsA("ScrollingFrame")
+		local layoutParent = navScroll or navPanelObj
+		local layout = layoutParent:FindFirstChildWhichIsA("UIListLayout")
 		if layout then
 			layout.FillDirection = Enum.FillDirection.Vertical
 			layout.Padding = UDim.new(0, 10)
+			layout.VerticalAlignment = Enum.VerticalAlignment.Top
+			layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 		end
 	end
 end
@@ -144,7 +155,7 @@ local function BitKaisenGui()
 	local gui = create("ScreenGui") {
 		Name = "BitKaisenGui",
 		ResetOnSpawn = false,
-		IgnoreGuiInset = true,
+		IgnoreGuiInset = false,
 		DisplayOrder = 15,
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 	}
@@ -210,26 +221,26 @@ end
 
 loadingScreen.bump("Preparing panels...")
 
-MissionsPanel.init()
-ActivitiesPanel.init()
-RelationshipsPanel.init()
-AssetsPanel.init()
-AffiliationsPanel.init()
-JobsPanel.init()
-DomainPanel.init()
-RivalsPanel.init()
-WorldHistoryPanel.init()
-MentorPanel.init()
-DevToolsPanel.init()
-SettingsPanel.init()
-BindingVowsPanel.init()
-DailyLoginPanel.init()
-FreeRewardsPanel.init()
-UpdateLogPanel.init()
-ClanWarPanel.init()
-GodModePanel.init()
-AFKPanel.init()
-IncidentMapPanel.init()
+safeInit("MissionsPanel", MissionsPanel.init)
+safeInit("ActivitiesPanel", ActivitiesPanel.init)
+safeInit("RelationshipsPanel", RelationshipsPanel.init)
+safeInit("AssetsPanel", AssetsPanel.init)
+safeInit("AffiliationsPanel", AffiliationsPanel.init)
+safeInit("JobsPanel", JobsPanel.init)
+safeInit("DomainPanel", DomainPanel.init)
+safeInit("RivalsPanel", RivalsPanel.init)
+safeInit("WorldHistoryPanel", WorldHistoryPanel.init)
+safeInit("MentorPanel", MentorPanel.init)
+safeInit("DevToolsPanel", DevToolsPanel.init)
+safeInit("SettingsPanel", SettingsPanel.init)
+safeInit("BindingVowsPanel", BindingVowsPanel.init)
+safeInit("DailyLoginPanel", DailyLoginPanel.init)
+safeInit("FreeRewardsPanel", FreeRewardsPanel.init)
+safeInit("UpdateLogPanel", UpdateLogPanel.init)
+safeInit("ClanWarPanel", ClanWarPanel.init)
+safeInit("GodModePanel", GodModePanel.init)
+safeInit("AFKPanel", AFKPanel.init)
+safeInit("IncidentMapPanel", IncidentMapPanel.init)
 
 px.usePx()
 
@@ -239,27 +250,28 @@ vide.mount(function()
 	return BitKaisenGui()
 end, playerGui)
 
-RatesPanel.init()
-TechniqueMasteryPanel.init()
-TraitDetailsPanel.init(playerGui)
+safeInit("RatesPanel", RatesPanel.init)
+safeInit("TechniqueMasteryPanel", TechniqueMasteryPanel.init)
+safeInit("TraitDetailsPanel", function() TraitDetailsPanel.init(playerGui) end)
 
-CombatPanel.init(playerGui)
-MinigamesPanel.init(playerGui)
-CharacterCustomizationPanel.init(playerGui)
-DeathPanel.init(playerGui)
-MissionSituationPanel.init(playerGui)
-FirstTimeGuidancePanel.init(playerGui)
+safeInit("CombatPanel", function() CombatPanel.init(playerGui) end)
+safeInit("MinigamesPanel", function() MinigamesPanel.init(playerGui) end)
+safeInit("CharacterCustomizationPanel", function() CharacterCustomizationPanel.init(playerGui) end)
+safeInit("DeathPanel", function() DeathPanel.init(playerGui) end)
+safeInit("MissionSituationPanel", function() MissionSituationPanel.init(playerGui) end)
+safeInit("FirstTimeGuidancePanel", function() FirstTimeGuidancePanel.init(playerGui) end)
 
-TopBarController.init()
-SFXController.init()
+safeInit("TopBarController", TopBarController.init)
+safeInit("SFXController", SFXController.init)
 
-topbarIcons.init({
-	godMode = GodModePanel,
-	clanWar = ClanWarPanel,
-	afk = AFKPanel,
-})
-
-inputDebug.init()
+safeInit("topbarIcons", function()
+	topbarIcons.init({
+		godMode = GodModePanel,
+		clanWar = ClanWarPanel,
+		afk = AFKPanel,
+		freeRewards = FreeRewardsPanel,
+	})
+end)
 
 local helpers = require("@ui/helpers")
 

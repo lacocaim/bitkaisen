@@ -82,6 +82,7 @@ local function init()
 	gui.IgnoreGuiInset = false
 	gui.DisplayOrder = 660
 	gui.Enabled = false
+	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Parent = playerGui
 
 	local currentOpen = false
@@ -264,6 +265,7 @@ local function init()
 	fateButton.Font = Enum.Font.GothamBold
 	fateButton.Text = "Let fate decide"
 	fateButton.AutoButtonColor = false
+	fateButton.ZIndex = 5
 	fateButton.LayoutOrder = 6
 	fateButton.Parent = scroll
 
@@ -326,6 +328,7 @@ local function init()
 		btn.TextWrapped = true
 		btn.Text = cleanText(optionData and optionData.Text, "Option " .. tostring(index))
 		btn.AutoButtonColor = false
+		btn.ZIndex = 5
 		btn.LayoutOrder = index
 		btn.Parent = optionsHolder
 		mc.corner(btn, 10)

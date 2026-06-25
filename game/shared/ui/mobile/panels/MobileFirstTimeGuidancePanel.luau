@@ -100,6 +100,7 @@ local function init()
 	gui.IgnoreGuiInset = false
 	gui.DisplayOrder = 680
 	gui.Enabled = false
+	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Parent = playerGui
 
 	local card = Instance.new("Frame")

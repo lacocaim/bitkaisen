@@ -10,8 +10,12 @@ local mobileCard = mc.mobileCard
 local mobileLabel = mc.mobileLabel
 local mobileSheet = mc.mobileSheet
 
+local bindTap = mc.bindTap
+
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
+
+local traitOpenButton: TextButton? = nil
 
 local RARITY_COLORS = {
 	Common = Color3.fromRGB(190, 190, 200),
@@ -499,6 +503,74 @@ local function closePanel()
 	gui.Enabled = false
 end
 
+local function findTraitsLabel(): TextLabel?
+	local mobileGui = playerGui:FindFirstChild("MobileGui")
+	if not mobileGui then return nil end
+	local mainPanel = mobileGui:FindFirstChild("MainPanel")
+	if not mainPanel then return nil end
+	local header = mainPanel:FindFirstChild("ProfileHeader")
+	if header then
+		local label = header:FindFirstChild("Traits")
+		if label and label:IsA("TextLabel") then return label end
+	end
+	for _, desc in mobileGui:GetDescendants() do
+		if desc:IsA("TextLabel") and desc.Name == "Traits" then
+			return desc
+		end
+	end
+	return nil
+end
+
+local function positionButtonAfterText(btn: TextButton, label: TextLabel)
+	local textWidth = 0
+	pcall(function() textWidth = label.TextBounds.X end)
+	if textWidth <= 0 then textWidth = 60 end
+	btn.Position = UDim2.new(0, textWidth + 4, 0.5, 0)
+end
+
+local function attachTraitButton()
+	if traitOpenButton and traitOpenButton.Parent then return end
+	local label = findTraitsLabel()
+	if not label then return end
+
+	label.ClipsDescendants = false
+
+	local btn = Instance.new("TextButton")
+	btn.Name = "TraitDetailsOpenButton"
+	btn.Size = UDim2.fromOffset(16, 16)
+	btn.AnchorPoint = Vector2.new(0, 0.5)
+	btn.Position = UDim2.new(0, 64, 0.5, 0)
+	btn.BackgroundColor3 = theme.Panel2 or Color3.fromRGB(22, 22, 32)
+	btn.BorderSizePixel = 0
+	btn.Text = "?"
+	btn.TextColor3 = theme.Gold or Color3.fromRGB(255, 207, 105)
+	btn.TextSize = 11
+	btn.Font = Enum.Font.GothamBlack
+	btn.AutoButtonColor = false
+	btn.ZIndex = 50
+	btn.Parent = label
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 999)
+	corner.Parent = btn
+
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = theme.StrokeSoft or Color3.fromRGB(78, 67, 96)
+	stroke.Thickness = 1
+	stroke.Parent = btn
+
+	positionButtonAfterText(btn, label)
+	label:GetPropertyChangedSignal("TextBounds"):Connect(function()
+		positionButtonAfterText(btn, label)
+	end)
+
+	bindTap(btn, function()
+		uiState.navigate("trait_details")
+	end)
+
+	traitOpenButton = btn
+end
+
 local function init()
 	gui = Instance.new("ScreenGui")
 	gui.Name = "BitKaisenMobileTraitDetailsGui"
@@ -526,6 +598,21 @@ local function init()
 			openPanel()
 		else
 			closePanel()
+		end
+	end)
+
+	task.spawn(function()
+		for _ = 1, 60 do
+			attachTraitButton()
+			if traitOpenButton and traitOpenButton.Parent then break end
+			task.wait(0.25)
+		end
+		while true do
+			task.wait(2)
+			if not traitOpenButton or not traitOpenButton.Parent then
+				traitOpenButton = nil
+				attachTraitButton()
+			end
 		end
 	end)
 end

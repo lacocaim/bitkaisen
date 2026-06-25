@@ -98,10 +98,29 @@ do
 	recompute()
 end
 
+local closeBtn = Instance.new("TextButton")
+closeBtn.Name = "CloseButton"
+closeBtn.AnchorPoint = Vector2.new(1, 0)
+closeBtn.Position = UDim2.new(1, -8, 0, 8)
+closeBtn.Size = UDim2.fromOffset(28, 28)
+closeBtn.BackgroundColor3 = Color3.fromRGB(37, 38, 50)
+closeBtn.BorderSizePixel = 0
+closeBtn.Font = Enum.Font.GothamBlack
+closeBtn.Text = "X"
+closeBtn.TextColor3 = theme.Red
+closeBtn.TextSize = 14
+closeBtn.ZIndex = 645
+closeBtn.Parent = panel
+makeCorner(closeBtn, 8)
+
+closeBtn.MouseButton1Click:Connect(function()
+	panel.Visible = false
+end)
+
 local title = Instance.new("TextLabel")
 title.BackgroundTransparency = 1
 title.Position = UDim2.new(0, 16, 0, 12)
-title.Size = UDim2.new(1, -32, 0, 26)
+title.Size = UDim2.new(1, -52, 0, 26)
 title.Text = "AFK STABILIZATION"
 title.TextColor3 = theme.Gold
 title.TextSize = 18
@@ -316,4 +335,8 @@ local function open()
 	if panel then panel.Visible = true end
 end
 
-return { init = init, open = open }
+local function close()
+	if panel then panel.Visible = false end
+end
+
+return { init = init, open = open, close = close }

@@ -13,6 +13,51 @@ local scroll: ScrollingFrame
 
 local sections = {
 	{
+		header = "Update 17 - Bug Fixes",
+		body = "• Physical Conditioning now correctly resets each age-up (was capped at 3 per lifetime).\n• Fixed exploit where relationship action counter could be bypassed with rapid requests.\n• Unregistered sorcerers can now promote past Grade 4.\n• Send Students on Patrol no longer crashes and consumes your turn.\n• World events, notable sorcerer aging, and era changes now continue past age 16.\n• Newborns no longer default as the strongest sorcerer alive.\n• Gender no longer randomly swaps on surviving spouses during generation takeover.\n• Cursed spirits can now take over prior-life children after death.\n• Rival entries in Affiliations no longer show broken action buttons.\n• God Mode clan picker now shows all clans including Ryomen.\n• Randomize Path button no longer crashes.\n• WAR button now hides when overlay menus are open.",
+		color = theme.Red,
+	},
+	{
+		header = "Update 17 - School System",
+		body = "• Characters now attend Elementary School (ages 6-10), Middle School (ages 11-13), and High School (ages 14-15).\n• Academic Performance and Attendance drift each year based on your Smarts stat.\n• Earn a Report Card Grade (A+ through F) from performance and attendance.\n• At age 16 you graduate with a full report card popup — honor students earn Smarts and Reputation bonuses.\n• New school activities: Attend Class, Study for Exams, Join a Club (8 clubs), Skip School.",
+		color = theme.Red,
+	},
+	{
+		header = "Update 17 - Jujutsu Mentor Career",
+		body = "• Jujutsu High students now graduate at age 20 — become a fully Registered Sorcerer with a graduation popup.\n• Awakened sorcerers who graduate civilian school at 16 are offered a transfer to Jujutsu High.\n• After graduating JJH, apply to become a Jujutsu Mentor (age 20+, Grade 2+, recommendations).\n• 4-rank career ladder: Assistant Instructor, Instructor, Senior Instructor, Master Instructor.\n• Earn yearly salary, Mentor XP, reputation, and students assigned to your care.\n• New mentor activities: Teach a Class, Supervise Student Mission, Grade Students, Mentor a Prodigy.\n• New MENTOR panel in the navigation bar to view rank, income, XP progress, and apply.",
+		color = theme.Red,
+	},
+	{
+		header = "Update 17 - Activity Sidebar",
+		body = "• The Activities menu now has a category sidebar on the left side.\n• Activities grouped into: Life, School, Training, Jujutsu High, Mentor, Missions, Dojo/Clan, Social, Minigames, Curse Spirit, Curse User, Era, Premium.\n• Click any category to instantly scroll to that section.\n• Section headers visually separate each category with color-coded labels.",
+		color = theme.Red,
+	},
+	{
+		header = "Update 17 - Full UI Overhaul",
+		body = "• Entire client UI rebuilt on Vide (reactive UI architecture).\n• Replaces old monolithic UI script that was hitting engine limits and breaking features.\n• Every major screen restored to full parity — not stripped-down stubs.\n• Fixed panels that would not open, buttons that did not respond, and reactive-scope crashes.\n• 58 Vide modules under game/shared/ui/ (components, panels, hooks, theme).\n• Single bootstrap mounts the full UI, centralized remotes, shared state system.\n• All 30+ panels migrated: Missions, Activities, Relationships, Assets, Jobs, Settings, Combat, Minigames, Domain, Rivals, History, Mentor, Affiliations, Binding Vows, Daily Login, Free Rewards, Update Log, Clan War, God Mode, AFK, Death, Character Customization, Technique Mastery, Trait Details, and more.",
+		color = theme.Red,
+	},
+	{
+		header = "Update 17 - Mobile UI",
+		body = "• Full mobile UI with portrait-locked layout and touch-optimized controls.\n• Mobile shell: profile header, life log, age-up button, and nav panel all in portrait layout.\n• Every panel has a dedicated Mobile version with swipe-friendly sheets and tap routing.\n• TopbarPlus icons on mobile: Settings, God Mode, War, AFK, Free Rewards.\n• Affiliations actions use an expandable grid instead of overflowing buttons.\n• Combat panel layers above other panels so fights are never obscured.\n• Stat notifications positioned at the top, below TopbarPlus.\n• Trait info button next to traits text on mobile profile.",
+		color = theme.Red,
+	},
+	{
+		header = "Update 17 - PC UI",
+		body = "• TopbarPlus icons restored on PC: Settings, God Mode, War, AFK, Free Rewards.\n• Legacy WAR nav button hidden — War is now TopbarPlus only.\n• AFK panel now has a working close button.\n• Nav button list scrollable — all nav entries reachable.\n• Responsive layout adapts to portrait, landscape, and desktop viewports.\n• Trait info button next to traits on PC profile.\n• Profile card, life log, and shell components fully functional.",
+		color = theme.Red,
+	},
+	{
+		header = "Update 17 - Quality of Life",
+		body = "• Loading screen shows for a minimum of 5 seconds to ensure everything loads.\n• Loading screen logo and progress bar positioned closer together.\n• Startup log messages silent on live servers — only visible in Studio.\n• Default Roblox respawn button removed.\n• Update Log accessible from Settings panel LOG tab.",
+		color = theme.Red,
+	},
+	{
+		header = "Update 17 - Codes",
+		body = "Redeem these in Settings > Codes:\n\n• Update17\n• NewCode\n• FullRestore\n• Jujutsu",
+		color = theme.Red,
+	},
+	{
 		header = "Update 16 - QOL & Progression",
 		body = "• Console support improvements added.\n• RCT requirements increased and RCT now gives passive health regeneration.\n• Missions and special missions are capped per age-up.\n• Early progression and visible stat gains are slower for a healthier long-term pace.\n• Curse encounters are more frequent based on Curse Exposure.",
 		color = theme.Gold,
@@ -131,7 +176,7 @@ local function renderSections()
 	local subtitleCard = mc.mobileCard({ parent = scroll, order = 0, accentColor = theme.Gold })
 	mc.mobileLabel({
 		parent = subtitleCard,
-		text = "Enemies of your era, rival encounters, reputation paths, and legacy pressure",
+		text = "School system, Jujutsu Mentor career, full UI overhaul, mobile parity, and bug fixes",
 		size = 13,
 		color = theme.SubText,
 		order = 1,
@@ -208,4 +253,4 @@ local function init()
 	end)
 end
 
-return { init = init }
+return { init = init, open = openPanel, close = closePanel }

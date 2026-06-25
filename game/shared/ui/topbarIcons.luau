@@ -75,6 +75,7 @@ function topbarIcons.init(panelRefs)
 		end
 		freeRewardsIcon:deselect()
 	end)
+
 end
 
 return topbarIcons

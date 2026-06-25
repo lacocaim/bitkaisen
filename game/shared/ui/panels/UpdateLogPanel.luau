@@ -104,12 +104,12 @@ padding.PaddingLeft = UDim.new(0, 16)
 padding.PaddingRight = UDim.new(0, 16)
 padding.Parent = panel
 
-local title = makeText(panel, "Title", "UPDATE 16", 22, true)
+local title = makeText(panel, "Title", "UPDATE 17", 22, true)
 title.Size = UDim2.new(1, -48, 0, 34)
 title.Position = UDim2.new(0, 0, 0, 0)
 title.TextColor3 = Color3.fromRGB(255, 220, 139)
 
-local subtitle = makeText(panel, "Subtitle", "Enemies of your era, rival encounters, reputation paths, and legacy pressure", 14, false)
+local subtitle = makeText(panel, "Subtitle", "School system, Jujutsu Mentor career, full UI overhaul, mobile parity, and bug fixes", 14, false)
 subtitle.Size = UDim2.new(1, -48, 0, 22)
 subtitle.Position = UDim2.new(0, 0, 0, 34)
 subtitle.TextColor3 = Color3.fromRGB(198, 186, 164)
@@ -188,6 +188,24 @@ local function addSection(headerText, bodyText, headerColor)
 	body.TextColor3 = Color3.fromRGB(232, 223, 205)
 end
 
+addSection("Update 17 - Bug Fixes", "• Physical Conditioning now correctly resets each age-up (was capped at 3 per lifetime).\n• Fixed exploit where relationship action counter could be bypassed with rapid requests.\n• Unregistered sorcerers can now promote past Grade 4.\n• Send Students on Patrol no longer crashes and consumes your turn.\n• World events, notable sorcerer aging, and era changes now continue past age 16.\n• Newborns no longer default as the strongest sorcerer alive.\n• Gender no longer randomly swaps on surviving spouses during generation takeover.\n• Cursed spirits can now take over prior-life children after death.\n• Rival entries in Affiliations no longer show broken action buttons.\n• God Mode clan picker now shows all clans including Ryomen.\n• Randomize Path button no longer crashes.\n• WAR button now hides when overlay menus are open.\n")
+
+addSection("Update 17 - School System", "• Characters now attend Elementary School (ages 6-10), Middle School (ages 11-13), and High School (ages 14-15).\n• Academic Performance and Attendance drift each year based on your Smarts stat.\n• Earn a Report Card Grade (A+ through F) from performance and attendance.\n• At age 16 you graduate with a full report card popup — honor students earn Smarts and Reputation bonuses.\n• New school activities: Attend Class, Study for Exams, Join a Club (8 clubs), Skip School.\n")
+
+addSection("Update 17 - Jujutsu Mentor Career", "• Jujutsu High students now graduate at age 20 — become a fully Registered Sorcerer with a graduation popup.\n• Awakened sorcerers who graduate civilian school at 16 are offered a transfer to Jujutsu High.\n• After graduating JJH, apply to become a Jujutsu Mentor (age 20+, Grade 2+, recommendations).\n• 4-rank career ladder: Assistant Instructor, Instructor, Senior Instructor, Master Instructor.\n• Earn yearly salary, Mentor XP, reputation, and students assigned to your care.\n• New mentor activities: Teach a Class, Supervise Student Mission, Grade Students, Mentor a Prodigy.\n• New MENTOR panel in the navigation bar to view rank, income, XP progress, and apply.\n")
+
+addSection("Update 17 - Activity Sidebar", "• The Activities menu now has a category sidebar on the left side.\n• Activities grouped into: Life, School, Training, Jujutsu High, Mentor, Missions, Dojo/Clan, Social, Minigames, Curse Spirit, Curse User, Era, Premium.\n• Click any category to instantly scroll to that section.\n• Section headers visually separate each category with color-coded labels.\n")
+
+addSection("Update 17 - Full UI Overhaul", "• Entire client UI rebuilt on Vide (reactive UI architecture).\n• Replaces old monolithic UI script that was hitting engine limits and breaking features.\n• Every major screen restored to full parity — not stripped-down stubs.\n• Fixed panels that would not open, buttons that did not respond, and reactive-scope crashes.\n• 58 Vide modules under game/shared/ui/ (components, panels, hooks, theme).\n• Single bootstrap mounts the full UI, centralized remotes, shared state system.\n• All 30+ panels migrated: Missions, Activities, Relationships, Assets, Jobs, Settings, Combat, Minigames, Domain, Rivals, History, Mentor, Affiliations, Binding Vows, Daily Login, Free Rewards, Update Log, Clan War, God Mode, AFK, Death, Character Customization, Technique Mastery, Trait Details, and more.\n")
+
+addSection("Update 17 - Mobile UI", "• Full mobile UI with portrait-locked layout and touch-optimized controls.\n• Mobile shell: profile header, life log, age-up button, and nav panel all in portrait layout.\n• Every panel has a dedicated Mobile version with swipe-friendly sheets and tap routing.\n• Tap router handles touch input through ScrollingFrames reliably.\n• Mobile-safe area respected — all panels sit below the Roblox topbar.\n• TopbarPlus icons on mobile: Settings, God Mode, War, AFK, Free Rewards.\n• Affiliations actions use an expandable grid instead of overflowing buttons.\n• Combat panel layers above other panels so fights are never obscured.\n• Stat notifications positioned at the top, below TopbarPlus.\n• Trait info button next to traits text on mobile profile.\n")
+
+addSection("Update 17 - PC UI", "• TopbarPlus icons restored on PC: Settings, God Mode, War, AFK, Free Rewards.\n• Legacy WAR nav button hidden — War is now TopbarPlus only.\n• AFK panel now has a working close button.\n• Nav button list scrollable — all nav entries reachable.\n• Responsive layout adapts to portrait, landscape, and desktop viewports.\n• Trait info button next to traits on PC profile.\n• Profile card, life log, and shell components fully functional.\n")
+
+addSection("Update 17 - Quality of Life", "• Loading screen shows for a minimum of 5 seconds to ensure everything loads.\n• Loading screen logo and progress bar positioned closer together.\n• Startup log messages silent on live servers — only visible in Studio.\n• Default Roblox respawn button removed.\n• Update Log accessible from Settings panel LOG tab.\n")
+
+addSection("Update 17 - Codes", "Redeem these in Settings > Codes:\n\n• Update17\n• NewCode\n• FullRestore\n• Jujutsu\n")
+
 addSection("Update 16 - QOL & Progression", "• Console support improvements added.\n• RCT requirements increased and RCT now gives passive health regeneration.\n• Missions and special missions are capped per age-up.\n• Early progression and visible stat gains are slower for a healthier long-term pace.\n• Curse encounters are more frequent based on Curse Exposure.\n")
 
 addSection("Update 16 - Combat & Strength", "• New Strength stat added.\n• Physical Conditioning activity added.\n• Strength improves basic attack damage, crit chance, and attack timing control.\n• Punching Bag and In-Home Gym added to Assets.\n• Finger hunting can now trigger curse obstacle combat if you get caught.\n")
@@ -230,7 +248,7 @@ addSection("Update 10 - Stability", "- Added server validation for test purchase
 
 addSection("Update 10 - Combat Foundation", "- Added interactive combat sessions with player and enemy HP/CE\n- Added attack timing minigame with target zone and sweet spot\n- Added defend QTE for 1 to 3 hit enemy combos\n- Added perfect-dodge counter attack window\n- Added test-place combat starter for verification\n- Added Reset Fight developer product hook with test-place bypass\n")
 
-local footer = makeText(panel, "Footer", "Update 16 is live. Rejoin once if anything looks weird after the update.", 12, false)
+local footer = makeText(panel, "Footer", "Update 17 is live. Rejoin once if anything looks weird after the update.", 12, false)
 footer.AnchorPoint = Vector2.new(0, 1)
 footer.Position = UDim2.new(0, 0, 1, 0)
 footer.Size = UDim2.new(1, 0, 0, 34)
@@ -312,4 +330,4 @@ local function init()
 	-- Update log auto-opens or is opened externally; expose open for callers.
 end
 
-return { init = init, open = openLog }
+return { init = init, open = openLog, close = closeLog }

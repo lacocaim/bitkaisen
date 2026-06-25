@@ -599,10 +599,10 @@ tabHolder.Parent = window
 
 local tabLayout = Instance.new("UIGridLayout")
 tabLayout.FillDirection = Enum.FillDirection.Horizontal
-tabLayout.FillDirectionMaxCells = 7
+tabLayout.FillDirectionMaxCells = 8
 tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
-tabLayout.CellPadding = UDim2.new(0, 7, 0, 0)
-tabLayout.CellSize = UDim2.new(1 / 7, -6, 1, 0)
+tabLayout.CellPadding = UDim2.new(0, 5, 0, 0)
+tabLayout.CellSize = UDim2.new(1 / 8, -5, 1, 0)
 tabLayout.Parent = tabHolder
 
 local tabs = {}
@@ -614,6 +614,7 @@ local TAB_ORDER = {
 	{ Id = "Codes", Text = "CODES" },
 	{ Id = "Achievements", Text = "ACHIEVE" },
 	{ Id = "Shop", Text = "SHOP" },
+	{ Id = "UpdateLog", Text = "LOG" },
 }
 
 local function makeTab(tabInfo, order)
@@ -746,8 +747,8 @@ local function applyResponsiveLayout()
 		tabHolder.Position = UDim2.new(0, 18, 0, 122)
 		tabHolder.Size = UDim2.new(1, -36, 0, 38)
 		tabLayout.FillDirectionMaxCells = #TAB_ORDER
-		tabLayout.CellPadding = UDim2.new(0, 7, 0, 0)
-		tabLayout.CellSize = UDim2.new(1 / #TAB_ORDER, -6, 1, 0)
+		tabLayout.CellPadding = UDim2.new(0, 5, 0, 0)
+		tabLayout.CellSize = UDim2.new(1 / #TAB_ORDER, -5, 1, 0)
 
 		for _, button in pairs(tabs) do
 			button.Size = UDim2.new(1, 0, 1, 0)
@@ -1862,6 +1863,16 @@ for tabId, button in pairs(tabs) do
 	button.Activated:Connect(function()
 		playSFX("Click")
 		confirmingDeleteSlotId = nil
+		if tabId == "UpdateLog" then
+			uiState.closeRoute()
+			task.defer(function()
+				local UpdateLogPanel = require("@ui-panels/UpdateLogPanel")
+				if UpdateLogPanel and UpdateLogPanel.open then
+					UpdateLogPanel.open()
+				end
+			end)
+			return
+		end
 		local builder = PAGE_BUILDERS[tabId] or buildHomePage
 		rebuildPage(builder, tabId)
 	end)

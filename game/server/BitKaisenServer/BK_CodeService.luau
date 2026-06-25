@@ -62,7 +62,7 @@ local CODE_ORDER = {
 	"UPDATE17",
 	"NEWCODE",
 	"FULLRESTORE",
-	"SECRET",
+	"JUJUTSU",
 }
 
 local CODE_DEFINITIONS = {
@@ -106,8 +106,8 @@ local CODE_DEFINITIONS = {
 		end
 	},
 
-	SECRET = {
-		Name = "Secret",
+	JUJUTSU = {
+		Name = "Jujutsu",
 		Description = "A hidden code for the dedicated.",
 		RewardText = "+$50,000 | +250 CE | +15 Mastery | +15 Rep",
 		Grant = function(stats)

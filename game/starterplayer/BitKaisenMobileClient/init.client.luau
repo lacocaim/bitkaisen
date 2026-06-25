@@ -5,7 +5,7 @@ local experienceMode = require("@ui-state/experienceMode")
 local mode = experienceMode.resolve()
 if mode ~= "Mobile" then return end
 
-print("[BK] Booting Mobile shell")
+if game:GetService("RunService"):IsStudio() then print("[BK] Booting Mobile shell") end
 
 pcall(function()
 	StarterGui.ScreenOrientation = Enum.ScreenOrientation.Portrait

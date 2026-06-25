@@ -63,7 +63,7 @@ local function safeInit(label, fn)
 	if not ok then warn("[BKClient] init failed: " .. label .. " -> " .. tostring(err)) end
 end
 
-print("[BK] Booting Computer shell")
+if game:GetService("RunService"):IsStudio() then print("[BK] Booting Computer shell") end
 
 loadingScreen.bump("Registering navigation...")
 

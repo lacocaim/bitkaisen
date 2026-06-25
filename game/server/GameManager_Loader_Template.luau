@@ -36,4 +36,4 @@ for _, moduleName in ipairs(loadOrder) do
 	end
 end
 
-print("[GameManager_Loader_Template] BitKaisen modular server loaded.")
+if game:GetService("RunService"):IsStudio() then print("[GameManager_Loader_Template] BitKaisen modular server loaded.") end

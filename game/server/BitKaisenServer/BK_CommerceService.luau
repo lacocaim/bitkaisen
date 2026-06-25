@@ -1975,7 +1975,7 @@ end
 ----------------------------------------------------------------
 function BK_CommerceService.Init(ctx)
 	if not ctx or type(ctx.GetStats) ~= "function" then
-		print("[BK_CommerceService] Waiting for live GameManager context.")
+		if game:GetService("RunService"):IsStudio() then print("[BK_CommerceService] Waiting for live GameManager context.") end
 		return
 	end
 

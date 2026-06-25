@@ -395,7 +395,7 @@ end
 
 function BK_AchievementService.Init(ctx)
 	if not ctx or type(ctx.GetStats) ~= "function" then
-		print("[BK_AchievementService] Waiting for live GameManager context.")
+		if game:GetService("RunService"):IsStudio() then print("[BK_AchievementService] Waiting for live GameManager context.") end
 		return
 	end
 

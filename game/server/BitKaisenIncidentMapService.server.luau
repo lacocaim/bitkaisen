@@ -313,4 +313,4 @@ Players.PlayerRemoving:Connect(function(player)
 	actionCooldowns[player.UserId] = nil
 end)
 
-print("[BitKaisenIncidentMapService] Loaded.")
+if game:GetService("RunService"):IsStudio() then print("[BitKaisenIncidentMapService] Loaded.") end

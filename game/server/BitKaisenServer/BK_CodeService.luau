@@ -59,271 +59,63 @@ end
 local BitKaisenSaveSystem = {}
 
 local CODE_ORDER = {
-	"UPDATE16",
-	"CONSOLESUPPORT",
-	"NEWGUI",
+	"UPDATE17",
+	"NEWCODE",
+	"FULLRESTORE",
 	"SECRET",
 }
 
 local CODE_DEFINITIONS = {
 
-	UPDATE16 = {
-		Name = "Update16",
-		Description = "Update 16 launch reward.",
-		RewardText = "+$10,000",
+	UPDATE17 = {
+		Name = "Update17",
+		Description = "Update 17 launch reward — the biggest update yet.",
+		RewardText = "+$20,000 | +100 CE | +10 Mastery | +10 Rep | +10 Happiness",
+		Grant = function(stats)
+			stats.Money = (stats.Money or 0) + 20000
+			stats.CursedEnergy = (stats.CursedEnergy or 0) + 100
+			stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + 10, 0, 100)
+			stats.Reputation = (stats.Reputation or 0) + 10
+			stats.Happiness = math.clamp((stats.Happiness or 100) + 10, 0, 100)
+			return "+$20,000 Money, +100 Cursed Energy, +10 Technique Mastery, +10 Reputation, and +10 Happiness"
+		end
+	},
+
+	NEWCODE = {
+		Name = "NewCode",
+		Description = "Thanks for playing BitKaisen.",
+		RewardText = "+$10,000 | +75 CE | +5 Rep | +15 Happiness",
 		Grant = function(stats)
 			stats.Money = (stats.Money or 0) + 10000
-			return "+$10,000 Money"
-		end
-	},
-
-	CONSOLESUPPORT = {
-		Name = "ConsoleSupport",
-		Description = "Console support reward.",
-		RewardText = "+75 CE",
-		Grant = function(stats)
 			stats.CursedEnergy = (stats.CursedEnergy or 0) + 75
-			return "+75 Cursed Energy"
+			stats.Reputation = (stats.Reputation or 0) + 5
+			stats.Happiness = math.clamp((stats.Happiness or 100) + 15, 0, 100)
+			return "+$10,000 Money, +75 Cursed Energy, +5 Reputation, and +15 Happiness"
 		end
 	},
 
-	NEWGUI = {
-		Name = "NewGUI",
-		Description = "New GUI reward.",
-		RewardText = "+$5,000",
+	FULLRESTORE = {
+		Name = "FullRestore",
+		Description = "Restore your sorcerer to peak condition.",
+		RewardText = "Max Health | Max Happiness | +50 CE",
 		Grant = function(stats)
-			stats.Money = (stats.Money or 0) + 5000
-			return "+$5,000 Money"
+			stats.Health = 100
+			stats.Happiness = 100
+			stats.CursedEnergy = (stats.CursedEnergy or 0) + 50
+			return "Health and Happiness restored to 100, and +50 Cursed Energy"
 		end
 	},
 
 	SECRET = {
 		Name = "Secret",
-		Description = "Limited secret launch code.",
-		RewardText = "+$25,000 | +250 CE",
-		Grant = function(stats)
-			stats.Money = (stats.Money or 0) + 25000
-			stats.CursedEnergy = (stats.CursedEnergy or 0) + 250
-			return "+$25,000 Money and +250 Cursed Energy"
-		end
-	},
-
-	UPDATE62 = {
-		Name = "UPDATE62",
-		Description = "Update 6.2 quality update reward.",
-		RewardText = "+$25,000 | +65 CE | +8 Mastery | +8 Rep | +3 Recommendations",
-		Grant = function(stats)
-			stats.Money = (stats.Money or 0) + 25000
-			stats.CursedEnergy = (stats.CursedEnergy or 0) + 65
-			stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + 8, 0, 100)
-			stats.Reputation = (stats.Reputation or 0) + 8
-			stats.TeacherRecommendations = (stats.TeacherRecommendations or 0) + 3
-			stats.Happiness = math.clamp((stats.Happiness or 100) + 8, 0, 100)
-			return "+$25,000 Money, +65 Cursed Energy, +8 Technique Mastery, +8 Reputation, +3 Teacher Recommendations, and +8 Happiness"
-		end
-	},
-
-	VOWS = {
-		Name = "VOWS",
-		Description = "Binding Vows polish reward.",
-		RewardText = "+50 CE | +6 Mastery | +5 Rep | +10 Happiness",
-		Grant = function(stats)
-			stats.CursedEnergy = (stats.CursedEnergy or 0) + 50
-			stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + 6, 0, 100)
-			stats.Reputation = (stats.Reputation or 0) + 5
-			stats.Happiness = math.clamp((stats.Happiness or 100) + 10, 0, 100)
-			return "+50 Cursed Energy, +6 Technique Mastery, +5 Reputation, and +10 Happiness"
-		end
-	},
-
-	SORRYBUGS = {
-		Name = "SORRYBUGS",
-		Description = "Bug fix apology reward.",
-		RewardText = "+$30,000 | +40 CE | +15 Happiness | +8 Health",
-		Grant = function(stats)
-			stats.Money = (stats.Money or 0) + 30000
-			stats.CursedEnergy = (stats.CursedEnergy or 0) + 40
-			stats.Happiness = math.clamp((stats.Happiness or 100) + 15, 0, 100)
-			stats.Health = math.clamp((stats.Health or 100) + 8, 0, 100)
-			return "+$30,000 Money, +40 Cursed Energy, +15 Happiness, and +8 Health"
-		end
-	},
-
-	SPADE = {
-		Name = "SPADE",
-		Description = "Special creator code reward.",
-		RewardText = "+$50,000 | +50 CE | +10 Mastery | +10 Rep",
+		Description = "A hidden code for the dedicated.",
+		RewardText = "+$50,000 | +250 CE | +15 Mastery | +15 Rep",
 		Grant = function(stats)
 			stats.Money = (stats.Money or 0) + 50000
-			stats.CursedEnergy = (stats.CursedEnergy or 0) + 50
-			stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + 10, 0, 100)
-			stats.Reputation = (stats.Reputation or 0) + 10
-			stats.Happiness = math.clamp((stats.Happiness or 100) + 10, 0, 100)
-			return "+$50,000 Money, +50 Cursed Energy, +10 Technique Mastery, +10 Reputation, and +10 Happiness"
-		end
-	},
-
-	UPDATE4 = {
-		Name = "UPDATE4",
-		Description = "Update 4 launch reward.",
-		RewardText = "+$20,000 | +30 CE | +6 Mastery | +5 Rep",
-		Grant = function(stats)
-			stats.Money = (stats.Money or 0) + 20000
-			stats.CursedEnergy = (stats.CursedEnergy or 0) + 30
-			stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + 6, 0, 100)
-			stats.Reputation = (stats.Reputation or 0) + 5
-			return "+$20,000 Money, +30 Cursed Energy, +6 Technique Mastery, and +5 Reputation"
-		end
-	},
-
-	DOJOEXPANSION = {
-		Name = "DOJOEXPANSION",
-		Description = "Grand Dojo expansion reward.",
-		RewardText = "+$12,000 | +8 Rep | +5 Dojo Prestige",
-		Grant = function(stats)
-			stats.Money = (stats.Money or 0) + 12000
-			stats.Reputation = (stats.Reputation or 0) + 8
-			stats.DojoPrestige = math.max(0, (stats.DojoPrestige or 0) + 5)
-			stats.ClanReputation = math.max(0, (stats.ClanReputation or 0) + 4)
-			stats.DojoReputation = math.max(0, (stats.DojoReputation or stats.ClanReputation or 0) + 4)
-			return "+$12,000 Money, +8 Reputation, +5 Dojo Prestige, and +4 Clan Reputation"
-		end
-	},
-
-	CURSEUSER = {
-		Name = "CURSEUSER",
-		Description = "Curse User route reward.",
-		RewardText = "+$15,000 | +25 CE | +10 Resentment",
-		Grant = function(stats)
-			stats.Money = (stats.Money or 0) + 15000
-			stats.CursedEnergy = (stats.CursedEnergy or 0) + 25
-			stats.CursedResentment = math.clamp((stats.CursedResentment or 0) + 10, 0, 999)
-			stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + 3, 0, 100)
-			return "+$15,000 Money, +25 Cursed Energy, +10 Cursed Resentment, and +3 Technique Mastery"
-		end
-	},
-
-	CURSEDSPIRIT = {
-		Name = "CURSEDSPIRIT",
-		Description = "Cursed Spirit content reward.",
-		RewardText = "+40 CE | +15 Resentment | +5 Mastery",
-		Grant = function(stats)
-			stats.CursedEnergy = (stats.CursedEnergy or 0) + 40
-			stats.CursedResentment = math.clamp((stats.CursedResentment or 0) + 15, 0, 999)
-			stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + 5, 0, 100)
-			stats.Happiness = math.clamp((stats.Happiness or 100) + 4, 0, 100)
-			return "+40 Cursed Energy, +15 Cursed Resentment, +5 Technique Mastery, and +4 Happiness"
-		end
-	},
-
-	SORRY4DELAY = {
-		Name = "SORRY4DELAY",
-		Description = "Compensation for the Update 4 delay.",
-		RewardText = "+$25,000 | +20 CE | +10 Happiness",
-		Grant = function(stats)
-			stats.Money = (stats.Money or 0) + 25000
-			stats.CursedEnergy = (stats.CursedEnergy or 0) + 20
-			stats.Happiness = math.clamp((stats.Happiness or 100) + 10, 0, 100)
-			stats.Reputation = (stats.Reputation or 0) + 3
-			return "+$25,000 Money, +20 Cursed Energy, +10 Happiness, and +3 Reputation"
-		end
-	},
-
-	UPDATE3 = {
-		Name = "UPDATE3",
-		Description = "Update 3 launch reward.",
-		RewardText = "+$15,000 | +25 CE | +5 Mastery | +5 Rep",
-		Grant = function(stats)
-			stats.Money = (stats.Money or 0) + 15000
-			stats.CursedEnergy = (stats.CursedEnergy or 0) + 25
-			stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + 5, 0, 100)
-			stats.Reputation = (stats.Reputation or 0) + 5
-			return "+$15,000 Money, +25 Cursed Energy, +5 Technique Mastery, and +5 Reputation"
-		end
-	},
-
-	CURSES = {
-		Name = "CURSES",
-		Description = "Cursed Spirit route reward.",
-		RewardText = "+$10,000 | +35 CE",
-		Grant = function(stats)
-			stats.Money = (stats.Money or 0) + 10000
-			stats.CursedEnergy = (stats.CursedEnergy or 0) + 35
-			return "+$10,000 Money and +35 Cursed Energy"
-		end
-	},
-
-	DELAY = {
-		Name = "DELAY",
-		Description = "Delay compensation reward.",
-		RewardText = "Free extra save slots",
-		Grant = function(stats, player)
-			stats.Codes = stats.Codes or {}
-			stats.Codes.FreeSaveSlotsUnlocked = true
-			stats.FreeSaveSlotsUnlocked = true
-			if player and context.BitKaisenSaveSystem and type(context.BitKaisenSaveSystem.UnlockExtraSaveSlots) == "function" then
-				pcall(function()
-					context.BitKaisenSaveSystem.UnlockExtraSaveSlots(player)
-				end)
-			end
-			return "Extra save slots unlocked"
-		end
-	},
-
-	ALPHA35 = {
-		Name = "ALPHA35",
-		Description = "Alpha 3.5 update reward.",
-		RewardText = "+$5,000 | +10 CE | +3 Rep",
-		Grant = function(stats)
-			stats.Money = (stats.Money or 0) + 5000
-			stats.CursedEnergy = (stats.CursedEnergy or 0) + 10
-			stats.Reputation = (stats.Reputation or 0) + 3
-			return "+$5,000 Money, +10 Cursed Energy, and +3 Reputation"
-		end
-	},
-
-	MOBILEFIX = {
-		Name = "MOBILEFIX",
-		Description = "Reward for the mobile bug fix update.",
-		RewardText = "+$3,500 | +5 Smarts",
-		Grant = function(stats)
-			stats.Money = (stats.Money or 0) + 3500
-			stats.Smarts = math.clamp((stats.Smarts or 0) + 5, 0, 100)
-			return "+$3,500 Money and +5 Smarts"
-		end
-	},
-
-	SORRYMOBILE = {
-		Name = "SORRYMOBILE",
-		Description = "Compensation for mobile issues.",
-		RewardText = "+$7,500 | +8 Happiness",
-		Grant = function(stats)
-			stats.Money = (stats.Money or 0) + 7500
-			stats.Happiness = math.clamp((stats.Happiness or 100) + 8, 0, 100)
-			return "+$7,500 Money and +8 Happiness"
-		end
-	},
-
-	TRAITS = {
-		Name = "TRAITS",
-		Description = "Traits update reward.",
-		RewardText = "+12 CE | +4 Mastery",
-		Grant = function(stats)
-			stats.CursedEnergy = (stats.CursedEnergy or 0) + 12
-			stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + 4, 0, 100)
-			return "+12 Cursed Energy and +4 Technique Mastery"
-		end
-	},
-
-	FAMILYUPDATE = {
-		Name = "FAMILYUPDATE",
-		Description = "Family update reward.",
-		RewardText = "+$4,000 | +6 Happiness | +2 Rep",
-		Grant = function(stats)
-			stats.Money = (stats.Money or 0) + 4000
-			stats.Happiness = math.clamp((stats.Happiness or 100) + 6, 0, 100)
-			stats.Reputation = (stats.Reputation or 0) + 2
-			return "+$4,000 Money, +6 Happiness, and +2 Reputation"
+			stats.CursedEnergy = (stats.CursedEnergy or 0) + 250
+			stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + 15, 0, 100)
+			stats.Reputation = (stats.Reputation or 0) + 15
+			return "+$50,000 Money, +250 Cursed Energy, +15 Technique Mastery, and +15 Reputation"
 		end
 	},
 }
@@ -546,7 +338,7 @@ end
 
 function BK_CodeService.Init(ctx)
 	if not ctx or type(ctx.GetStats) ~= "function" then
-		print("[BK_CodeService] Waiting for live GameManager context.")
+		if game:GetService("RunService"):IsStudio() then print("[BK_CodeService] Waiting for live GameManager context.") end
 		return
 	end
 

@@ -97,6 +97,7 @@ local function init()
 		title = "AFK STABILIZATION",
 		onClose = function()
 			sheet.Visible = false
+			gui.Enabled = false
 		end,
 	})
 
@@ -219,8 +220,6 @@ local function init()
 
 	openButton.Visible = false
 	sheet.Visible = false
-
-	gui.Enabled = true
 
 	local ok, p = pcall(function() return getAFK:InvokeServer() end)
 	if ok and typeof(p) == "table" then

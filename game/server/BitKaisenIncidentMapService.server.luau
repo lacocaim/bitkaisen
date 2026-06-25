@@ -8,7 +8,12 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
 
-local BitKaisenIncidentMap = require(ReplicatedStorage:WaitForChild("BitKaisenIncidentMap"))
+local incidentMapModule = ReplicatedStorage:FindFirstChild("BitKaisenIncidentMap")
+if not incidentMapModule then
+	warn("[BitKaisenIncidentMapService] BitKaisenIncidentMap module not found in ReplicatedStorage. Service disabled.")
+	return
+end
+local BitKaisenIncidentMap = require(incidentMapModule)
 local BitKaisenCurseEvolution = require(ReplicatedStorage:WaitForChild("BitKaisenCurseEvolution"))
 
 local function ensureRemote(name, className)

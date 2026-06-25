@@ -94,13 +94,15 @@ function inputDebug.init()
 		inputDebug.dumpScreenGuis()
 	end)
 
+	local GuiService = game:GetService("GuiService")
 	UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		if input.UserInputType ~= Enum.UserInputType.MouseButton1
 			and input.UserInputType ~= Enum.UserInputType.Touch then
 			return
 		end
 		local pos = input.Position
-		inputDebug.hitTestAt(math.floor(pos.X), math.floor(pos.Y))
+		local inset = GuiService:GetGuiInset()
+		inputDebug.hitTestAt(math.floor(pos.X + inset.X), math.floor(pos.Y + inset.Y))
 	end)
 end
 

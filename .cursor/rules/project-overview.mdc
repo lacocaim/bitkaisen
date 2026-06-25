@@ -55,6 +55,7 @@ The game uses a traditional Roblox scripting architecture (not ECS):
 ### Panels
 - **PC panels** (`game/shared/ui/panels/`): each is a standalone module with its own ScreenGui, uses `Instance.new()` for all UI construction, wires to `uiState.subscribe()` for route-driven open/close or listens for remote events. Panels use imperative `refresh()` methods and `:Connect()` for events
 - **Mobile panels** (`game/shared/ui/mobile/panels/`): each `Mobile*Panel` module follows the same pattern (own ScreenGui, route-driven via `uiState.subscribe`), using `mobileComponents` helpers for mobile-native sheets and buttons
+- **Critical**: every panel ScreenGui **must** start with `gui.Enabled = false` at init and only set `Enabled = true` when the panel is actively displayed. An `Enabled = true` ScreenGui with idle children (especially `ScrollingFrame`s) silently consumes all input within its bounds, even if those children are `Visible = false`
 - **God Mode** (PC and Mobile): standalone overlay, opened via TopbarPlus topbar icon (not nav-routed). Close hides the sheet overlay only
 
 ### State

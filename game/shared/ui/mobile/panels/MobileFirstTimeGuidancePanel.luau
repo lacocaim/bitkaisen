@@ -98,6 +98,7 @@ local function init()
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
 	gui.DisplayOrder = 680
+	gui.Enabled = false
 	gui.Parent = playerGui
 
 	local card = Instance.new("Frame")
@@ -209,6 +210,7 @@ local function init()
 		bodyLabel.Text = step.Body
 		nextButton.Text = step.Button or "NEXT"
 
+		gui.Enabled = true
 		card.Visible = true
 		card.BackgroundTransparency = 1
 		accent.BackgroundTransparency = 1

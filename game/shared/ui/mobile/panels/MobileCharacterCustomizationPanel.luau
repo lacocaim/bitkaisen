@@ -377,7 +377,7 @@ local function init(playerGui: Instance)
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
 	gui.DisplayOrder = 650
-	gui.Enabled = true
+	gui.Enabled = false
 	gui.Parent = playerGui
 
 	local overlay = Instance.new("Frame")
@@ -923,6 +923,7 @@ local function init(playerGui: Instance)
 		if isOpen then return end
 		isOpen = true
 
+		gui.Enabled = true
 		overlay.Visible = true
 		sheet.Visible = true
 		overlay.BackgroundTransparency = 1
@@ -942,6 +943,7 @@ local function init(playerGui: Instance)
 
 		sheet.Visible = false
 		overlay.Visible = false
+		gui.Enabled = false
 		isOpen = false
 		lockedIdentityState = nil
 		lockedRolledIdentityState = nil

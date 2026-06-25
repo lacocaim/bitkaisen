@@ -80,6 +80,7 @@ local function init()
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
 	gui.DisplayOrder = 660
+	gui.Enabled = false
 	gui.Parent = playerGui
 
 	local currentOpen = false
@@ -298,6 +299,7 @@ local function init()
 		task.delay(0.16, function()
 			if not currentOpen then
 				overlay.Visible = false
+				gui.Enabled = false
 			end
 		end)
 	end
@@ -387,6 +389,7 @@ local function init()
 
 		fateButton.Visible = #currentOptions >= 2
 		scroll.CanvasPosition = Vector2.new(0, 0)
+		gui.Enabled = true
 		overlay.Visible = true
 		overlay.BackgroundTransparency = 1
 		sheet.Position = UDim2.new(0.5, 0, 1, 20)

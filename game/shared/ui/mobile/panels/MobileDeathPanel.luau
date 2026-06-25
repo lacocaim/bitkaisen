@@ -114,7 +114,7 @@ local function init(playerGui: Instance)
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
 	gui.DisplayOrder = 670
-	gui.Enabled = true
+	gui.Enabled = false
 	gui.Parent = playerGui
 
 	-- Full-screen overlay
@@ -560,6 +560,7 @@ local function init(playerGui: Instance)
 		curseBtn.Visible = curseUnlocked
 		curseHint.Visible = curseUnlocked
 
+		gui.Enabled = true
 		overlay.Visible = true
 		sheet.Visible = true
 		overlay.BackgroundTransparency = 1
@@ -579,6 +580,7 @@ local function init(playerGui: Instance)
 
 		sheet.Visible = false
 		overlay.Visible = false
+		gui.Enabled = false
 	end
 
 	-- Wire close button on picker header

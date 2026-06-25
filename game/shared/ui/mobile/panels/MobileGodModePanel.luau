@@ -329,13 +329,12 @@ local function init()
 		title = "GOD MODE",
 		onClose = function()
 			sheet.Visible = false
+			gui.Enabled = false
 		end,
 	})
 
 	scroll = sheet:FindFirstChildOfClass("ScrollingFrame")
 	sheet.Visible = false
-
-	gui.Enabled = true
 
 	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(purchasePlayer, purchasedPassId, wasPurchased)
 		if purchasePlayer ~= player then return end

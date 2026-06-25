@@ -5,6 +5,7 @@ local Players = game:GetService("Players")
 local mc = require("@ui/mobile/mobileComponents")
 
 local theme = mc.theme
+local bindTap = mc.bindTap
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
@@ -341,7 +342,7 @@ local function init()
 		btn.MouseLeave:Connect(function()
 			TweenService:Create(btn, TWEEN_FAST, { BackgroundColor3 = style.Button }):Play()
 		end)
-		btn.Activated:Connect(function()
+		bindTap(btn, function()
 			chooseOption(optionData, index)
 		end)
 	end
@@ -400,12 +401,12 @@ local function init()
 		TweenService:Create(sheet, TWEEN_FAST, { Position = UDim2.new(0.5, 0, 1, -8) }):Play()
 	end
 
-	closeBtn.Activated:Connect(function()
+	bindTap(closeBtn, function()
 		playSFX("ChoiceSelect")
 		closeWindow(true)
 	end)
 
-	fateButton.Activated:Connect(pickRandomOption)
+	bindTap(fateButton, pickRandomOption)
 
 	showMissionSituation.OnClientEvent:Connect(openWindow)
 end

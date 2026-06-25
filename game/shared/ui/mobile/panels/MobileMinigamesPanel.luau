@@ -7,6 +7,7 @@ local mc = require("@ui/mobile/mobileComponents")
 local theme = mc.theme
 local corner = mc.corner
 local stroke = mc.stroke
+local bindTap = mc.bindTap
 
 local MobileMinigamesPanel = {}
 
@@ -271,7 +272,7 @@ local function openBlackFlashTiming(payload)
 		marker.Position = UDim2.new(progress, 0, 0.5, 0)
 	end)
 
-	hitButton.Activated:Connect(function()
+	bindTap(hitButton, function()
 		submitActive(false)
 	end)
 end
@@ -329,13 +330,13 @@ local function openBlackjack(payload)
 		stand.TextTransparency = 0.45
 	end
 
-	hit.Activated:Connect(function()
+	bindTap(hit, function()
 		sendBlackjackAction("hit")
 	end)
-	stand.Activated:Connect(function()
+	bindTap(stand, function()
 		sendBlackjackAction("stand")
 	end)
-	leave.Activated:Connect(function()
+	bindTap(leave, function()
 		if payload.Done == true then
 			destroyActive()
 		else
@@ -382,7 +383,7 @@ local function openBurglary(payload)
 
 	local leaveBtn = makeActionButton(panel, "LEAVE", UDim2.new(1, -90, 0, 14), UDim2.new(0, 72, 0, 32), Color3.fromRGB(105, 54, 54))
 	leaveBtn.TextSize = 12
-	leaveBtn.Activated:Connect(function()
+	bindTap(leaveBtn, function()
 		sendBurglaryResult("fled")
 	end)
 
@@ -478,10 +479,10 @@ local function openBurglary(payload)
 	local down = makeActionButton(panel, "DOWN", UDim2.new(dpadCenter, -36, 0, dpadY + 56), dpadBtnSize, Color3.fromRGB(75, 70, 68))
 	local right = makeActionButton(panel, "RIGHT", UDim2.new(dpadCenter, 40, 0, dpadY + 56), dpadBtnSize, Color3.fromRGB(75, 70, 68))
 
-	up.Activated:Connect(function() step(0, -1) end)
-	down.Activated:Connect(function() step(0, 1) end)
-	left.Activated:Connect(function() step(-1, 0) end)
-	right.Activated:Connect(function() step(1, 0) end)
+	bindTap(up, function() step(0, -1) end)
+	bindTap(down, function() step(0, 1) end)
+	bindTap(left, function() step(-1, 0) end)
+	bindTap(right, function() step(1, 0) end)
 
 	active = { Kind = "Burglary", Token = token, Root = root }
 	redraw()
@@ -548,7 +549,7 @@ local function openHeirloom(payload)
 		corner(button, 10)
 		stroke(button, Color3.fromRGB(190, 143, 82))
 
-		button.Activated:Connect(function()
+		bindTap(button, function()
 			if not active or active.Kind ~= "Heirloom" or button:GetAttribute("Opened") == true then
 				return
 			end
@@ -706,10 +707,10 @@ local function openCursedFingerHunt(payload)
 	local down = makeActionButton(panel, "DOWN", UDim2.new(dpadCenter, -36, 0, dpadY + 56), dpadBtnSize, Color3.fromRGB(72, 46, 54))
 	local right = makeActionButton(panel, "RIGHT", UDim2.new(dpadCenter, 40, 0, dpadY + 56), dpadBtnSize, Color3.fromRGB(72, 46, 54))
 
-	up.Activated:Connect(function() step(0, -1) end)
-	down.Activated:Connect(function() step(0, 1) end)
-	left.Activated:Connect(function() step(-1, 0) end)
-	right.Activated:Connect(function() step(1, 0) end)
+	bindTap(up, function() step(0, -1) end)
+	bindTap(down, function() step(0, 1) end)
+	bindTap(left, function() step(-1, 0) end)
+	bindTap(right, function() step(1, 0) end)
 
 	active = { Kind = "CursedFinger", Token = token, Root = root }
 	redraw()
@@ -775,7 +776,7 @@ local function openRCTMemory(payload)
 		corner(button, 12)
 		stroke(button, Color3.fromRGB(230, 250, 250))
 
-		button.Activated:Connect(function()
+		bindTap(button, function()
 			if not active or active.Kind ~= "RCTMemory" then
 				return
 			end

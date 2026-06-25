@@ -5,6 +5,7 @@ local TweenService = game:GetService("TweenService")
 local mc = require("@ui/mobile/mobileComponents")
 
 local theme = mc.theme
+local bindTap = mc.bindTap
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
@@ -255,13 +256,13 @@ local function init()
 		end)
 	end
 
-	skipButton.Activated:Connect(function()
+	bindTap(skipButton, function()
 		state.Finished = true
 		markSeen()
 		setStep(#STEPS + 1)
 	end)
 
-	nextButton.Activated:Connect(function()
+	bindTap(nextButton, function()
 		setStep(state.StepIndex + 1)
 	end)
 

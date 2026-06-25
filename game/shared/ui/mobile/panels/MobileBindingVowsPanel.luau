@@ -5,6 +5,7 @@ local uiState = require("@ui-state/uiState")
 local mc = require("@ui/mobile/mobileComponents")
 
 local theme = mc.theme
+local bindTap = mc.bindTap
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -348,7 +349,7 @@ local function makeSelectorRow(parent: Frame, sectionNum: number, title: string,
 	prevBtn.AutoButtonColor = false
 	prevBtn.Parent = selectorFrame
 	mc.corner(prevBtn, 8)
-	prevBtn.Activated:Connect(onPrev)
+	bindTap(prevBtn, onPrev)
 
 	local valueLabel = Instance.new("TextLabel")
 	valueLabel.Size = UDim2.new(1, -96, 1, 0)
@@ -374,7 +375,7 @@ local function makeSelectorRow(parent: Frame, sectionNum: number, title: string,
 	nextBtn.AutoButtonColor = false
 	nextBtn.Parent = selectorFrame
 	mc.corner(nextBtn, 8)
-	nextBtn.Activated:Connect(onNext)
+	bindTap(nextBtn, onNext)
 
 	mc.mobileLabel({
 		parent = card,

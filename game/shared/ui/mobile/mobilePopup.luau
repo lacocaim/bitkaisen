@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local mc = require("@ui/mobile/mobileComponents")
 local t = mc.theme
+local bindTap = mc.bindTap
 
 local popupQueue = {}
 local isShowing = false
@@ -205,7 +206,7 @@ local function init(playerGui: PlayerGui)
 	continueBtn.ZIndex = 102
 	continueBtn.Parent = window
 	mc.corner(continueBtn, 8)
-	continueBtn.Activated:Connect(closeCurrentPopup)
+	bindTap(continueBtn, closeCurrentPopup)
 
 	overlay.InputBegan:Connect(function(input)
 		if not isShowing then return end

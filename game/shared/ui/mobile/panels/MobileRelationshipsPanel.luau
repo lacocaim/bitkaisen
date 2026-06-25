@@ -8,6 +8,7 @@ local mc = require("@ui/mobile/mobileComponents")
 local theme = mc.theme
 local corner = mc.corner
 local stroke = mc.stroke
+local bindTap = mc.bindTap
 local mobileButton = mc.mobileButton
 local mobileCard = mc.mobileCard
 local mobileLabel = mc.mobileLabel
@@ -389,7 +390,7 @@ local function createActionsGrid(parent: GuiObject, relationship, order: number)
 			TweenService:Create(btn, TWEEN_FAST, { BackgroundColor3 = theme.Button }):Play()
 		end)
 
-		btn.Activated:Connect(function()
+		bindTap(btn, function()
 			if busyAction then return end
 
 			if action.Confirm and btn:GetAttribute("Confirmed") ~= true then
@@ -518,7 +519,7 @@ local function createRelationshipCard(parent: GuiObject, relationship, order: nu
 	expandBtn.Parent = card
 	corner(expandBtn, 8)
 
-	expandBtn.Activated:Connect(function()
+	bindTap(expandBtn, function()
 		if expandedCardId == relationship.Id then
 			expandedCardId = nil
 			if actionsHolder then actionsHolder:Destroy() end

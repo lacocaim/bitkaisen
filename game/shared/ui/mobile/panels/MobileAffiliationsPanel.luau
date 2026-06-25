@@ -5,6 +5,7 @@ local uiState = require("@ui-state/uiState")
 local mc = require("@ui/mobile/mobileComponents")
 
 local theme = mc.theme
+local bindTap = mc.bindTap
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -165,7 +166,7 @@ local function createPageControls(groupKey: string, totalCount: number, currentP
 	prev.Parent = controls
 	mc.corner(prev, 8)
 	if currentPage > 1 then
-		prev.Activated:Connect(function()
+		bindTap(prev, function()
 			groupPages[groupKey] = math.clamp(currentPage - 1, 1, totalPages)
 			refresh()
 		end)
@@ -186,7 +187,7 @@ local function createPageControls(groupKey: string, totalCount: number, currentP
 	nxt.Parent = controls
 	mc.corner(nxt, 8)
 	if currentPage < totalPages then
-		nxt.Activated:Connect(function()
+		bindTap(nxt, function()
 			groupPages[groupKey] = math.clamp(currentPage + 1, 1, totalPages)
 			refresh()
 		end)

@@ -5,6 +5,7 @@ local MarketplaceService = game:GetService("MarketplaceService")
 
 local mc = require("@ui/mobile/mobileComponents")
 local theme = mc.theme
+local bindTap = mc.bindTap
 
 local player = Players.LocalPlayer
 
@@ -824,8 +825,8 @@ local function init(playerGui: Instance)
 			task.delay(0.08, function() busy = false end)
 		end
 
-		leftBtn.Activated:Connect(function() applyCycle(-1) end)
-		rightBtn.Activated:Connect(function() applyCycle(1) end)
+		bindTap(leftBtn, function() applyCycle(-1) end)
+		bindTap(rightBtn, function() applyCycle(1) end)
 
 		return row
 	end
@@ -993,7 +994,7 @@ local function init(playerGui: Instance)
 	-- Button callbacks
 	-----------------------------------------------------------------------
 
-	randomizeBtn.Activated:Connect(function()
+	bindTap(randomizeBtn, function()
 		clearStatus()
 		if currentPage == 1 then
 			lockedIdentityState = nil
@@ -1004,14 +1005,14 @@ local function init(playerGui: Instance)
 		refreshPage()
 	end)
 
-	backBtn.Activated:Connect(function()
+	bindTap(backBtn, function()
 		clearStatus()
 		lockedIdentityState = nil
 		currentPage = 1
 		refreshPage()
 	end)
 
-	continueBtn.Activated:Connect(function()
+	bindTap(continueBtn, function()
 		clearStatus()
 
 		if submitting then return end

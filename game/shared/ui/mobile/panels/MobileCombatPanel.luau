@@ -13,6 +13,7 @@ local overlayManager = require(script.Parent.Parent.Parent.state.overlayManager)
 local theme = mobileComponents.theme
 local corner = mobileComponents.corner
 local stroke = mobileComponents.stroke
+local bindTap = mobileComponents.bindTap
 local mobileButton = mobileComponents.mobileButton
 local mobileCard = mobileComponents.mobileCard
 local mobileLabel = mobileComponents.mobileLabel
@@ -626,7 +627,7 @@ local function init(playerGui: Instance)
 			end)
 		end
 
-		stop.Activated:Connect(function() submit(false) end)
+		bindTap(stop, function() submit(false) end)
 		root.InputBegan:Connect(function(input)
 			if input.UserInputType == Enum.UserInputType.Touch then submit(false) end
 		end)
@@ -717,7 +718,7 @@ local function init(playerGui: Instance)
 			stroke(button, Color3.fromRGB(255, 255, 255), 2)
 
 			startedAt = os.clock()
-			button.Activated:Connect(function()
+			bindTap(button, function()
 				if finished or hitId ~= activeHitId then return end
 				local elapsed = os.clock() - startedAt
 				local success = elapsed <= windowSeconds
@@ -801,7 +802,7 @@ local function init(playerGui: Instance)
 		heartbeatPulse()
 
 		local clicked = false
-		button.Activated:Connect(function()
+		bindTap(button, function()
 			if clicked then return end
 			clicked = true
 			pulseAlive = false
@@ -995,23 +996,23 @@ local function init(playerGui: Instance)
 		end
 	end
 
-	-- Button connections
-	attackButton.Activated:Connect(function()
+	-- Button connections (via tap router for ScrollingFrame reliability)
+	bindTap(attackButton, function()
 		if state.Phase == "player_turn" then combatAction:FireServer("attack") end
 	end)
-	techniqueButton.Activated:Connect(function()
+	bindTap(techniqueButton, function()
 		if state.Phase == "player_turn" then combatAction:FireServer("technique") end
 	end)
-	domainButton.Activated:Connect(function()
+	bindTap(domainButton, function()
 		if state.Phase == "player_turn" then combatAction:FireServer("domain") end
 	end)
-	defendButton.Activated:Connect(function()
+	bindTap(defendButton, function()
 		if state.Phase == "player_turn" then combatAction:FireServer("defend") end
 	end)
-	fleeButton.Activated:Connect(function()
+	bindTap(fleeButton, function()
 		if state.Phase == "player_turn" then combatAction:FireServer("flee") end
 	end)
-	resetButton.Activated:Connect(function()
+	bindTap(resetButton, function()
 		if not state.Active then return end
 		local productId = tonumber(state.ResetProductId) or 0
 		if game.PlaceId == TEST_PURCHASE_PLACE_ID or RunService:IsStudio() then

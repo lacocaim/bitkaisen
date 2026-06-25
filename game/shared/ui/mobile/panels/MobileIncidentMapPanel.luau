@@ -5,6 +5,7 @@ local TweenService = game:GetService("TweenService")
 local mc = require("@ui/mobile/mobileComponents")
 
 local theme = mc.theme
+local bindTap = mc.bindTap
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
@@ -268,7 +269,7 @@ local function buildHeader(parent)
 	refreshBtn.AutoButtonColor = false
 	refreshBtn.Parent = header
 	mc.corner(refreshBtn, 8)
-	refreshBtn.Activated:Connect(loadMap)
+	bindTap(refreshBtn, loadMap)
 
 	local closeBtn = Instance.new("TextButton")
 	closeBtn.AnchorPoint = Vector2.new(1, 0.5)
@@ -283,7 +284,7 @@ local function buildHeader(parent)
 	closeBtn.AutoButtonColor = false
 	closeBtn.Parent = header
 	mc.corner(closeBtn, 999)
-	closeBtn.Activated:Connect(closeMap)
+	bindTap(closeBtn, closeMap)
 end
 
 local function init()

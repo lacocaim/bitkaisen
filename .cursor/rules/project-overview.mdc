@@ -56,7 +56,7 @@ The game uses a traditional Roblox scripting architecture (not ECS):
 - **PC panels** (`game/shared/ui/panels/`): each is a standalone module with its own ScreenGui, uses `Instance.new()` for all UI construction, wires to `uiState.subscribe()` for route-driven open/close or listens for remote events. Panels use imperative `refresh()` methods and `:Connect()` for events
 - **Mobile panels** (`game/shared/ui/mobile/panels/`): each `Mobile*Panel` module follows the same pattern (own ScreenGui, route-driven via `uiState.subscribe`), using `mobileComponents` helpers for mobile-native sheets and buttons
 - **Critical**: every panel ScreenGui **must** start with `gui.Enabled = false` at init and only set `Enabled = true` when the panel is actively displayed. An `Enabled = true` ScreenGui with idle children (especially `ScrollingFrame`s) silently consumes all input within its bounds, even if those children are `Visible = false`
-- **Button events**: buttons **inside a `ScrollingFrame`** must use `bindTap(button, callback)` from `mobileComponents.luau` -- NOT `Activated` or `MouseButton1Click`. On touch, `ScrollingFrame` claims the gesture as a scroll and `Activated` never fires; `bindTap` tracks `InputBegan`/`InputEnded` with a movement+time threshold to reliably distinguish taps from scrolls. Buttons **outside** scroll frames (e.g. header "X", topbar icons) may use `Activated` as before. `mobileButton()` already uses `bindTap` internally. Nav buttons in `mobileShell.luau` and `+ AGE` also use `bindTap`
+- **Button events**: buttons **inside a `ScrollingFrame`** must use `bindTap(button, callback)` from `mobileComponents.luau` -- NOT `Activated` or `MouseButton1Click`. On touch, `ScrollingFrame` claims the gesture as a scroll and `Activated` never fires. `bindTap` delegates to `tapRouter.luau`, a **global tap router** that uses a single `UserInputService.InputBegan/InputEnded` pair and `GetGuiObjectsAtPosition` to dispatch taps to registered buttons -- reliably working through ScrollingFrames on touch. Buttons **outside** scroll frames (e.g. header "X", topbar icons) may use `Activated` as before. `mobileButton()` already uses `bindTap` internally. Nav buttons in `mobileShell.luau`, `+ AGE`, and all combat action/minigame buttons also use `bindTap`
 - **Mobile safe area**: every mobile panel ScreenGui uses `IgnoreGuiInset = false` so titles/content sit below the Roblox topbar (CoreGui can't be drawn over). `mobileSheet` also enforces this on its parent ScreenGui. Any non-interactive hint/overlay placed over shell buttons (e.g. FirstTimeGuidance `GuidanceCard`) must be `Active = false` so it never eats taps
 - **God Mode** (PC and Mobile): standalone overlay, opened via TopbarPlus topbar icon (not nav-routed). Close hides the sheet overlay only
 
@@ -66,6 +66,7 @@ The game uses a traditional Roblox scripting architecture (not ECS):
 - `navRegistry` -- dynamic nav entries (missions, activities, relationships, assets, jobs, affiliations, domain, rivals, history, mentor)
 - `remotes` -- centralized remote access with lazy WaitForChild + cache
 - `overlayManager` -- single-overlay enforcer: `show(name, openFn, closeFn)` auto-closes the previous full-screen overlay before opening the new one; `closeAll()` closes whatever is open. Used by topbar icons (God Mode, AFK, War) and route navigation (`uiState.navigate` calls `closeAll()`). Prevents the opaque-stack "black screen" problem
+- `tapRouter` -- global tap dispatcher. Lazily connects one `UserInputService.InputBegan/InputEnded` pair. On finger-up, if movement < 12px and elapsed < 0.5s, calls `GetGuiObjectsAtPosition` and fires the callback of the first registered button on an enabled ScreenGui. Per-button debounce (0.2s). API: `register(button, callback)` / `unregister(button)`. All mobile tappable buttons go through this via `bindTap`
 - `experienceMode` -- singleton that **auto-detects** Computer/Mobile (UserInputService + viewport), shows the loading screen, and caches the initial life event. No picker, no manual switch
 
 ### Topbar
@@ -78,9 +79,9 @@ The game uses a traditional Roblox scripting architecture (not ECS):
 ### Input debugging
 - `inputDebug.luau` provides an **on-screen debug HUD** (works on real devices, not just Studio):
   - Tiny "D" toggle button (top-left) shows/hides the HUD panel
-  - HUD shows: last tap target name+class+Active, current overlay (from `overlayManager`), all enabled ScreenGuis
+  - HUD shows: current overlay (from `overlayManager`), all enabled ScreenGuis
   - Large red "RESET UI" button calls `overlayManager.closeAll()` + `uiState.closeAll()` + disables stray ScreenGuis -- escape hatch from black-screen scenarios
-  - "LOG" toggle enables/disables console output (disabled by default to avoid touch-input lag from spam)
+  - No per-input console spam; HUD refreshes only when visible (every 2s)
 - Note: `execute_luau` (Studio MCP) runs in a **separate Luau VM** that shares the DataModel but has its own `require` cache / `_G`. Requiring `uiState`/panels from it gives different module instances than the running game, so pub/sub and `_G` guards can't be tested that way -- inspect/instrument live instances instead
 
 ### Studio / repo sync
@@ -99,7 +100,7 @@ game/shared/ui/                      -> UI tree root
 game/shared/ui/panels/               -> PC panel modules (30+), each with own ScreenGui
 game/shared/ui/components/           -> Vide reactive shell components (ProfileCard, LifeLog, NavPanel, etc.)
 game/shared/ui/components/shell/     -> Shell-level Vide components (ProfileCard, LifeLog, NavPanel, AgeUpButton, etc.)
-game/shared/ui/state/                -> Shared state: playerState, uiState, navRegistry, remotes, experienceMode, overlayManager
+game/shared/ui/state/                -> Shared state: playerState, uiState, navRegistry, remotes, experienceMode, overlayManager, tapRouter
 game/shared/ui/mobile/               -> Mobile shell + components (mobileShell, mobileComponents, mobilePopup, mobileNotifications, mobileRouter)
 game/shared/ui/mobile/panels/        -> Mobile*Panel modules (route-driven, own ScreenGui)
 game/shared/ui/hooks/                -> UI hooks (setTimeout, useEvent, useRefresh, useTween)

@@ -8,6 +8,7 @@ local mc = require("@ui/mobile/mobileComponents")
 local theme = mc.theme
 local corner = mc.corner
 local stroke = mc.stroke
+local bindTap = mc.bindTap
 local mobileButton = mc.mobileButton
 local mobileCard = mc.mobileCard
 local mobileLabel = mc.mobileLabel
@@ -158,7 +159,7 @@ local function buildTabs()
 		btn.Parent = tabHolder
 		corner(btn, 8)
 		stroke(btn, theme.Stroke)
-		btn.Activated:Connect(function()
+		bindTap(btn, function()
 			setTab(tabName)
 			dojoSubPage = "Overview"
 			refresh()

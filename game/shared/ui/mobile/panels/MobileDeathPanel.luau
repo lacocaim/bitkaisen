@@ -5,6 +5,7 @@ local MarketplaceService = game:GetService("MarketplaceService")
 
 local mc = require("@ui/mobile/mobileComponents")
 local theme = mc.theme
+local bindTap = mc.bindTap
 
 local player = Players.LocalPlayer
 
@@ -586,7 +587,7 @@ local function init(playerGui: Instance)
 	-- Wire close button on picker header
 	for _, child in ipairs(pickerHeader:GetChildren()) do
 		if child:IsA("TextButton") then
-			child.Activated:Connect(function()
+			bindTap(child, function()
 				hidePicker()
 			end)
 			break
@@ -594,7 +595,7 @@ local function init(playerGui: Instance)
 	end
 
 	-- Button actions
-	newLifeBtn.Activated:Connect(function()
+	bindTap(newLifeBtn, function()
 		newLifeBtn.Text = "STARTING..."
 		updateLifeEvent:FireServer("StartNewLife")
 		task.delay(0.25, function()
@@ -603,11 +604,11 @@ local function init(playerGui: Instance)
 		end)
 	end)
 
-	successorBtn.Activated:Connect(function()
+	bindTap(successorBtn, function()
 		showPicker()
 	end)
 
-	rctBtn.Activated:Connect(function()
+	bindTap(rctBtn, function()
 		if getRCTReviveUses(lastDeathStats) >= RCT_REVIVE_MAX_PER_LIFE then
 			updateRCTButton(lastDeathStats)
 			return
@@ -629,7 +630,7 @@ local function init(playerGui: Instance)
 		end)
 	end)
 
-	curseBtn.Activated:Connect(function()
+	bindTap(curseBtn, function()
 		curseBtn.Text = "REBIRTHING..."
 		updateLifeEvent:FireServer("BecomeVengefulSpirit")
 		task.delay(0.45, function()
@@ -637,7 +638,7 @@ local function init(playerGui: Instance)
 		end)
 	end)
 
-	reincarnateBtn.Activated:Connect(function()
+	bindTap(reincarnateBtn, function()
 		reincarnateBtn.Text = "REINCARNATING..."
 		updateLifeEvent:FireServer("Reincarnate")
 		task.delay(0.45, function()

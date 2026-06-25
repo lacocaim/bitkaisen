@@ -8,6 +8,7 @@ local mc = require("@ui/mobile/mobileComponents")
 local theme = mc.theme
 local corner = mc.corner
 local stroke = mc.stroke
+local bindTap = mc.bindTap
 local mobileCard = mc.mobileCard
 local mobileLabel = mc.mobileLabel
 local mobileButton = mc.mobileButton
@@ -352,7 +353,7 @@ local function buildPills(categories: { string })
 		pad.PaddingRight = UDim.new(0, 14)
 		pad.Parent = pill
 
-		pill.Activated:Connect(function()
+		bindTap(pill, function()
 			selectedCategory = cat
 			updatePillHighlight()
 			if activityCache then

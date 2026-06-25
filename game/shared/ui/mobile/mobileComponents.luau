@@ -1,45 +1,11 @@
-local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local tapRouter = require("@ui-state/tapRouter")
 
-local TAP_MAX_MOVE = 12
-local TAP_MAX_TIME = 0.5
-local TAP_DEBOUNCE = 0.25
-
--- Reliable tap detection that works inside ScrollingFrames on touch devices.
--- ScrollingFrame swallows Activated when the finger moves even slightly, so we
--- track InputBegan/InputEnded ourselves and only fire the callback when the
--- finger stayed within TAP_MAX_MOVE pixels for < TAP_MAX_TIME seconds.
+-- Register a button for global tap routing. The tap router uses a single
+-- UIS InputBegan/InputEnded pair and GetGuiObjectsAtPosition to dispatch
+-- taps, which reliably works inside ScrollingFrames on touch.
 local function bindTap(button: GuiButton, callback: () -> ())
-	local startPos: Vector3? = nil
-	local startTime = 0
-	local lastFire = 0
-
-	button.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.Touch
-			or input.UserInputType == Enum.UserInputType.MouseButton1 then
-			startPos = input.Position
-			startTime = os.clock()
-		end
-	end)
-
-	button.InputEnded:Connect(function(input)
-		if input.UserInputType ~= Enum.UserInputType.Touch
-			and input.UserInputType ~= Enum.UserInputType.MouseButton1 then
-			return
-		end
-		if not startPos then return end
-
-		local now = os.clock()
-		local dx = math.abs(input.Position.X - startPos.X)
-		local dy = math.abs(input.Position.Y - startPos.Y)
-		startPos = nil
-
-		if dx > TAP_MAX_MOVE or dy > TAP_MAX_MOVE then return end
-		if (now - startTime) > TAP_MAX_TIME then return end
-		if (now - lastFire) < TAP_DEBOUNCE then return end
-		lastFire = now
-		callback()
-	end)
+	tapRouter.register(button, callback)
 end
 
 local theme = {
@@ -254,7 +220,7 @@ local function mobileHeader(parent: GuiObject, titleText: string, onClose: () ->
 	closeBtn.AutoButtonColor = false
 	closeBtn.Parent = header
 	corner(closeBtn, 999)
-	closeBtn.Activated:Connect(onClose)
+	bindTap(closeBtn, onClose)
 
 	return header
 end

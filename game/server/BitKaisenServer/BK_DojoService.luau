@@ -70,7 +70,8 @@ local function getDojoStudentCapacity(stats)
 	local baseCapacity = 3 + ((level - 1) * 2)
 	local reputationBonus = math.clamp(math.floor((stats.ClanReputation or 0) / 35), 0, 4)
 	local passBonus = stats.HasExtraDojoStudentsPass == true and 3 or 0
-	return baseCapacity + reputationBonus + passBonus
+	local expansionBonus = stats.HasDojoExpansionPass == true and 2 or 0
+	return baseCapacity + reputationBonus + passBonus + expansionBonus
 end
 
 local function getDojoUpgradeCost(stats)
@@ -319,7 +320,8 @@ local function generateDojoRecruitPool(stats)
 	ensureExtraStats(stats)
 	stats.DojoRecruitPool = {}
 
-	for index = 1, 10 do
+	local poolSize = if stats.HasDojoExpansionPass == true then 15 else 10
+	for index = 1, poolSize do
 		table.insert(stats.DojoRecruitPool, makeRecruitCandidate(stats, index))
 	end
 end

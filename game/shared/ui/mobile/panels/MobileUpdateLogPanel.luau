@@ -13,6 +13,36 @@ local scroll: ScrollingFrame
 
 local sections = {
 	{
+		header = "Update 18 - Shop Overhaul",
+		body = "• All shop prices updated to match Roblox Creator Dashboard — no more mismatched prices.\n• Accurate descriptions for every gamepass and developer product.\n• 5 previously TBD developer products now have real prices: CT Evolution Accelerator (R$ 299), Black Flash Drill Pack (R$ 299), Clan War Mediation (R$ 99), Cursed Tool Salvage Kit (R$ 99), Combat Recovery Kit (R$ 99).\n• Go Rogue gamepass now listed in the shop.\n• God Mode increased to R$ 800 with expanded feature set.\n• 2x Progress (Training) increased to R$ 400 with doubled training gains across CE, Strength, and Mastery.",
+		color = theme.Gold,
+	},
+	{
+		header = "Update 18 - New Gamepasses",
+		body = "• Lucky Sorcerer (R$ 349) — 15% boost to Smarts, Health, Happiness, Looks, and Strength at birth on every new life.\n• Training Prodigy (R$ 349) — 1.5x gains on Cursed Energy, Strength, and Technique Mastery during all training.\n• Mission Investor (R$ 299) — 1.5x cash, reputation, and CE gains from all mission completions.\n• Legacy Blessing (R$ 349) — Future heirs start stronger through your family line.\n• Focused Training (R$ 199) — Permanent +25% Cursed Energy gains from CE training.\n• AFK Pass (R$ 200) — 2x AFK payouts. AFK is free for everyone; this pass doubles your idle earnings.\n• Binding Vow Specialist (R$ 349) — Hold up to 5 custom vows per life instead of 3. Negative vow effects reduced by 25%.",
+		color = theme.Gold,
+	},
+	{
+		header = "Update 18 - VIP Sorcerer Pass Expansion",
+		body = "• VIP Pass now grants 2x daily login rewards.\n• VIP Pass now grants 1.5x money from missions and jobs.\n• VIP Pass now grants 1.5x training gains (CE and Strength).\n• VIP Pass now grants 2x Technique Mastery gains.\n• VIP Pass owners receive the exclusive 'VIP Sorcerer' title.\n• VIP Pass still includes extra save slots.\n• VIP price updated to R$ 400 to reflect expanded value.",
+		color = theme.Gold,
+	},
+	{
+		header = "Update 18 - Binding Vow Specialist",
+		body = "• New gamepass: Binding Vow Specialist (R$ 349).\n• Raises the custom binding vow limit from 3 to 5 per life.\n• Reduces all negative vow effects (sacrifices) by 25%.\n• Works on both custom vows and preset binding vows.\n• New VOWS button added to the navigation bar for quick access.",
+		color = theme.Purple,
+	},
+	{
+		header = "Update 18 - Lucky Birth Enhancement",
+		body = "• Lucky Birth now guarantees a Rare or higher trait at birth — no more Common-only rolls.\n• 25% luck boost to clan and origin rolls — Lucky Birth now rolls 5 origins and keeps the best.\n• Extra cursed technique roll — if the first innate technique roll fails, Lucky Birth tries again.\n• Lucky Birth price adjusted to R$ 150.",
+		color = theme.Gold,
+	},
+	{
+		header = "Update 18 - AFK Free for All",
+		body = "• AFK Stabilization is now free for all players — no unlock required.\n• The AFK Pass (R$ 200) now exclusively doubles your AFK payouts (2x).\n• Unlock buttons removed from AFK panels on both PC and Mobile.\n• AFK panel shows '2x ACTIVE' badge if AFK Pass is owned.\n• Rate display reflects the doubled payout for pass owners.",
+		color = theme.Green,
+	},
+	{
 		header = "Update 17 - Bug Fixes",
 		body = "• Physical Conditioning now correctly resets each age-up (was capped at 3 per lifetime).\n• Fixed exploit where relationship action counter could be bypassed with rapid requests.\n• Unregistered sorcerers can now promote past Grade 4.\n• Send Students on Patrol no longer crashes and consumes your turn.\n• World events, notable sorcerer aging, and era changes now continue past age 16.\n• Newborns no longer default as the strongest sorcerer alive.\n• Gender no longer randomly swaps on surviving spouses during generation takeover.\n• Cursed spirits can now take over prior-life children after death.\n• Rival entries in Affiliations no longer show broken action buttons.\n• God Mode clan picker now shows all clans including Ryomen.\n• Randomize Path button no longer crashes.\n• WAR button now hides when overlay menus are open.",
 		color = theme.Red,
@@ -53,9 +83,9 @@ local sections = {
 		color = theme.Red,
 	},
 	{
-		header = "Update 17 - Codes",
-		body = "Redeem these in Settings > Codes:\n\n• Update17\n• NewCode\n• FullRestore\n• Jujutsu",
-		color = theme.Red,
+		header = "Update 18 - Codes",
+		body = "Redeem these in Settings > Codes:\n\n• Update18 — +$25k, +150 CE, +15 Mastery, +15 Rep, +15 Happiness\n• ShopOverhaul — +$30k, +100 CE, +10 Rep\n• VipSorcerer — +200 CE, +20 Mastery, Max Health, Max Happiness\n• BindingVow — +$15k, +100 CE, +15 Strength, +10 Rep\n• SixEyes — +$75k, +300 CE, +20 Mastery, +20 Rep",
+		color = theme.Gold,
 	},
 	{
 		header = "Update 16 - QOL & Progression",
@@ -176,7 +206,7 @@ local function renderSections()
 	local subtitleCard = mc.mobileCard({ parent = scroll, order = 0, accentColor = theme.Gold })
 	mc.mobileLabel({
 		parent = subtitleCard,
-		text = "School system, Jujutsu Mentor career, full UI overhaul, mobile parity, and bug fixes",
+		text = "Shop overhaul, VIP expansion, Binding Vow Specialist, AFK for all, and new gamepasses",
 		size = 13,
 		color = theme.SubText,
 		order = 1,

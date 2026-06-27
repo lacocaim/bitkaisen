@@ -172,7 +172,7 @@ actionButton.Parent = panel
 makeCorner(actionButton, 8)
 makeStroke(actionButton, Color3.fromRGB(255, 255, 255), 1, 0.35)
 
-local state = { Unlocked = false, Active = false, RatePerSecond = 0.2, SessionEarned = 0, EarnedTotal = 0, ProductId = 0, TestingPlace = false }
+local state = { Unlocked = true, Active = false, RatePerSecond = 0.2, SessionEarned = 0, EarnedTotal = 0, ProductId = 0, TestingPlace = false, HasAFKPass = false }
 local ignoreInputUntil = 0
 local lastAutoStopAt = 0
 
@@ -194,16 +194,12 @@ local function refresh()
 		buttonStroke.Color = active and theme.Green or theme.Purple
 		buttonStroke.Transparency = active and 0.25 or 0.12
 	end
-	if state.Unlocked then
-		body.Text = state.Active and "Stabilizing. Avoid normal play actions while AFK mode is active." or "Start AFK mode to earn while idle."
-		actionButton.Text = state.Active and "STOP AFK" or "START AFK"
-		actionButton.BackgroundColor3 = state.Active and theme.Red or theme.Green
-	else
-		body.Text = "One-time unlock. Earn money while idle after activating AFK mode."
-		actionButton.Text = state.TestingPlace and "TEST UNLOCK" or "UNLOCK"
-		actionButton.BackgroundColor3 = theme.Purple
-	end
-	statsText.Text = "Rate: " .. formatMoney(state.RatePerSecond or 0) .. "/sec\nThis session: " .. formatMoney(state.SessionEarned or 0) .. "\nLifetime AFK: " .. formatMoney(state.EarnedTotal or 0)
+	local passNote = state.HasAFKPass and " (2x ACTIVE)" or ""
+	body.Text = state.Active and ("Stabilizing. Avoid normal play actions while AFK mode is active." .. passNote) or ("Start AFK mode to earn while idle." .. passNote)
+	actionButton.Text = state.Active and "STOP AFK" or "START AFK"
+	actionButton.BackgroundColor3 = state.Active and theme.Red or theme.Green
+	local displayRate = (state.RatePerSecond or 0) * (state.HasAFKPass and 2 or 1)
+	statsText.Text = "Rate: " .. formatMoney(displayRate) .. "/sec" .. (state.HasAFKPass and " (2x)" or "") .. "\nThis session: " .. formatMoney(state.SessionEarned or 0) .. "\nLifetime AFK: " .. formatMoney(state.EarnedTotal or 0)
 end
 
 local function isPointInside(guiObject, position)
@@ -261,23 +257,11 @@ local function init()
 	end)
 
 	actionButton.MouseButton1Click:Connect(function()
-		if state.Unlocked then
-			local nextAction = state.Active and "stop" or "start"
-			if nextAction == "start" then
-				ignoreInputUntil = os.clock() + 1.25
-			end
-			afkAction:FireServer(nextAction)
-		else
-			local productId = tonumber(state.ProductId) or 0
-			if state.TestingPlace then
-				afkAction:FireServer("test_unlock")
-			elseif productId > 0 then
-				MarketplaceService:PromptGamePassPurchase(player, productId)
-			else
-				actionButton.Text = "SET PRODUCT ID"
-				task.delay(1, refresh)
-			end
+		local nextAction = state.Active and "stop" or "start"
+		if nextAction == "start" then
+			ignoreInputUntil = os.clock() + 1.25
 		end
+		afkAction:FireServer(nextAction)
 		task.delay(0.2, fetch)
 	end)
 

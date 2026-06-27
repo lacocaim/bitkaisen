@@ -14,7 +14,7 @@ local gui: ScreenGui
 local sheet: Frame
 local scroll: ScrollingFrame
 
-local state = { Unlocked = false, Active = false, RatePerSecond = 0.2, SessionEarned = 0, EarnedTotal = 0, ProductId = 0, TestingPlace = false }
+local state = { Unlocked = true, Active = false, RatePerSecond = 0.2, SessionEarned = 0, EarnedTotal = 0, ProductId = 0, TestingPlace = false, HasAFKPass = false }
 local ignoreInputUntil = 0
 local lastAutoStopAt = 0
 
@@ -42,21 +42,16 @@ local function refresh()
 
 	if actionButton then
 		actionButton.Visible = true
-		if state.Unlocked then
-			bodyLabel.Text = state.Active and "Stabilizing. Avoid normal play actions while AFK mode is active." or "Start AFK mode to earn while idle."
-			actionButton.Text = state.Active and "STOP AFK" or "START AFK"
-			actionButton.BackgroundColor3 = state.Active and theme.Bad or theme.Green
-			actionButton.TextColor3 = state.Active and theme.Text or theme.Bg
-		else
-			bodyLabel.Text = "One-time unlock. Earn money while idle after activating AFK mode."
-			actionButton.Text = state.TestingPlace and "TEST UNLOCK" or "UNLOCK"
-			actionButton.BackgroundColor3 = theme.Purple
-			actionButton.TextColor3 = theme.Text
-		end
+		local passNote = state.HasAFKPass and " (2x ACTIVE)" or ""
+		bodyLabel.Text = state.Active and ("Stabilizing. Avoid normal play actions while AFK mode is active." .. passNote) or ("Start AFK mode to earn while idle." .. passNote)
+		actionButton.Text = state.Active and "STOP AFK" or "START AFK"
+		actionButton.BackgroundColor3 = state.Active and theme.Bad or theme.Green
+		actionButton.TextColor3 = state.Active and theme.Text or theme.Bg
 	end
 
 	if statsLabel then
-		statsLabel.Text = "Rate: " .. formatMoney(state.RatePerSecond or 0) .. "/sec\nThis session: " .. formatMoney(state.SessionEarned or 0) .. "\nLifetime AFK: " .. formatMoney(state.EarnedTotal or 0)
+		local displayRate = (state.RatePerSecond or 0) * (state.HasAFKPass and 2 or 1)
+		statsLabel.Text = "Rate: " .. formatMoney(displayRate) .. "/sec" .. (state.HasAFKPass and " (2x)" or "") .. "\nThis session: " .. formatMoney(state.SessionEarned or 0) .. "\nLifetime AFK: " .. formatMoney(state.EarnedTotal or 0)
 	end
 end
 
@@ -137,20 +132,11 @@ local function init()
 		textSize = 15,
 		order = 3,
 		callback = function()
-			if state.Unlocked then
-				local nextAction = state.Active and "stop" or "start"
-				if nextAction == "start" then
-					ignoreInputUntil = os.clock() + 1.25
-				end
-				afkAction:FireServer(nextAction)
-			else
-				local productId = tonumber(state.ProductId) or 0
-				if state.TestingPlace then
-					afkAction:FireServer("test_unlock")
-				elseif productId > 0 then
-					MarketplaceService:PromptGamePassPurchase(player, productId)
-				end
+			local nextAction = state.Active and "stop" or "start"
+			if nextAction == "start" then
+				ignoreInputUntil = os.clock() + 1.25
 			end
+			afkAction:FireServer(nextAction)
 			task.delay(0.2, function()
 				local ok2, p2 = pcall(function() return getAFK:InvokeServer() end)
 				if ok2 and typeof(p2) == "table" then

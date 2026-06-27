@@ -59,63 +59,77 @@ end
 local BitKaisenSaveSystem = {}
 
 local CODE_ORDER = {
-	"UPDATE17",
-	"NEWCODE",
-	"FULLRESTORE",
-	"JUJUTSU",
+	"UPDATE18",
+	"SHOPOVERHAUL",
+	"VIPSORCERER",
+	"BINDINGVOW",
+	"SIXEYES",
 }
 
 local CODE_DEFINITIONS = {
 
-	UPDATE17 = {
-		Name = "Update17",
-		Description = "Update 17 launch reward — the biggest update yet.",
-		RewardText = "+$20,000 | +100 CE | +10 Mastery | +10 Rep | +10 Happiness",
+	UPDATE18 = {
+		Name = "Update18",
+		Description = "Update 18 celebration. Welcome to the new era.",
+		RewardText = "+$25,000 | +150 CE | +15 Mastery | +15 Rep | +15 Happiness",
 		Grant = function(stats)
-			stats.Money = (stats.Money or 0) + 20000
-			stats.CursedEnergy = (stats.CursedEnergy or 0) + 100
-			stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + 10, 0, 100)
-			stats.Reputation = (stats.Reputation or 0) + 10
-			stats.Happiness = math.clamp((stats.Happiness or 100) + 10, 0, 100)
-			return "+$20,000 Money, +100 Cursed Energy, +10 Technique Mastery, +10 Reputation, and +10 Happiness"
-		end
-	},
-
-	NEWCODE = {
-		Name = "NewCode",
-		Description = "Thanks for playing BitKaisen.",
-		RewardText = "+$10,000 | +75 CE | +5 Rep | +15 Happiness",
-		Grant = function(stats)
-			stats.Money = (stats.Money or 0) + 10000
-			stats.CursedEnergy = (stats.CursedEnergy or 0) + 75
-			stats.Reputation = (stats.Reputation or 0) + 5
-			stats.Happiness = math.clamp((stats.Happiness or 100) + 15, 0, 100)
-			return "+$10,000 Money, +75 Cursed Energy, +5 Reputation, and +15 Happiness"
-		end
-	},
-
-	FULLRESTORE = {
-		Name = "FullRestore",
-		Description = "Restore your sorcerer to peak condition.",
-		RewardText = "Max Health | Max Happiness | +50 CE",
-		Grant = function(stats)
-			stats.Health = 100
-			stats.Happiness = 100
-			stats.CursedEnergy = (stats.CursedEnergy or 0) + 50
-			return "Health and Happiness restored to 100, and +50 Cursed Energy"
-		end
-	},
-
-	JUJUTSU = {
-		Name = "Jujutsu",
-		Description = "A hidden code for the dedicated.",
-		RewardText = "+$50,000 | +250 CE | +15 Mastery | +15 Rep",
-		Grant = function(stats)
-			stats.Money = (stats.Money or 0) + 50000
-			stats.CursedEnergy = (stats.CursedEnergy or 0) + 250
+			stats.Money = (stats.Money or 0) + 25000
+			stats.CursedEnergy = (stats.CursedEnergy or 0) + 150
 			stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + 15, 0, 100)
 			stats.Reputation = (stats.Reputation or 0) + 15
-			return "+$50,000 Money, +250 Cursed Energy, +15 Technique Mastery, and +15 Reputation"
+			stats.Happiness = math.clamp((stats.Happiness or 100) + 15, 0, 100)
+			return "+$25,000 Money, +150 Cursed Energy, +15 Technique Mastery, +15 Reputation, and +15 Happiness"
+		end
+	},
+
+	SHOPOVERHAUL = {
+		Name = "ShopOverhaul",
+		Description = "The shop is reborn.",
+		RewardText = "+$30,000 | +100 CE | +10 Rep",
+		Grant = function(stats)
+			stats.Money = (stats.Money or 0) + 30000
+			stats.CursedEnergy = (stats.CursedEnergy or 0) + 100
+			stats.Reputation = (stats.Reputation or 0) + 10
+			return "+$30,000 Money, +100 Cursed Energy, and +10 Reputation"
+		end
+	},
+
+	VIPSORCERER = {
+		Name = "VipSorcerer",
+		Description = "A code for the elite.",
+		RewardText = "+200 CE | +20 Mastery | Max Health | Max Happiness",
+		Grant = function(stats)
+			stats.CursedEnergy = (stats.CursedEnergy or 0) + 200
+			stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + 20, 0, 100)
+			stats.Health = 100
+			stats.Happiness = 100
+			return "+200 Cursed Energy, +20 Technique Mastery, Health restored to 100, and Happiness restored to 100"
+		end
+	},
+
+	BINDINGVOW = {
+		Name = "BindingVow",
+		Description = "The vow is sealed.",
+		RewardText = "+$15,000 | +100 CE | +15 Strength | +10 Rep",
+		Grant = function(stats)
+			stats.Money = (stats.Money or 0) + 15000
+			stats.CursedEnergy = (stats.CursedEnergy or 0) + 100
+			stats.Strength = math.clamp((stats.Strength or 0) + 15, 0, 100)
+			stats.Reputation = (stats.Reputation or 0) + 10
+			return "+$15,000 Money, +100 Cursed Energy, +15 Strength, and +10 Reputation"
+		end
+	},
+
+	SIXEYES = {
+		Name = "SixEyes",
+		Description = "A hidden code for the dedicated.",
+		RewardText = "+$75,000 | +300 CE | +20 Mastery | +20 Rep",
+		Grant = function(stats)
+			stats.Money = (stats.Money or 0) + 75000
+			stats.CursedEnergy = (stats.CursedEnergy or 0) + 300
+			stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + 20, 0, 100)
+			stats.Reputation = (stats.Reputation or 0) + 20
+			return "+$75,000 Money, +300 Cursed Energy, +20 Technique Mastery, and +20 Reputation"
 		end
 	},
 }
@@ -364,7 +378,7 @@ function BK_CodeService.Init(ctx)
 		end
 	end
 
-	if context.IS_DEBUG then print("[BK_CodeService] Loaded real code logic with Update 6.2 codes.") end
+	if context.IS_DEBUG then print("[BK_CodeService] Loaded real code logic with Update 18 codes.") end
 end
 
 return BK_CodeService

@@ -16,7 +16,8 @@ local playerGui = player:WaitForChild("PlayerGui")
 local updateLifeEvent = ReplicatedStorage:WaitForChild("UpdateLifeEvent")
 local updateSettingsEvent = ReplicatedStorage:WaitForChild("UpdateSettingsEvent")
 local testPurchase = ReplicatedStorage:WaitForChild("TestPurchase")
-local setGiftRecipient = ReplicatedStorage:WaitForChild("SetGiftRecipient")
+local initiateGift = ReplicatedStorage:WaitForChild("InitiateGift")
+local promptGiftPurchase = ReplicatedStorage:WaitForChild("PromptGiftPurchase")
 
 local TEST_PURCHASE_PLACE_ID = 104206065947170
 local function promptRobuxItem(kind, robloxId)
@@ -54,6 +55,14 @@ local DOUBLE_TRAINING_GAMEPASS_ID = 1849210885
 local LUCKY_BIRTH_GAMEPASS_ID = 1859848647
 local EXTRA_DOJO_STUDENTS_GAMEPASS_ID = 1862959768
 local GOD_MODE_GAMEPASS_ID = 1861509054
+local GO_ROGUE_GAMEPASS_ID = 1887460270
+local LUCKY_SORCERER_GAMEPASS_ID = 1863476467
+local TRAINING_PRODIGY_GAMEPASS_ID = 1863314699
+local MISSION_INVESTOR_GAMEPASS_ID = 1863458434
+local LEGACY_BLESSING_GAMEPASS_ID = 1865683126
+local FOCUSED_TRAINING_GAMEPASS_ID = 1847591321
+local AFK_PASS_GAMEPASS_ID = 1879156343
+local BINDING_VOW_SPECIALIST_GAMEPASS_ID = 1863380690
 
 local STARTER_SORCERER_PACK_PRODUCT_ID = 3595826857
 local FOCUSED_TRAINING_PRODUCT_ID = 3595838153
@@ -133,12 +142,12 @@ local SHOP_CATEGORIES = {
 		Subtitle = "Best value packs and starter purchases.",
 		Accent = THEME.Gold,
 		Items = {
-			{ Id = "god_mode", Name = "God Mode", Subtitle = "Premium life tuning: trait edits, clan rerolls, start boosts, legacy trait inheritance, and reset life controls.", Kind = "GamePass", RobloxId = GOD_MODE_GAMEPASS_ID, PriceText = "R$ 399", Accent = THEME.Gold },
+			{ Id = "god_mode", Name = "God Mode", Subtitle = "Premium life tuning: trait edits, clan rerolls, start boosts, legacy trait inheritance, and reset life controls.", Kind = "GamePass", RobloxId = GOD_MODE_GAMEPASS_ID, PriceText = "R$ 800", Accent = THEME.Gold },
 			{ Id = "elite_sorcerer_pack", Name = "Elite Sorcerer Pack", Subtitle = "Money, CE, recommendations, boosts, and power rerolls bundled together.", Kind = "Product", RobloxId = ELITE_SORCERER_PACK_PRODUCT_ID, PriceText = "R$ 500", Accent = THEME.Gold },
 			{ Id = "starter_pack", Name = "Starter Sorcerer Pack", Subtitle = "Money, CE boost, and early-game help.", Kind = "Product", RobloxId = STARTER_SORCERER_PACK_PRODUCT_ID, PriceText = "R$ 149", Accent = THEME.Gold },
-			{ Id = "gift_go_rogue", Name = "Gift Go Rogue", Subtitle = "Gift permanent Go Rogue access to another Roblox user.", Kind = "Product", RobloxId = GIFT_GO_ROGUE_PRODUCT_ID, GiftPassKey = "GoRogue", PriceText = "GIFT", Accent = THEME.Purple },
-			{ Id = "gift_god_mode", Name = "Gift God Mode", Subtitle = "Gift God Mode access to another Roblox user.", Kind = "Product", RobloxId = GIFT_GOD_MODE_PRODUCT_ID, GiftPassKey = "GodMode", PriceText = "GIFT", Accent = THEME.Gold },
-			{ Id = "gift_afk_stabilization", Name = "Gift AFK Stabilization", Subtitle = "Gift AFK Stabilization access to another Roblox user.", Kind = "Product", RobloxId = GIFT_AFK_STABILIZATION_PRODUCT_ID, GiftPassKey = "AFKStabilization", PriceText = "GIFT", Accent = THEME.Green },
+			{ Id = "gift_go_rogue", Name = "Gift Go Rogue", Subtitle = "Gift permanent Go Rogue access to another Roblox user.", Kind = "Product", RobloxId = GIFT_GO_ROGUE_PRODUCT_ID, GiftPassKey = "GoRogue", PriceText = "R$ 100", Accent = THEME.Purple },
+			{ Id = "gift_god_mode", Name = "Gift God Mode", Subtitle = "Gift God Mode access to another Roblox user.", Kind = "Product", RobloxId = GIFT_GOD_MODE_PRODUCT_ID, GiftPassKey = "GodMode", PriceText = "R$ 800", Accent = THEME.Gold },
+			{ Id = "gift_afk_stabilization", Name = "Gift AFK Stabilization", Subtitle = "Gift AFK Stabilization access to another Roblox user.", Kind = "Product", RobloxId = GIFT_AFK_STABILIZATION_PRODUCT_ID, GiftPassKey = "AFKStabilization", PriceText = "R$ 200", Accent = THEME.Green },
 			{ Id = "test_gift", Name = "Test Gift", Subtitle = "Testing-place-only gift item for validating the gift username and receipt flow.", Kind = "Product", RobloxId = TEST_GIFT_PRODUCT_ID, GiftPassKey = "TestGift", PriceText = "TEST", Accent = THEME.Blue, TestOnly = true },
 		},
 	},
@@ -161,11 +170,11 @@ local SHOP_CATEGORIES = {
 			{ Id = "mastery_boost_15", Name = "Mastery Boost 15 Min", Subtitle = "Activates 2x mastery growth support and gives instant mastery if you have a technique.", Kind = "Product", RobloxId = MASTERY_BOOST_15_PRODUCT_ID, PriceText = "R$ 100", Accent = THEME.Purple },
 			{ Id = "ce_boost_15", Name = "CE Boost 15 Min", Subtitle = "Activates 2x cursed energy growth support and gives instant cursed energy.", Kind = "Product", RobloxId = CE_BOOST_15_PRODUCT_ID, PriceText = "R$ 99", Accent = THEME.Blue },
 			{ Id = "focused_training", Name = "Focused Training Session", Subtitle = "Gain cursed energy, technique mastery, and sharper growth.", Kind = "Product", RobloxId = FOCUSED_TRAINING_PRODUCT_ID, PriceText = "R$ 199", Accent = THEME.Blue },
-			{ Id = "ct_evolution_accelerator", Name = "CT Evolution Accelerator", Subtitle = "Adds mastery and evolution pressure for your current cursed technique.", Kind = "Product", RobloxId = CT_EVOLUTION_ACCELERATOR_PRODUCT_ID, PriceText = "R$ TBD", Accent = THEME.Purple },
-			{ Id = "black_flash_drill_pack", Name = "Black Flash Drill Pack", Subtitle = "Adds drill tokens, CE, and a small mastery push for Black Flash training.", Kind = "Product", RobloxId = BLACK_FLASH_DRILL_PACK_PRODUCT_ID, PriceText = "R$ TBD", Accent = THEME.Red },
-			{ Id = "clan_war_mediation", Name = "Clan War Mediation", Subtitle = "Lowers active Clan War tension or saves a mediation credit if no war is active.", Kind = "Product", RobloxId = CLAN_WAR_MEDIATION_PRODUCT_ID, PriceText = "R$ TBD", Accent = THEME.Gold },
-			{ Id = "cursed_tool_salvage_kit", Name = "Cursed Tool Salvage Kit", Subtitle = "Recover a Common-Epic cursed tool. Duplicates convert into money and CE.", Kind = "Product", RobloxId = CURSED_TOOL_SALVAGE_KIT_PRODUCT_ID, PriceText = "R$ TBD", Accent = THEME.Purple },
-			{ Id = "combat_recovery_kit", Name = "Combat Recovery Kit", Subtitle = "Restore health and cursed energy after rough fights. Does not revive dead lives.", Kind = "Product", RobloxId = COMBAT_RECOVERY_KIT_PRODUCT_ID, PriceText = "R$ TBD", Accent = THEME.Green },
+			{ Id = "ct_evolution_accelerator", Name = "CT Evolution Accelerator", Subtitle = "Adds mastery and evolution pressure for your current cursed technique.", Kind = "Product", RobloxId = CT_EVOLUTION_ACCELERATOR_PRODUCT_ID, PriceText = "R$ 299", Accent = THEME.Purple },
+			{ Id = "black_flash_drill_pack", Name = "Black Flash Drill Pack", Subtitle = "Adds drill tokens, CE, and a small mastery push for Black Flash training.", Kind = "Product", RobloxId = BLACK_FLASH_DRILL_PACK_PRODUCT_ID, PriceText = "R$ 299", Accent = THEME.Red },
+			{ Id = "clan_war_mediation", Name = "Clan War Mediation", Subtitle = "Lowers active Clan War tension or saves a mediation credit if no war is active.", Kind = "Product", RobloxId = CLAN_WAR_MEDIATION_PRODUCT_ID, PriceText = "R$ 99", Accent = THEME.Gold },
+			{ Id = "cursed_tool_salvage_kit", Name = "Cursed Tool Salvage Kit", Subtitle = "Recover a Common-Epic cursed tool. Duplicates convert into money and CE.", Kind = "Product", RobloxId = CURSED_TOOL_SALVAGE_KIT_PRODUCT_ID, PriceText = "R$ 99", Accent = THEME.Purple },
+			{ Id = "combat_recovery_kit", Name = "Combat Recovery Kit", Subtitle = "Restore health and cursed energy after rough fights. Does not revive dead lives.", Kind = "Product", RobloxId = COMBAT_RECOVERY_KIT_PRODUCT_ID, PriceText = "R$ 99", Accent = THEME.Green },
 			{ Id = "recommendation_letter", Name = "Recommendation Letter", Subtitle = "Adds +1 teacher recommendation to your promotion record.", Kind = "Product", RobloxId = RECOMMENDATION_LETTER_PRODUCT_ID, PriceText = "R$ 129", Accent = THEME.Gold },
 			{ Id = "emergency_treatment", Name = "Emergency Treatment", Subtitle = "Restores your current life to full health if you are alive.", Kind = "Product", RobloxId = EMERGENCY_TREATMENT_PRODUCT_ID, PriceText = "R$ 49", Accent = THEME.Green },
 		},
@@ -186,8 +195,8 @@ local SHOP_CATEGORIES = {
 		Accent = THEME.Orange,
 		Items = {
 			{ Id = "recruit_reroll", Name = "Student Reroll", Subtitle = "Reroll your Grand Dojo recruit board.", Kind = "Product", RobloxId = RECRUIT_REROLL_PRODUCT_ID, PriceText = "R$ 49", Accent = THEME.Orange },
-			{ Id = "dojo_funding_pack", Name = "Dojo Funding Pack", Subtitle = "Funds your clan dojo with money, reputation, repairs, capacity support, and recruit help.", Kind = "Product", RobloxId = DOJO_FUNDING_PACK_PRODUCT_ID, PriceText = "R$ 199", Accent = THEME.Gold },
-			{ Id = "extra_dojo_students", Name = "Extra Dojo Students", Subtitle = "Permanently increases Grand Dojo student capacity by +3.", Kind = "GamePass", RobloxId = EXTRA_DOJO_STUDENTS_GAMEPASS_ID, PriceText = "R$ 399", Accent = THEME.Purple },
+			{ Id = "dojo_funding_pack", Name = "Dojo Funding Pack", Subtitle = "Funds your clan dojo with money, reputation, repairs, capacity support, and recruit help.", Kind = "Product", RobloxId = DOJO_FUNDING_PACK_PRODUCT_ID, PriceText = "R$ 499", Accent = THEME.Gold },
+			{ Id = "extra_dojo_students", Name = "Extra Dojo Students", Subtitle = "Permanently increases Grand Dojo student capacity by +3.", Kind = "GamePass", RobloxId = EXTRA_DOJO_STUDENTS_GAMEPASS_ID, PriceText = "R$ 99", Accent = THEME.Purple },
 		},
 	},
 	{
@@ -195,11 +204,19 @@ local SHOP_CATEGORIES = {
 		Subtitle = "Permanent account-wide upgrades.",
 		Accent = THEME.Purple,
 		Items = {
-			{ Id = "vip_pass", Name = "VIP Sorcerer Pass", Subtitle = "Unlocks VIP perks, save slots support, and future VIP bonuses.", Kind = "GamePass", RobloxId = VIP_SORCERER_PASS_ID, PriceText = "R$ 750", Accent = THEME.Purple },
-			{ Id = "extra_save_slots", Name = "Extra Save Slots", Subtitle = "Unlocks save slots 2 and 3 without needing the full VIP pass.", Kind = "GamePass", RobloxId = EXTRA_SAVE_SLOTS_GAMEPASS_ID, PriceText = "R$ 200", Accent = THEME.Blue },
-			{ Id = "double_money", Name = "2x Money", Subtitle = "Permanent money multiplier for supported rewards and money products.", Kind = "GamePass", RobloxId = DOUBLE_MONEY_GAMEPASS_ID, PriceText = "R$ 250", Accent = THEME.Green },
-			{ Id = "double_training", Name = "2x Progress", Subtitle = "Permanent progress multiplier for supported training and progression rewards.", Kind = "GamePass", RobloxId = DOUBLE_TRAINING_GAMEPASS_ID, PriceText = "R$ 250", Accent = THEME.Red },
-			{ Id = "lucky_birth", Name = "Lucky Birth", Subtitle = "Improves future birth outcomes and gives new lives a small starting boost.", Kind = "GamePass", RobloxId = LUCKY_BIRTH_GAMEPASS_ID, PriceText = "R$ 399", Accent = THEME.Gold },
+			{ Id = "vip_pass", Name = "VIP Sorcerer Pass", Subtitle = "2x daily login rewards, 1.5x money, 1.5x training, 2x technique mastery, exclusive VIP title, and extra save slots.", Kind = "GamePass", RobloxId = VIP_SORCERER_PASS_ID, PriceText = "R$ 400", Accent = THEME.Purple },
+			{ Id = "extra_save_slots", Name = "Extra Save Slots", Subtitle = "Unlocks save slots 2 and 3 without needing the full VIP pass.", Kind = "GamePass", RobloxId = EXTRA_SAVE_SLOTS_GAMEPASS_ID, PriceText = "R$ 150", Accent = THEME.Blue },
+			{ Id = "double_money", Name = "2x Money", Subtitle = "Doubles money from everything. Missions, jobs, tournaments, and all income sources.", Kind = "GamePass", RobloxId = DOUBLE_MONEY_GAMEPASS_ID, PriceText = "R$ 200", Accent = THEME.Green },
+			{ Id = "double_training", Name = "2x Progress", Subtitle = "Doubles all training gains. CE reserves, Strength, and Technique Mastery.", Kind = "GamePass", RobloxId = DOUBLE_TRAINING_GAMEPASS_ID, PriceText = "R$ 400", Accent = THEME.Red },
+			{ Id = "lucky_birth", Name = "Lucky Birth", Subtitle = "Guaranteed rare or higher trait at birth. 25% luck boost to cursed technique and clan rolls on new lives.", Kind = "GamePass", RobloxId = LUCKY_BIRTH_GAMEPASS_ID, PriceText = "R$ 150", Accent = THEME.Gold },
+			{ Id = "lucky_sorcerer", Name = "Lucky Sorcerer", Subtitle = "15% boost to Smarts, Health, Happiness, Looks, and Strength at birth on every new life.", Kind = "GamePass", RobloxId = LUCKY_SORCERER_GAMEPASS_ID, PriceText = "R$ 349", Accent = THEME.Gold },
+			{ Id = "training_prodigy", Name = "Training Prodigy", Subtitle = "1.5x gains on Cursed Energy, Strength, and Technique Mastery during all training. Stacks with other boosts.", Kind = "GamePass", RobloxId = TRAINING_PRODIGY_GAMEPASS_ID, PriceText = "R$ 349", Accent = THEME.Blue },
+			{ Id = "mission_investor", Name = "Mission Investor", Subtitle = "1.5x cash, reputation, and CE gains from all mission completions. Stacks with 2x Money.", Kind = "GamePass", RobloxId = MISSION_INVESTOR_GAMEPASS_ID, PriceText = "R$ 299", Accent = THEME.Green },
+			{ Id = "legacy_blessing", Name = "Legacy Blessing", Subtitle = "Future heirs start stronger through your family line. Successor lives inherit better base stats.", Kind = "GamePass", RobloxId = LEGACY_BLESSING_GAMEPASS_ID, PriceText = "R$ 349", Accent = THEME.Gold },
+			{ Id = "focused_training_pass", Name = "Focused Training", Subtitle = "Permanent +25% Cursed Energy gains from CE training. Stacks with Training Prodigy and 2x Training.", Kind = "GamePass", RobloxId = FOCUSED_TRAINING_GAMEPASS_ID, PriceText = "R$ 199", Accent = THEME.Blue },
+			{ Id = "afk_pass", Name = "AFK Pass", Subtitle = "2x AFK payouts. AFK is free for everyone; this pass doubles your idle earnings.", Kind = "GamePass", RobloxId = AFK_PASS_GAMEPASS_ID, PriceText = "R$ 200", Accent = THEME.Green },
+			{ Id = "binding_vow_specialist", Name = "Binding Vow Specialist", Subtitle = "Hold up to 5 custom vows per life instead of 3. Negative vow effects are reduced by 25%.", Kind = "GamePass", RobloxId = BINDING_VOW_SPECIALIST_GAMEPASS_ID, PriceText = "R$ 349", Accent = THEME.Purple },
+			{ Id = "go_rogue", Name = "Go Rogue", Subtitle = "Opens the Go Rogue option in Jobs. Exclusive rogue missions and dissociation from JJH.", Kind = "GamePass", RobloxId = GO_ROGUE_GAMEPASS_ID, PriceText = "R$ 100", Accent = THEME.Red },
 		},
 	},
 }
@@ -1632,8 +1649,8 @@ local function promptGiftRecipient(item)
 	giftOverlay.Parent = gui
 
 	local box = Instance.new("Frame")
-	box.Size = UDim2.new(0, 360, 0, 190)
-	box.Position = UDim2.new(0.5, -180, 0.5, -95)
+	box.Size = UDim2.new(0, 360, 0, 320)
+	box.Position = UDim2.new(0.5, -180, 0.5, -160)
 	box.BackgroundColor3 = THEME.Panel
 	box.BorderSizePixel = 0
 	box.ZIndex = 5001
@@ -1661,29 +1678,79 @@ local function promptGiftRecipient(item)
 	note.TextSize = 11
 	note.Font = Enum.Font.GothamMedium
 	note.TextXAlignment = Enum.TextXAlignment.Left
-	note.Text = "Type the receiver's Roblox username. Gifts cannot be sent to yourself."
+	note.Text = "Select a player in this server to send the gift to."
 	note.ZIndex = 5002
 	note.Parent = box
 
-	local giftInput = Instance.new("TextBox")
-	giftInput.Size = UDim2.new(1, -32, 0, 42)
-	giftInput.Position = UDim2.new(0, 16, 0, 72)
-	giftInput.BackgroundColor3 = THEME.Panel2
-	giftInput.BorderSizePixel = 0
-	giftInput.PlaceholderText = "Recipient Roblox username"
-	giftInput.Text = ""
-	giftInput.TextColor3 = THEME.Text
-	giftInput.PlaceholderColor3 = THEME.SubText
-	giftInput.TextSize = 14
-	giftInput.Font = Enum.Font.GothamBold
-	giftInput.ClearTextOnFocus = false
-	giftInput.ZIndex = 5002
-	giftInput.Parent = box
-	addCorner(giftInput, 8)
-	addStroke(giftInput, THEME.Stroke, 1)
+	local scroll = Instance.new("ScrollingFrame")
+	scroll.Size = UDim2.new(1, -32, 1, -120)
+	scroll.Position = UDim2.new(0, 16, 0, 72)
+	scroll.BackgroundColor3 = THEME.Panel2
+	scroll.BorderSizePixel = 0
+	scroll.ScrollBarThickness = 4
+	scroll.ScrollBarImageColor3 = THEME.SubText
+	scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+	scroll.ZIndex = 5002
+	scroll.Parent = box
+	addCorner(scroll, 8)
+
+	local layout = Instance.new("UIListLayout")
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Padding = UDim.new(0, 2)
+	layout.Parent = scroll
+
+	local others = {}
+	for _, p in ipairs(Players:GetPlayers()) do
+		if p ~= player then
+			table.insert(others, p)
+		end
+	end
+
+	if #others == 0 then
+		local emptyLabel = Instance.new("TextLabel")
+		emptyLabel.Size = UDim2.new(1, 0, 0, 40)
+		emptyLabel.BackgroundTransparency = 1
+		emptyLabel.TextColor3 = THEME.SubText
+		emptyLabel.TextSize = 12
+		emptyLabel.Font = Enum.Font.GothamMedium
+		emptyLabel.Text = "No other players in this server."
+		emptyLabel.ZIndex = 5003
+		emptyLabel.Parent = scroll
+	end
+
+	for i, p in ipairs(others) do
+		local entry = Instance.new("TextButton")
+		entry.Size = UDim2.new(1, 0, 0, 40)
+		entry.BackgroundColor3 = THEME.Panel
+		entry.BackgroundTransparency = 0.4
+		entry.BorderSizePixel = 0
+		entry.Text = ""
+		entry.LayoutOrder = i
+		entry.ZIndex = 5003
+		entry.Parent = scroll
+		addCorner(entry, 6)
+
+		local displayLabel = Instance.new("TextLabel")
+		displayLabel.Size = UDim2.new(1, -16, 1, 0)
+		displayLabel.Position = UDim2.new(0, 8, 0, 0)
+		displayLabel.BackgroundTransparency = 1
+		displayLabel.TextColor3 = THEME.Text
+		displayLabel.TextSize = 13
+		displayLabel.Font = Enum.Font.GothamBold
+		displayLabel.TextXAlignment = Enum.TextXAlignment.Left
+		displayLabel.Text = p.DisplayName .. "  (@" .. p.Name .. ")"
+		displayLabel.ZIndex = 5004
+		displayLabel.Parent = entry
+
+		entry.Activated:Connect(function()
+			giftOverlay:Destroy()
+			initiateGift:FireServer(item.RobloxId, p.UserId)
+		end)
+	end
 
 	local cancel = Instance.new("TextButton")
-	cancel.Size = UDim2.new(0.48, -8, 0, 40)
+	cancel.Size = UDim2.new(1, -32, 0, 40)
 	cancel.Position = UDim2.new(0, 16, 1, -56)
 	cancel.BackgroundColor3 = THEME.Panel2
 	cancel.BorderSizePixel = 0
@@ -1695,44 +1762,20 @@ local function promptGiftRecipient(item)
 	cancel.Parent = box
 	addCorner(cancel, 8)
 
-	local giftButton = cancel:Clone()
-	giftButton.Position = UDim2.new(0.52, 0, 1, -56)
-	giftButton.BackgroundColor3 = item.Accent or THEME.Purple
-	giftButton.Text = "GIFT"
-	giftButton.Parent = box
-
 	cancel.Activated:Connect(function()
 		giftOverlay:Destroy()
 	end)
-
-	giftButton.Activated:Connect(function()
-		local receiverName = tostring(giftInput.Text or ""):gsub("^%s+", ""):gsub("%s+$", "")
-		if receiverName == "" then
-			showGiftStatusPopup(false, "GIFT ERROR", "Enter the receiver's Roblox username first.")
-			return
-		end
-		if string.lower(receiverName) == string.lower(player.Name) then
-			showGiftStatusPopup(false, "GIFT ERROR", "You cannot gift this to yourself. Enter another player's Roblox username.")
-			return
-		end
-		giftButton.Text = "CHECKING..."
-		local ok, result = pcall(function()
-			return setGiftRecipient:InvokeServer(item.RobloxId, receiverName)
-		end)
-		if not ok or typeof(result) ~= "table" or result.Success ~= true then
-			giftButton.Text = "GIFT"
-			showGiftStatusPopup(false, "GIFT ERROR", (typeof(result) == "table" and result.Message) or "Could not set gift recipient.")
-			return
-		end
-		giftOverlay:Destroy()
-		showGiftStatusPopup(true, "GIFT READY", "Receiver confirmed: " .. tostring(result.RecipientName or receiverName) .. ". Complete the purchase to send the gift.")
-		promptRobuxItem(item.Kind, item.RobloxId)
-	end)
-
-	task.defer(function()
-		giftInput:CaptureFocus()
-	end)
 end
+
+promptGiftPurchase.OnClientEvent:Connect(function(productId)
+	productId = tonumber(productId) or 0
+	if productId <= 0 then return end
+	if game.PlaceId == TEST_PURCHASE_PLACE_ID then
+		testPurchase:FireServer("Product", productId)
+		return
+	end
+	MarketplaceService:PromptProductPurchase(player, productId)
+end)
 
 local function makeProductCard(item)
 	local isStarterPackClaimed = item.Id == "starter_pack" and hasClaimedStarterPack()
@@ -1786,7 +1829,7 @@ local function makeProductCard(item)
 	price.ZIndex = 634
 	price.Parent = card
 
-	local buyText = isStarterPackClaimed and "OWNED" or (item.GiftPassKey and "GIFT" or ((item.RobloxId and item.RobloxId > 0) and "BUY" or "SET ID"))
+	local buyText = isStarterPackClaimed and "OWNED" or ((item.RobloxId and item.RobloxId > 0) and (item.GiftPassKey and "GIFT" or "BUY") or "SET ID")
 	local buyButton = makeSmallButton(card, buyText, isStarterPackClaimed and THEME.Panel3 or THEME.RedDark, function()
 		if isStarterPackClaimed then playSFX("Error") return end
 		if item.GiftPassKey then

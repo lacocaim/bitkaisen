@@ -93,7 +93,8 @@ local combatAction = BK_Remotes.Get("CombatAction")
 local combatStateUpdate = BK_Remotes.Get("CombatStateUpdate")
 local combatMinigameResult = BK_Remotes.Get("CombatMinigameResult")
 local submitCharacterCustomization = BK_Remotes.Get("SubmitCharacterCustomization")
-local setGiftRecipient = BK_Remotes.Get("SetGiftRecipient")
+local initiateGift = BK_Remotes.Get("InitiateGift")
+local promptGiftPurchase = BK_Remotes.Get("PromptGiftPurchase")
 
 local showGroupJoinPrompt = BK_Remotes.Get("PromptGroupJoin")
 local claimGroupJoinReward = BK_Remotes.Get("ClaimGroupJoinReward")
@@ -155,6 +156,7 @@ local NEW_PASS_IDS = {
 	DojoExpansion = 0,
 	FocusedTraining = 1847591321,
 	AFKPass = 1879156343,
+	BindingVowSpecialist = 1863380690,
 }
 local LUCKY_SORCERER_PASS_ID = NEW_PASS_IDS.LuckySorcerer
 local TRAINING_PRODIGY_PASS_ID = NEW_PASS_IDS.TrainingProdigy
@@ -187,21 +189,24 @@ local REQUIRE_LIKE_CONFIRMATION_FOR_CODES = false
 
 
 local VIP_CACHE_SECONDS = 60
-local vipOwnershipCache = {}
-local extraSaveSlotsOwnershipCache = {}
-local doubleMoneyOwnershipCache = {}
-local doubleTrainingOwnershipCache = {}
-local luckyBirthOwnershipCache = {}
-local extraDojoStudentsOwnershipCache = {}
-local godModeOwnershipCache = {}
-local goRogueOwnershipCache = {}
-local luckySorcererOwnershipCache = {}
-local trainingProdigyOwnershipCache = {}
-local missionInvestorOwnershipCache = {}
-local legacyBlessingOwnershipCache = {}
-local dojoExpansionOwnershipCache = {}
-local focusedTrainingOwnershipCache = {}
-local afkPassOwnershipCache = {}
+local ownershipCaches = {
+	vip = {},
+	extraSaveSlots = {},
+	doubleMoney = {},
+	doubleTraining = {},
+	luckyBirth = {},
+	extraDojoStudents = {},
+	godMode = {},
+	goRogue = {},
+	luckySorcerer = {},
+	trainingProdigy = {},
+	missionInvestor = {},
+	legacyBlessing = {},
+	dojoExpansion = {},
+	focusedTraining = {},
+	afkPass = {},
+	bindingVowSpecialist = {},
+}
 
 local RATE_LIMITS = {
 	AgeUp = 0.4,
@@ -290,55 +295,59 @@ function checkCachedGamePassOwnership(player, passId, cacheTable, label)
 end
 
 function ownsVIPSorcererPass(player)
-	return checkCachedGamePassOwnership(player, VIP_SORCERER_PASS_ID, vipOwnershipCache, "VIP Sorcerer Pass")
+	return checkCachedGamePassOwnership(player, VIP_SORCERER_PASS_ID, ownershipCaches.vip, "VIP Sorcerer Pass")
 end
 
 function ownsExtraSaveSlotsPass(player)
-	return checkCachedGamePassOwnership(player, EXTRA_SAVE_SLOTS_PASS_ID, extraSaveSlotsOwnershipCache, "Extra Save Slots")
+	return checkCachedGamePassOwnership(player, EXTRA_SAVE_SLOTS_PASS_ID, ownershipCaches.extraSaveSlots, "Extra Save Slots")
 end
 
 function ownsDoubleMoneyPass(player)
-	return checkCachedGamePassOwnership(player, DOUBLE_MONEY_PASS_ID, doubleMoneyOwnershipCache, "2x Money")
+	return checkCachedGamePassOwnership(player, DOUBLE_MONEY_PASS_ID, ownershipCaches.doubleMoney, "2x Money")
 end
 
 function ownsDoubleTrainingPass(player)
-	return checkCachedGamePassOwnership(player, DOUBLE_TRAINING_PASS_ID, doubleTrainingOwnershipCache, "2x Progress")
+	return checkCachedGamePassOwnership(player, DOUBLE_TRAINING_PASS_ID, ownershipCaches.doubleTraining, "2x Progress")
 end
 
 function ownsLuckyBirthPass(player)
-	return checkCachedGamePassOwnership(player, LUCKY_BIRTH_PASS_ID, luckyBirthOwnershipCache, "Lucky Birth")
+	return checkCachedGamePassOwnership(player, LUCKY_BIRTH_PASS_ID, ownershipCaches.luckyBirth, "Lucky Birth")
 end
 
 function ownsLuckySorcererPass(player)
-	return checkCachedGamePassOwnership(player, LUCKY_SORCERER_PASS_ID, luckySorcererOwnershipCache, "Lucky Sorcerer")
+	return checkCachedGamePassOwnership(player, LUCKY_SORCERER_PASS_ID, ownershipCaches.luckySorcerer, "Lucky Sorcerer")
 end
 
 function ownsTrainingProdigyPass(player)
-	return checkCachedGamePassOwnership(player, TRAINING_PRODIGY_PASS_ID, trainingProdigyOwnershipCache, "Training Prodigy")
+	return checkCachedGamePassOwnership(player, TRAINING_PRODIGY_PASS_ID, ownershipCaches.trainingProdigy, "Training Prodigy")
 end
 
 function ownsMissionInvestorPass(player)
-	return checkCachedGamePassOwnership(player, MISSION_INVESTOR_PASS_ID, missionInvestorOwnershipCache, "Mission Investor")
+	return checkCachedGamePassOwnership(player, MISSION_INVESTOR_PASS_ID, ownershipCaches.missionInvestor, "Mission Investor")
 end
 
 function ownsLegacyBlessingPass(player)
-	return checkCachedGamePassOwnership(player, LEGACY_BLESSING_PASS_ID, legacyBlessingOwnershipCache, "Legacy Blessing")
+	return checkCachedGamePassOwnership(player, LEGACY_BLESSING_PASS_ID, ownershipCaches.legacyBlessing, "Legacy Blessing")
 end
 
 function ownsDojoExpansionPass(player)
-	return checkCachedGamePassOwnership(player, DOJO_EXPANSION_PASS_ID, dojoExpansionOwnershipCache, "Dojo Expansion")
+	return checkCachedGamePassOwnership(player, DOJO_EXPANSION_PASS_ID, ownershipCaches.dojoExpansion, "Dojo Expansion")
 end
 
 function ownsFocusedTrainingPass(player)
-	return checkCachedGamePassOwnership(player, FOCUSED_TRAINING_PASS_ID, focusedTrainingOwnershipCache, "Focused Training")
+	return checkCachedGamePassOwnership(player, FOCUSED_TRAINING_PASS_ID, ownershipCaches.focusedTraining, "Focused Training")
 end
 
 function ownsAFKPass(player)
-	return checkCachedGamePassOwnership(player, NEW_PASS_IDS.AFKPass, afkPassOwnershipCache, "AFK Pass")
+	return checkCachedGamePassOwnership(player, NEW_PASS_IDS.AFKPass, ownershipCaches.afkPass, "AFK Pass")
+end
+
+function ownsBindingVowSpecialistPass(player)
+	return checkCachedGamePassOwnership(player, NEW_PASS_IDS.BindingVowSpecialist, ownershipCaches.bindingVowSpecialist, "Binding Vow Specialist")
 end
 
 function ownsExtraDojoStudentsPass(player)
-	return checkCachedGamePassOwnership(player, EXTRA_DOJO_STUDENTS_PASS_ID, extraDojoStudentsOwnershipCache, "Extra Dojo Students")
+	return checkCachedGamePassOwnership(player, EXTRA_DOJO_STUDENTS_PASS_ID, ownershipCaches.extraDojoStudents, "Extra Dojo Students")
 end
 
 function hasGiftedGamePass(player, passKey)
@@ -360,11 +369,11 @@ function hasGiftedGamePass(player, passKey)
 end
 
 function ownsGodModePass(player)
-	return checkCachedGamePassOwnership(player, GOD_MODE_PASS_ID, godModeOwnershipCache, "God Mode") or hasGiftedGamePass(player, "GodMode")
+	return checkCachedGamePassOwnership(player, GOD_MODE_PASS_ID, ownershipCaches.godMode, "God Mode") or hasGiftedGamePass(player, "GodMode")
 end
 
 function ownsGoRoguePass(player)
-	return checkCachedGamePassOwnership(player, GO_ROGUE_PASS_ID, goRogueOwnershipCache, "Go Rogue") or hasGiftedGamePass(player, "GoRogue")
+	return checkCachedGamePassOwnership(player, GO_ROGUE_PASS_ID, ownershipCaches.goRogue, "Go Rogue") or hasGiftedGamePass(player, "GoRogue")
 end
 
 function syncMonetizationEntitlements(player, stats)
@@ -380,6 +389,12 @@ function syncMonetizationEntitlements(player, stats)
 	stats.HasGodModePass = ownsGodModePass(player)
 	stats.HasGoRoguePass = ownsGoRoguePass(player)
 	stats.HasLuckySorcererPass = ownsLuckySorcererPass(player)
+	stats.HasBindingVowSpecialistPass = ownsBindingVowSpecialistPass(player)
+	stats.HasLegacyBlessingPass = ownsLegacyBlessingPass(player)
+	stats.HasDojoExpansionPass = ownsDojoExpansionPass(player)
+	if ownsVIPSorcererPass(player) then
+		stats.VIPTitle = "VIP Sorcerer"
+	end
 	if hasGiftedGamePass(player, "AFKStabilization") then
 		stats.AFKStabilizationUnlocked = true
 	end
@@ -392,6 +407,17 @@ local function applyLuckySorcererBirthBoost(player, stats)
 	stats.Happiness = math.min(100, math.floor((stats.Happiness or 100) * 1.15))
 	stats.Looks = math.min(100, math.floor((stats.Looks or 50) * 1.15))
 	stats.Strength = math.max(5, math.floor((stats.Strength or 0) * 1.15))
+end
+
+local function applyLegacyBlessingBoost(player, stats)
+	if not ownsLegacyBlessingPass(player) then return end
+	local gen = math.max(1, tonumber(stats.Generation) or 1)
+	local scaledBonus = math.clamp(gen - 1, 0, 5)
+	stats.CursedEnergy = (tonumber(stats.CursedEnergy) or 0) + (25 * scaledBonus)
+	stats.Strength = math.min(100, (tonumber(stats.Strength) or 0) + (3 * scaledBonus))
+	stats.Smarts = math.min(100, (tonumber(stats.Smarts) or 0) + (2 * scaledBonus))
+	stats.Health = math.min(100, (tonumber(stats.Health) or 0) + (3 * scaledBonus))
+	stats.Reputation = (tonumber(stats.Reputation) or 0) + (2 * scaledBonus)
 end
 
 
@@ -437,9 +463,9 @@ function rollBirthOriginForPlayer(player)
 		return bestOrigin
 	end
 
-	-- Lucky Birth is not a guaranteed rare-clan button. It rolls extra birth chances
-	-- and keeps the strongest result, so bad births become less common without hard-breaking rarity.
-	for _ = 1, 2 do
+	-- Lucky Birth rolls extra birth chances and keeps the strongest result.
+	-- 25% luck boost: 4 extra rolls (total 5) for clan/origin selection.
+	for _ = 1, 4 do
 		local candidate = BitKaisenStats.RollOrigin()
 		if getBirthOriginScore(candidate) > getBirthOriginScore(bestOrigin) then
 			bestOrigin = candidate
@@ -489,13 +515,14 @@ end
 
 function clearVIPCache(player)
 	if player then
-		vipOwnershipCache[player.UserId] = nil
-		extraSaveSlotsOwnershipCache[player.UserId] = nil
-		doubleMoneyOwnershipCache[player.UserId] = nil
-		doubleTrainingOwnershipCache[player.UserId] = nil
-		luckyBirthOwnershipCache[player.UserId] = nil
-		extraDojoStudentsOwnershipCache[player.UserId] = nil
-		godModeOwnershipCache[player.UserId] = nil
+		ownershipCaches.vip[player.UserId] = nil
+		ownershipCaches.extraSaveSlots[player.UserId] = nil
+		ownershipCaches.doubleMoney[player.UserId] = nil
+		ownershipCaches.doubleTraining[player.UserId] = nil
+		ownershipCaches.luckyBirth[player.UserId] = nil
+		ownershipCaches.extraDojoStudents[player.UserId] = nil
+		ownershipCaches.godMode[player.UserId] = nil
+		ownershipCaches.bindingVowSpecialist[player.UserId] = nil
 	end
 end
 
@@ -1255,6 +1282,10 @@ function normalizeCursedSocietyState(stats)
 		if stats.SocietyStatus == "Civilian" or stats.SocietyStatus == "Registered Sorcerer" or stats.SocietyStatus == "Jujutsu Student" then
 			stats.SocietyStatus = "Unregistered Cursed Spirit"
 		end
+	elseif tostring(stats.LifePath or "") == "Rogue Sorcerer" or tostring(stats.SocietyStatus or "") == "Rogue Sorcerer" then
+		stats.LifePath = "Rogue Sorcerer"
+		stats.SocietyStatus = "Rogue Sorcerer"
+		stats.RegisteredSorcerer = false
 	elseif stats.IsJujutsuMentor == true then
 		stats.SocietyStatus = "Jujutsu Mentor"
 		stats.RegisteredSorcerer = true
@@ -1329,6 +1360,8 @@ function normalizeCursedSocietyState(stats)
 		stats.LifePath = "Cursed Spirit"
 	elseif isCurseUser(stats) then
 		stats.LifePath = "Curse User"
+	elseif tostring(stats.LifePath or "") == "Rogue Sorcerer" or tostring(stats.SocietyStatus or "") == "Rogue Sorcerer" then
+		stats.LifePath = "Rogue Sorcerer"
 	elseif stats.ClanFounded == true then
 		stats.LifePath = "Clan Founder"
 	elseif stats.InJujutsuHigh == true then
@@ -3190,6 +3223,7 @@ function startAsCurseRebirth(player)
 	ensureCharacterAppearance(newStats)
 	syncMonetizationEntitlements(player, newStats)
 	applyLuckySorcererBirthBoost(player, newStats)
+	applyLegacyBlessingBoost(player, newStats)
 
 	if preservedSettings then
 		newStats.Settings = preservedSettings
@@ -3353,6 +3387,7 @@ function startNewLife(player)
 	ensureExtraStats(newStats)
 	syncMonetizationEntitlements(player, newStats)
 	applyLuckySorcererBirthBoost(player, newStats)
+	applyLegacyBlessingBoost(player, newStats)
 
 	if preservedSettings then
 		newStats.Settings = preservedSettings
@@ -3388,7 +3423,7 @@ function startNewLife(player)
 	newStats.CursedEnergy += rolledOrigin.BonusCE
 	newStats.Smarts = math.clamp(newStats.Smarts + rolledOrigin.BonusSmarts, 1, 100)
 
-	BitKaisenStats.ApplyBirthTechnique(newStats, rolledOrigin)
+	BitKaisenStats.ApplyBirthTechnique(newStats, rolledOrigin, ownsLuckyBirthPass(player))
 	applySecretBirthEasterEggs(player, newStats)
 	applyLuckyBirthBonuses(player, newStats)
 	normalizeCursedSocietyState(newStats)
@@ -3402,7 +3437,7 @@ function startNewLife(player)
 		newStats.Reputation = math.max(0, (newStats.Reputation or 0) + 1)
 	end
 
-	newStats.Traits = BitKaisenTraits.RollBirthTraits(newStats)
+	newStats.Traits = BitKaisenTraits.RollBirthTraits(newStats, ownsLuckyBirthPass(player))
 	BitKaisenTraits.ApplyStartingBonuses(newStats)
 	newStats.TraitsRolled = true
 	local godModeStartBoostMessage = BK_GodModeService.ApplyStartBoost(newStats)
@@ -3484,6 +3519,7 @@ function startAsSuccessor(player, successorId, options)
 	newStats.TakenOverFromLivingParentName = liveTakeover and tostring(parentStats.Name or "Unknown") or nil
 	ensureCharacterAppearance(newStats)
 	syncMonetizationEntitlements(player, newStats)
+	applyLegacyBlessingBoost(player, newStats)
 	local inheritedInnate, inheritedTechnique = BitKaisenStats.ApplyInheritedTechniqueFromParent(newStats, parentStats)
 	if inheritedInnate then
 		newStats.LegacyHistory = newStats.LegacyHistory or {}
@@ -4379,44 +4415,53 @@ do
 		return true, "Available"
 	end
 
-	function applyBindingVowEffects(stats, vow)
+	function applyBindingVowEffects(stats, vow, player)
 		local effects = vow.Effects or {}
+		local negReduction = (player and ownsBindingVowSpecialistPass(player)) and 0.75 or 1
 
 		if vow.MoneyPercentCost then
 			local currentMoney = math.max(0, tonumber(stats.Money) or 0)
-			stats.Money = math.max(0, currentMoney - math.floor(currentMoney * vow.MoneyPercentCost))
+			stats.Money = math.max(0, currentMoney - math.floor(currentMoney * vow.MoneyPercentCost * negReduction))
 		end
 
 		if effects.Health then
-			stats.Health = math.clamp((tonumber(stats.Health) or 100) + effects.Health, 0, 100)
+			local val = effects.Health
+			stats.Health = math.clamp((tonumber(stats.Health) or 100) + (val < 0 and math.floor(val * negReduction) or val), 0, 100)
 		end
 
 		if effects.Happiness then
-			stats.Happiness = math.clamp((tonumber(stats.Happiness) or 100) + effects.Happiness, 0, 100)
+			local val = effects.Happiness
+			stats.Happiness = math.clamp((tonumber(stats.Happiness) or 100) + (val < 0 and math.floor(val * negReduction) or val), 0, 100)
 		end
 
 		if effects.Smarts then
-			stats.Smarts = math.clamp((tonumber(stats.Smarts) or 0) + effects.Smarts, 0, 100)
+			local val = effects.Smarts
+			stats.Smarts = math.clamp((tonumber(stats.Smarts) or 0) + (val < 0 and math.floor(val * negReduction) or val), 0, 100)
 		end
 
 		if effects.CursedEnergy then
-			stats.CursedEnergy = math.max(0, (tonumber(stats.CursedEnergy) or 0) + effects.CursedEnergy)
+			local val = effects.CursedEnergy
+			stats.CursedEnergy = math.max(0, (tonumber(stats.CursedEnergy) or 0) + (val < 0 and math.floor(val * negReduction) or val))
 		end
 
 		if effects.TechniqueMastery then
-			stats.TechniqueMastery = math.clamp((tonumber(stats.TechniqueMastery) or 0) + effects.TechniqueMastery, 0, 100)
+			local val = effects.TechniqueMastery
+			stats.TechniqueMastery = math.clamp((tonumber(stats.TechniqueMastery) or 0) + (val < 0 and math.floor(val * negReduction) or val), 0, 100)
 		end
 
 		if effects.Reputation then
-			stats.Reputation = (tonumber(stats.Reputation) or 0) + effects.Reputation
+			local val = effects.Reputation
+			stats.Reputation = (tonumber(stats.Reputation) or 0) + (val < 0 and math.floor(val * negReduction) or val)
 		end
 
 		if effects.ClanReputation then
-			stats.ClanReputation = math.max(0, (tonumber(stats.ClanReputation) or 0) + effects.ClanReputation)
+			local val = effects.ClanReputation
+			stats.ClanReputation = math.max(0, (tonumber(stats.ClanReputation) or 0) + (val < 0 and math.floor(val * negReduction) or val))
 		end
 
 		if effects.TeacherRecommendations then
-			stats.TeacherRecommendations = math.max(0, (tonumber(stats.TeacherRecommendations) or 0) + effects.TeacherRecommendations)
+			local val = effects.TeacherRecommendations
+			stats.TeacherRecommendations = math.max(0, (tonumber(stats.TeacherRecommendations) or 0) + (val < 0 and math.floor(val * negReduction) or val))
 		end
 	end
 
@@ -4730,7 +4775,7 @@ do
 		}
 	end
 
-	local function canMakeCustomBindingVow(stats, sacrifice, reward, severity)
+	local function canMakeCustomBindingVow(player, stats, sacrifice, reward, severity)
 		if not stats or stats.Alive == false then
 			return false, "You do not have an active life."
 		end
@@ -4766,8 +4811,9 @@ do
 			end
 		end
 
-		if activeCustomVowCount(stats) >= 3 then
-			return false, "You can only hold 3 custom vows in one life."
+		local vowLimit = ownsBindingVowSpecialistPass(player) and 5 or 3
+		if activeCustomVowCount(stats) >= vowLimit then
+			return false, "You can only hold " .. tostring(vowLimit) .. " custom vows in one life."
 		end
 
 		if sacrifice.Id == "reserves" and ce < (18 * severity.Power) then
@@ -4807,16 +4853,17 @@ do
 			return false, "Choose a valid vow strength."
 		end
 
-		local canMake, reason = canMakeCustomBindingVow(stats, sacrifice, reward, severity)
+		local canMake, reason = canMakeCustomBindingVow(player, stats, sacrifice, reward, severity)
 		if not canMake then
 			return false, reason
 		end
 
 		local power = tonumber(severity.Power) or 1
+		local sacrificePower = ownsBindingVowSpecialistPass(player) and (power * 0.75) or power
 		local preview = buildCustomContractPreview(sacrifice, reward, severity)
 		local customId = "custom_" .. tostring(os.time()) .. "_" .. tostring(math.random(1000, 9999))
 
-		sacrifice.Apply(stats, power)
+		sacrifice.Apply(stats, sacrificePower)
 		reward.Apply(stats, power)
 
 		local customVow = {
@@ -4992,7 +5039,7 @@ do
 			return false, reason
 		end
 
-		applyBindingVowEffects(stats, vow)
+		applyBindingVowEffects(stats, vow, player)
 
 		stats.ActiveVows = normalizeActiveVows(stats)
 		table.insert(stats.ActiveVows, vow.Id)
@@ -9500,11 +9547,12 @@ function resolveMission(player, stats, missionData, choiceOption)
 		local smartBonus = 1 + ((stats.Smarts or 0) / 300)
 		local missionInvestorMult = ownsMissionInvestorPass(player) and 1.5 or 1
 		local doubleMoneyMult = ownsDoubleMoneyPass(player) and 2 or 1
+		local vipMoneyMult = ownsVIPSorcererPass(player) and 1.5 or 1
 
 		local baseMissionCE = (missionData.RewardCE or 0) + (combatResult.CursedEnergyBonus or 0)
 		local missionCEGain, missionCEBonus, missionCETool = BitKaisenCursedTools.ApplyCEGain(stats, baseMissionCE * missionInvestorMult)
 		stats.CursedEnergy += missionCEGain
-		stats.Money += math.floor((missionData.RewardMoney or 0) * smartBonus * ((combatResult and combatResult.RewardMoneyMult) or 1) * missionInvestorMult * doubleMoneyMult)
+		stats.Money += math.floor((missionData.RewardMoney or 0) * smartBonus * ((combatResult and combatResult.RewardMoneyMult) or 1) * missionInvestorMult * doubleMoneyMult * vipMoneyMult)
 		stats.Reputation += math.floor((missionData.RewardRep or 0) * smartBonus * ((combatResult and combatResult.RewardRepMult) or 1) * missionInvestorMult)
 		stats.MissionsCompleted += 1
 		stats.Happiness = math.clamp((stats.Happiness or 100) + 8, 0, 100)
@@ -9735,7 +9783,7 @@ domainAction.OnServerEvent:Connect(function(player, actionId)
 end)
 
 getGodMode.OnServerInvoke = function(player)
-	godModeOwnershipCache[player.UserId] = nil
+	ownershipCaches.godMode[player.UserId] = nil
 	return BK_GodModeService.GetPayload(player)
 end
 
@@ -10513,6 +10561,8 @@ BitKaisenServiceContext = {
 	OwnsDojoExpansionPass = ownsDojoExpansionPass,
 	OwnsFocusedTrainingPass = ownsFocusedTrainingPass,
 	OwnsAFKPass = ownsAFKPass,
+	OwnsVIPPass = ownsVIPSorcererPass,
+	OwnsBindingVowSpecialistPass = ownsBindingVowSpecialistPass,
 	ClearVIPCache = clearVIPCache,
 	SyncMonetizationEntitlements = syncMonetizationEntitlements,
 	GenerateDojoRecruitPool = generateDojoRecruitPool,
@@ -10583,9 +10633,9 @@ BK_ActivityService.Init(BitKaisenServiceContext)
 BK_RelationshipService.Init(BitKaisenServiceContext)
 BK_DevCommands.Init(BitKaisenServiceContext)
 
-setGiftRecipient.OnServerInvoke = function(player, productId, recipientName)
-	return BK_CommerceService.SetGiftRecipient(player, productId, recipientName)
-end
+initiateGift.OnServerEvent:Connect(function(player, productId, recipientUserId)
+	BK_CommerceService.InitiateGift(player, productId, recipientUserId, promptGiftPurchase)
+end)
 
 Players.PlayerAdded:Connect(function(player)
 	BK_DevCommands.HookPlayer(player)
@@ -10610,12 +10660,12 @@ Players.PlayerRemoving:Connect(function(player)
 	scheduledSavePlayers[player.UserId] = nil
 	activeSavePlayers[player.UserId] = nil
 	lastSaveTimes[player.UserId] = nil
-	vipOwnershipCache[player.UserId] = nil
-	extraSaveSlotsOwnershipCache[player.UserId] = nil
-	doubleMoneyOwnershipCache[player.UserId] = nil
-	doubleTrainingOwnershipCache[player.UserId] = nil
-	luckyBirthOwnershipCache[player.UserId] = nil
-	extraDojoStudentsOwnershipCache[player.UserId] = nil
+	ownershipCaches.vip[player.UserId] = nil
+	ownershipCaches.extraSaveSlots[player.UserId] = nil
+	ownershipCaches.doubleMoney[player.UserId] = nil
+	ownershipCaches.doubleTraining[player.UserId] = nil
+	ownershipCaches.luckyBirth[player.UserId] = nil
+	ownershipCaches.extraDojoStudents[player.UserId] = nil
 end)
 
 game:BindToClose(function()

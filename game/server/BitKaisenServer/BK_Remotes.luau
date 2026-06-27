@@ -90,7 +90,8 @@ local REMOTE_DEFINITIONS = {
 	AFKStabilizationUpdate = "RemoteEvent",
 
 	-- Gift gamepass developer-product flow
-	SetGiftRecipient = "RemoteFunction",
+	InitiateGift = "RemoteEvent",
+	PromptGiftPurchase = "RemoteEvent",
 
 	-- Update 6.2: First-time tutorial persistence
 	MarkTutorialSeen = "RemoteEvent",

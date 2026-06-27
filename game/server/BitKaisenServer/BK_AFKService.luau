@@ -109,10 +109,11 @@ local function publicState(player)
 	if stats then ensureExtraStats(stats) end
 	local session = sessions[player.UserId]
 	return {
-		Unlocked = stats and stats.AFKStabilizationUnlocked == true or false,
+		Unlocked = true,
 		Active = session and session.Active == true or false,
 		TestingPlace = isTestingPlace(),
 		ProductId = getProductId(),
+		HasAFKPass = ownsAFKPass(player),
 		RatePerSecond = PAYOUT_PER_SECOND,
 		EarnedTotal = stats and math.floor((tonumber(stats.AFKStabilizationEarned) or 0) * 100 + 0.5) / 100 or 0,
 		SessionEarned = session and math.floor((tonumber(session.Earned) or 0) * 100 + 0.5) / 100 or 0,
@@ -159,12 +160,7 @@ local function startSession(player)
 	local stats = getStats(player)
 	if not stats then return false, "No active life." end
 	ensureExtraStats(stats)
-	if ownsAFKPass(player) then
-		stats.AFKStabilizationUnlocked = true
-	end
-	if stats.AFKStabilizationUnlocked ~= true then
-		return false, "AFK Stabilization is locked."
-	end
+	stats.AFKStabilizationUnlocked = true
 	if stats.Alive == false then
 		return false, "Start a living character first."
 	end

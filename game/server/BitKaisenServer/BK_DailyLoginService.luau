@@ -459,12 +459,18 @@ local function claimDailyReward(player)
 		warn("[BK_DailyLoginService] Account daily save did not confirm for " .. tostring(player.Name) .. ". Session cache still blocks duplicate claims until server shutdown.")
 	end
 
+	local isVIP = context.OwnsVIPPass and context.OwnsVIPPass(player) or false
+
 	local ok, result = pcall(function()
 		return reward.Grant(stats)
 	end)
 
+	if isVIP then
+		pcall(function() reward.Grant(stats) end)
+	end
+
 	if ok and result then
-		rewardSummary = result
+		rewardSummary = isVIP and (result .. " (2x VIP Bonus)") or result
 	elseif not ok then
 		warn("[BK_DailyLoginService] Reward grant failed for " .. tostring(player.Name) .. ": " .. tostring(result))
 		rewardSummary = "Reward failed to apply, but the daily claim was recorded."

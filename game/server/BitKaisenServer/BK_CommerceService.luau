@@ -99,6 +99,7 @@ local RESET_FIGHT_PRODUCT_ID = 3604877974
 -- Gamepass for the one-time AFK Stabilization unlock.
 local AFK_STABILIZATION_GAMEPASS_ID = 1879156343
 local AFK_STABILIZATION_PRODUCT_ID = AFK_STABILIZATION_GAMEPASS_ID
+local BINDING_VOW_SPECIALIST_PASS_ID = 1863380690
 
 -- Update 13 developer products. Fill these with real Developer Product IDs after creating them in Roblox.
 local CLAN_WAR_MEDIATION_PRODUCT_ID = 3605163954
@@ -111,13 +112,10 @@ local RCT_REVIVE_MAX_PER_LIFE = 2
 -- INTERNAL STATE
 ----------------------------------------------------------------
 local initialized = false
-local pendingGiftRecipients = {}
-local giftRecipientRateLimits = {}
+local pendingGifts = {}
+local giftInitiateCooldowns = {}
 
-local GIFT_RECIPIENT_COOLDOWN_SECONDS = 2
-local GIFT_RECIPIENT_WINDOW_SECONDS = 60
-local GIFT_RECIPIENT_MAX_ATTEMPTS = 10
-local GIFT_PENDING_EXPIRY_SECONDS = 120
+local GIFT_INITIATE_COOLDOWN_SECONDS = 2
 
 local TEST_PURCHASE_PLACE_IDS = {
 	[104206065947170] = true,
@@ -127,30 +125,6 @@ local function isTestPurchasePlace()
 	return TEST_PURCHASE_PLACE_IDS[game.PlaceId] == true
 end
 
-local function checkGiftRecipientRateLimit(player)
-	if not player then
-		return false, "Try again later."
-	end
-
-	local now = os.clock()
-	local entry = giftRecipientRateLimits[player.UserId]
-	if not entry or now - (tonumber(entry.WindowStartedAt) or 0) > GIFT_RECIPIENT_WINDOW_SECONDS then
-		entry = { WindowStartedAt = now, Count = 0, LastAttemptAt = 0 }
-		giftRecipientRateLimits[player.UserId] = entry
-	end
-
-	if now - (tonumber(entry.LastAttemptAt) or 0) < GIFT_RECIPIENT_COOLDOWN_SECONDS then
-		return false, "Please wait a moment before checking another gift receiver."
-	end
-
-	if (tonumber(entry.Count) or 0) >= GIFT_RECIPIENT_MAX_ATTEMPTS then
-		return false, "Too many gift receiver checks. Try again in a minute."
-	end
-
-	entry.LastAttemptAt = now
-	entry.Count = (tonumber(entry.Count) or 0) + 1
-	return true
-end
 
 ----------------------------------------------------------------
 -- CONTEXT BRIDGES
@@ -1732,41 +1706,29 @@ local function grantCombatRecoveryKit(player, stats)
 end
 
 local function grantGiftedGamePass(player, stats, productInfo, productId)
-	local giftMap = pendingGiftRecipients[player.UserId] or {}
-	local recipient = giftMap[productId]
-	if not recipient or not recipient.UserId then
-		fireMajorPopup(player, "GIFT REJECTED", "The gift could not be sent because no receiver was confirmed.", tostring(productInfo.GiftLabel or productInfo.Name), "Enter a recipient username before buying a gift product.", "Danger")
-		fireLifeUpdate(player, stats, "<font color='#e94f64'><b>[ GIFT ]</b></font> Enter a recipient username before buying a gift product.")
-		return false
-	end
-	if tonumber(recipient.ProductId) ~= tonumber(productId) or (tonumber(recipient.ExpiresAt) or 0) < os.clock() then
-		giftMap[productId] = nil
-		pendingGiftRecipients[player.UserId] = giftMap
-		fireMajorPopup(player, "GIFT REJECTED", "The gift receiver expired before purchase completed.", tostring(productInfo.GiftLabel or productInfo.Name), "Enter the receiver username again.", "Danger")
-		fireLifeUpdate(player, stats, "<font color='#e94f64'><b>[ GIFT ]</b></font> Gift receiver expired. Enter the receiver username again.")
-		return false
-	end
-	if tonumber(recipient.UserId) == tonumber(player.UserId) then
-		giftMap[productId] = nil
-		pendingGiftRecipients[player.UserId] = giftMap
-		fireMajorPopup(player, "GIFT REJECTED", "You cannot send a gift to yourself.", tostring(productInfo.GiftLabel or productInfo.Name), "Enter another player's Roblox username.", "Danger")
-		fireLifeUpdate(player, stats, "<font color='#e94f64'><b>[ GIFT ]</b></font> You cannot send a gift to yourself. Enter another player's Roblox username.")
-		return false
-	end
-	giftMap[productId] = nil
-	pendingGiftRecipients[player.UserId] = giftMap
+	local buyerId = player.UserId
+	local gift = pendingGifts[buyerId]
 
+	if not gift or gift.expectedProductId ~= productId then
+		warn("[BK_CommerceService] Gift receipt with no matching pending gift. buyerId=" .. tostring(buyerId) .. " productId=" .. tostring(productId))
+		return true
+	end
+
+	local recipientId = gift.recipientId
 	local saveSystem = context.BitKaisenSaveSystem
 	if not saveSystem or type(saveSystem.GrantGiftedGamePassByUserId) ~= "function" then
 		return false
 	end
 
-	local ok = saveSystem.GrantGiftedGamePassByUserId(recipient.UserId, productInfo.GiftPassKey)
+	local ok = saveSystem.GrantGiftedGamePassByUserId(recipientId, productInfo.GiftPassKey)
 	if ok ~= true then
+		warn("[BK_CommerceService] grantGiftedGamePass failed (recipient may have left). Keeping pending for retry. recipientId=" .. tostring(recipientId))
 		return false
 	end
 
-	local targetPlayer = Players:GetPlayerByUserId(recipient.UserId)
+	pendingGifts[buyerId] = nil
+
+	local targetPlayer = Players:GetPlayerByUserId(recipientId)
 	if targetPlayer then
 		local targetStats = getStats(targetPlayer)
 		if targetStats then
@@ -1788,8 +1750,9 @@ local function grantGiftedGamePass(player, stats, productInfo, productId)
 		end
 	end
 
-	fireMajorPopup(player, "GIFT SENT", "Your gift was saved to the recipient's account.", tostring(productInfo.GiftLabel or productInfo.Name), "Recipient: " .. tostring(recipient.Name or recipient.UserId), "Success")
-	fireLifeUpdate(player, stats, "<font color='#ffcd69'><b>[ GIFT ]</b></font> Gifted <b>" .. tostring(productInfo.GiftLabel or productInfo.Name) .. "</b> to <b>" .. tostring(recipient.Name or recipient.UserId) .. "</b>.")
+	local recipientName = gift.recipientName or tostring(recipientId)
+	fireMajorPopup(player, "GIFT SENT", "Your gift was saved to the recipient's account.", tostring(productInfo.GiftLabel or productInfo.Name), "Recipient: " .. recipientName, "Success")
+	fireLifeUpdate(player, stats, "<font color='#ffcd69'><b>[ GIFT ]</b></font> Gifted <b>" .. tostring(productInfo.GiftLabel or productInfo.Name) .. "</b> to <b>" .. recipientName .. "</b>.")
 	return true
 end
 
@@ -1903,59 +1866,32 @@ function BK_CommerceService.GetGoRogueProductId()
 	return 0
 end
 
-function BK_CommerceService.SetGiftRecipient(player, productId, recipientName)
+function BK_CommerceService.InitiateGift(player, productId, recipientUserId, promptGiftPurchaseRemote)
+	if not player then return end
 	productId = tonumber(productId) or 0
+	recipientUserId = tonumber(recipientUserId) or 0
+
 	local productInfo = DEVELOPER_PRODUCTS[productId]
-	if not player or not productInfo or productInfo.Id ~= "gift_gamepass" then
-		return { Success = false, Message = "That item is not giftable." }
-	end
-	if productInfo.TestOnly == true and not isTestPurchasePlace() then
-		return { Success = false, Message = "That item is not giftable." }
-	end
+	if not productInfo or productInfo.Id ~= "gift_gamepass" then return end
+	if productInfo.TestOnly == true and not isTestPurchasePlace() then return end
 
-	pendingGiftRecipients[player.UserId] = pendingGiftRecipients[player.UserId] or {}
-	pendingGiftRecipients[player.UserId][productId] = nil
+	local now = os.clock()
+	local lastAttempt = giftInitiateCooldowns[player.UserId] or 0
+	if now - lastAttempt < GIFT_INITIATE_COOLDOWN_SECONDS then return end
+	giftInitiateCooldowns[player.UserId] = now
 
-	local allowed, rateMessage = checkGiftRecipientRateLimit(player)
-	if not allowed then
-		return { Success = false, Message = rateMessage }
-	end
+	local recipient = Players:GetPlayerByUserId(recipientUserId)
+	if not recipient then return end
+	if recipient == player then return end
 
-	recipientName = tostring(recipientName or "")
-	recipientName = recipientName:gsub("^%s+", ""):gsub("%s+$", "")
-	if recipientName == "" then
-		return { Success = false, Message = "Enter the recipient's Roblox username." }
-	end
-	if #recipientName < 3 or #recipientName > 20 or not string.match(recipientName, "^[%w_]+$") or string.match(recipientName, "^%d+$") then
-		return { Success = false, Message = "Enter a valid Roblox username." }
-	end
-
-	local ok, userId = pcall(function()
-		return Players:GetUserIdFromNameAsync(recipientName)
-	end)
-	if not ok or not userId then
-		return { Success = false, Message = "Could not find that Roblox username." }
-	end
-	if tonumber(userId) == tonumber(player.UserId) then
-		return { Success = false, Message = "You cannot gift this to yourself. Enter another player's Roblox username." }
-	end
-
-	local canonicalName = recipientName
-	local nameOk, currentName = pcall(function()
-		return Players:GetNameFromUserIdAsync(userId)
-	end)
-	if nameOk and currentName and tostring(currentName) ~= "" then
-		canonicalName = tostring(currentName)
-	end
-
-	pendingGiftRecipients[player.UserId][productId] = {
-		UserId = tonumber(userId),
-		Name = canonicalName,
-		ProductId = productId,
-		ExpiresAt = os.clock() + GIFT_PENDING_EXPIRY_SECONDS,
+	pendingGifts[player.UserId] = {
+		recipientId = recipientUserId,
+		recipientName = recipient.Name,
+		expectedProductId = productId,
+		createdAt = os.clock(),
 	}
 
-	return { Success = true, Message = "Gift recipient set.", RecipientName = canonicalName, RecipientUserId = tonumber(userId) }
+	promptGiftPurchaseRemote:FireClient(player, productId)
 end
 
 function BK_CommerceService.GetResetFightProductId()
@@ -2027,7 +1963,8 @@ function BK_CommerceService.Init(ctx)
 			and purchasedPassId ~= DOJO_EXPANSION_PASS_ID
 			and purchasedPassId ~= AFK_STABILIZATION_GAMEPASS_ID
 			and purchasedPassId ~= GOD_MODE_PASS_ID
-			and purchasedPassId ~= GO_ROGUE_PASS_ID then
+			and purchasedPassId ~= GO_ROGUE_PASS_ID
+			and purchasedPassId ~= BINDING_VOW_SPECIALIST_PASS_ID then
 			return
 		end
 
@@ -2042,8 +1979,8 @@ function BK_CommerceService.Init(ctx)
 
 		if wasPurchased then
 			if purchasedPassId == VIP_SORCERER_PASS_ID then
-				fireMajorPopup(player, "VIP UNLOCKED", "Your VIP Sorcerer Pass is active.", "VIP Sorcerer", "VIP perks are now available on this account.")
-				fireLifeUpdate(player, stats, "<font color='#ffcd69'><b>[ VIP ]</b></font> VIP Sorcerer Pass active.")
+				fireMajorPopup(player, "VIP UNLOCKED", "Your VIP Sorcerer Pass is active.", "VIP Sorcerer", "2x daily login, 1.5x money, 1.5x training, 2x mastery, exclusive title, and extra save slots.")
+				fireLifeUpdate(player, stats, "<font color='#ffcd69'><b>[ VIP ]</b></font> VIP Sorcerer Pass active. 2x daily login, 1.5x money, 1.5x training, 2x mastery.")
 
 			elseif purchasedPassId == EXTRA_SAVE_SLOTS_PASS_ID then
 				fireMajorPopup(player, "SAVE SLOTS UNLOCKED", "Extra save slots are now unlocked.", "Slots 1-3", "Open Menu > Save Slots to create or load another life.")
@@ -2099,8 +2036,22 @@ function BK_CommerceService.Init(ctx)
 			elseif purchasedPassId == GO_ROGUE_PASS_ID then
 				fireMajorPopup(player, "GO ROGUE UNLOCKED", "You can now become a Rogue Sorcerer.", "Go Rogue", "Open Jobs to see the rogue path.")
 				fireLifeUpdate(player, stats, "<font color='#e53935'><b>[ GO ROGUE ]</b></font> Go Rogue unlocked.")
+
+			elseif purchasedPassId == BINDING_VOW_SPECIALIST_PASS_ID then
+				fireMajorPopup(player, "BINDING VOW SPECIALIST ACTIVE", "Hold 5 custom vows. Negative effects reduced by 25%.", "Vow Specialist", "Your custom vow limit is now 5 per life, and sacrifice costs are reduced.")
+				fireLifeUpdate(player, stats, "<font color='#b388ff'><b>[ GAMEPASS ]</b></font> Binding Vow Specialist active. Custom vow limit raised to 5, negative effects reduced by 25%.")
 			end
 		end
+	end)
+
+	Players.PlayerRemoving:Connect(function(leavingPlayer)
+		local uid = leavingPlayer.UserId
+		local gift = pendingGifts[uid]
+		if gift then
+			warn("[BK_CommerceService] Buyer left with pending gift. buyerId=" .. tostring(uid) .. " recipientId=" .. tostring(gift.recipientId) .. " productId=" .. tostring(gift.expectedProductId))
+		end
+		pendingGifts[uid] = nil
+		giftInitiateCooldowns[uid] = nil
 	end)
 
 	if context.IS_DEBUG then print("[BK_CommerceService] Loaded Update 6 commerce logic (RCT Revive max 2 per life, 5 new gamepasses registered).") end

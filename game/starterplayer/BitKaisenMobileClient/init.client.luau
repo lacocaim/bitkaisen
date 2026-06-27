@@ -58,6 +58,7 @@ navRegistry.register({ id = "domain", label = "DOMAIN", order = 7, color = theme
 navRegistry.register({ id = "rivals", label = "RIVALS", order = 8, color = theme.Bad })
 navRegistry.register({ id = "history", label = "HISTORY", order = 9, color = theme.Blue })
 navRegistry.register({ id = "mentor", label = "MENTOR", order = 10, color = Color3.fromRGB(55, 180, 220) })
+navRegistry.register({ id = "binding_vows", label = "VOWS", order = 11, color = theme.Purple })
 
 loadingScreen.bump("Preparing panels...")
 

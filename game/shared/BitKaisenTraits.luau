@@ -1606,14 +1606,18 @@ local function traitAlreadyPicked(result, trait)
 	return false
 end
 
+local RARITY_RANK = { Common = 1, Uncommon = 2, Rare = 3, Legendary = 4 }
+
 local function buildEligiblePool(stats, options)
 	options = options or {}
 	local pool = {}
+	local minRarityRank = options.MinRarity and RARITY_RANK[options.MinRarity] or 0
 
 	for _, trait in ipairs(BitKaisenTraits.Definitions) do
 		local allowed = true
 		if options.Category and trait.Category ~= options.Category then allowed = false end
 		if options.Rarity   and trait.Rarity   ~= options.Rarity   then allowed = false end
+		if minRarityRank > 0 and (RARITY_RANK[trait.Rarity] or 1) < minRarityRank then allowed = false end
 
 		if allowed and typeof(trait.OriginWhitelist) == "table" then
 			allowed = false
@@ -1669,8 +1673,12 @@ function BitKaisenTraits.RollTraits(stats, count, options)
 	return result
 end
 
-function BitKaisenTraits.RollBirthTraits(stats)
-	local traits = BitKaisenTraits.RollTraits(stats)
+function BitKaisenTraits.RollBirthTraits(stats, luckyBirth)
+	local traitOptions = nil
+	if luckyBirth then
+		traitOptions = { MinRarity = "Rare" }
+	end
+	local traits = BitKaisenTraits.RollTraits(stats, nil, traitOptions)
 
 	local origin = tostring(stats and (stats.Origin or stats.Clan) or "")
 	-- Death Painting is handled as lineage/origin now, not as a visible trait.

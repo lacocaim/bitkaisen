@@ -53,6 +53,13 @@ local function ownsDoubleMoneyPass(player)
 	return false
 end
 
+local function ownsVIPPass(player)
+	if context.OwnsVIPPass then
+		return context.OwnsVIPPass(player)
+	end
+	return false
+end
+
 local function getYear(stats)
 	return tonumber(stats and stats.Year) or (2000 + (tonumber(stats and stats.Age) or 0))
 end
@@ -278,7 +285,8 @@ function BK_JobService.AdvanceYear(player, stats)
 
 	local level = math.clamp(tonumber(stats.JobLevel) or 1, 1, 5)
 	local doubleMoneyMult = ownsDoubleMoneyPass(player) and 2 or 1
-	local yearlyPay = math.floor(salary * (1 + ((level - 1) * 0.18)) * doubleMoneyMult)
+	local vipMoneyMult = ownsVIPPass(player) and 1.5 or 1
+	local yearlyPay = math.floor(salary * (1 + ((level - 1) * 0.18)) * doubleMoneyMult * vipMoneyMult)
 	local expGain = math.random(8, 16) + getStatBonus(stats, "Smarts") + getStatBonus(stats, "Happiness")
 	stats.Money = math.max(0, (tonumber(stats.Money) or 0) + yearlyPay)
 	stats.JobExperience = math.max(0, (tonumber(stats.JobExperience) or 0) + expGain)

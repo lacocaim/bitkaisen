@@ -163,9 +163,10 @@ local function makeRouteCard(payload)
 	local isMobile = mobile()
 	local isRogue = payload.IsRogueSorcerer == true
 	local canGo = payload.CanGoRogue == true
+	local hasGoRoguePass = payload.HasGoRoguePass == true
 	local rogueProductId = tonumber(payload.GoRogueProductId) or 0
 	local roguePassId = tonumber(payload.GoRoguePassId) or 0
-	local canPurchaseRogue = canGo and (roguePassId > 0 or rogueProductId > 0)
+	local canPurchaseRogue = canGo and (hasGoRoguePass or roguePassId > 0 or rogueProductId > 0)
 	local rogueUsed = (tonumber(payload.RogueActionsThisYear) or 0) >= 1
 	local card = Instance.new("Frame")
 	card.Size = UDim2.new(1, -8, 0, isRogue and (isMobile and 156 or 132) or (isMobile and 104 or 86))
@@ -203,19 +204,20 @@ local function makeRouteCard(payload)
 			if busy then return end
 			busy = true
 			button.Text = "..."
-			if game.PlaceId == TEST_PURCHASE_PLACE_ID then
+			if hasGoRoguePass or game.PlaceId == TEST_PURCHASE_PLACE_ID then
 				jobAction:FireServer("go_rogue", "test_place_bypass")
+				task.delay(0.5, function() busy = false end)
 			else
 				if roguePassId > 0 then
 					MarketplaceService:PromptGamePassPurchase(player, roguePassId)
 				else
 					MarketplaceService:PromptProductPurchase(player, rogueProductId)
 				end
+				task.delay(0.8, function()
+					busy = false
+					if isOpen then refresh() end
+				end)
 			end
-			task.delay(0.8, function()
-				busy = false
-				if isOpen then refresh() end
-			end)
 		end)
 	end
 

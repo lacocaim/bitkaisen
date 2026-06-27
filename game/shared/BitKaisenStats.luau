@@ -867,7 +867,7 @@ function BitKaisenStats.IsTechniqueUsable(stats)
 	return stats and stats.CursedTechnique and stats.CursedTechnique ~= "None" and stats.TechniqueUsable ~= false
 end
 
-function BitKaisenStats.ApplyBirthTechnique(stats, originData)
+function BitKaisenStats.ApplyBirthTechnique(stats, originData, luckyBirth)
 	if not stats then
 		return stats
 	end
@@ -881,6 +881,9 @@ function BitKaisenStats.ApplyBirthTechnique(stats, originData)
 	stats.InnateDormant = stats.InnateDormant == true
 
 	local innate = BitKaisenStats.RollInnateTechniqueForOrigin(originData or stats.Origin or stats.Clan)
+	if not innate and luckyBirth then
+		innate = BitKaisenStats.RollInnateTechniqueForOrigin(originData or stats.Origin or stats.Clan)
+	end
 	if innate == "Six Eyes" then
 		innate = "Limitless"
 		stats.SixEyesBornTraitPending = true

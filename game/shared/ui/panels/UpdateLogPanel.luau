@@ -109,7 +109,7 @@ title.Size = UDim2.new(1, -48, 0, 34)
 title.Position = UDim2.new(0, 0, 0, 0)
 title.TextColor3 = Color3.fromRGB(255, 220, 139)
 
-local subtitle = makeText(panel, "Subtitle", "Shop overhaul, VIP expansion, Binding Vow Specialist, AFK for all, and new gamepasses", 14, false)
+local subtitle = makeText(panel, "Subtitle", "Shop overhaul, new gamepasses, VIP expansion, gift system fix, and new codes", 14, false)
 subtitle.Size = UDim2.new(1, -48, 0, 22)
 subtitle.Position = UDim2.new(0, 0, 0, 34)
 subtitle.TextColor3 = Color3.fromRGB(198, 186, 164)
@@ -188,19 +188,21 @@ local function addSection(headerText, bodyText, headerColor)
 	body.TextColor3 = Color3.fromRGB(232, 223, 205)
 end
 
-addSection("Hotfix - Gift System", "• Fixed gifting gamepasses failing silently when the recipient wasn't in your server.\n• Gift recipient is now selected from a player list (same-server only) instead of typing a username.\n• Server validates recipient before charging Robux — no more lost purchases.\n• Retry-safe: if the recipient leaves mid-purchase, the system retries correctly.\n• Orphaned gift receipts no longer loop forever.\n", Color3.fromRGB(115, 220, 150))
+addSection("Hotfix — Gift System", "• Improved gift delivery reliability — gifts now consistently reach the recipient.\n• Gift recipient picker now shows players in your server for easy selection.\n• Server validates the recipient is present before opening the Robux prompt.\n• Improved retry handling for mid-purchase edge cases.\n• Stale gift receipts now resolve cleanly on next join.\n", Color3.fromRGB(115, 220, 150))
 
-addSection("Update 18 - Shop Overhaul", "• All shop prices updated to match Roblox Creator Dashboard — no more mismatched prices.\n• Accurate descriptions for every gamepass and developer product.\n• 5 previously TBD developer products now have real prices: CT Evolution Accelerator (R$ 299), Black Flash Drill Pack (R$ 299), Clan War Mediation (R$ 99), Cursed Tool Salvage Kit (R$ 99), Combat Recovery Kit (R$ 99).\n• Go Rogue gamepass now listed in the shop.\n• God Mode increased to R$ 800 with expanded feature set.\n• 2x Progress (Training) increased to R$ 400 with doubled training gains across CE, Strength, and Mastery.\n", Color3.fromRGB(255, 220, 139))
+addSection("Shop Overhaul", "• All shop prices now match the Creator Dashboard — no more mismatches.\n• Every gamepass and developer product has an accurate description.\n• Go Rogue gamepass now listed in the shop.\n• God Mode updated to R$ 800 with expanded features.\n• 2x Progress updated to R$ 400 — doubled CE, Strength, and Mastery gains.\n• 5 new developer products priced: CT Evolution Accelerator, Black Flash Drill Pack, Clan War Mediation, Cursed Tool Salvage Kit, Combat Recovery Kit.\n", Color3.fromRGB(255, 220, 139))
 
-addSection("Update 18 - New Gamepasses", "• Lucky Sorcerer (R$ 349) — 15% boost to Smarts, Health, Happiness, Looks, and Strength at birth on every new life.\n• Training Prodigy (R$ 349) — 1.5x gains on Cursed Energy, Strength, and Technique Mastery during all training. Stacks with other boosts.\n• Mission Investor (R$ 299) — 1.5x cash, reputation, and CE gains from all mission completions. Stacks with 2x Money.\n• Legacy Blessing (R$ 349) — Future heirs start stronger through your family line. Successor lives inherit better base stats.\n• Focused Training (R$ 199) — Permanent +25% Cursed Energy gains from CE training. Stacks with Training Prodigy and 2x Training.\n• AFK Pass (R$ 200) — 2x AFK payouts. AFK is free for everyone; this pass doubles your idle earnings.\n• Binding Vow Specialist (R$ 349) — Hold up to 5 custom vows per life instead of 3. Negative vow effects are reduced by 25%.\n", Color3.fromRGB(255, 220, 139))
+addSection("New Gamepasses", "• Lucky Sorcerer (R$ 349) — +15% birth stats every new life.\n• Training Prodigy (R$ 349) — 1.5x CE, Strength, and Mastery training.\n• Mission Investor (R$ 299) — 1.5x cash from missions (stacks with 2x Money).\n• Legacy Blessing (R$ 349) — Heirs start stronger each generation (+CE, +Strength, +Smarts, +Health, +Rep scaling with bloodline depth).\n• Focused Training (R$ 199) — +25% CE from CE training (stacks with everything).\n• AFK Pass (R$ 200) — 2x AFK payouts (AFK is free for all now).\n• Binding Vow Specialist (R$ 349) — 5 vows instead of 3, -25% negative effects.\n• Dojo Expansion (coming soon) — +5 recruit candidates, +2 student capacity.\n", Color3.fromRGB(255, 220, 139))
 
-addSection("Update 18 - VIP Sorcerer Pass Expansion", "• VIP Pass now grants 2x daily login rewards.\n• VIP Pass now grants 1.5x money from missions and jobs.\n• VIP Pass now grants 1.5x training gains (CE and Strength).\n• VIP Pass now grants 2x Technique Mastery gains.\n• VIP Pass owners receive the exclusive 'VIP Sorcerer' title.\n• VIP Pass still includes extra save slots.\n• VIP price updated to R$ 400 to reflect expanded value.\n", Color3.fromRGB(255, 220, 139))
+addSection("VIP Sorcerer Pass Expansion", "• 2x daily login rewards.\n• 1.5x money from missions and jobs.\n• 1.5x training gains.\n• 2x Technique Mastery gains.\n• Exclusive 'VIP Sorcerer' title.\n• Extra save slots included.\n", Color3.fromRGB(255, 220, 139))
 
-addSection("Update 18 - Binding Vow Specialist", "• New gamepass: Binding Vow Specialist (R$ 349).\n• Raises the custom binding vow limit from 3 to 5 per life.\n• Reduces all negative vow effects (sacrifices) by 25%.\n• Works on both custom vows and preset binding vows.\n• New VOWS button added to the navigation bar for quick access.\n", Color3.fromRGB(179, 136, 255))
+addSection("Binding Vow Specialist", "• Custom vow limit raised from 3 to 5.\n• All negative effects reduced by 25%.\n• New VOWS nav button for quick access.\n", Color3.fromRGB(179, 136, 255))
 
-addSection("Update 18 - Lucky Birth Enhancement", "• Lucky Birth now guarantees a Rare or higher trait at birth — no more Common-only rolls.\n• 25% luck boost to clan and origin rolls — Lucky Birth now rolls 5 origins and keeps the best.\n• Extra cursed technique roll — if the first innate technique roll fails, Lucky Birth tries again.\n• Lucky Birth price adjusted to R$ 150.\n", Color3.fromRGB(255, 220, 139))
+addSection("Lucky Birth Enhancement", "• Guaranteed Rare+ trait at birth.\n• 25% luck boost to clan/origin rolls.\n• Extra cursed technique roll if first fails.\n", Color3.fromRGB(255, 220, 139))
 
-addSection("Update 18 - AFK Free for All", "• AFK Stabilization is now free for all players — no unlock required.\n• The AFK Pass (R$ 200) now exclusively doubles your AFK payouts (2x).\n• Unlock buttons removed from AFK panels on both PC and Mobile.\n• AFK panel shows '2x ACTIVE' badge if AFK Pass is owned.\n• Rate display reflects the doubled payout for pass owners.\n", Color3.fromRGB(115, 220, 150))
+addSection("AFK Free for All", "• AFK Stabilization is now FREE for everyone.\n• AFK Pass doubles your idle payouts (2x).\n", Color3.fromRGB(115, 220, 150))
+
+addSection("New Codes", "Redeem in Settings > Codes:\n\n• Update18 — +$25k, +150 CE, +15 Mastery, +15 Rep, +15 Happiness\n• ShopOverhaul — +$30k, +100 CE, +10 Rep\n• VipSorcerer — +200 CE, +20 Mastery, Max Health, Max Happiness\n• BindingVow — +$15k, +100 CE, +15 Strength, +10 Rep\n• SixEyes — +$75k, +300 CE, +20 Mastery, +20 Rep\n", Color3.fromRGB(120, 190, 255))
 
 addSection("Update 17 - Bug Fixes", "• Physical Conditioning now correctly resets each age-up (was capped at 3 per lifetime).\n• Fixed exploit where relationship action counter could be bypassed with rapid requests.\n• Unregistered sorcerers can now promote past Grade 4.\n• Send Students on Patrol no longer crashes and consumes your turn.\n• World events, notable sorcerer aging, and era changes now continue past age 16.\n• Newborns no longer default as the strongest sorcerer alive.\n• Gender no longer randomly swaps on surviving spouses during generation takeover.\n• Cursed spirits can now take over prior-life children after death.\n• Rival entries in Affiliations no longer show broken action buttons.\n• God Mode clan picker now shows all clans including Ryomen.\n• Randomize Path button no longer crashes.\n• WAR button now hides when overlay menus are open.\n")
 
@@ -217,8 +219,6 @@ addSection("Update 17 - Mobile UI", "• Full mobile UI with portrait-locked lay
 addSection("Update 17 - PC UI", "• TopbarPlus icons restored on PC: Settings, God Mode, War, AFK, Free Rewards.\n• Legacy WAR nav button hidden — War is now TopbarPlus only.\n• AFK panel now has a working close button.\n• Nav button list scrollable — all nav entries reachable.\n• Responsive layout adapts to portrait, landscape, and desktop viewports.\n• Trait info button next to traits on PC profile.\n• Profile card, life log, and shell components fully functional.\n")
 
 addSection("Update 17 - Quality of Life", "• Loading screen shows for a minimum of 5 seconds to ensure everything loads.\n• Loading screen logo and progress bar positioned closer together.\n• Startup log messages silent on live servers — only visible in Studio.\n• Default Roblox respawn button removed.\n• Update Log accessible from Settings panel LOG tab.\n")
-
-addSection("Update 18 - Codes", "Redeem these in Settings > Codes:\n\n• Update18 — +$25k, +150 CE, +15 Mastery, +15 Rep, +15 Happiness\n• ShopOverhaul — +$30k, +100 CE, +10 Rep\n• VipSorcerer — +200 CE, +20 Mastery, Max Health, Max Happiness\n• BindingVow — +$15k, +100 CE, +15 Strength, +10 Rep\n• SixEyes — +$75k, +300 CE, +20 Mastery, +20 Rep\n")
 
 addSection("Update 16 - QOL & Progression", "• Console support improvements added.\n• RCT requirements increased and RCT now gives passive health regeneration.\n• Missions and special missions are capped per age-up.\n• Early progression and visible stat gains are slower for a healthier long-term pace.\n• Curse encounters are more frequent based on Curse Exposure.\n")
 
@@ -262,7 +262,7 @@ addSection("Update 10 - Stability", "- Added server validation for test purchase
 
 addSection("Update 10 - Combat Foundation", "- Added interactive combat sessions with player and enemy HP/CE\n- Added attack timing minigame with target zone and sweet spot\n- Added defend QTE for 1 to 3 hit enemy combos\n- Added perfect-dodge counter attack window\n- Added test-place combat starter for verification\n- Added Reset Fight developer product hook with test-place bypass\n")
 
-local footer = makeText(panel, "Footer", "Update 18 is live. Rejoin once if anything looks weird after the update.", 12, false)
+local footer = makeText(panel, "Footer", "Update 18 is live. Rejoin once if anything looks off after the update.", 12, false)
 footer.AnchorPoint = Vector2.new(0, 1)
 footer.Position = UDim2.new(0, 0, 1, 0)
 footer.Size = UDim2.new(1, 0, 0, 34)

@@ -13,34 +13,44 @@ local scroll: ScrollingFrame
 
 local sections = {
 	{
-		header = "Update 18 - Shop Overhaul",
-		body = "• All shop prices updated to match Roblox Creator Dashboard — no more mismatched prices.\n• Accurate descriptions for every gamepass and developer product.\n• 5 previously TBD developer products now have real prices: CT Evolution Accelerator (R$ 299), Black Flash Drill Pack (R$ 299), Clan War Mediation (R$ 99), Cursed Tool Salvage Kit (R$ 99), Combat Recovery Kit (R$ 99).\n• Go Rogue gamepass now listed in the shop.\n• God Mode increased to R$ 800 with expanded feature set.\n• 2x Progress (Training) increased to R$ 400 with doubled training gains across CE, Strength, and Mastery.",
+		header = "Hotfix — Gift System",
+		body = "• Improved gift delivery reliability — gifts now consistently reach the recipient.\n• Gift recipient picker now shows players in your server for easy selection.\n• Server validates the recipient is present before opening the Robux prompt.\n• Improved retry handling for mid-purchase edge cases.\n• Stale gift receipts now resolve cleanly on next join.",
+		color = theme.Green,
+	},
+	{
+		header = "Shop Overhaul",
+		body = "• All shop prices now match the Creator Dashboard — no more mismatches.\n• Every gamepass and developer product has an accurate description.\n• Go Rogue gamepass now listed in the shop.\n• God Mode updated to R$ 800 with expanded features.\n• 2x Progress updated to R$ 400 — doubled CE, Strength, and Mastery gains.\n• 5 new developer products priced: CT Evolution Accelerator, Black Flash Drill Pack, Clan War Mediation, Cursed Tool Salvage Kit, Combat Recovery Kit.",
 		color = theme.Gold,
 	},
 	{
-		header = "Update 18 - New Gamepasses",
-		body = "• Lucky Sorcerer (R$ 349) — 15% boost to Smarts, Health, Happiness, Looks, and Strength at birth on every new life.\n• Training Prodigy (R$ 349) — 1.5x gains on Cursed Energy, Strength, and Technique Mastery during all training.\n• Mission Investor (R$ 299) — 1.5x cash, reputation, and CE gains from all mission completions.\n• Legacy Blessing (R$ 349) — Future heirs start stronger through your family line.\n• Focused Training (R$ 199) — Permanent +25% Cursed Energy gains from CE training.\n• AFK Pass (R$ 200) — 2x AFK payouts. AFK is free for everyone; this pass doubles your idle earnings.\n• Binding Vow Specialist (R$ 349) — Hold up to 5 custom vows per life instead of 3. Negative vow effects reduced by 25%.",
+		header = "New Gamepasses",
+		body = "• Lucky Sorcerer (R$ 349) — +15% birth stats every new life.\n• Training Prodigy (R$ 349) — 1.5x CE, Strength, and Mastery training.\n• Mission Investor (R$ 299) — 1.5x cash from missions (stacks with 2x Money).\n• Legacy Blessing (R$ 349) — Heirs start stronger each generation (+CE, +Strength, +Smarts, +Health, +Rep scaling with bloodline depth).\n• Focused Training (R$ 199) — +25% CE from CE training (stacks with everything).\n• AFK Pass (R$ 200) — 2x AFK payouts (AFK is free for all now).\n• Binding Vow Specialist (R$ 349) — 5 vows instead of 3, -25% negative effects.\n• Dojo Expansion (coming soon) — +5 recruit candidates, +2 student capacity.",
 		color = theme.Gold,
 	},
 	{
-		header = "Update 18 - VIP Sorcerer Pass Expansion",
-		body = "• VIP Pass now grants 2x daily login rewards.\n• VIP Pass now grants 1.5x money from missions and jobs.\n• VIP Pass now grants 1.5x training gains (CE and Strength).\n• VIP Pass now grants 2x Technique Mastery gains.\n• VIP Pass owners receive the exclusive 'VIP Sorcerer' title.\n• VIP Pass still includes extra save slots.\n• VIP price updated to R$ 400 to reflect expanded value.",
+		header = "VIP Sorcerer Pass Expansion",
+		body = "• 2x daily login rewards.\n• 1.5x money from missions and jobs.\n• 1.5x training gains.\n• 2x Technique Mastery gains.\n• Exclusive 'VIP Sorcerer' title.\n• Extra save slots included.",
 		color = theme.Gold,
 	},
 	{
-		header = "Update 18 - Binding Vow Specialist",
-		body = "• New gamepass: Binding Vow Specialist (R$ 349).\n• Raises the custom binding vow limit from 3 to 5 per life.\n• Reduces all negative vow effects (sacrifices) by 25%.\n• Works on both custom vows and preset binding vows.\n• New VOWS button added to the navigation bar for quick access.",
+		header = "Binding Vow Specialist",
+		body = "• Custom vow limit raised from 3 to 5.\n• All negative effects reduced by 25%.\n• New VOWS nav button for quick access.",
 		color = theme.Purple,
 	},
 	{
-		header = "Update 18 - Lucky Birth Enhancement",
-		body = "• Lucky Birth now guarantees a Rare or higher trait at birth — no more Common-only rolls.\n• 25% luck boost to clan and origin rolls — Lucky Birth now rolls 5 origins and keeps the best.\n• Extra cursed technique roll — if the first innate technique roll fails, Lucky Birth tries again.\n• Lucky Birth price adjusted to R$ 150.",
+		header = "Lucky Birth Enhancement",
+		body = "• Guaranteed Rare+ trait at birth.\n• 25% luck boost to clan/origin rolls.\n• Extra cursed technique roll if first fails.",
 		color = theme.Gold,
 	},
 	{
-		header = "Update 18 - AFK Free for All",
-		body = "• AFK Stabilization is now free for all players — no unlock required.\n• The AFK Pass (R$ 200) now exclusively doubles your AFK payouts (2x).\n• Unlock buttons removed from AFK panels on both PC and Mobile.\n• AFK panel shows '2x ACTIVE' badge if AFK Pass is owned.\n• Rate display reflects the doubled payout for pass owners.",
+		header = "AFK Free for All",
+		body = "• AFK Stabilization is now FREE for everyone.\n• AFK Pass doubles your idle payouts (2x).",
 		color = theme.Green,
+	},
+	{
+		header = "New Codes",
+		body = "Redeem in Settings > Codes:\n\n• Update18 — +$25k, +150 CE, +15 Mastery, +15 Rep, +15 Happiness\n• ShopOverhaul — +$30k, +100 CE, +10 Rep\n• VipSorcerer — +200 CE, +20 Mastery, Max Health, Max Happiness\n• BindingVow — +$15k, +100 CE, +15 Strength, +10 Rep\n• SixEyes — +$75k, +300 CE, +20 Mastery, +20 Rep",
+		color = theme.Blue,
 	},
 	{
 		header = "Update 17 - Bug Fixes",
@@ -81,11 +91,6 @@ local sections = {
 		header = "Update 17 - Quality of Life",
 		body = "• Loading screen shows for a minimum of 5 seconds to ensure everything loads.\n• Loading screen logo and progress bar positioned closer together.\n• Startup log messages silent on live servers — only visible in Studio.\n• Default Roblox respawn button removed.\n• Update Log accessible from Settings panel LOG tab.",
 		color = theme.Red,
-	},
-	{
-		header = "Update 18 - Codes",
-		body = "Redeem these in Settings > Codes:\n\n• Update18 — +$25k, +150 CE, +15 Mastery, +15 Rep, +15 Happiness\n• ShopOverhaul — +$30k, +100 CE, +10 Rep\n• VipSorcerer — +200 CE, +20 Mastery, Max Health, Max Happiness\n• BindingVow — +$15k, +100 CE, +15 Strength, +10 Rep\n• SixEyes — +$75k, +300 CE, +20 Mastery, +20 Rep",
-		color = theme.Gold,
 	},
 	{
 		header = "Update 16 - QOL & Progression",
@@ -206,14 +211,14 @@ local function renderSections()
 	local subtitleCard = mc.mobileCard({ parent = scroll, order = 0, accentColor = theme.Gold })
 	mc.mobileLabel({
 		parent = subtitleCard,
-		text = "Shop overhaul, VIP expansion, Binding Vow Specialist, AFK for all, and new gamepasses",
+		text = "Shop overhaul, new gamepasses, VIP expansion, gift system fix, and new codes",
 		size = 13,
 		color = theme.SubText,
 		order = 1,
 	})
 	mc.mobileLabel({
 		parent = subtitleCard,
-		text = "Rejoin once if anything looks weird after the update.",
+		text = "Rejoin once if anything looks off after the update.",
 		size = 12,
 		color = theme.Muted,
 		order = 2,

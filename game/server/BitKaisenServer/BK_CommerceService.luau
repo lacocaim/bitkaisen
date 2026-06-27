@@ -27,6 +27,9 @@
 local Players = game:GetService("Players")
 local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local DataStoreService = game:GetService("DataStoreService")
+
+local giftMailboxStore = DataStoreService:GetDataStore("BK_GiftMailbox")
 
 local BitKaisenStats = require(ReplicatedStorage:WaitForChild("BitKaisenStats"))
 local BitKaisenTraits = require(ReplicatedStorage:WaitForChild("BitKaisenTraits"))
@@ -1715,44 +1718,62 @@ local function grantGiftedGamePass(player, stats, productInfo, productId)
 	end
 
 	local recipientId = gift.recipientId
-	local saveSystem = context.BitKaisenSaveSystem
-	if not saveSystem or type(saveSystem.GrantGiftedGamePassByUserId) ~= "function" then
-		return false
+	local giftLabel = tostring(productInfo.GiftLabel or productInfo.Name or "Gift")
+	local senderName = tostring(player and player.Name or "another player")
+	local recipientName = gift.recipientName or tostring(recipientId)
+
+	local targetPlayer = Players:GetPlayerByUserId(recipientId)
+	if targetPlayer then
+		local saveSystem = context.BitKaisenSaveSystem
+		if saveSystem and type(saveSystem.GrantGiftedGamePassByUserId) == "function" then
+			local grantOk = saveSystem.GrantGiftedGamePassByUserId(recipientId, productInfo.GiftPassKey)
+			if grantOk == true then
+				local targetStats = getStats(targetPlayer)
+				if targetStats then
+					targetStats.GiftedGamePasses = typeof(targetStats.GiftedGamePasses) == "table" and targetStats.GiftedGamePasses or {}
+					targetStats.GiftedGamePasses[productInfo.GiftPassKey] = true
+					if productInfo.GiftPassKey == "GodMode" then
+						targetStats.HasGodModePass = true
+					elseif productInfo.GiftPassKey == "GoRogue" then
+						targetStats.HasGoRoguePass = true
+					elseif productInfo.GiftPassKey == "AFKStabilization" then
+						targetStats.AFKStabilizationUnlocked = true
+					end
+					forceSaveStats(targetPlayer, "GiftedGamePass")
+					fireMajorPopup(targetPlayer, "GIFT RECEIVED", "A gift was added to your account.", giftLabel, "From: " .. senderName, "Success")
+					fireLifeUpdate(targetPlayer, targetStats, "<font color='#63e787'><b>[ GIFT ]</b></font> You received <b>" .. giftLabel .. "</b> from <b>" .. senderName .. "</b>.")
+				end
+				pendingGifts[buyerId] = nil
+				fireMajorPopup(player, "GIFT SENT", "Your gift was delivered to " .. recipientName .. ".", giftLabel, "Recipient: " .. recipientName, "Success")
+				fireLifeUpdate(player, stats, "<font color='#ffcd69'><b>[ GIFT ]</b></font> Gifted <b>" .. giftLabel .. "</b> to <b>" .. recipientName .. "</b>.")
+				return true
+			end
+		end
 	end
 
-	local ok = saveSystem.GrantGiftedGamePassByUserId(recipientId, productInfo.GiftPassKey)
-	if ok ~= true then
-		warn("[BK_CommerceService] grantGiftedGamePass failed (recipient may have left). Keeping pending for retry. recipientId=" .. tostring(recipientId))
+	local mailboxOk, mailboxErr = pcall(function()
+		local mailboxKey = "gifts_" .. tostring(recipientId)
+		giftMailboxStore:UpdateAsync(mailboxKey, function(old)
+			old = if typeof(old) == "table" then old else {}
+			table.insert(old, {
+				passKey = productInfo.GiftPassKey,
+				passLabel = giftLabel,
+				fromName = senderName,
+				fromId = buyerId,
+				timestamp = os.time(),
+			})
+			return old
+		end)
+	end)
+
+	if not mailboxOk then
+		warn("[BK_CommerceService] Gift mailbox write failed: " .. tostring(mailboxErr))
 		return false
 	end
 
 	pendingGifts[buyerId] = nil
-
-	local targetPlayer = Players:GetPlayerByUserId(recipientId)
-	if targetPlayer then
-		local targetStats = getStats(targetPlayer)
-		if targetStats then
-			targetStats.GiftedGamePasses = typeof(targetStats.GiftedGamePasses) == "table" and targetStats.GiftedGamePasses or {}
-			targetStats.GiftedGamePasses[productInfo.GiftPassKey] = true
-			if productInfo.GiftPassKey == "GodMode" then
-				targetStats.HasGodModePass = true
-			elseif productInfo.GiftPassKey == "GoRogue" then
-				targetStats.HasGoRoguePass = true
-			elseif productInfo.GiftPassKey == "AFKStabilization" then
-				targetStats.AFKStabilizationUnlocked = true
-			end
-			forceSaveStats(targetPlayer, "GiftedGamePass")
-
-			local giftLabel = tostring(productInfo.GiftLabel or productInfo.Name or "Gift")
-			local senderName = tostring(player and player.Name or "another player")
-			fireMajorPopup(targetPlayer, "GIFT RECEIVED", "A gift was added to your account.", giftLabel, "From: " .. senderName, "Success")
-			fireLifeUpdate(targetPlayer, targetStats, "<font color='#63e787'><b>[ GIFT ]</b></font> You received <b>" .. giftLabel .. "</b> from <b>" .. senderName .. "</b>.")
-		end
-	end
-
-	local recipientName = gift.recipientName or tostring(recipientId)
-	fireMajorPopup(player, "GIFT SENT", "Your gift was saved to the recipient's account.", tostring(productInfo.GiftLabel or productInfo.Name), "Recipient: " .. recipientName, "Success")
-	fireLifeUpdate(player, stats, "<font color='#ffcd69'><b>[ GIFT ]</b></font> Gifted <b>" .. tostring(productInfo.GiftLabel or productInfo.Name) .. "</b> to <b>" .. recipientName .. "</b>.")
+	fireMajorPopup(player, "GIFT SENT", recipientName .. " will receive this gift when they next log in.", giftLabel, "Recipient: " .. recipientName, "Success")
+	fireLifeUpdate(player, stats, "<font color='#ffcd69'><b>[ GIFT ]</b></font> Gifted <b>" .. giftLabel .. "</b> to <b>" .. recipientName .. "</b>. They'll receive it on next login.")
 	return true
 end
 
@@ -1866,10 +1887,10 @@ function BK_CommerceService.GetGoRogueProductId()
 	return 0
 end
 
-function BK_CommerceService.InitiateGift(player, productId, recipientUserId, promptGiftPurchaseRemote)
+function BK_CommerceService.InitiateGift(player, productId, recipientUsername, promptGiftPurchaseRemote)
 	if not player then return end
 	productId = tonumber(productId) or 0
-	recipientUserId = tonumber(recipientUserId) or 0
+	if type(recipientUsername) ~= "string" or recipientUsername == "" then return end
 
 	local productInfo = DEVELOPER_PRODUCTS[productId]
 	if not productInfo or productInfo.Id ~= "gift_gamepass" then return end
@@ -1880,13 +1901,22 @@ function BK_CommerceService.InitiateGift(player, productId, recipientUserId, pro
 	if now - lastAttempt < GIFT_INITIATE_COOLDOWN_SECONDS then return end
 	giftInitiateCooldowns[player.UserId] = now
 
-	local recipient = Players:GetPlayerByUserId(recipientUserId)
-	if not recipient then return end
-	if recipient == player then return end
+	local recipientUserId
+	local ok, err = pcall(function()
+		recipientUserId = Players:GetUserIdFromNameAsync(recipientUsername)
+	end)
+	if not ok or not recipientUserId then
+		fireMajorPopup(player, "GIFT ERROR", "Could not find a Roblox user named '" .. tostring(recipientUsername) .. "'.", "", "", "Error")
+		return
+	end
+	if recipientUserId == player.UserId then
+		fireMajorPopup(player, "GIFT ERROR", "You can't gift yourself.", "", "", "Error")
+		return
+	end
 
 	pendingGifts[player.UserId] = {
 		recipientId = recipientUserId,
-		recipientName = recipient.Name,
+		recipientName = recipientUsername,
 		expectedProductId = productId,
 		createdAt = os.clock(),
 	}
@@ -2055,6 +2085,61 @@ function BK_CommerceService.Init(ctx)
 	end)
 
 	if context.IS_DEBUG then print("[BK_CommerceService] Loaded Update 6 commerce logic (RCT Revive max 2 per life, 5 new gamepasses registered).") end
+end
+
+function BK_CommerceService.ClaimGiftMailbox(player)
+	if not player then return end
+	local userId = player.UserId
+	local mailboxKey = "gifts_" .. tostring(userId)
+
+	local gifts
+	local readOk, readErr = pcall(function()
+		gifts = giftMailboxStore:GetAsync(mailboxKey)
+	end)
+	if not readOk then
+		warn("[BK_CommerceService] Gift mailbox read failed for " .. tostring(userId) .. ": " .. tostring(readErr))
+		return
+	end
+	if typeof(gifts) ~= "table" or #gifts == 0 then return end
+
+	local removeOk, removeErr = pcall(function()
+		giftMailboxStore:RemoveAsync(mailboxKey)
+	end)
+	if not removeOk then
+		warn("[BK_CommerceService] Gift mailbox clear failed for " .. tostring(userId) .. ": " .. tostring(removeErr))
+	end
+
+	local saveSystem = context.BitKaisenSaveSystem
+	local stats = getStats(player)
+	if not stats then return end
+
+	for _, giftEntry in ipairs(gifts) do
+		local passKey = tostring(giftEntry.passKey or "")
+		local passLabel = tostring(giftEntry.passLabel or giftEntry.passKey or "Gift")
+		local fromName = tostring(giftEntry.fromName or "another player")
+		if passKey ~= "" then
+			if saveSystem and type(saveSystem.GrantGiftedGamePassByUserId) == "function" then
+				saveSystem.GrantGiftedGamePassByUserId(userId, passKey)
+			end
+			stats.GiftedGamePasses = typeof(stats.GiftedGamePasses) == "table" and stats.GiftedGamePasses or {}
+			stats.GiftedGamePasses[passKey] = true
+			if passKey == "GodMode" then
+				stats.HasGodModePass = true
+			elseif passKey == "GoRogue" then
+				stats.HasGoRoguePass = true
+			elseif passKey == "AFKStabilization" then
+				stats.AFKStabilizationUnlocked = true
+			end
+			fireMajorPopup(player, "GIFT RECEIVED", "A gift was added to your account.", passLabel, "From: " .. fromName, "Success")
+			fireLifeUpdate(player, stats, "<font color='#63e787'><b>[ GIFT ]</b></font> You received <b>" .. passLabel .. "</b> from <b>" .. fromName .. "</b>.")
+		end
+	end
+
+	if context.ForceSaveStats then
+		context.ForceSaveStats(player, "GiftMailboxClaim")
+	else
+		forceSaveStats(player, "GiftMailboxClaim")
+	end
 end
 
 return BK_CommerceService

@@ -1649,8 +1649,8 @@ local function promptGiftRecipient(item)
 	giftOverlay.Parent = gui
 
 	local box = Instance.new("Frame")
-	box.Size = UDim2.new(0, 360, 0, 320)
-	box.Position = UDim2.new(0.5, -180, 0.5, -160)
+	box.Size = UDim2.new(0, 360, 0, 220)
+	box.Position = UDim2.new(0.5, -180, 0.5, -110)
 	box.BackgroundColor3 = THEME.Panel
 	box.BorderSizePixel = 0
 	box.ZIndex = 5001
@@ -1678,80 +1678,41 @@ local function promptGiftRecipient(item)
 	note.TextSize = 11
 	note.Font = Enum.Font.GothamMedium
 	note.TextXAlignment = Enum.TextXAlignment.Left
-	note.Text = "Select a player in this server to send the gift to."
+	note.Text = "Enter the Roblox username of the player you want to gift."
 	note.ZIndex = 5002
 	note.Parent = box
 
-	local scroll = Instance.new("ScrollingFrame")
-	scroll.Size = UDim2.new(1, -32, 1, -120)
-	scroll.Position = UDim2.new(0, 16, 0, 72)
-	scroll.BackgroundColor3 = THEME.Panel2
-	scroll.BorderSizePixel = 0
-	scroll.ScrollBarThickness = 4
-	scroll.ScrollBarImageColor3 = THEME.SubText
-	scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-	scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-	scroll.ZIndex = 5002
-	scroll.Parent = box
-	addCorner(scroll, 8)
+	local inputBox = Instance.new("TextBox")
+	inputBox.Size = UDim2.new(1, -32, 0, 40)
+	inputBox.Position = UDim2.new(0, 16, 0, 72)
+	inputBox.BackgroundColor3 = THEME.Panel2
+	inputBox.BorderSizePixel = 0
+	inputBox.TextColor3 = THEME.Text
+	inputBox.PlaceholderText = "Username..."
+	inputBox.PlaceholderColor3 = THEME.SubText
+	inputBox.TextSize = 14
+	inputBox.Font = Enum.Font.GothamBold
+	inputBox.ClearTextOnFocus = false
+	inputBox.ZIndex = 5003
+	inputBox.Parent = box
+	addCorner(inputBox, 8)
 
-	local layout = Instance.new("UIListLayout")
-	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.Padding = UDim.new(0, 2)
-	layout.Parent = scroll
-
-	local others = {}
-	for _, p in ipairs(Players:GetPlayers()) do
-		if p ~= player then
-			table.insert(others, p)
-		end
-	end
-
-	if #others == 0 then
-		local emptyLabel = Instance.new("TextLabel")
-		emptyLabel.Size = UDim2.new(1, 0, 0, 40)
-		emptyLabel.BackgroundTransparency = 1
-		emptyLabel.TextColor3 = THEME.SubText
-		emptyLabel.TextSize = 12
-		emptyLabel.Font = Enum.Font.GothamMedium
-		emptyLabel.Text = "No other players in this server."
-		emptyLabel.ZIndex = 5003
-		emptyLabel.Parent = scroll
-	end
-
-	for i, p in ipairs(others) do
-		local entry = Instance.new("TextButton")
-		entry.Size = UDim2.new(1, 0, 0, 40)
-		entry.BackgroundColor3 = THEME.Panel
-		entry.BackgroundTransparency = 0.4
-		entry.BorderSizePixel = 0
-		entry.Text = ""
-		entry.LayoutOrder = i
-		entry.ZIndex = 5003
-		entry.Parent = scroll
-		addCorner(entry, 6)
-
-		local displayLabel = Instance.new("TextLabel")
-		displayLabel.Size = UDim2.new(1, -16, 1, 0)
-		displayLabel.Position = UDim2.new(0, 8, 0, 0)
-		displayLabel.BackgroundTransparency = 1
-		displayLabel.TextColor3 = THEME.Text
-		displayLabel.TextSize = 13
-		displayLabel.Font = Enum.Font.GothamBold
-		displayLabel.TextXAlignment = Enum.TextXAlignment.Left
-		displayLabel.Text = p.DisplayName .. "  (@" .. p.Name .. ")"
-		displayLabel.ZIndex = 5004
-		displayLabel.Parent = entry
-
-		entry.Activated:Connect(function()
-			giftOverlay:Destroy()
-			initiateGift:FireServer(item.RobloxId, p.UserId)
-		end)
-	end
+	local sendBtn = Instance.new("TextButton")
+	sendBtn.Size = UDim2.new(1, -32, 0, 40)
+	sendBtn.Position = UDim2.new(0, 16, 0, 120)
+	sendBtn.BackgroundColor3 = item.Accent or THEME.Gold
+	sendBtn.BorderSizePixel = 0
+	sendBtn.TextColor3 = Color3.fromRGB(15, 12, 10)
+	sendBtn.TextSize = 14
+	sendBtn.Font = Enum.Font.GothamBlack
+	sendBtn.Text = "SEND GIFT"
+	sendBtn.ZIndex = 5003
+	sendBtn.Parent = box
+	addCorner(sendBtn, 8)
 
 	local cancel = Instance.new("TextButton")
 	cancel.Size = UDim2.new(1, -32, 0, 40)
-	cancel.Position = UDim2.new(0, 16, 1, -56)
+	cancel.Position = UDim2.new(0, 16, 0, 168)
 	cancel.BackgroundColor3 = THEME.Panel2
 	cancel.BorderSizePixel = 0
 	cancel.TextColor3 = THEME.Text
@@ -1761,6 +1722,20 @@ local function promptGiftRecipient(item)
 	cancel.ZIndex = 5002
 	cancel.Parent = box
 	addCorner(cancel, 8)
+
+	sendBtn.Activated:Connect(function()
+		local username = string.gsub(inputBox.Text, "%s+", "")
+		if username == "" then
+			showGiftStatusPopup(false, "NO USERNAME", "Please enter a Roblox username.")
+			return
+		end
+		if string.lower(username) == string.lower(player.Name) then
+			showGiftStatusPopup(false, "INVALID", "You can't gift yourself.")
+			return
+		end
+		giftOverlay:Destroy()
+		initiateGift:FireServer(item.RobloxId, username)
+	end)
 
 	cancel.Activated:Connect(function()
 		giftOverlay:Destroy()

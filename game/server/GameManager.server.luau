@@ -10633,13 +10633,16 @@ BK_ActivityService.Init(BitKaisenServiceContext)
 BK_RelationshipService.Init(BitKaisenServiceContext)
 BK_DevCommands.Init(BitKaisenServiceContext)
 
-initiateGift.OnServerEvent:Connect(function(player, productId, recipientUserId)
-	BK_CommerceService.InitiateGift(player, productId, recipientUserId, promptGiftPurchase)
+initiateGift.OnServerEvent:Connect(function(player, productId, recipientUsername)
+	BK_CommerceService.InitiateGift(player, productId, recipientUsername, promptGiftPurchase)
 end)
 
 Players.PlayerAdded:Connect(function(player)
 	BK_DevCommands.HookPlayer(player)
 	loadOrStartLife(player)
+	task.defer(function()
+		BK_CommerceService.ClaimGiftMailbox(player)
+	end)
 end)
 
 Players.PlayerRemoving:Connect(function(player)

@@ -14,7 +14,7 @@ local scroll: ScrollingFrame
 local sections = {
 	{
 		header = "Hotfix — Gift System",
-		body = "• Improved gift delivery reliability — gifts now consistently reach the recipient.\n• Gift recipient picker now shows players in your server for easy selection.\n• Server validates the recipient is present before opening the Robux prompt.\n• Improved retry handling for mid-purchase edge cases.\n• Stale gift receipts now resolve cleanly on next join.",
+		body = "• Gifts now work cross-server — enter any Roblox username to send a gift.\n• Recipient no longer needs to be in your server.\n• If the recipient is offline, the gift is saved and delivered on their next login.\n• Server validates the username before opening the Robux prompt.\n• Improved retry handling for edge cases during purchase.",
 		color = theme.Green,
 	},
 	{

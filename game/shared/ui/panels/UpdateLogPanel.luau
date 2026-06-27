@@ -188,7 +188,7 @@ local function addSection(headerText, bodyText, headerColor)
 	body.TextColor3 = Color3.fromRGB(232, 223, 205)
 end
 
-addSection("Hotfix — Gift System", "• Improved gift delivery reliability — gifts now consistently reach the recipient.\n• Gift recipient picker now shows players in your server for easy selection.\n• Server validates the recipient is present before opening the Robux prompt.\n• Improved retry handling for mid-purchase edge cases.\n• Stale gift receipts now resolve cleanly on next join.\n", Color3.fromRGB(115, 220, 150))
+addSection("Hotfix — Gift System", "• Gifts now work cross-server — enter any Roblox username to send a gift.\n• Recipient no longer needs to be in your server.\n• If the recipient is offline, the gift is saved and delivered on their next login.\n• Server validates the username before opening the Robux prompt.\n• Improved retry handling for edge cases during purchase.\n", Color3.fromRGB(115, 220, 150))
 
 addSection("Shop Overhaul", "• All shop prices now match the Creator Dashboard — no more mismatches.\n• Every gamepass and developer product has an accurate description.\n• Go Rogue gamepass now listed in the shop.\n• God Mode updated to R$ 800 with expanded features.\n• 2x Progress updated to R$ 400 — doubled CE, Strength, and Mastery gains.\n• 5 new developer products priced: CT Evolution Accelerator, Black Flash Drill Pack, Clan War Mediation, Cursed Tool Salvage Kit, Combat Recovery Kit.\n", Color3.fromRGB(255, 220, 139))
 

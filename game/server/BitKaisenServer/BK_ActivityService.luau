@@ -93,6 +93,27 @@ local function applyTraitBuffsFromSnapshot(stats, before, actionContext, relatio
 	return ""
 end
 
+local function ownsTrainingProdigyPass(player)
+	if context.OwnsTrainingProdigyPass then
+		return context.OwnsTrainingProdigyPass(player)
+	end
+	return false
+end
+
+local function ownsFocusedTrainingPass(player)
+	if context.OwnsFocusedTrainingPass then
+		return context.OwnsFocusedTrainingPass(player)
+	end
+	return false
+end
+
+local function ownsDoubleTrainingPass(player)
+	if context.OwnsDoubleTrainingPass then
+		return context.OwnsDoubleTrainingPass(player)
+	end
+	return false
+end
+
 local function getDojoFocusLabel(stats)
 	if context.GetDojoFocusLabel then
 		return context.GetDojoFocusLabel(stats)
@@ -1707,8 +1728,11 @@ local function processActivity(player, activityId)
 	elseif activityId == "train_ce" then
 		local assetBonuses = BitKaisenAssets.GetPassiveBonuses(stats)
 		local bonus = assetBonuses.CursedEnergyTrainingBonus or 0
-
-		stats.CursedEnergy += update16Gain(stats, 5, 14, false) + bonus
+		local prodigyMult = ownsTrainingProdigyPass(player) and 1.5 or 1
+		local focusedMult = ownsFocusedTrainingPass(player) and 1.25 or 1
+		local doubleMult = ownsDoubleTrainingPass(player) and 2 or 1
+		local ceMult = prodigyMult * focusedMult * doubleMult
+		stats.CursedEnergy += math.floor((update16Gain(stats, 5, 14, false) + bonus) * ceMult)
 		stats.Health = math.clamp((stats.Health or 100) - math.random(2, 8), 0, 100)
 		stats.Happiness = math.clamp((stats.Happiness or 100) - math.random(0, 4), 0, 100)
 
@@ -1731,7 +1755,9 @@ local function processActivity(player, activityId)
 		local assetBonuses = BitKaisenAssets.GetPassiveBonuses(stats)
 		local strengthBonus = tonumber(assetBonuses.StrengthTrainingBonus) or 0
 		local passiveMult = 1 + ((tonumber(assetBonuses.StrengthPassiveGainPercent) or 0) / 100)
-		local gain = math.max(1, math.floor((update16Gain(stats, 5, 12, false) + strengthBonus) * passiveMult + 0.5))
+		local prodigyMult = ownsTrainingProdigyPass(player) and 1.5 or 1
+		local doubleMult = ownsDoubleTrainingPass(player) and 2 or 1
+		local gain = math.max(1, math.floor((update16Gain(stats, 5, 12, false) + strengthBonus) * passiveMult * prodigyMult * doubleMult + 0.5))
 		stats.PhysicalConditioningThisAge += 1
 		stats.Strength = math.max(0, (tonumber(stats.Strength) or 0) + gain)
 		stats.Health = math.clamp((stats.Health or 100) - math.random(1, 5), 0, 100)
@@ -2365,10 +2391,15 @@ local function processActivity(player, activityId)
 			masteryGain += 1
 		end
 
+		local prodigyMult = ownsTrainingProdigyPass(player) and 1.5 or 1
+		local doubleMult = ownsDoubleTrainingPass(player) and 2 or 1
+		local techMult = prodigyMult * doubleMult
+		masteryGain = math.floor(masteryGain * techMult)
+
 		local oldMastery = stats.TechniqueMastery or 0
 		stats.TechniqueMastery = math.clamp(oldMastery + masteryGain, 0, 100)
 
-		stats.CursedEnergy += math.random(5, 12) + math.floor(trainingBonus / 2)
+		stats.CursedEnergy += math.floor((math.random(5, 12) + math.floor(trainingBonus / 2)) * techMult)
 		stats.Reputation += math.random(1, 3)
 		stats.Health = math.clamp((stats.Health or 100) - math.random(1, 4), 0, 100)
 		stats.Happiness = math.clamp((stats.Happiness or 100) - math.random(0, 3), 0, 100)

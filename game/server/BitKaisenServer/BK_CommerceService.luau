@@ -55,11 +55,12 @@ local GO_ROGUE_PASS_ID = 1887460270
 -- These must match the IDs used in BitKaisenSettingsMenu and GameManager.
 -- While an ID is 0, ownership checks and purchase popups are safely skipped.
 ----------------------------------------------------------------
-local LUCKY_SORCERER_PASS_ID = 0
-local TRAINING_PRODIGY_PASS_ID = 0
-local MISSION_INVESTOR_PASS_ID = 0
-local LEGACY_BLESSING_PASS_ID = 0
+local LUCKY_SORCERER_PASS_ID = 1863476467
+local TRAINING_PRODIGY_PASS_ID = 1863314699
+local MISSION_INVESTOR_PASS_ID = 1863458434
+local LEGACY_BLESSING_PASS_ID = 1865683126
 local DOJO_EXPANSION_PASS_ID = 0
+local FOCUSED_TRAINING_PASS_ID = 1847591321
 
 ----------------------------------------------------------------
 -- EXISTING DEVELOPER PRODUCT IDS

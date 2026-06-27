@@ -84,6 +84,13 @@ local function getProductId()
 	return 0
 end
 
+local function ownsAFKPass(player)
+	if context.OwnsAFKPass then
+		return context.OwnsAFKPass(player)
+	end
+	return false
+end
+
 local function ensureGamePassUnlock(player, stats)
 	if not player or not stats or stats.AFKStabilizationUnlocked == true or isTestingPlace() then return end
 	local passId = getProductId()
@@ -125,9 +132,9 @@ local function settlePendingPayout(player, stats, session)
 	local now = os.clock()
 	local elapsed = now - (session.LastPayoutAt or now)
 	local payoutSeconds = math.floor(elapsed)
-	local payout = roundCurrency(payoutSeconds * PAYOUT_PER_SECOND)
+	local afkMult = ownsAFKPass(player) and 2 or 1
+	local payout = roundCurrency(payoutSeconds * PAYOUT_PER_SECOND * afkMult)
 	if payout <= 0 then return 0 end
-
 	stats.Money = roundCurrency((tonumber(stats.Money) or 0) + payout)
 	stats.AFKStabilizationEarned = roundCurrency((tonumber(stats.AFKStabilizationEarned) or 0) + payout)
 	session.Earned = roundCurrency((tonumber(session.Earned) or 0) + payout)
@@ -152,6 +159,9 @@ local function startSession(player)
 	local stats = getStats(player)
 	if not stats then return false, "No active life." end
 	ensureExtraStats(stats)
+	if ownsAFKPass(player) then
+		stats.AFKStabilizationUnlocked = true
+	end
 	if stats.AFKStabilizationUnlocked ~= true then
 		return false, "AFK Stabilization is locked."
 	end

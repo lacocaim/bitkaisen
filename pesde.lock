@@ -16,6 +16,15 @@ frktest = [{ name = "itsfrank/frktest", version = "^0.0.4", index = "https://git
 luau-lsp = [{ name = "pesde/luau_lsp", version = "=1.66.1", index = "https://github.com/pesde-pkg/index", target = "lune" }, "dev"]
 stylua = [{ name = "pesde/stylua", version = "=2.4.1", index = "https://github.com/pesde-pkg/index", target = "lune" }, "dev"]
 
+[graph."centau/vide@0.0.0-aece7522eb2538942921fa7c13baac5dd4e83441 roblox"]
+direct = ["vide", { repo = "https://github.com/lacocaim/vide", rev = "24e1a9bd24fef896a10620ac1851aa26f78809ed" }, "standard"]
+
+[graph."centau/vide@0.0.0-aece7522eb2538942921fa7c13baac5dd4e83441 roblox".pkg_ref]
+ref_ty = "git"
+repo = "https://github.com/lacocaim/vide"
+tree_id = "aece7522eb2538942921fa7c13baac5dd4e83441"
+new_structure = true
+
 [graph."jiwonz/dirs@0.6.0 lune".dependencies]
 greentea = ["jiwonz/greentea_luau@0.2.0 luau", "standard"]
 pathfs = ["jiwonz/pathfs@0.6.0 lune", "standard"]
@@ -129,6 +138,13 @@ pathfs = [{ name = "jiwonz/pathfs", version = "^0.6.0", index = "https://github.
 result = [{ name = "lukadev_0/result", version = "^1.2.1", index = "https://github.com/pesde-pkg/index" }, "peer"]
 unzip = [{ name = "0x5eal/unzip", version = "^0.2.0", index = "https://github.com/pesde-pkg/index", target = "luau" }, "standard"]
 
+[graph."wally#1foreverhd/topbarplus@3.4.0 roblox"]
+direct = ["topbarplus", { wally = "wally#1foreverhd/topbarplus", version = "^3.4.0", index = "default" }, "standard"]
+
+[graph."wally#1foreverhd/topbarplus@3.4.0 roblox".pkg_ref]
+ref_ty = "wally"
+index_url = "https://github.com/upliftgames/wally-index"
+
 [graph."wally#corecii/greentea@0.4.11 roblox"]
 direct = ["gt", { wally = "wally#corecii/greentea", version = "^0.4.11", index = "default" }, "standard"]
 
@@ -160,6 +176,13 @@ index_url = "https://github.com/upliftgames/wally-index"
 direct = ["charm", { wally = "wally#littensy/charm", version = "^0.11.0-rc.5", index = "default" }, "standard"]
 
 [graph."wally#littensy/charm@0.11.0 roblox".pkg_ref]
+ref_ty = "wally"
+index_url = "https://github.com/upliftgames/wally-index"
+
+[graph."wally#littensy/ripple@0.10.2 roblox"]
+direct = ["ripple", { wally = "wally#littensy/ripple", version = "^0.10.2", index = "default" }, "standard"]
+
+[graph."wally#littensy/ripple@0.10.2 roblox".pkg_ref]
 ref_ty = "wally"
 index_url = "https://github.com/upliftgames/wally-index"
 

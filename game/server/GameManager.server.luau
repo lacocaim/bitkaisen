@@ -147,6 +147,22 @@ local EXTRA_DOJO_STUDENTS_PASS_ID = 1862959768
 local GOD_MODE_PASS_ID = 1861509054 -- God Mode gamepass ID.
 local GO_ROGUE_PASS_ID = 1887460270 -- Go Rogue gamepass ID.
 
+local NEW_PASS_IDS = {
+	LuckySorcerer = 1863476467,
+	TrainingProdigy = 1863314699,
+	MissionInvestor = 1863458434,
+	LegacyBlessing = 1865683126,
+	DojoExpansion = 0,
+	FocusedTraining = 1847591321,
+	AFKPass = 1879156343,
+}
+local LUCKY_SORCERER_PASS_ID = NEW_PASS_IDS.LuckySorcerer
+local TRAINING_PRODIGY_PASS_ID = NEW_PASS_IDS.TrainingProdigy
+local MISSION_INVESTOR_PASS_ID = NEW_PASS_IDS.MissionInvestor
+local LEGACY_BLESSING_PASS_ID = NEW_PASS_IDS.LegacyBlessing
+local DOJO_EXPANSION_PASS_ID = NEW_PASS_IDS.DojoExpansion
+local FOCUSED_TRAINING_PASS_ID = NEW_PASS_IDS.FocusedTraining
+
 local STARTER_SORCERER_PACK_PRODUCT_ID = 3595826857
 local FOCUSED_TRAINING_PRODUCT_ID = 3595838153
 local MONEY_5000_PRODUCT_ID = 3596044734
@@ -179,6 +195,13 @@ local luckyBirthOwnershipCache = {}
 local extraDojoStudentsOwnershipCache = {}
 local godModeOwnershipCache = {}
 local goRogueOwnershipCache = {}
+local luckySorcererOwnershipCache = {}
+local trainingProdigyOwnershipCache = {}
+local missionInvestorOwnershipCache = {}
+local legacyBlessingOwnershipCache = {}
+local dojoExpansionOwnershipCache = {}
+local focusedTrainingOwnershipCache = {}
+local afkPassOwnershipCache = {}
 
 local RATE_LIMITS = {
 	AgeUp = 0.4,
@@ -215,7 +238,7 @@ function isDev(player)
 end
 
 local function isTestPurchasePlace()
-	return TEST_PURCHASE_PLACE_IDS[game.PlaceId] == true
+	return TEST_PURCHASE_PLACE_IDS[game.PlaceId] == true or RunService:IsStudio()
 end
 
 local playerLives = {}
@@ -286,6 +309,34 @@ function ownsLuckyBirthPass(player)
 	return checkCachedGamePassOwnership(player, LUCKY_BIRTH_PASS_ID, luckyBirthOwnershipCache, "Lucky Birth")
 end
 
+function ownsLuckySorcererPass(player)
+	return checkCachedGamePassOwnership(player, LUCKY_SORCERER_PASS_ID, luckySorcererOwnershipCache, "Lucky Sorcerer")
+end
+
+function ownsTrainingProdigyPass(player)
+	return checkCachedGamePassOwnership(player, TRAINING_PRODIGY_PASS_ID, trainingProdigyOwnershipCache, "Training Prodigy")
+end
+
+function ownsMissionInvestorPass(player)
+	return checkCachedGamePassOwnership(player, MISSION_INVESTOR_PASS_ID, missionInvestorOwnershipCache, "Mission Investor")
+end
+
+function ownsLegacyBlessingPass(player)
+	return checkCachedGamePassOwnership(player, LEGACY_BLESSING_PASS_ID, legacyBlessingOwnershipCache, "Legacy Blessing")
+end
+
+function ownsDojoExpansionPass(player)
+	return checkCachedGamePassOwnership(player, DOJO_EXPANSION_PASS_ID, dojoExpansionOwnershipCache, "Dojo Expansion")
+end
+
+function ownsFocusedTrainingPass(player)
+	return checkCachedGamePassOwnership(player, FOCUSED_TRAINING_PASS_ID, focusedTrainingOwnershipCache, "Focused Training")
+end
+
+function ownsAFKPass(player)
+	return checkCachedGamePassOwnership(player, NEW_PASS_IDS.AFKPass, afkPassOwnershipCache, "AFK Pass")
+end
+
 function ownsExtraDojoStudentsPass(player)
 	return checkCachedGamePassOwnership(player, EXTRA_DOJO_STUDENTS_PASS_ID, extraDojoStudentsOwnershipCache, "Extra Dojo Students")
 end
@@ -328,10 +379,21 @@ function syncMonetizationEntitlements(player, stats)
 	stats.HasVIPPass = ownsVIPSorcererPass(player)
 	stats.HasGodModePass = ownsGodModePass(player)
 	stats.HasGoRoguePass = ownsGoRoguePass(player)
+	stats.HasLuckySorcererPass = ownsLuckySorcererPass(player)
 	if hasGiftedGamePass(player, "AFKStabilization") then
 		stats.AFKStabilizationUnlocked = true
 	end
 end
+
+local function applyLuckySorcererBirthBoost(player, stats)
+	if not ownsLuckySorcererPass(player) then return end
+	stats.Smarts = math.min(100, math.floor((stats.Smarts or 50) * 1.15))
+	stats.Health = math.min(100, math.floor((stats.Health or 100) * 1.15))
+	stats.Happiness = math.min(100, math.floor((stats.Happiness or 100) * 1.15))
+	stats.Looks = math.min(100, math.floor((stats.Looks or 50) * 1.15))
+	stats.Strength = math.max(5, math.floor((stats.Strength or 0) * 1.15))
+end
+
 
 function getBirthOriginScore(originData)
 	if typeof(originData) ~= "table" then
@@ -3127,6 +3189,7 @@ function startAsCurseRebirth(player)
 	newStats.CharacterCustomized = true
 	ensureCharacterAppearance(newStats)
 	syncMonetizationEntitlements(player, newStats)
+	applyLuckySorcererBirthBoost(player, newStats)
 
 	if preservedSettings then
 		newStats.Settings = preservedSettings
@@ -3289,6 +3352,7 @@ function startNewLife(player)
 	local newStats = BitKaisenStats.GetDefaultStats()
 	ensureExtraStats(newStats)
 	syncMonetizationEntitlements(player, newStats)
+	applyLuckySorcererBirthBoost(player, newStats)
 
 	if preservedSettings then
 		newStats.Settings = preservedSettings
@@ -9434,12 +9498,14 @@ function resolveMission(player, stats, missionData, choiceOption)
 
 	if success then
 		local smartBonus = 1 + ((stats.Smarts or 0) / 300)
+		local missionInvestorMult = ownsMissionInvestorPass(player) and 1.5 or 1
+		local doubleMoneyMult = ownsDoubleMoneyPass(player) and 2 or 1
 
 		local baseMissionCE = (missionData.RewardCE or 0) + (combatResult.CursedEnergyBonus or 0)
-		local missionCEGain, missionCEBonus, missionCETool = BitKaisenCursedTools.ApplyCEGain(stats, baseMissionCE)
+		local missionCEGain, missionCEBonus, missionCETool = BitKaisenCursedTools.ApplyCEGain(stats, baseMissionCE * missionInvestorMult)
 		stats.CursedEnergy += missionCEGain
-		stats.Money += math.floor((missionData.RewardMoney or 0) * smartBonus * ((combatResult and combatResult.RewardMoneyMult) or 1))
-		stats.Reputation += math.floor((missionData.RewardRep or 0) * smartBonus * ((combatResult and combatResult.RewardRepMult) or 1))
+		stats.Money += math.floor((missionData.RewardMoney or 0) * smartBonus * ((combatResult and combatResult.RewardMoneyMult) or 1) * missionInvestorMult * doubleMoneyMult)
+		stats.Reputation += math.floor((missionData.RewardRep or 0) * smartBonus * ((combatResult and combatResult.RewardRepMult) or 1) * missionInvestorMult)
 		stats.MissionsCompleted += 1
 		stats.Happiness = math.clamp((stats.Happiness or 100) + 8, 0, 100)
 		stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + (combatResult.MasteryGain or 0), 0, 100)
@@ -10309,7 +10375,7 @@ claimFreeReward.OnServerInvoke = function(player, clientConfirmedLike)
 	return claimFreeMasteryReward(player, clientConfirmedLike == true)
 end
 
-local ALLOWED_SETTINGS = {
+ALLOWED_SETTINGS = {
 	MusicVolume = "number",
 	SFXVolume = "number",
 
@@ -10324,7 +10390,7 @@ local ALLOWED_SETTINGS = {
 	UIMode = "string",
 }
 
-local ALLOWED_STRING_VALUES = {
+ALLOWED_STRING_VALUES = {
 	UIMode = { Computer = true, Mobile = true },
 }
 
@@ -10371,7 +10437,7 @@ end)
 -- Developer chat command logic moved to BK_DevCommands in Phase 2 split.
 ----------------------------------------------------------------
 
-local BitKaisenServiceContext = {
+BitKaisenServiceContext = {
 	Remotes = {
 		RedeemCode = redeemCode,
 		GetCodeGate = getCodeGate,
@@ -10440,6 +10506,13 @@ local BitKaisenServiceContext = {
 
 	OwnsDoubleMoneyPass = ownsDoubleMoneyPass,
 	OwnsDoubleTrainingPass = ownsDoubleTrainingPass,
+	OwnsMissionInvestorPass = ownsMissionInvestorPass,
+	OwnsLuckySorcererPass = ownsLuckySorcererPass,
+	OwnsTrainingProdigyPass = ownsTrainingProdigyPass,
+	OwnsLegacyBlessingPass = ownsLegacyBlessingPass,
+	OwnsDojoExpansionPass = ownsDojoExpansionPass,
+	OwnsFocusedTrainingPass = ownsFocusedTrainingPass,
+	OwnsAFKPass = ownsAFKPass,
 	ClearVIPCache = clearVIPCache,
 	SyncMonetizationEntitlements = syncMonetizationEntitlements,
 	GenerateDojoRecruitPool = generateDojoRecruitPool,

@@ -27,6 +27,8 @@ jobs:
 
       - name: Install pesde
         run: pesde install
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build project
         run: rojo build game.project.json -o bitkaisen.rbxl

@@ -586,11 +586,14 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 			TransferredAtAge = stats.Age,
 		})
 
+		local preservedYear = (tonumber(stats.BirthYear) or 0) + (tonumber(stats.Age) or 0)
+		print("[DEBUG][BrainTransplant] Year before=" .. tostring(preservedYear) .. " hostAge=" .. tostring(hostAge) .. " newBirthYear=" .. tostring(preservedYear - hostAge))
 		stats.Name = hostName
 		stats.FullName = hostName
 		stats.FirstName = getFirstNameFromFullName(hostName)
 		stats.Gender = relationship.Gender or stats.Gender
 		stats.Age = hostAge
+		stats.BirthYear = preservedYear - hostAge
 		stats.CurrentMonth = 1
 		stats.MonthsIntoAge = 0
 		stats.CursedEnergy = math.max(0, (tonumber(stats.CursedEnergy) or 0) - ceCost)

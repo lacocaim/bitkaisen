@@ -655,6 +655,7 @@ local function init(playerGui: Instance)
 
 		isShowingDeath = true
 		lastDeathStats = stats
+		if _G.BitKaisenPlaySFX then _G.BitKaisenPlaySFX("Death") end
 		updateRCTReviveButtonForStats(stats)
 
 		biographyText.Text = buildBiography(stats)

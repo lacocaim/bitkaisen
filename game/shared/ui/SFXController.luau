@@ -91,7 +91,9 @@ local function init()
 		end)
 	end
 
-	_G.BitKaisenPlaySFX = play
+	if not _G.BitKaisenPlaySFX then
+		_G.BitKaisenPlaySFX = play
+	end
 end
 
 return { init = init }

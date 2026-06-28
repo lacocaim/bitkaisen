@@ -230,7 +230,7 @@ local function MobileProfileHeader()
 			AutomaticSize = Enum.AutomaticSize.Y,
 			LayoutOrder = 5,
 		},
-		create("TextLabel") {
+		create("TextButton") {
 			Name = "Technique",
 			Size = UDim2.new(1, 0, 0, 14),
 			BackgroundTransparency = 1,
@@ -241,7 +241,14 @@ local function MobileProfileHeader()
 			TextXAlignment = Enum.TextXAlignment.Left,
 			TextWrapped = true,
 			AutomaticSize = Enum.AutomaticSize.Y,
+			AutoButtonColor = false,
 			LayoutOrder = 6,
+
+			[vide.action(function(btn: TextButton)
+				bindTap(btn, function()
+					uiState.navigate("technique_mastery")
+				end)
+			end)] = true,
 		},
 		create("TextLabel") {
 			Name = "Traits",
@@ -404,7 +411,6 @@ local function MobileLifeLog()
 			ScrollBarThickness = 3,
 			ScrollBarImageColor3 = theme.RedSoft,
 			CanvasSize = UDim2.new(0, 0, 0, 0),
-			AutomaticCanvasSize = Enum.AutomaticSize.Y,
 			ZIndex = 1,
 
 			create("UIListLayout") {
@@ -413,6 +419,7 @@ local function MobileLifeLog()
 					layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 						if scrollRef then
 							local contentHeight = layout.AbsoluteContentSize.Y + 30
+							scrollRef.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
 							scrollRef.CanvasPosition = Vector2.new(0, contentHeight)
 						end
 					end)
@@ -468,6 +475,7 @@ local function MobileAgeButton()
 
 		[vide.action(function(btn: TextButton)
 			bindTap(btn, function()
+				if _G.BitKaisenPlaySFX then _G.BitKaisenPlaySFX("Tick") end
 				local ule = remotes.updateLifeEvent()
 				if ule then
 					ule:FireServer("AgeUp")
@@ -525,20 +533,41 @@ local function MobileNavPanel()
 					return isActive() and theme.Panel3 or theme.Panel2
 				end,
 				BorderSizePixel = 0,
-				Text = entry.label,
-				TextColor3 = function()
-					return isActive() and theme.Text or theme.SubText
-				end,
-				TextSize = 13,
-				Font = Enum.Font.GothamBlack,
+				Text = "",
 				AutoButtonColor = false,
 				ZIndex = 5,
 
 				create("UICorner") { CornerRadius = UDim.new(0, 8) },
-				create("UIStroke") { Color = entry.color or theme.Stroke },
+				create("UIStroke") { Color = theme.Stroke },
+
+				create("Frame") {
+					Name = "Accent",
+					AnchorPoint = Vector2.new(0, 0.5),
+					Position = UDim2.new(0, 8, 0.5, 0),
+					Size = UDim2.new(0, 4, 0, 20),
+					BackgroundColor3 = entry.color or theme.Red,
+					BorderSizePixel = 0,
+					create("UICorner") { CornerRadius = UDim.new(1, 0) },
+				},
+
+				create("TextLabel") {
+					Name = "Label",
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					Position = UDim2.new(0.5, 0, 0.5, 0),
+					Size = UDim2.new(1, 0, 1, 0),
+					BackgroundTransparency = 1,
+					Text = entry.label,
+					TextColor3 = function()
+						return isActive() and theme.Text or theme.SubText
+					end,
+					TextSize = 13,
+					Font = Enum.Font.GothamBlack,
+					TextXAlignment = Enum.TextXAlignment.Center,
+				},
 
 			[vide.action(function(b: TextButton)
 				bindTap(b, function()
+					if _G.BitKaisenPlaySFX then _G.BitKaisenPlaySFX("Click") end
 					uiState.navigate(entry.id)
 				end)
 			end)] = true,
@@ -589,6 +618,7 @@ local function create_(playerGui: PlayerGui)
 			local ageBtn = mainPanel:FindFirstChild("AgeUpButton")
 			if ageBtn and ageBtn:IsA("TextButton") then
 				bindTap(ageBtn, function()
+					if _G.BitKaisenPlaySFX then _G.BitKaisenPlaySFX("Tick") end
 					local ule = remotes.updateLifeEvent()
 					if ule then
 						ule:FireServer("AgeUp")

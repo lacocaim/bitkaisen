@@ -23,6 +23,7 @@ local function AgeUpButton()
 			clicked = function()
 				if busy() then return end
 				busy(true)
+				if _G.BitKaisenPlaySFX then _G.BitKaisenPlaySFX("Tick") end
 				local ule = remotes.updateLifeEvent()
 				if ule then
 					ule:FireServer("AgeUp")

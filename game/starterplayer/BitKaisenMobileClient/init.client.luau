@@ -48,17 +48,17 @@ end
 
 loadingScreen.bump("Registering navigation...")
 
-navRegistry.register({ id = "missions", label = "MISSIONS", order = 1, color = theme.Red })
-navRegistry.register({ id = "activities", label = "ACTIVITIES", order = 2, color = theme.Red })
-navRegistry.register({ id = "relationships", label = "RELATIONSHIPS", order = 3, color = theme.Red })
-navRegistry.register({ id = "assets", label = "ASSETS", order = 4, color = theme.Red })
-navRegistry.register({ id = "jobs", label = "JOBS", order = 5, color = theme.Gold })
+navRegistry.register({ id = "missions", label = "MISSIONS", order = 1, color = theme.Bad })
+navRegistry.register({ id = "activities", label = "ACTIVITIES", order = 2, color = theme.Orange })
+navRegistry.register({ id = "relationships", label = "RELATIONSHIPS", order = 3, color = Color3.fromRGB(255, 120, 190) })
+navRegistry.register({ id = "assets", label = "ASSETS", order = 4, color = theme.Gold })
+navRegistry.register({ id = "jobs", label = "JOBS", order = 5, color = theme.Green })
 navRegistry.register({ id = "affiliations", label = "AFFILIATIONS", order = 6, color = theme.Purple })
-navRegistry.register({ id = "domain", label = "DOMAIN", order = 7, color = theme.Purple })
-navRegistry.register({ id = "rivals", label = "RIVALS", order = 8, color = theme.Bad })
+navRegistry.register({ id = "domain", label = "DOMAIN", order = 7, color = Color3.fromRGB(190, 130, 255) })
+navRegistry.register({ id = "rivals", label = "RIVALS", order = 8, color = theme.Red })
 navRegistry.register({ id = "history", label = "HISTORY", order = 9, color = theme.Blue })
-navRegistry.register({ id = "mentor", label = "MENTOR", order = 10, color = Color3.fromRGB(55, 180, 220) })
-navRegistry.register({ id = "binding_vows", label = "VOWS", order = 11, color = theme.Purple })
+navRegistry.register({ id = "mentor", label = "MENTOR", order = 10, color = Color3.fromRGB(55, 200, 230) })
+navRegistry.register({ id = "binding_vows", label = "VOWS", order = 11, color = Color3.fromRGB(220, 180, 255) })
 
 loadingScreen.bump("Preparing panels...")
 
@@ -98,6 +98,19 @@ tryInit("SettingsPanel", function() return require("@ui-panels/SettingsPanel") e
 px.usePx()
 
 loadingScreen.bump("Building your world...")
+
+local bgGui = Instance.new("ScreenGui")
+bgGui.Name = "BitKaisenBg"
+bgGui.ResetOnSpawn = false
+bgGui.IgnoreGuiInset = true
+bgGui.DisplayOrder = 1
+bgGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+local bgFrame = Instance.new("Frame")
+bgFrame.Size = UDim2.fromScale(1, 1)
+bgFrame.BackgroundColor3 = theme.Bg
+bgFrame.BorderSizePixel = 0
+bgFrame.Parent = bgGui
+bgGui.Parent = playerGui
 
 vide.mount(function()
 	return mobileShell.create(playerGui)

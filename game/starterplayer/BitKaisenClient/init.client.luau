@@ -67,17 +67,17 @@ if game:GetService("RunService"):IsStudio() then print("[BK] Booting Computer sh
 
 loadingScreen.bump("Registering navigation...")
 
-navRegistry.register({ id = "missions", label = "MISSIONS", order = 1, color = theme.Red })
-navRegistry.register({ id = "activities", label = "ACTIVITIES", order = 2, color = theme.Red })
-navRegistry.register({ id = "relationships", label = "RELATIONSHIPS", order = 3, color = theme.Red })
-navRegistry.register({ id = "assets", label = "ASSETS", order = 4, color = theme.Red })
-navRegistry.register({ id = "jobs", label = "JOBS", order = 5, color = theme.Gold })
+navRegistry.register({ id = "missions", label = "MISSIONS", order = 1, color = theme.Bad })
+navRegistry.register({ id = "activities", label = "ACTIVITIES", order = 2, color = theme.Orange })
+navRegistry.register({ id = "relationships", label = "RELATIONSHIPS", order = 3, color = Color3.fromRGB(255, 120, 190) })
+navRegistry.register({ id = "assets", label = "ASSETS", order = 4, color = theme.Gold })
+navRegistry.register({ id = "jobs", label = "JOBS", order = 5, color = theme.Green })
 navRegistry.register({ id = "affiliations", label = "AFFILIATIONS", order = 6, color = theme.Purple })
-navRegistry.register({ id = "domain", label = "DOMAIN", order = 7, color = theme.Purple })
-navRegistry.register({ id = "rivals", label = "RIVALS", order = 8, color = theme.Bad })
+navRegistry.register({ id = "domain", label = "DOMAIN", order = 7, color = Color3.fromRGB(190, 130, 255) })
+navRegistry.register({ id = "rivals", label = "RIVALS", order = 8, color = theme.Red })
 navRegistry.register({ id = "history", label = "HISTORY", order = 9, color = theme.Blue })
-navRegistry.register({ id = "mentor", label = "MENTOR", order = 10, color = Color3.fromRGB(55, 180, 220) })
-navRegistry.register({ id = "binding_vows", label = "VOWS", order = 11, color = theme.Purple })
+navRegistry.register({ id = "mentor", label = "MENTOR", order = 10, color = Color3.fromRGB(55, 200, 230) })
+navRegistry.register({ id = "binding_vows", label = "VOWS", order = 11, color = Color3.fromRGB(220, 180, 255) })
 
 local function isMobile()
 	local camera = workspace.CurrentCamera
@@ -127,28 +127,18 @@ local function applyResponsiveLayout(mainPanel: Frame)
 			layout.VerticalAlignment = Enum.VerticalAlignment.Center
 		end
 	else
-		profileCard.Size = UDim2.new(0.30, 0, 0.60, 0)
-		profileCard.Position = UDim2.new(0.67, 0, 0.07, 0)
+		local navPanelObj = navPanel :: Frame
+		navPanelObj.Size = UDim2.new(0.945, 0, 0, 40)
+		navPanelObj.Position = UDim2.new(0.025, 0, 0.003, 0)
+
+		profileCard.Size = UDim2.new(0.30, 0, 0.76, 0)
+		profileCard.Position = UDim2.new(0.67, 0, 0.095, 0)
 
 		logContainer.Size = UDim2.new(0.61, 0, 0.76, 0)
-		logContainer.Position = UDim2.new(0.025, 0, 0.07, 0)
+		logContainer.Position = UDim2.new(0.025, 0, 0.095, 0)
 
-		actionRow.Size = UDim2.new(0.61, 0, 0.08, 0)
-		actionRow.Position = UDim2.new(0.025, 0, 0.86, 0)
-
-		local navPanelObj = navPanel :: ScrollingFrame
-		navPanelObj.Size = UDim2.new(0.30, 0, 0.28, 0)
-		navPanelObj.Position = UDim2.new(0.67, 0, 0.68, 0)
-
-		local navScroll = navPanelObj:FindFirstChild("NavScroll") or navPanelObj:FindFirstChildWhichIsA("ScrollingFrame")
-		local layoutParent = navScroll or navPanelObj
-		local layout = layoutParent:FindFirstChildWhichIsA("UIListLayout")
-		if layout then
-			layout.FillDirection = Enum.FillDirection.Vertical
-			layout.Padding = UDim.new(0, 10)
-			layout.VerticalAlignment = Enum.VerticalAlignment.Top
-			layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-		end
+		actionRow.Size = UDim2.new(0.61, 0, 0.07, 0)
+		actionRow.Position = UDim2.new(0.025, 0, 0.878, 0)
 	end
 end
 
@@ -246,6 +236,19 @@ safeInit("IncidentMapPanel", IncidentMapPanel.init)
 px.usePx()
 
 loadingScreen.bump("Building your world...")
+
+local bgGui = Instance.new("ScreenGui")
+bgGui.Name = "BitKaisenBg"
+bgGui.ResetOnSpawn = false
+bgGui.IgnoreGuiInset = true
+bgGui.DisplayOrder = 1
+bgGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+local bgFrame = Instance.new("Frame")
+bgFrame.Size = UDim2.fromScale(1, 1)
+bgFrame.BackgroundColor3 = theme.Bg
+bgFrame.BorderSizePixel = 0
+bgFrame.Parent = bgGui
+bgGui.Parent = playerGui
 
 vide.mount(function()
 	return BitKaisenGui()

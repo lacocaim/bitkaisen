@@ -48,12 +48,15 @@ local function showNextPopup()
 	if tone == "success" then
 		toneColor(theme.Green)
 		toneBgColor(TONE_BG.success)
+		if _G.BitKaisenPlaySFX then _G.BitKaisenPlaySFX("Success") end
 	elseif tone == "danger" or tone == "error" then
 		toneColor(theme.Red)
 		toneBgColor(TONE_BG.danger)
+		if _G.BitKaisenPlaySFX then _G.BitKaisenPlaySFX("Error") end
 	else
 		toneColor(theme.Purple)
 		toneBgColor(TONE_BG.default)
+		if _G.BitKaisenPlaySFX then _G.BitKaisenPlaySFX("Notification") end
 	end
 
 	isShowing(true)

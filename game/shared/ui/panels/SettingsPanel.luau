@@ -473,13 +473,16 @@ local function createClientSound(name, soundId, volume)
 end
 
 local clientSounds = {
-	Click = createClientSound("Click", "", 0.35),
+	Click = createClientSound("Click", "rbxassetid://138567614125924", 0.35),
 	Hover = createClientSound("Hover", "", 0.2),
 	Open = createClientSound("Open", "", 0.35),
 	Close = createClientSound("Close", "", 0.35),
-	Tick = createClientSound("Tick", "", 0.25),
-	Success = createClientSound("Success", "", 0.45),
-	Error = createClientSound("Error", "", 0.45),
+	Tick = createClientSound("Tick", "rbxassetid://112803970477077", 0.2),
+	Success = createClientSound("Success", "rbxassetid://5224155871", 0.45),
+	Error = createClientSound("Error", "rbxassetid://17208353912", 0.45),
+	Purchase = createClientSound("Purchase", "rbxassetid://111773238101465", 0.45),
+	Notification = createClientSound("Notification", "rbxassetid://139308638407157", 0.4),
+	Death = createClientSound("Death", "rbxassetid://132970652194118", 0.5),
 }
 
 local function playSFX(name)
@@ -1924,6 +1927,7 @@ end)
 MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(purchasePlayer, purchasedPassId, wasPurchased)
 	if purchasePlayer ~= player then return end
 	if not wasPurchased then return end
+	playSFX("Purchase")
 	if purchasedPassId == VIP_SORCERER_PASS_ID or purchasedPassId == EXTRA_SAVE_SLOTS_GAMEPASS_ID or purchasedPassId == LUCKY_BIRTH_GAMEPASS_ID or purchasedPassId == EXTRA_DOJO_STUDENTS_GAMEPASS_ID or purchasedPassId == DOUBLE_MONEY_GAMEPASS_ID or purchasedPassId == DOUBLE_TRAINING_GAMEPASS_ID or purchasedPassId == GOD_MODE_GAMEPASS_ID then
 		task.delay(0.5, function()
 			if isOpen and currentTab == "Saves" then
@@ -1967,6 +1971,7 @@ local function init()
 			closePanel()
 		end
 	end)
+	_G.BitKaisenPlaySFX = playSFX
 end
 
-return { init = init }
+return { init = init, playSFX = playSFX }

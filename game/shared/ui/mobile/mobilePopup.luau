@@ -49,6 +49,7 @@ function showNextPopup()
 	end
 
 	local data = table.remove(popupQueue, 1)
+	if _G.BitKaisenPlaySFX then _G.BitKaisenPlaySFX("Notification") end
 	if titleLabel then titleLabel.Text = tostring(data.Title or "EVENT") end
 	if bodyLabel then bodyLabel.Text = tostring(data.Body or "") end
 	if highlightLabel then highlightLabel.Text = tostring(data.Highlight or "") end

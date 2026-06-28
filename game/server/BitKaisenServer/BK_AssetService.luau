@@ -1393,7 +1393,9 @@ local function processAssetAction(player, actionId, assetId)
 		return
 
 	elseif string.sub(actionId, 1, 17) == "RecruitCandidate|" then
+		print("[DEBUG][Recruit] actionId='" .. tostring(actionId) .. "' assetId='" .. tostring(assetId) .. "'")
 		if assetId ~= "grand_dojo" then
+			print("[DEBUG][Recruit] FAIL: assetId is not grand_dojo, got: " .. tostring(assetId))
 			return
 		end
 

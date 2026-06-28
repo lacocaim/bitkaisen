@@ -4,7 +4,6 @@ local vide = require("@packages/vide")
 local container = require("@ui-components/core/container")
 local text = require("@ui-components/core/text")
 local stroke = require("@ui-components/core/stroke")
-local gradient = require("@ui-components/core/gradient")
 local theme = require("@ui/theme")
 local px = require("@ui/px")
 local uiState = require("@ui-state/uiState")
@@ -15,10 +14,8 @@ local derive = vide.derive
 local source = vide.source
 local indexes = vide.indexes
 
-local TWEEN_QUICK = TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-local HOVER_BG = Color3.fromRGB(25, 25, 32)
-local HOVER_STROKE = Color3.fromRGB(170, 58, 58)
-local HOVER_ACCENT = Color3.fromRGB(255, 90, 90)
+local TWEEN_QUICK = TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+local HOVER_BG = Color3.fromRGB(28, 28, 38)
 
 local function NavButton(entry: { id: string, label: string, color: Color3? })
 	local isActive = derive(function()
@@ -30,9 +27,6 @@ local function NavButton(entry: { id: string, label: string, color: Color3? })
 
 	local buttonRef: GuiObject = nil :: any
 	local strokeRef: UIStroke = nil :: any
-	local accentRef: GuiObject = nil :: any
-	local glowRef: Frame = nil :: any
-	local glowStrokeRef: UIStroke = nil :: any
 	local scaleRef: UIScale = nil :: any
 
 	local function applyVisualState()
@@ -42,79 +36,42 @@ local function NavButton(entry: { id: string, label: string, color: Color3? })
 		local active = isActive()
 
 		local targetBg = if active then theme.Panel3 elseif isHover then HOVER_BG else theme.Panel2
-		local targetStroke = if isHover then HOVER_STROKE else theme.Stroke
-		local targetAccent = if isHover then HOVER_ACCENT else (entry.color or theme.Red)
-		local targetScale = if isPress then (if isHover then 0.985 else 0.975) elseif isHover then 1.015 else 1
+		local targetScale = if isPress then 0.95 elseif isHover then 1.03 else 1
 
 		TweenService:Create(buttonRef, TWEEN_QUICK, { BackgroundColor3 = targetBg }):Play()
-		if strokeRef then
-			TweenService:Create(strokeRef, TWEEN_QUICK, { Color = targetStroke }):Play()
-		end
-		if accentRef then
-			TweenService:Create(accentRef, TWEEN_QUICK, { BackgroundColor3 = targetAccent }):Play()
-		end
-		if glowRef then
-			TweenService:Create(glowRef, TWEEN_QUICK, {
-				BackgroundTransparency = if isHover then 0.92 else 1,
-			}):Play()
-		end
-		if glowStrokeRef then
-			TweenService:Create(glowStrokeRef, TWEEN_QUICK, {
-				Transparency = if isHover then 0.35 else 1,
-				Thickness = if isHover then 2 else 1,
-			}):Play()
-		end
 		if scaleRef then
-			TweenService:Create(scaleRef, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-				Scale = targetScale,
-			}):Play()
+			TweenService:Create(scaleRef, TweenInfo.new(0.1, Enum.EasingStyle.Quad), { Scale = targetScale }):Play()
 		end
 	end
 
-	local theStroke = stroke { color = theme.Stroke }
+	local theStroke = create("UIStroke") {
+		Color = function()
+			return if isActive() or hovered() then (entry.color or theme.Red) else theme.Stroke
+		end,
+		Thickness = 1,
+	}
 	strokeRef = theStroke :: any
 
 	local theScale = create("UIScale") { Scale = 1 }
 	scaleRef = theScale
 
-	local theGlowStroke = create("UIStroke") {
-		Name = "GlowStroke",
-		Color = theme.RedSoft,
-		Thickness = 1,
-		Transparency = 1,
-	}
-	glowStrokeRef = theGlowStroke
-
-	local theGlow = create("Frame") {
-		Name = "HoverGlow",
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.new(0.5, 0, 0.5, 0),
-		Size = UDim2.new(1, 8, 1, 8),
-		BackgroundColor3 = theme.RedSoft,
-		BackgroundTransparency = 1,
+	local theAccent = create("Frame") {
+		Name = "Accent",
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.new(0, 7, 0.5, 0),
+		Size = UDim2.new(0, 3, 0, 12),
+		BackgroundColor3 = entry.color or theme.Red,
 		BorderSizePixel = 0,
-		ZIndex = 0,
-		create("UICorner") { CornerRadius = UDim.new(0, 12) },
-		theGlowStroke,
+		create("UICorner") { CornerRadius = UDim.new(1, 0) },
 	}
-	glowRef = theGlow
-
-	local theAccent = container {
-		name = "Accent",
-		w = 4, hs = 1, h = -14,
-		x = 8, y = 7,
-		color = entry.color or theme.Red,
-		corner = 999,
-	}
-	accentRef = theAccent :: any
 
 	local btn = container {
 		name = entry.id .. "Button",
-		ws = 0.86, h = px(42),
+		h = px(32),
 		color = function()
 			return isActive() and theme.Panel3 or theme.Panel2
 		end,
-		corner = 9,
+		corner = 7,
 		hover = function(state)
 			hovered(state)
 			if not state then pressed(false) end
@@ -127,18 +84,19 @@ local function NavButton(entry: { id: string, label: string, color: Color3? })
 		clicked = function()
 			pressed(false)
 			applyVisualState()
+			if _G.BitKaisenPlaySFX then _G.BitKaisenPlaySFX("Click") end
 			uiState.navigate(entry.id)
 		end,
+		create("UIFlexItem") { FlexMode = Enum.UIFlexMode.Fill },
 		theStroke,
 		theScale,
-		theGlow,
 		theAccent,
 		text {
 			text = entry.label,
 			color = function()
 				return if isActive() or hovered() then theme.Text else theme.SubText
 			end,
-			size = px(14),
+			size = px(18),
 			font = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.ExtraBold),
 			truncate = "end",
 			ws = 1, hs = 1,
@@ -150,44 +108,31 @@ local function NavButton(entry: { id: string, label: string, color: Color3? })
 end
 
 local function NavPanel()
-	return container {
-		name = "NavPanel",
-		ws = 0.30, hs = 0.28,
-		xs = 0.67, ys = 0.68,
-		color = theme.Panel,
-		corner = 12,
-		clips = true,
-		gradient { color = ColorSequence.new(theme.Panel, theme.Bg2), rotation = 90 },
-		stroke { color = theme.StrokeSoft },
+	return create("Frame") {
+		Name = "NavPanel",
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
 
-		create("ScrollingFrame") {
-			Name = "NavScroll",
-			Size = UDim2.fromScale(1, 1),
-			BackgroundTransparency = 1,
-			BorderSizePixel = 0,
-			ScrollBarThickness = 0,
-			AutomaticCanvasSize = Enum.AutomaticSize.Y,
-			CanvasSize = UDim2.new(0, 0, 0, 0),
-
-			create("UIListLayout") {
-				SortOrder = Enum.SortOrder.LayoutOrder,
-				Padding = px.udim(0, 10),
-				HorizontalAlignment = Enum.HorizontalAlignment.Center,
-				VerticalAlignment = Enum.VerticalAlignment.Center,
-			},
-
-			indexes(function()
-				local _ = navRegistry.version()
-				return navRegistry.getEntries()
-			end, function(value, index)
-				local entry = value()
-				return NavButton({
-					id = entry.id,
-					label = entry.label,
-					color = entry.color,
-				})
-			end),
+		create("UIListLayout") {
+			Name = "NavLayout",
+			FillDirection = Enum.FillDirection.Horizontal,
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			Padding = UDim.new(0, 5),
+			VerticalAlignment = Enum.VerticalAlignment.Center,
+			HorizontalAlignment = Enum.HorizontalAlignment.Left,
 		},
+
+		indexes(function()
+			local _ = navRegistry.version()
+			return navRegistry.getEntries()
+		end, function(value)
+			local entry = value()
+			return NavButton({
+				id = entry.id,
+				label = entry.label,
+				color = entry.color,
+			})
+		end),
 	}
 end
 

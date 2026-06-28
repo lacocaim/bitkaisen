@@ -545,6 +545,7 @@ local function init(playerGui: Instance)
 		end
 		isShowingDeath = true
 		lastDeathStats = stats
+		if _G.BitKaisenPlaySFX then _G.BitKaisenPlaySFX("Death") end
 
 		biographyLabel.Text = buildBiography(stats)
 		statsLabel.Text = "Age " .. tostring(stats.Age or 0)

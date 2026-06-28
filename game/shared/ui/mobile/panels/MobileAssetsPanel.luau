@@ -775,7 +775,7 @@ local function buildDojoRecruit(data)
 			size = UDim2.new(1, 0, 0, 48), color = theme.Green,
 			textColor = theme.Bg, textSize = 14, order = 5,
 			callback = function()
-				fireAssetAction("RecruitCandidate", tostring(candidate.Id or i))
+				fireAssetAction("RecruitCandidate|" .. tostring(candidate.Id or i), "grand_dojo")
 			end,
 		})
 		orderIndex += 1

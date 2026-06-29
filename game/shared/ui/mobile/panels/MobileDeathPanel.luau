@@ -74,6 +74,56 @@ local function buildBiography(stats)
 		.. generationLine
 end
 
+local function getRibbon(stats)
+	local age = tonumber(stats.Age) or 0
+	local grade = tostring(stats.Grade or "")
+	local rep = tonumber(stats.Reputation) or 0
+	local missions = tonumber(stats.MissionsCompleted) or 0
+	local isCurseUser = stats.IsCurseUser == true or stats.Path == "Curse User" or stats.Alignment == "Curse User"
+	local isCurseLife = tostring(stats.World or "") == "Cursed Spirit" or tostring(stats.Lineage or ""):find("Cursed")
+	local hasSpecialGrade = grade == "Special Grade"
+	local hasDomain = stats.DomainExpansion and stats.DomainExpansion ~= "None" and stats.DomainExpansion ~= ""
+	local hasRCT = stats.RCT == true or stats.HasRCT == true
+	local generation = tonumber(stats.Generation) or 1
+	local founded = stats.ClanFounded == true
+
+	if hasSpecialGrade and hasDomain and age >= 50 then
+		return "🏆 LEGEND OF THE CURSED WORLD", Color3.fromRGB(255, 200, 50)
+	elseif hasSpecialGrade and hasDomain then
+		return "👑 SPECIAL GRADE SORCERER", Color3.fromRGB(220, 160, 255)
+	elseif isCurseUser and grade == "Special Grade" then
+		return "☠️ CURSE USER KING", Color3.fromRGB(200, 60, 80)
+	elseif isCurseUser and rep < -50 then
+		return "💀 FEARED CURSE USER", Color3.fromRGB(180, 40, 60)
+	elseif isCurseUser then
+		return "🩸 CURSE USER", Color3.fromRGB(200, 80, 90)
+	elseif isCurseLife then
+		return "👁 CURSED SPIRIT", Color3.fromRGB(140, 80, 200)
+	elseif hasRCT and hasDomain then
+		return "⚡ ELITE JUJUTSU SORCERER", Color3.fromRGB(120, 200, 255)
+	elseif hasDomain then
+		return "🌀 DOMAIN USER", Color3.fromRGB(140, 120, 255)
+	elseif hasRCT then
+		return "✨ RCT PRACTITIONER", Color3.fromRGB(100, 220, 180)
+	elseif founded then
+		return "🏯 CLAN FOUNDER", Color3.fromRGB(255, 180, 60)
+	elseif generation >= 5 then
+		return "🔱 DEEP BLOODLINE", Color3.fromRGB(180, 140, 255)
+	elseif missions >= 100 then
+		return "⚔️ VETERAN SORCERER", Color3.fromRGB(120, 200, 140)
+	elseif grade == "Grade 1" or grade == "Semi-Grade 1" then
+		return "🎖 GRADE 1 SORCERER", Color3.fromRGB(100, 180, 255)
+	elseif age >= 80 then
+		return "🕰 LONG LIFE", Color3.fromRGB(160, 160, 180)
+	elseif age <= 18 then
+		return "🌱 LIFE CUT SHORT", Color3.fromRGB(180, 180, 200)
+	elseif rep >= 100 then
+		return "🌟 CELEBRATED SORCERER", Color3.fromRGB(255, 220, 80)
+	else
+		return "📜 ORDINARY LIFE", Color3.fromRGB(140, 140, 160)
+	end
+end
+
 local function getRCTReviveUses(stats)
 	if typeof(stats) ~= "table" then
 		return 0
@@ -193,12 +243,27 @@ local function init(playerGui: Instance)
 	subtitleLabel.ZIndex = 903
 	subtitleLabel.Parent = scroll
 
+	-- Ribbon
+	local ribbonLabel = Instance.new("TextLabel")
+	ribbonLabel.Name = "RibbonLabel"
+	ribbonLabel.Size = UDim2.new(1, 0, 0, 52)
+	ribbonLabel.TextWrapped = true
+	ribbonLabel.BackgroundTransparency = 1
+	ribbonLabel.Text = ""
+	ribbonLabel.TextColor3 = Color3.fromRGB(255, 200, 80)
+	ribbonLabel.TextSize = 13
+	ribbonLabel.Font = Enum.Font.GothamBlack
+	ribbonLabel.TextXAlignment = Enum.TextXAlignment.Center
+	ribbonLabel.LayoutOrder = 3
+	ribbonLabel.ZIndex = 903
+	ribbonLabel.Parent = scroll
+
 	-- Biography card
 	local bioCard = mc.mobileCard({
 		parent = scroll,
 		color = Color3.fromRGB(18, 18, 26),
 		accentColor = Color3.fromRGB(120, 35, 35),
-		order = 3,
+		order = 4,
 	})
 
 	local biographyLabel = Instance.new("TextLabel")
@@ -548,6 +613,22 @@ local function init(playerGui: Instance)
 		if _G.BitKaisenPlaySFX then _G.BitKaisenPlaySFX("Death") end
 
 		biographyLabel.Text = buildBiography(stats)
+
+		local ribbonText, ribbonColor = getRibbon(stats)
+		local karma = tonumber(stats.HiddenKarma) or 0
+		local karmaLabel = ""
+		if karma >= 60 then
+			karmaLabel = "\n✦ The cursed world remembers your light."
+		elseif karma >= 20 then
+			karmaLabel = "\n✦ You left the world a little better."
+		elseif karma <= -60 then
+			karmaLabel = "\n✦ Darkness followed you everywhere."
+		elseif karma <= -20 then
+			karmaLabel = "\n✦ The weight of your choices lingered."
+		end
+		ribbonLabel.Text = ribbonText .. karmaLabel
+		ribbonLabel.TextColor3 = ribbonColor
+
 		statsLabel.Text = "Age " .. tostring(stats.Age or 0)
 			.. "  •  Grade: " .. tostring(stats.Grade or "?")
 			.. "  •  CE: " .. tostring(stats.CursedEnergy or 0)

@@ -109,6 +109,12 @@ local CLAN_WAR_MEDIATION_PRODUCT_ID = 3605163954
 local CURSED_TOOL_SALVAGE_KIT_PRODUCT_ID = 3605164055
 local COMBAT_RECOVERY_KIT_PRODUCT_ID = 3605164164
 
+-- Summer Update: Time Skip developer products.
+-- >>> REPLACE 0s WITH REAL DEVELOPER PRODUCT IDs FROM THE CREATOR DASHBOARD <<<
+local TIME_SKIP_5_PRODUCT_ID  = 3607128993  -- R$75  — Skip 5 years
+local TIME_SKIP_10_PRODUCT_ID = 3607129012  -- R$149 — Skip 10 years
+local TIME_SKIP_25_PRODUCT_ID = 3607129036  -- R$299 — Skip 25 years
+
 local RCT_REVIVE_MAX_PER_LIFE = 2
 
 ----------------------------------------------------------------
@@ -370,6 +376,24 @@ local DEVELOPER_PRODUCTS = {
 	[COMBAT_RECOVERY_KIT_PRODUCT_ID] = {
 		Id = "combat_recovery_kit",
 		Name = "Combat Recovery Kit",
+	},
+
+	[TIME_SKIP_5_PRODUCT_ID] = {
+		Id = "time_skip_5",
+		Name = "Time Skip +5 Years",
+		Years = 5,
+	},
+
+	[TIME_SKIP_10_PRODUCT_ID] = {
+		Id = "time_skip_10",
+		Name = "Time Skip +10 Years",
+		Years = 10,
+	},
+
+	[TIME_SKIP_25_PRODUCT_ID] = {
+		Id = "time_skip_25",
+		Name = "Time Skip +25 Years",
+		Years = 25,
 	},
 }
 
@@ -1777,6 +1801,48 @@ local function grantGiftedGamePass(player, stats, productInfo, productId)
 	return true
 end
 
+local TIME_SKIP_MAX_AGE = 79 -- natural old age death starts at 80; block skipping into it
+
+local function grantTimeSkip(player, stats, years)
+	if not player or not stats then return false end
+	ensureExtraStats(stats)
+
+	if stats.Alive == false then
+		fireMajorPopup(player, "TIME SKIP", "You cannot skip time while dead.", "No active life", "Start a new life first.")
+		return true
+	end
+
+	local race = tostring(stats.Race or "")
+	local curseType = tostring(stats.CurseType or "")
+	local isCurse = stats.IsCurse == true
+		or race == "Cursed Spirit" or race == "Curse"
+		or curseType ~= "" and curseType ~= "None"
+	if isCurse then
+		fireMajorPopup(player, "TIME SKIP", "Cursed Spirits are not bound by human time.", "Cannot use on curse life", "Time Skip only works on human lives.")
+		return true
+	end
+
+	local currentAge = math.floor(tonumber(stats.Age) or 0)
+	if currentAge >= TIME_SKIP_MAX_AGE then
+		fireMajorPopup(player, "TIME SKIP", "You are already approaching the end of your natural lifespan.", "Too old to skip", "Time Skip cannot be used past age " .. TIME_SKIP_MAX_AGE .. ".")
+		return true
+	end
+
+	local yearsToSkip = math.min(years, TIME_SKIP_MAX_AGE - currentAge)
+	stats.Age = currentAge + yearsToSkip
+	stats.TimeSkipsUsed = (tonumber(stats.TimeSkipsUsed) or 0) + 1
+
+	fireMajorPopup(
+		player,
+		"TIME SKIP",
+		"The years blur past like pages in a book.",
+		"+" .. yearsToSkip .. " Years",
+		"You are now age " .. tostring(stats.Age) .. "."
+	)
+	fireLifeUpdate(player, stats, "<font color='#b388ff'><b>[ TIME SKIP ]</b></font> <b>+" .. yearsToSkip .. " years</b> — you are now age <b>" .. tostring(stats.Age) .. "</b>.")
+	return true
+end
+
 local function grantDeveloperProduct(player, productId)
 	local stats = getStats(player)
 
@@ -1859,6 +1925,15 @@ local function grantDeveloperProduct(player, productId)
 
 	elseif productInfo.Id == "combat_recovery_kit" then
 		grantCombatRecoveryKit(player, stats)
+
+	elseif productInfo.Id == "time_skip_5" then
+		grantTimeSkip(player, stats, 5)
+
+	elseif productInfo.Id == "time_skip_10" then
+		grantTimeSkip(player, stats, 10)
+
+	elseif productInfo.Id == "time_skip_25" then
+		grantTimeSkip(player, stats, 25)
 
 	elseif productInfo.Id == "elite_sorcerer_pack" then
 		grantEliteSorcererPack(player, stats)

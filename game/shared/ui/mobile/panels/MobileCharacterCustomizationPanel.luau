@@ -22,7 +22,7 @@ local OPTIONS = {
 
 	HairColor = {
 		"Black", "Brown", "Dark Brown", "Blonde", "White", "Silver",
-		"Red", "Blue-Black", "Ash Gray", "Pink", "Purple",
+		"Red", "Blue-Black", "Ash Gray", "Pink", "Purple", "Green", "Blue", "Orange",
 	},
 
 	EyeColor = {

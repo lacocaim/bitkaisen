@@ -364,6 +364,12 @@ function BK_WorldHistoryService.GetWorldHistoryPayload(stats)
 			ClanWarActive = clanWarState.Active == true,
 			ClanWarRival = clanWarState.RivalClanName,
 			ClanWarTension = clanWarState.Tension,
+			Fame = math.clamp(tonumber(stats.Fame) or 0, 0, 100),
+			Fear = math.clamp(tonumber(stats.Fear) or 0, 0, 100),
+			WorldAttention = math.clamp(tonumber(stats.WorldAttention) or 0, 0, 100),
+			WorldPressure = math.clamp(tonumber(stats.WorldPressure) or 0, 0, 100),
+			SocietyInfluence = math.clamp(tonumber(stats.SocietyInfluence) or 0, 0, 100),
+			WantedLevel = math.clamp(tonumber(stats.WantedLevel) or 0, 0, 100),
 		},
 	}
 end

@@ -1333,6 +1333,32 @@ BitKaisenTraits.Definitions = {
 		Description = "the outline of a future domain exists in your cursed technique.",
 		Modifiers = { MasteryGainMult = 1.10, CombatGainMult = 1.10, MissionSuccessBonus = 5, RiskMult = 0.96 } },
 
+	----------------------------------------------------------------
+	-- BIRTH TALENTS
+	-- Innate gifts rolled at birth, separate from personality traits.
+	-- These reflect natural potential beyond a cursed technique.
+	----------------------------------------------------------------
+
+	{ Id = "heavenly_physique", Name = "Heavenly Physique", Category = "BirthTalent", Rarity = "Uncommon", Weight = 30,
+		Description = "born with a body that holds cursed energy naturally. Higher base health and CE from the start.",
+		Modifiers = { StartingCEBonus = 10, StartingHealthBonus = 15, CEGainMult = 1.06 } },
+
+	{ Id = "battle_instinct", Name = "Battle Instinct", Category = "BirthTalent", Rarity = "Uncommon", Weight = 30,
+		Description = "born reading fights. Combat output and grade progress come faster than they should.",
+		Modifiers = { CombatGainMult = 1.18, GradeProgressMult = 1.14, RiskMult = 0.96 } },
+
+	{ Id = "cursed_bloodline", Name = "Cursed Bloodline", Category = "BirthTalent", Rarity = "Rare", Weight = 12,
+		Description = "cursed energy runs deep in this bloodline. CE grows faster and cursed techniques awaken more easily.",
+		Modifiers = { CEGainMult = 1.20, MasteryGainMult = 1.12, StartingCEBonus = 15 } },
+
+	{ Id = "prodigy", Name = "Prodigy", Category = "BirthTalent", Rarity = "Rare", Weight = 12,
+		Description = "a once-in-a-generation mind. Technique mastery and grade advancement happen at an unnatural pace.",
+		Modifiers = { MasteryGainMult = 1.25, GradeProgressMult = 1.20, SmartsGainMult = 1.15 } },
+
+	{ Id = "chosen_vessel", Name = "Chosen Vessel", Category = "BirthTalent", Rarity = "Legendary", Weight = 3,
+		Description = "born as a natural vessel. Cursed energy capacity is extraordinary and spirits are drawn to this body.",
+		Modifiers = { StartingCEBonus = 30, CEGainMult = 1.28, CombatGainMult = 1.15, RiskMult = 0.92 } },
+
 	-- Six Eyes: Gojo bloodline trait, not a cursed technique.
 	{ Id = "six_eyes", Name = "Six Eyes", Category = "Bloodline", Rarity = "Legendary", Weight = 1,
 		Description = "a rare Gojo bloodline trait that reads cursed energy with unnatural precision. Six Eyes is a trait, not a cursed technique.",
@@ -1619,6 +1645,7 @@ local function buildEligiblePool(stats, options)
 		if options.Rarity   and trait.Rarity   ~= options.Rarity   then allowed = false end
 		if minRarityRank > 0 and (RARITY_RANK[trait.Rarity] or 1) < minRarityRank then allowed = false end
 
+		if options.ExcludeCategory and trait.Category == options.ExcludeCategory then allowed = false end
 		if allowed and typeof(trait.OriginWhitelist) == "table" then
 			allowed = false
 
@@ -1678,7 +1705,22 @@ function BitKaisenTraits.RollBirthTraits(stats, luckyBirth)
 	if luckyBirth then
 		traitOptions = { MinRarity = "Rare" }
 	end
-	local traits = BitKaisenTraits.RollTraits(stats, nil, traitOptions)
+	-- exclude BirthTalent from the general pool (they get their own roll below)
+	local generalOptions = traitOptions and table.clone(traitOptions) or {}
+	generalOptions.ExcludeCategory = "BirthTalent"
+	local traits = BitKaisenTraits.RollTraits(stats, nil, generalOptions)
+
+	-- separate BirthTalent roll: 40% chance, higher if luckyBirth
+	local birthTalentChance = luckyBirth and 75 or 40
+	if math.random(1, 100) <= birthTalentChance then
+		local talentPool = buildEligiblePool(stats, { Category = "BirthTalent" })
+		if #talentPool > 0 then
+			local picked = weightedPick(talentPool)
+			if picked and not traitAlreadyPicked(traits, picked) then
+				table.insert(traits, picked.Id)
+			end
+		end
+	end
 
 	local origin = tostring(stats and (stats.Origin or stats.Clan) or "")
 	-- Death Painting is handled as lineage/origin now, not as a visible trait.
@@ -1707,14 +1749,15 @@ function BitKaisenTraits.RollBirthTraits(stats, luckyBirth)
 		end
 
 		if shouldAddSixEyes and not traitAlreadyPicked(traits, sixEyes) then
-			while #traits >= 4 do
+			while #traits >= 5 do
 				table.remove(traits, #traits)
 			end
 			table.insert(traits, sixEyes.Id)
 		end
 	end
 
-	while #traits > 4 do table.remove(traits, #traits) end
+	-- cap at 5 to allow 4 normal traits + 1 birth talent
+	while #traits > 5 do table.remove(traits, #traits) end
 
 	return traits
 end

@@ -10,34 +10,56 @@ local playerGui = player:WaitForChild("PlayerGui")
 
 local getWorldHistory = ReplicatedStorage:WaitForChild("GetWorldHistory")
 local getTitles = ReplicatedStorage:WaitForChild("GetTitles")
+local getPastLives = ReplicatedStorage:WaitForChild("GetPastLives", 5)
 
 local gui: ScreenGui
 local sheet: Frame
 local scroll: ScrollingFrame
 local headerFrame: Frame
 
+local RIBBON_COLORS = {
+	["LEGEND OF THE CURSED WORLD"] = Color3.fromRGB(255, 200, 50),
+	["SPECIAL GRADE SORCERER"] = Color3.fromRGB(220, 160, 255),
+	["CURSE USER KING"] = Color3.fromRGB(200, 60, 80),
+	["FEARED CURSE USER"] = Color3.fromRGB(180, 40, 60),
+	["CURSE USER"] = Color3.fromRGB(200, 80, 90),
+	["CURSED SPIRIT"] = Color3.fromRGB(140, 80, 200),
+	["ELITE JUJUTSU SORCERER"] = Color3.fromRGB(120, 200, 255),
+	["DOMAIN USER"] = Color3.fromRGB(140, 120, 255),
+	["RCT PRACTITIONER"] = Color3.fromRGB(100, 220, 180),
+	["CLAN FOUNDER"] = Color3.fromRGB(255, 180, 60),
+	["DEEP BLOODLINE"] = Color3.fromRGB(180, 140, 255),
+	["VETERAN SORCERER"] = Color3.fromRGB(120, 200, 140),
+	["GRADE 1 SORCERER"] = Color3.fromRGB(100, 180, 255),
+	["LONG LIFE"] = Color3.fromRGB(160, 160, 180),
+	["LIFE CUT SHORT"] = Color3.fromRGB(180, 180, 200),
+	["CELEBRATED SORCERER"] = Color3.fromRGB(255, 220, 80),
+	["ORDINARY LIFE"] = Color3.fromRGB(140, 140, 160),
+}
+
 local activeTab = "history"
 local historyTabBtn: TextButton
 local titlesTabBtn: TextButton
+local livesTabBtn: TextButton
+local influenceTabBtn: TextButton
 
 local function clearList()
 	for _, child in ipairs(scroll:GetChildren()) do
-		if child:IsA("GuiObject") then child:Destroy() end
+		if child:IsA("GuiObject") and child.Name ~= "TabBar" then child:Destroy() end
 	end
 end
 
 local function updateTabStyles()
-	if activeTab == "history" then
-		historyTabBtn.BackgroundColor3 = theme.Button
-		historyTabBtn.TextColor3 = theme.Gold
-		titlesTabBtn.BackgroundColor3 = theme.Panel
-		titlesTabBtn.TextColor3 = theme.SubText
-	else
-		historyTabBtn.BackgroundColor3 = theme.Panel
-		historyTabBtn.TextColor3 = theme.SubText
-		titlesTabBtn.BackgroundColor3 = theme.Button
-		titlesTabBtn.TextColor3 = theme.Gold
-	end
+	local active = { bg = theme.Button, text = theme.Gold }
+	local inactive = { bg = theme.Panel, text = theme.SubText }
+	local h = activeTab == "history" and active or inactive
+	local t = activeTab == "titles" and active or inactive
+	local l = activeTab == "lives" and active or inactive
+	local inf = activeTab == "influence" and active or inactive
+	historyTabBtn.BackgroundColor3 = h.bg; historyTabBtn.TextColor3 = h.text
+	titlesTabBtn.BackgroundColor3 = t.bg; titlesTabBtn.TextColor3 = t.text
+	if livesTabBtn then livesTabBtn.BackgroundColor3 = l.bg; livesTabBtn.TextColor3 = l.text end
+	if influenceTabBtn then influenceTabBtn.BackgroundColor3 = inf.bg; influenceTabBtn.TextColor3 = inf.text end
 end
 
 local function renderHistory()
@@ -183,29 +205,165 @@ local function renderTitles()
 	end
 end
 
+local function renderLives()
+	clearList()
+	activeTab = "lives"
+	updateTabStyles()
+
+	if not getPastLives then
+		local errCard = mc.mobileCard({ parent = scroll, order = 1 })
+		mc.mobileLabel({ parent = errCard, text = "Cemetery unavailable — rejoin to enable it.", size = 13, color = theme.SubText, order = 1 })
+		return
+	end
+
+	local ok, data = pcall(function() return getPastLives:InvokeServer() end)
+	if not ok or typeof(data) ~= "table" then
+		local errCard = mc.mobileCard({ parent = scroll, order = 1 })
+		mc.mobileLabel({ parent = errCard, text = "Could not load past lives.", size = 14, color = theme.Bad, font = Enum.Font.GothamBold, order = 1 })
+		return
+	end
+
+	local lives = data.PastLives or {}
+	if #lives == 0 then
+		local c = mc.mobileCard({ parent = scroll, order = 1 })
+		mc.mobileLabel({ parent = c, text = "⚰  No past lives recorded yet.", size = 14, color = theme.SubText, font = Enum.Font.GothamBold, order = 1 })
+		mc.mobileLabel({ parent = c, text = "Start a new life to begin your cemetery.", size = 13, color = theme.SubText, order = 2 })
+		return
+	end
+
+	for i, life in ipairs(lives) do
+		local ribColor = RIBBON_COLORS[life.Ribbon] or Color3.fromRGB(140, 140, 160)
+		local c = mc.mobileCard({ parent = scroll, order = i, accentColor = ribColor })
+		mc.mobileLabel({ parent = c, text = "⚰  " .. tostring(life.Name or "Unknown"), size = 16, color = theme.Text, font = Enum.Font.GothamBlack, order = 1 })
+		mc.mobileLabel({ parent = c, text = tostring(life.Ribbon or "ORDINARY LIFE"), size = 13, color = ribColor, font = Enum.Font.GothamBlack, order = 2 })
+		mc.mobileLabel({ parent = c, text = "Age " .. tostring(life.Age or 0) .. "  ·  " .. tostring(life.Grade or "Unranked") .. "  ·  " .. tostring(life.Clan or ""), size = 13, color = theme.SubText, order = 3 })
+		mc.mobileLabel({ parent = c, text = "Technique: " .. tostring(life.Technique or "None") .. "  ·  Missions: " .. tostring(life.Missions or 0), size = 12, color = theme.Muted, order = 4 })
+		mc.mobileLabel({ parent = c, text = "— #" .. tostring(i) .. " —", size = 11, color = theme.SubText, order = 5 })
+	end
+end
+
+local function makeMobileBar(parent, label, value, barColor, order)
+	local barCard = mc.mobileCard({ parent = parent, order = order, accentColor = barColor })
+
+	mc.mobileLabel({ parent = barCard, text = label, size = 13, color = theme.Text, font = Enum.Font.GothamMedium, order = 1 })
+	mc.mobileLabel({ parent = barCard, text = tostring(math.floor(value)) .. " / 100", size = 13, color = barColor, font = Enum.Font.GothamBlack, order = 2 })
+
+	local track = Instance.new("Frame")
+	track.Size = UDim2.new(1, -24, 0, 10)
+	track.Position = UDim2.new(0, 12, 0, 0)
+	track.BackgroundColor3 = Color3.fromRGB(30, 30, 42)
+	track.BorderSizePixel = 0
+	track.LayoutOrder = 3
+	track.Parent = barCard
+	local tc = Instance.new("UICorner"); tc.CornerRadius = UDim.new(0, 5); tc.Parent = track
+
+	local fill = Instance.new("Frame")
+	fill.Size = UDim2.new(math.clamp(value / 100, 0, 1), 0, 1, 0)
+	fill.BackgroundColor3 = barColor
+	fill.BorderSizePixel = 0
+	fill.ZIndex = track.ZIndex + 1
+	fill.Parent = track
+	local fc = Instance.new("UICorner"); fc.CornerRadius = UDim.new(0, 5); fc.Parent = fill
+end
+
+local function renderInfluence()
+	clearList()
+	activeTab = "influence"
+	updateTabStyles()
+
+	local ok, data = pcall(function() return getWorldHistory:InvokeServer() end)
+	if not ok or typeof(data) ~= "table" then
+		local errCard = mc.mobileCard({ parent = scroll, order = 1 })
+		mc.mobileLabel({ parent = errCard, text = "Could not load influence data.", size = 14, color = theme.Bad, font = Enum.Font.GothamBold, order = 1 })
+		return
+	end
+
+	local s = data.Summary or {}
+	local fame   = tonumber(s.Fame) or 0
+	local fear   = tonumber(s.Fear) or 0
+	local attn   = tonumber(s.WorldAttention) or 0
+	local press  = tonumber(s.WorldPressure) or 0
+	local soc    = tonumber(s.SocietyInfluence) or 0
+	local wanted = tonumber(s.WantedLevel) or 0
+
+	local descCard = mc.mobileCard({ parent = scroll, order = 1 })
+	mc.mobileLabel({ parent = descCard, text = "How the world perceives you.", size = 14, color = theme.Gold, font = Enum.Font.GothamBlack, order = 1 })
+	mc.mobileLabel({ parent = descCard, text = "Built from your actions, missions, and reputation.", size = 13, color = theme.SubText, order = 2 })
+
+	local fameCard = mc.mobileCard({ parent = scroll, order = 2, accentColor = theme.Gold })
+	mc.mobileLabel({ parent = fameCard, text = "⭐  FAME — " .. tostring(math.floor(fame)) .. " / 100", size = 15, color = theme.Gold, font = Enum.Font.GothamBlack, order = 1 })
+	mc.mobileLabel({ parent = fameCard, text = fame >= 75 and "Celebrated across the jujutsu world." or fame >= 40 and "Your name is known in sorcerer circles." or "Still unknown to most.", size = 13, color = theme.SubText, order = 2 })
+	local fameTrack = Instance.new("Frame")
+	fameTrack.Size = UDim2.new(1, -24, 0, 10)
+	fameTrack.Position = UDim2.new(0, 12, 0, 0)
+	fameTrack.BackgroundColor3 = Color3.fromRGB(30, 30, 42)
+	fameTrack.BorderSizePixel = 0
+	fameTrack.LayoutOrder = 3
+	fameTrack.Parent = fameCard
+	local ftc = Instance.new("UICorner"); ftc.CornerRadius = UDim.new(0, 5); ftc.Parent = fameTrack
+	local fameFill = Instance.new("Frame")
+	fameFill.Size = UDim2.new(math.clamp(fame / 100, 0, 1), 0, 1, 0)
+	fameFill.BackgroundColor3 = theme.Gold
+	fameFill.BorderSizePixel = 0
+	fameFill.ZIndex = fameTrack.ZIndex + 1
+	fameFill.Parent = fameTrack
+	local ffc = Instance.new("UICorner"); ffc.CornerRadius = UDim.new(0, 5); ffc.Parent = fameFill
+
+	local fearColor = Color3.fromRGB(220, 84, 90)
+	local fearCard = mc.mobileCard({ parent = scroll, order = 3, accentColor = fearColor })
+	mc.mobileLabel({ parent = fearCard, text = "💀  FEAR — " .. tostring(math.floor(fear)) .. " / 100", size = 15, color = fearColor, font = Enum.Font.GothamBlack, order = 1 })
+	mc.mobileLabel({ parent = fearCard, text = fear >= 75 and "Enemies flee when they hear your name." or fear >= 40 and "Your presence unsettles those who know you." or "You haven't yet made them afraid.", size = 13, color = theme.SubText, order = 2 })
+	local fearTrack = Instance.new("Frame")
+	fearTrack.Size = UDim2.new(1, -24, 0, 10)
+	fearTrack.Position = UDim2.new(0, 12, 0, 0)
+	fearTrack.BackgroundColor3 = Color3.fromRGB(30, 30, 42)
+	fearTrack.BorderSizePixel = 0
+	fearTrack.LayoutOrder = 3
+	fearTrack.Parent = fearCard
+	local frtc = Instance.new("UICorner"); frtc.CornerRadius = UDim.new(0, 5); frtc.Parent = fearTrack
+	local fearFill = Instance.new("Frame")
+	fearFill.Size = UDim2.new(math.clamp(fear / 100, 0, 1), 0, 1, 0)
+	fearFill.BackgroundColor3 = fearColor
+	fearFill.BorderSizePixel = 0
+	fearFill.ZIndex = fearTrack.ZIndex + 1
+	fearFill.Parent = fearTrack
+	local frc = Instance.new("UICorner"); frc.CornerRadius = UDim.new(0, 5); frc.Parent = fearFill
+
+	local blueColor = Color3.fromRGB(116, 190, 255)
+	local orangeColor = Color3.fromRGB(255, 160, 60)
+	local purpleColor = Color3.fromRGB(180, 130, 255)
+
+	local presCard = mc.mobileCard({ parent = scroll, order = 4 })
+	mc.mobileLabel({ parent = presCard, text = "WORLD PRESENCE", size = 14, color = theme.Text, font = Enum.Font.GothamBlack, order = 1 })
+	mc.mobileLabel({ parent = presCard, text = "World Attention: " .. tostring(math.floor(attn)), size = 13, color = blueColor, order = 2 })
+	mc.mobileLabel({ parent = presCard, text = "World Pressure: " .. tostring(math.floor(press)), size = 13, color = orangeColor, order = 3 })
+	mc.mobileLabel({ parent = presCard, text = "Society Influence: " .. tostring(math.floor(soc)), size = 13, color = purpleColor, order = 4 })
+	mc.mobileLabel({ parent = presCard, text = "Wanted Level: " .. tostring(math.floor(wanted)), size = 13, color = wanted >= 50 and fearColor or theme.SubText, order = 5 })
+end
+
 local function buildTabBar()
 	local tabBar = Instance.new("Frame")
 	tabBar.Name = "TabBar"
-	tabBar.Size = UDim2.new(1, -20, 0, 46)
+	tabBar.Size = UDim2.new(1, -20, 0, 100)
 	tabBar.Position = UDim2.new(0, 10, 0, 0)
 	tabBar.BackgroundTransparency = 1
 	tabBar.LayoutOrder = -1
 	tabBar.Parent = scroll
 
-	local tabLayout = Instance.new("UIListLayout")
-	tabLayout.FillDirection = Enum.FillDirection.Horizontal
-	tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	tabLayout.Padding = UDim.new(0, 8)
-	tabLayout.Parent = tabBar
+	local tabGrid = Instance.new("UIGridLayout")
+	tabGrid.CellSize = UDim2.new(0.5, -6, 0, 44)
+	tabGrid.CellPadding = UDim2.new(0, 8, 0, 8)
+	tabGrid.SortOrder = Enum.SortOrder.LayoutOrder
+	tabGrid.Parent = tabBar
 
 	historyTabBtn = mc.mobileButton({
 		parent = tabBar,
 		text = "HISTORY",
-		size = UDim2.new(0.5, -4, 0, 44),
+		size = UDim2.new(0, 0, 0, 0),
 		position = UDim2.new(0, 0, 0, 0),
 		color = theme.Button,
 		textColor = theme.Gold,
-		textSize = 14,
+		textSize = 13,
 		order = 1,
 		callback = function()
 			if activeTab ~= "history" then renderHistory() end
@@ -215,14 +373,42 @@ local function buildTabBar()
 	titlesTabBtn = mc.mobileButton({
 		parent = tabBar,
 		text = "TITLES",
-		size = UDim2.new(0.5, -4, 0, 44),
+		size = UDim2.new(0, 0, 0, 0),
 		position = UDim2.new(0, 0, 0, 0),
 		color = theme.Panel,
 		textColor = theme.SubText,
-		textSize = 14,
+		textSize = 13,
 		order = 2,
 		callback = function()
 			if activeTab ~= "titles" then renderTitles() end
+		end,
+	})
+
+	livesTabBtn = mc.mobileButton({
+		parent = tabBar,
+		text = "CEMETERY",
+		size = UDim2.new(0, 0, 0, 0),
+		position = UDim2.new(0, 0, 0, 0),
+		color = theme.Panel,
+		textColor = theme.SubText,
+		textSize = 13,
+		order = 3,
+		callback = function()
+			if activeTab ~= "lives" then renderLives() end
+		end,
+	})
+
+	influenceTabBtn = mc.mobileButton({
+		parent = tabBar,
+		text = "INFLUENCE",
+		size = UDim2.new(0, 0, 0, 0),
+		position = UDim2.new(0, 0, 0, 0),
+		color = theme.Panel,
+		textColor = theme.SubText,
+		textSize = 13,
+		order = 4,
+		callback = function()
+			if activeTab ~= "influence" then renderInfluence() end
 		end,
 	})
 end
@@ -230,7 +416,9 @@ end
 local function openPanel()
 	gui.Enabled = true
 	activeTab = "history"
-	buildTabBar()
+	if not scroll:FindFirstChild("TabBar") then
+		buildTabBar()
+	end
 	renderHistory()
 end
 

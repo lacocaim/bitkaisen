@@ -92,6 +92,10 @@ local CLAN_WAR_MEDIATION_PRODUCT_ID = 3605163954
 local CURSED_TOOL_SALVAGE_KIT_PRODUCT_ID = 3605164055
 local COMBAT_RECOVERY_KIT_PRODUCT_ID = 3605164164
 
+local TIME_SKIP_5_PRODUCT_ID  = 3607128993
+local TIME_SKIP_10_PRODUCT_ID = 3607129012
+local TIME_SKIP_25_PRODUCT_ID = 3607129036
+
 ----------------------------------------------------------------
 -- SETTINGS / THEME
 ----------------------------------------------------------------
@@ -177,6 +181,16 @@ local SHOP_CATEGORIES = {
 			{ Id = "combat_recovery_kit", Name = "Combat Recovery Kit", Subtitle = "Restore health and cursed energy after rough fights. Does not revive dead lives.", Kind = "Product", RobloxId = COMBAT_RECOVERY_KIT_PRODUCT_ID, PriceText = "R$ 99", Accent = THEME.Green },
 			{ Id = "recommendation_letter", Name = "Recommendation Letter", Subtitle = "Adds +1 teacher recommendation to your promotion record.", Kind = "Product", RobloxId = RECOMMENDATION_LETTER_PRODUCT_ID, PriceText = "R$ 129", Accent = THEME.Gold },
 			{ Id = "emergency_treatment", Name = "Emergency Treatment", Subtitle = "Restores your current life to full health if you are alive.", Kind = "Product", RobloxId = EMERGENCY_TREATMENT_PRODUCT_ID, PriceText = "R$ 49", Accent = THEME.Green },
+		},
+	},
+	{
+		Name = "Time Skip",
+		Subtitle = "Skip years instantly. Cannot be used on dead lives.",
+		Accent = THEME.Blue,
+		Items = {
+			{ Id = "time_skip_5",  Name = "Time Skip +5 Years",  Subtitle = "Skip 5 years into the future. Your character ages instantly — use wisely.",           Kind = "Product", RobloxId = TIME_SKIP_5_PRODUCT_ID,  PriceText = "R$ 75",  Accent = THEME.Blue },
+			{ Id = "time_skip_10", Name = "Time Skip +10 Years", Subtitle = "Skip 10 years into the future. Time waits for no sorcerer.",                          Kind = "Product", RobloxId = TIME_SKIP_10_PRODUCT_ID, PriceText = "R$ 149", Accent = THEME.Blue },
+			{ Id = "time_skip_25", Name = "Time Skip +25 Years", Subtitle = "Skip 25 years into the future. A quarter century, gone in an instant.",               Kind = "Product", RobloxId = TIME_SKIP_25_PRODUCT_ID, PriceText = "R$ 299", Accent = THEME.Purple },
 		},
 	},
 	{

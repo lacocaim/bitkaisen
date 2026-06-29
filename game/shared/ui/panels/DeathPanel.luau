@@ -86,7 +86,7 @@ local function init(playerGui: Instance)
 
 	local window = Instance.new("Frame")
 	window.Name = "DeathWindow"
-	window.Size = UDim2.new(0, 640, 0, 610)
+	window.Size = UDim2.new(0, 640, 0, 680)
 	window.AnchorPoint = Vector2.new(0.5, 0.5)
 	window.Position = UDim2.new(0.5, 0, 0.54, 0)
 	window.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
@@ -97,7 +97,7 @@ local function init(playerGui: Instance)
 	window.Parent = overlay
 	addCorner(window, 14)
 	addStroke(window, Color3.fromRGB(120, 35, 35), 2)
-	responsiveScale.attach(window, 640, 610)
+	responsiveScale.attach(window, 640, 680)
 
 	local title = Instance.new("TextLabel")
 	title.Name = "Title"
@@ -165,10 +165,25 @@ local function init(playerGui: Instance)
 	statsText.ZIndex = 902
 	statsText.Parent = window
 
+	local ribbonLabel = Instance.new("TextLabel")
+	ribbonLabel.Name = "RibbonLabel"
+	ribbonLabel.Size = UDim2.new(1, -70, 0, 70)
+	ribbonLabel.Position = UDim2.new(0, 35, 0, 318)
+	ribbonLabel.TextWrapped = true
+	ribbonLabel.BackgroundTransparency = 1
+	ribbonLabel.TextColor3 = Color3.fromRGB(255, 200, 80)
+	ribbonLabel.TextSize = 18
+	ribbonLabel.Font = Enum.Font.GothamBlack
+	ribbonLabel.TextXAlignment = Enum.TextXAlignment.Center
+	ribbonLabel.TextYAlignment = Enum.TextYAlignment.Center
+	ribbonLabel.Text = ""
+	ribbonLabel.ZIndex = 910
+	ribbonLabel.Parent = window
+
 	local buttonsHolder = Instance.new("Frame")
 	buttonsHolder.Name = "ButtonsHolder"
 	buttonsHolder.Size = UDim2.new(1, -70, 0, 260)
-	buttonsHolder.Position = UDim2.new(0, 35, 0, 330)
+	buttonsHolder.Position = UDim2.new(0, 35, 0, 390)
 	buttonsHolder.BackgroundTransparency = 1
 	buttonsHolder.ZIndex = 902
 	buttonsHolder.Parent = window
@@ -435,6 +450,56 @@ local function init(playerGui: Instance)
 		return viewport.X < 720 or viewport.Y < 620 or UserInputService.TouchEnabled
 	end
 
+	local function getRibbon(stats)
+		local age = tonumber(stats.Age) or 0
+		local grade = tostring(stats.Grade or "")
+		local rep = tonumber(stats.Reputation) or 0
+		local missions = tonumber(stats.MissionsCompleted) or 0
+		local isCurseUser = stats.IsCurseUser == true or stats.Path == "Curse User" or stats.Alignment == "Curse User"
+		local isCurseLife = tostring(stats.World or "") == "Cursed Spirit" or tostring(stats.Lineage or ""):find("Cursed")
+		local hasSpecialGrade = grade == "Special Grade"
+		local hasDomain = stats.DomainExpansion and stats.DomainExpansion ~= "None" and stats.DomainExpansion ~= ""
+		local hasRCT = stats.RCT == true or stats.HasRCT == true
+		local generation = tonumber(stats.Generation) or 1
+		local founded = stats.ClanFounded == true
+
+		if hasSpecialGrade and hasDomain and age >= 50 then
+			return "🏆 LEGEND OF THE CURSED WORLD", Color3.fromRGB(255, 200, 50)
+		elseif hasSpecialGrade and hasDomain then
+			return "👑 SPECIAL GRADE SORCERER", Color3.fromRGB(220, 160, 255)
+		elseif isCurseUser and grade == "Special Grade" then
+			return "☠️ CURSE USER KING", Color3.fromRGB(200, 60, 80)
+		elseif isCurseUser and rep < -50 then
+			return "💀 FEARED CURSE USER", Color3.fromRGB(180, 40, 60)
+		elseif isCurseUser then
+			return "🩸 CURSE USER", Color3.fromRGB(200, 80, 90)
+		elseif isCurseLife then
+			return "👁 CURSED SPIRIT", Color3.fromRGB(140, 80, 200)
+		elseif hasRCT and hasDomain then
+			return "⚡ ELITE JUJUTSU SORCERER", Color3.fromRGB(120, 200, 255)
+		elseif hasDomain then
+			return "🌀 DOMAIN USER", Color3.fromRGB(140, 120, 255)
+		elseif hasRCT then
+			return "✨ RCT PRACTITIONER", Color3.fromRGB(100, 220, 180)
+		elseif founded then
+			return "🏯 CLAN FOUNDER", Color3.fromRGB(255, 180, 60)
+		elseif generation >= 5 then
+			return "🔱 DEEP BLOODLINE", Color3.fromRGB(180, 140, 255)
+		elseif missions >= 100 then
+			return "⚔️ VETERAN SORCERER", Color3.fromRGB(120, 200, 140)
+		elseif grade == "Grade 1" or grade == "Semi-Grade 1" then
+			return "🎖 GRADE 1 SORCERER", Color3.fromRGB(100, 180, 255)
+		elseif age >= 80 then
+			return "🕰 LONG LIFE", Color3.fromRGB(160, 160, 180)
+		elseif age <= 18 then
+			return "🌱 LIFE CUT SHORT", Color3.fromRGB(180, 180, 200)
+		elseif rep >= 100 then
+			return "🌟 CELEBRATED SORCERER", Color3.fromRGB(255, 220, 80)
+		else
+			return "📜 ORDINARY LIFE", Color3.fromRGB(140, 140, 160)
+		end
+	end
+
 	local function buildBiography(stats)
 		local name = tostring(stats.Name or "Unknown")
 		local age = tostring(stats.Age or 0)
@@ -659,6 +724,21 @@ local function init(playerGui: Instance)
 		updateRCTReviveButtonForStats(stats)
 
 		biographyText.Text = buildBiography(stats)
+
+		local ribbonText, ribbonColor = getRibbon(stats)
+		local karma = tonumber(stats.HiddenKarma) or 0
+		local karmaLabel = ""
+		if karma >= 60 then
+			karmaLabel = "  ✦ The cursed world remembers your light."
+		elseif karma >= 20 then
+			karmaLabel = "  ✦ You left the world a little better."
+		elseif karma <= -60 then
+			karmaLabel = "  ✦ Darkness followed you everywhere."
+		elseif karma <= -20 then
+			karmaLabel = "  ✦ The weight of your choices lingered."
+		end
+		ribbonLabel.Text = ribbonText .. (karmaLabel ~= "" and ("\n" .. karmaLabel) or "")
+		ribbonLabel.TextColor3 = ribbonColor
 
 		statsText.Text =
 			"Age " .. tostring(stats.Age or 0) ..

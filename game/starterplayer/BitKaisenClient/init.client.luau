@@ -1,4 +1,9 @@
 local Players = game:GetService("Players")
+local GuiService = game:GetService("GuiService")
+local UserInputService = game:GetService("UserInputService")
+if UserInputService.GamepadEnabled then
+	GuiService.AutoSelectGuiEnabled = false
+end
 
 local experienceMode = require("@ui-state/experienceMode")
 local mode = experienceMode.resolve()
@@ -18,6 +23,7 @@ local AgeUpButton = require("@ui-components/shell/AgeUpButton")
 local NavPanel = require("@ui-components/shell/NavPanel")
 local NotificationHolder = require("@ui-components/shell/NotificationHolder")
 local MajorPopup = require("@ui-components/shell/MajorPopup")
+local WeeklyChallengesPanel = require("@ui-panels/WeeklyChallengesPanel")
 local MissionsPanel = require("@ui-panels/MissionsPanel")
 local ActivitiesPanel = require("@ui-panels/ActivitiesPanel")
 local RelationshipsPanel = require("@ui-panels/RelationshipsPanel")
@@ -67,6 +73,7 @@ if game:GetService("RunService"):IsStudio() then print("[BK] Booting Computer sh
 
 loadingScreen.bump("Registering navigation...")
 
+navRegistry.register({ id = "weekly", label = "WEEKLY", order = 0, color = theme.Blue })
 navRegistry.register({ id = "missions", label = "MISSIONS", order = 1, color = theme.Bad })
 navRegistry.register({ id = "activities", label = "ACTIVITIES", order = 2, color = theme.Orange })
 navRegistry.register({ id = "relationships", label = "RELATIONSHIPS", order = 3, color = Color3.fromRGB(255, 120, 190) })
@@ -212,6 +219,7 @@ end
 
 loadingScreen.bump("Preparing panels...")
 
+safeInit("WeeklyChallengesPanel", WeeklyChallengesPanel.init)
 safeInit("MissionsPanel", MissionsPanel.init)
 safeInit("ActivitiesPanel", ActivitiesPanel.init)
 safeInit("RelationshipsPanel", RelationshipsPanel.init)

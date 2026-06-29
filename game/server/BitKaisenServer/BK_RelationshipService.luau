@@ -14,7 +14,7 @@ local BK_WorldHistoryService = require(script.Parent:WaitForChild("BK_WorldHisto
 local BK_RelationshipService = {}
 local context = {}
 
-local RELATIONSHIP_PAYLOAD_CACHE_TTL = 20
+local RELATIONSHIP_PAYLOAD_CACHE_TTL = 60
 local relationshipPayloadCache = {}
 
 local function getRelationshipPayloadSignature(stats)

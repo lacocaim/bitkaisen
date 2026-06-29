@@ -102,6 +102,13 @@ local REMOTE_DEFINITIONS = {
 	-- Jujutsu Mentor
 	GetMentor = "RemoteFunction",
 	MentorAction = "RemoteEvent",
+
+	-- Cemetery of Lives
+	GetPastLives = "RemoteFunction",
+
+	-- Weekly Challenges
+	GetChallenges = "RemoteFunction",
+	ChallengeCompleted = "RemoteEvent",
 }
 
 local remoteCache = {}

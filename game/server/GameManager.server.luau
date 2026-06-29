@@ -7,7 +7,7 @@
 --   Do not blindly convert them back to local unless GameManager is split into modules.
 
 if _G.__GameManagerLoaded then
-	warn("[GameManager] Duplicate detected — skipping. Delete the old Studio copy.")
+	warn("[GameManager] Duplicate detected â€” skipping. Delete the old Studio copy.")
 	return
 end
 _G.__GameManagerLoaded = true
@@ -43,10 +43,18 @@ local BK_RivalService = require(ServerScriptService:WaitForChild("BitKaisenServe
 local BK_SchoolService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_SchoolService"))
 local BK_MentorService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_MentorService"))
 BK_WorldHistoryService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_WorldHistoryService"))
+local BK_ChallengeService
+do
+	local ok, result = pcall(function()
+		BK_ChallengeService = require(ServerScriptService:WaitForChild("BitKaisenServer", 5):WaitForChild("BK_ChallengeService", 5))
+	end)
+	if not ok then warn("[GameManager] BK_ChallengeService failed to load: " .. tostring(result)) end
+end
 BK_Remotes.Init()
 
 local updateLifeEvent = BK_Remotes.Get("UpdateLifeEvent")
 local showMajorPopup = BK_Remotes.Get("ShowMajorPopup")
+local challengeCompleted = BK_Remotes.Get("ChallengeCompleted")
 local showMissionSituation = BK_Remotes.Get("ShowMissionSituation")
 local missionChoice = BK_Remotes.Get("MissionChoice")
 local clearPendingMission = BK_Remotes.Get("ClearPendingMission")
@@ -590,8 +598,35 @@ function checkRateLimit(player, actionKey)
 	return true
 end
 
+local _lastChallengeCheck = {}
+
 function fireLifeUpdate(player, stats, message, forceResetLog)
 	updateLifeEvent:FireClient(player, stats, message, forceResetLog == true)
+	if not BK_ChallengeService or not stats then return end
+
+	local isNewLife = forceResetLog == true
+	local now = os.clock()
+	local lastCheck = _lastChallengeCheck[player.UserId] or 0
+
+	-- Only run stat checks every 3 seconds, but always run on new life
+	if not isNewLife and (now - lastCheck) < 3 then return end
+	_lastChallengeCheck[player.UserId] = now
+
+	local allNewly = {}
+	if isNewLife then
+		local ok, lifeNewly = pcall(BK_ChallengeService.OnNewLife, player)
+		if ok and lifeNewly then
+			for _, ch in ipairs(lifeNewly) do table.insert(allNewly, ch) end
+		end
+	end
+	local ok2, statNewly = pcall(BK_ChallengeService.CheckStats, player, stats)
+	if ok2 and statNewly then
+		for _, ch in ipairs(statNewly) do table.insert(allNewly, ch) end
+	end
+	for _, ch in ipairs(allNewly) do
+		fireMajorPopup(player, "CHALLENGE COMPLETE!", ch.Desc, ch.Title, "+" .. ch.Reward, "success")
+		challengeCompleted:FireClient(player, ch.Id)
+	end
 end
 
 function fireMajorPopup(player, title, body, highlight, footer, tone)
@@ -696,7 +731,7 @@ function applyTraitBuffsFromSnapshot(stats, before, context, relationship)
 	local gradeMult = BitKaisenTraits.GetModifier(stats, "GradeProgressMult", 1)
 	local combatMult = BitKaisenTraits.GetModifier(stats, "CombatGainMult", 1)
 	local happinessLossMult = BitKaisenTraits.GetModifier(stats, "HappinessLossMult", 1)
-	local riskMult = BitKaisenTraits.GetModifier(stats, "RiskMult", 1)
+	local riskMult = BitKaisenTraits.GetModifier(stats, "RiskMult", 1) * getKarmaRiskMod(stats)
 
 	if context == "Activity" or context == "Mission" then
 		local extra
@@ -928,6 +963,17 @@ function isOfficialJujutsuSorcerer(stats)
 	return isRegistered
 		and getGradeValue(gradeText) > 0
 		and string.sub(gradeText, 1, 13) ~= "Unregistered "
+end
+
+local function adjustKarma(stats, amount)
+	if not stats then return end
+	stats.HiddenKarma = math.clamp((tonumber(stats.HiddenKarma) or 0) + amount, -100, 100)
+end
+
+local function getKarmaRiskMod(stats)
+	local k = tonumber(stats and stats.HiddenKarma) or 0
+	-- karma +100 = 15% less risk, karma -100 = 20% more risk
+	return 1 - (k / 100) * 0.15 + (k < 0 and (-k / 100) * 0.05 or 0)
 end
 
 function isCurseUser(stats)
@@ -1648,7 +1694,7 @@ CHARACTER_CUSTOMIZATION_OPTIONS = {
 
 	HairColor = {
 		"Black", "Brown", "Dark Brown", "Blonde", "White", "Silver",
-		"Red", "Blue-Black", "Ash Gray", "Pink", "Purple"
+		"Red", "Blue-Black", "Ash Gray", "Pink", "Purple", "Green", "Blue", "Orange"
 	},
 
 	EyeColor = {
@@ -2339,6 +2385,7 @@ function ensureExtraStats(stats)
 	stats.UnregisteredIncidents = math.max(0, tonumber(stats.UnregisteredIncidents) or 0)
 	stats.CurseUserProgress = math.max(0, tonumber(stats.CurseUserProgress) or 0)
 	stats.CursedResentment = math.max(0, tonumber(stats.CursedResentment) or 0)
+	stats.HiddenKarma = math.clamp(tonumber(stats.HiddenKarma) or 0, -100, 100)
 	stats.CurseRebirthEligible = stats.CurseRebirthEligible == true
 	stats.CurseRebirthCount = math.max(0, tonumber(stats.CurseRebirthCount) or 0)
 	ensureCursedSpiritFlavor(stats)
@@ -3359,6 +3406,35 @@ function startAsCurseRebirth(player)
 	return true
 end
 
+local function getLifeRibbon(stats)
+	local age = tonumber(stats.Age) or 0
+	local grade = tostring(stats.Grade or "")
+	local rep = tonumber(stats.Reputation) or 0
+	local missions = tonumber(stats.MissionsCompleted) or 0
+	local isCU = stats.IsCurseUser == true or stats.Path == "Curse User" or stats.Alignment == "Curse User"
+	local isCL = tostring(stats.World or "") == "Cursed Spirit" or tostring(stats.Lineage or ""):find("Cursed")
+	local hasDomain = stats.DomainExpansion and stats.DomainExpansion ~= "None" and stats.DomainExpansion ~= ""
+	local hasRCT = stats.RCT == true or stats.HasRCT == true
+	local generation = tonumber(stats.Generation) or 1
+	if grade == "Special Grade" and hasDomain and age >= 50 then return "LEGEND OF THE CURSED WORLD"
+	elseif grade == "Special Grade" and hasDomain then return "SPECIAL GRADE SORCERER"
+	elseif isCU and grade == "Special Grade" then return "CURSE USER KING"
+	elseif isCU and rep < -50 then return "FEARED CURSE USER"
+	elseif isCU then return "CURSE USER"
+	elseif isCL then return "CURSED SPIRIT"
+	elseif hasRCT and hasDomain then return "ELITE JUJUTSU SORCERER"
+	elseif hasDomain then return "DOMAIN USER"
+	elseif hasRCT then return "RCT PRACTITIONER"
+	elseif stats.ClanFounded == true then return "CLAN FOUNDER"
+	elseif generation >= 5 then return "DEEP BLOODLINE"
+	elseif missions >= 100 then return "VETERAN SORCERER"
+	elseif grade == "Grade 1" or grade == "Semi-Grade 1" then return "GRADE 1 SORCERER"
+	elseif age >= 80 then return "LONG LIFE"
+	elseif age <= 18 then return "LIFE CUT SHORT"
+	elseif rep >= 100 then return "CELEBRATED SORCERER"
+	else return "ORDINARY LIFE" end
+end
+
 function startNewLife(player)
 	local oldStats = playerLives[player.UserId]
 	local preservedSettings = nil
@@ -3375,6 +3451,28 @@ function startNewLife(player)
 
 	if oldStats and oldStats.MetaProgress then
 		preservedMetaProgress = oldStats.MetaProgress
+	end
+
+	-- Save past life snapshot (max 10)
+	if oldStats and (tonumber(oldStats.Age) or 0) >= 1 then
+		preservedMetaProgress = preservedMetaProgress or {}
+		preservedMetaProgress.PastLives = preservedMetaProgress.PastLives or {}
+		local snapshot = {
+			Name = tostring(oldStats.Name or "Unknown"),
+			Clan = tostring(oldStats.Clan or oldStats.FamilyName or ""),
+			Age = tonumber(oldStats.Age) or 0,
+			Grade = tostring(oldStats.Grade or "Unranked"),
+			Technique = tostring(oldStats.Technique or "None"),
+			Missions = tonumber(oldStats.MissionsCompleted) or 0,
+			Reputation = tonumber(oldStats.Reputation) or 0,
+			Ribbon = getLifeRibbon(oldStats),
+			Generation = tonumber(oldStats.Generation) or 1,
+			Timestamp = os.time(),
+		}
+		table.insert(preservedMetaProgress.PastLives, 1, snapshot)
+		if #preservedMetaProgress.PastLives > 10 then
+			table.remove(preservedMetaProgress.PastLives, 11)
+		end
 	end
 
 	pendingMissions[player.UserId] = nil
@@ -3655,7 +3753,7 @@ function grantGroupJoinReward(player, stats)
 		player,
 		"GROUP REWARD",
 		"Thank you for being part of the BitKaisen community.",
-		"+$10,000 • +15 Reputation • +25 Health",
+		"+$10,000 â€¢ +15 Reputation â€¢ +25 Health",
 		"This is a one-time reward. Rejoining will not grant it again."
 	)
 
@@ -6672,13 +6770,13 @@ function registerCurseUserMissions()
 		end
 
 		mission.RewardText = mission.RewardText or (
-			"Choice rewards • $" ..
+			"Choice rewards â€¢ $" ..
 				tostring(mission.RewardMoney or 0) ..
-				" • CE +" ..
+				" â€¢ CE +" ..
 				tostring(mission.RewardCE or 0) ..
-				" • " ..
+				" â€¢ " ..
 				repText ..
-				" • Underground Progress"
+				" â€¢ Underground Progress"
 		)
 
 		table.insert(CURSE_USER_MISSIONS, mission)
@@ -7961,6 +8059,7 @@ function resolveVesselEscortDialogue(player, stats, option)
 		stats.Happiness = math.clamp((stats.Happiness or 100) - 8, 0, 100)
 		stats.Reputation = (stats.Reputation or 0 - 8)
 		stats.MissionsFailed = (stats.MissionsFailed or 0) + 1
+		adjustKarma(stats, -2)
 
 		resultText = opening .. "\n\nThe assassin broke through your guard. You survived, but the escort collapsed and the higher-ups lost confidence in you.\nPenalties: -8 Reputation, Health damage, +1 Mission Failed."
 
@@ -8650,7 +8749,7 @@ function resolveCurseSorcererAttackChoice(player, stats, pending, option)
 			stats.CurseEvolutionProgress = math.max(0, (stats.CurseEvolutionProgress or 0) + math.random(8, 14))
 			reduceCurseHunger(stats, math.random(10, 22))
 			result ..= "\nYou fought them directly and overwhelmed them. Your threat level rose."
-			result ..= "\nRewards: <b>+" .. tostring(ceGain) .. " CE</b> • <b>+" .. tostring(threatGain) .. " Threat</b> • Sorcerers Killed: <b>" .. tostring(stats.SorcerersKilled) .. "</b>."
+			result ..= "\nRewards: <b>+" .. tostring(ceGain) .. " CE</b> â€¢ <b>+" .. tostring(threatGain) .. " Threat</b> â€¢ Sorcerers Killed: <b>" .. tostring(stats.SorcerersKilled) .. "</b>."
 		elseif gap >= 10 then
 			local ceGain = math.random(10, 22)
 			local threatGain = math.random(5, 10)
@@ -8662,20 +8761,20 @@ function resolveCurseSorcererAttackChoice(player, stats, pending, option)
 			reduceCurseHunger(stats, math.random(8, 16))
 			stats.Health = math.clamp((stats.Health or 100) - damage, 0, 100)
 			result ..= "\nYou won, but the sorcerer forced a real fight before falling."
-			result ..= "\nRewards: <b>+" .. tostring(ceGain) .. " CE</b> • <b>+" .. tostring(threatGain) .. " Threat</b> • Health <b>-" .. tostring(damage) .. "</b>."
+			result ..= "\nRewards: <b>+" .. tostring(ceGain) .. " CE</b> â€¢ <b>+" .. tostring(threatGain) .. " Threat</b> â€¢ Health <b>-" .. tostring(damage) .. "</b>."
 		elseif gap >= -25 then
 			local damage = math.random(14, 28)
 			stats.Health = math.clamp((stats.Health or 100) - damage, 0, 100)
 			stats.CurseThreat = math.max(0, (stats.CurseThreat or 0) + math.random(3, 8))
 			stats.HuntersEscaped = (tonumber(stats.HuntersEscaped) or 0) + 1
 			result ..= "\nThe fight tore through " .. territory .. ", but neither side finished it cleanly. " .. hunterName .. " survived and reported your existence."
-			result ..= "\nResult: Health <b>-" .. tostring(damage) .. "</b> • Exorcism Risk increased."
+			result ..= "\nResult: Health <b>-" .. tostring(damage) .. "</b> â€¢ Exorcism Risk increased."
 		elseif gap >= -70 then
 			local damage = math.random(25, 45)
 			stats.Health = math.clamp((stats.Health or 100) - damage, 0, 100)
 			stats.ExorcismRisk = math.clamp((stats.ExorcismRisk or 0) + math.random(8, 16), 0, 100)
 			result ..= "\nThe sorcerer nearly exorcised you. You survived, but your cursed body was pushed close to collapse."
-			result ..= "\nResult: Health <b>-" .. tostring(damage) .. "</b> • Exorcism Risk increased sharply."
+			result ..= "\nResult: Health <b>-" .. tostring(damage) .. "</b> â€¢ Exorcism Risk increased sharply."
 		else
 			stats.Health = 0
 			stats.Alive = false
@@ -8717,14 +8816,14 @@ function resolveCurseSorcererAttackChoice(player, stats, pending, option)
 			stats.SorcerersKilled = (stats.SorcerersKilled or 0) + 1
 			stats.CurseEvolutionProgress = math.max(0, (stats.CurseEvolutionProgress or 0) + math.random(8, 15))
 			result ..= "\nYou struck first and ended the hunt before the sorcerer could control the fight."
-			result ..= "\nRewards: <b>+" .. tostring(ceGain) .. " CE</b> • <b>+" .. tostring(threatGain) .. " Threat</b>."
+			result ..= "\nRewards: <b>+" .. tostring(ceGain) .. " CE</b> â€¢ <b>+" .. tostring(threatGain) .. " Threat</b>."
 		elseif gap >= -20 then
 			local damage = math.random(10, 24)
 			local threatGain = math.random(4, 9)
 			stats.Health = math.clamp((stats.Health or 100) - damage, 0, 100)
 			stats.CurseThreat = math.max(0, (stats.CurseThreat or 0) + threatGain)
 			result ..= "\nYour ambush disrupted the sorcerer, but they survived long enough to wound you before retreating."
-			result ..= "\nResult: Health <b>-" .. tostring(damage) .. "</b> • Threat <b>+" .. tostring(threatGain) .. "</b>."
+			result ..= "\nResult: Health <b>-" .. tostring(damage) .. "</b> â€¢ Threat <b>+" .. tostring(threatGain) .. "</b>."
 		else
 			local damage = math.random(22, 40)
 			stats.Health = math.clamp((stats.Health or 100) - damage, 0, 100)
@@ -8743,7 +8842,7 @@ function resolveCurseSorcererAttackChoice(player, stats, pending, option)
 		result ..= "\nYou fled before the sorcerer could pin you down. You survived, but your presence looked weaker."
 		result ..= "\nResult: Threat <b>-" .. tostring(threatDrop) .. "</b>"
 		if damage > 0 then
-			result ..= " • Health <b>-" .. tostring(damage) .. "</b>"
+			result ..= " â€¢ Health <b>-" .. tostring(damage) .. "</b>"
 		end
 		result ..= "."
 	end
@@ -8848,7 +8947,7 @@ function resolvePendingOutsideDojoApplication(player, stats)
 			"DOJO ACCEPTED",
 			"Six months after applying, your letter finally came back. You were accepted into " .. dojoName .. ".",
 			dojoName,
-			"Sensei: " .. senseiName .. " • " .. senseiGrade
+			"Sensei: " .. senseiName .. " â€¢ " .. senseiGrade
 		)
 
 		return "<font color='#7ee787'><b>[ DOJO ACCEPTED ]</b></font> You were accepted into <b>" .. dojoName .. "</b>. Your sensei is <b>" .. senseiName .. "</b> (" .. senseiGrade .. ", age " .. tostring(senseiAge) .. "). Open the Grand Dojo menu to train with your new dojo."
@@ -8920,6 +9019,26 @@ function ageUp(player)
 		end
 		if (tonumber(stats.WantedLevel) or 0) >= 3 then
 			addCursedResentment(stats, math.random(1, 2))
+		end
+	end
+
+	-- Hidden karma drift each age tick
+	do
+		local rep = tonumber(stats.Reputation) or 0
+		local happiness = tonumber(stats.Happiness) or 100
+		if isCurseUser(stats) then
+			adjustKarma(stats, -1)
+		elseif isCurseLife(stats) then
+			adjustKarma(stats, -1)
+		elseif rep >= 50 then
+			adjustKarma(stats, 1)
+		elseif rep < -20 then
+			adjustKarma(stats, -1)
+		end
+		if happiness >= 80 then
+			adjustKarma(stats, 1)
+		elseif happiness <= 20 then
+			adjustKarma(stats, -1)
 		end
 	end
 
@@ -9037,7 +9156,7 @@ function ageUp(player)
 					player,
 					"ERA SHIFT",
 					"Your life has lasted long enough for history itself to change around you.",
-					tostring(stats.PreviousEra or "Unknown Era") .. " → " .. tostring(stats.CurrentEra or stats.Era or "Modern Era"),
+					tostring(stats.PreviousEra or "Unknown Era") .. " â†’ " .. tostring(stats.CurrentEra or stats.Era or "Modern Era"),
 					"Era shifts can change future event flavor, society pressure, and long-term cursed history."
 				)
 			end
@@ -9220,7 +9339,10 @@ function ageUp(player)
 
 		local hasAwakened = (stats.CursedTechnique and stats.CursedTechnique ~= "None") or (stats.TechniqueAwakened == true)
 		local isUnreg = isUnregisteredSorcerer(stats)
-		if (hasAwakened or isUnreg) and not isCurseLife(stats) and not isCurseUser(stats) and not stats.InJujutsuHigh then
+		local hasGoRogue = ownsGoRoguePass(player) or stats.HasGoRoguePass == true
+		local era = tostring(stats.Era or "Modern Era")
+		local jjhEraAllowed = era == "Modern Era" or era == "Collapse Era"
+		if (hasAwakened or isUnreg) and not isCurseLife(stats) and not isCurseUser(stats) and not stats.InJujutsuHigh and not hasGoRogue and jjhEraAllowed then
 			local enrollMsg, enrolled = BK_ActivityService.EnrollInJujutsuHigh(player, stats)
 			if enrolled then
 				logMessage = logMessage .. "\n" .. "Your cursed energy caught the attention of recruiters at graduation. " .. enrollMsg
@@ -9240,7 +9362,7 @@ function ageUp(player)
 			player,
 			"ERA SHIFT",
 			"Your life has lasted long enough for history itself to change around you.",
-			tostring(stats.PreviousEra or "Unknown Era") .. " → " .. tostring(stats.CurrentEra or stats.Era or "Modern Era"),
+			tostring(stats.PreviousEra or "Unknown Era") .. " â†’ " .. tostring(stats.CurrentEra or stats.Era or "Modern Era"),
 			"Era shifts can change future event flavor, society pressure, and long-term cursed history."
 		)
 	end
@@ -9510,6 +9632,7 @@ function resolveMission(player, stats, missionData, choiceOption)
 		if stats.Health <= 0 then
 			stats.Alive = false
 			stats.MissionsFailed += 1
+			adjustKarma(stats, -3)
 			logMessage = logMessage .. "\nYou died on the mission."
 			fireLifeUpdate(player, stats, logMessage)
 			saveStats(player)
@@ -9555,6 +9678,28 @@ function resolveMission(player, stats, missionData, choiceOption)
 		stats.Money += math.floor((missionData.RewardMoney or 0) * smartBonus * ((combatResult and combatResult.RewardMoneyMult) or 1) * missionInvestorMult * doubleMoneyMult * vipMoneyMult)
 		stats.Reputation += math.floor((missionData.RewardRep or 0) * smartBonus * ((combatResult and combatResult.RewardRepMult) or 1) * missionInvestorMult)
 		stats.MissionsCompleted += 1
+		if BK_ChallengeService then
+			local function fireChallengeEvent(evType, evData)
+				local ok, newly = pcall(BK_ChallengeService.OnEvent, player, evType, evData or {})
+				if ok and newly then
+					for _, ch in ipairs(newly) do
+						fireMajorPopup(player, "CHALLENGE COMPLETE!", ch.Desc, ch.Title, "+" .. ch.Reward, "success")
+						challengeCompleted:FireClient(player, ch.Id)
+					end
+				end
+			end
+			fireChallengeEvent("combat_win", {})
+			local healthAfter = tonumber(stats.Health) or 100
+			if healthAfter < 20 then
+				fireChallengeEvent("combat_survive_low_hp", {})
+			end
+			local mGrade = tostring(missionData and missionData.Grade or "")
+			if mGrade:find("Special") then
+				fireChallengeEvent("mission_complete", { rank = "Special" })
+			elseif mGrade == "Grade 1" or mGrade:find("Grade 1") then
+				fireChallengeEvent("mission_complete", { rank = "A" })
+			end
+		end
 		stats.Happiness = math.clamp((stats.Happiness or 100) + 8, 0, 100)
 		stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + (combatResult.MasteryGain or 0), 0, 100)
 		if (combatResult.HealthDamage or 0) > 0 then
@@ -9652,6 +9797,7 @@ function resolveMission(player, stats, missionData, choiceOption)
 		stats.Health = math.clamp((stats.Health or 100) - actualDamage, 0, 100)
 		stats.Happiness = math.clamp((stats.Happiness or 100) - 15, 0, 100)
 		stats.MissionsFailed += 1
+		adjustKarma(stats, -2)
 		stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + ((combatResult and combatResult.MasteryGain) or 0), 0, 100)
 		local missionFailRepNote = adjustWorldReputation(stats, 0, math.random(0, 2), 0)
 
@@ -9840,6 +9986,19 @@ getTitles.OnServerInvoke = function(player)
 	local stats = playerLives[player.UserId]
 	if not stats then return { Titles = {} } end
 	return BK_WorldHistoryService.GetTitlesPayload(stats)
+end
+
+local getPastLives = BK_Remotes.Get("GetPastLives")
+getPastLives.OnServerInvoke = function(player)
+	local stats = playerLives[player.UserId]
+	if not stats or not stats.MetaProgress then return { PastLives = {} } end
+	return { PastLives = stats.MetaProgress.PastLives or {} }
+end
+
+local getChallenges = BK_Remotes.Get("GetChallenges")
+getChallenges.OnServerInvoke = function(player)
+	if not BK_ChallengeService then return { Challenges = {}, ResetsIn = 0 } end
+	return BK_ChallengeService.GetChallengesPayload(player)
 end
 
 local DEV_TOOLS_TESTING_PLACE_ID = 104206065947170
@@ -10095,6 +10254,7 @@ missionChoice.OnServerEvent:Connect(function(player, optionIndex)
 		applyMorality(stats, option.Morality or 0)
 
 		stats.MissionsCompleted = (stats.MissionsCompleted or 0) + 1
+		adjustKarma(stats, isCurseUser(stats) and -1 or 2)
 
 		local progressGain = tonumber((option.Effects or {}).CurseUserProgress) or tonumber(mission and mission.RewardCE) or 8
 		local effects = option.Effects or {}
@@ -10132,7 +10292,7 @@ missionChoice.OnServerEvent:Connect(function(player, optionIndex)
 			table.insert(rewardParts, "Underground Progress +" .. tostring(progressGain))
 		end
 
-		local rewardSummary = "Rewards: " .. table.concat(rewardParts, " • ")
+		local rewardSummary = "Rewards: " .. table.concat(rewardParts, " â€¢ ")
 		if #rewardParts <= 0 then
 			rewardSummary = "Rewards: None"
 		end
@@ -10408,7 +10568,7 @@ claimGroupJoinReward.OnServerEvent:Connect(function(player, membershipStatus)
 	end
 
 	if not verified then
-		warn("[GameManager] Group join reward denied for " .. tostring(player.Name) .. " — not in group.")
+		warn("[GameManager] Group join reward denied for " .. tostring(player.Name) .. " â€” not in group.")
 		return
 	end
 

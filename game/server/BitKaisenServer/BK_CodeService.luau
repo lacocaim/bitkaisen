@@ -59,77 +59,64 @@ end
 local BitKaisenSaveSystem = {}
 
 local CODE_ORDER = {
-	"UPDATE18",
-	"SHOPOVERHAUL",
-	"VIPSORCERER",
-	"BINDINGVOW",
-	"SIXEYES",
+	"SUMMERUPDATE",
+	"CURSESEASON",
+	"DOMAINOPENED",
+	"SHADOWTHREAD",
 }
 
 local CODE_DEFINITIONS = {
 
-	UPDATE18 = {
-		Name = "Update18",
-		Description = "Update 18 celebration. Welcome to the new era.",
-		RewardText = "+$25,000 | +150 CE | +15 Mastery | +15 Rep | +15 Happiness",
+	SUMMERUPDATE = {
+		Name = "SummerUpdate",
+		Description = "Summer is here. The cursed world never rests.",
+		RewardText = "+$25,000 | +120 CE | +12 Mastery | +12 Rep | +12 Happiness",
 		Grant = function(stats)
 			stats.Money = (stats.Money or 0) + 25000
-			stats.CursedEnergy = (stats.CursedEnergy or 0) + 150
-			stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + 15, 0, 100)
-			stats.Reputation = (stats.Reputation or 0) + 15
-			stats.Happiness = math.clamp((stats.Happiness or 100) + 15, 0, 100)
-			return "+$25,000 Money, +150 Cursed Energy, +15 Technique Mastery, +15 Reputation, and +15 Happiness"
+			stats.CursedEnergy = (stats.CursedEnergy or 0) + 120
+			stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + 12, 0, 100)
+			stats.Reputation = (stats.Reputation or 0) + 12
+			stats.Happiness = math.clamp((stats.Happiness or 100) + 12, 0, 100)
+			return "+$25,000 Money, +120 Cursed Energy, +12 Technique Mastery, +12 Reputation, and +12 Happiness"
 		end
 	},
 
-	SHOPOVERHAUL = {
-		Name = "ShopOverhaul",
-		Description = "The shop is reborn.",
-		RewardText = "+$30,000 | +100 CE | +10 Rep",
-		Grant = function(stats)
-			stats.Money = (stats.Money or 0) + 30000
-			stats.CursedEnergy = (stats.CursedEnergy or 0) + 100
-			stats.Reputation = (stats.Reputation or 0) + 10
-			return "+$30,000 Money, +100 Cursed Energy, and +10 Reputation"
-		end
-	},
-
-	VIPSORCERER = {
-		Name = "VipSorcerer",
-		Description = "A code for the elite.",
-		RewardText = "+200 CE | +20 Mastery | Max Health | Max Happiness",
-		Grant = function(stats)
-			stats.CursedEnergy = (stats.CursedEnergy or 0) + 200
-			stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + 20, 0, 100)
-			stats.Health = 100
-			stats.Happiness = 100
-			return "+200 Cursed Energy, +20 Technique Mastery, Health restored to 100, and Happiness restored to 100"
-		end
-	},
-
-	BINDINGVOW = {
-		Name = "BindingVow",
-		Description = "The vow is sealed.",
-		RewardText = "+$15,000 | +100 CE | +15 Strength | +10 Rep",
+	CURSESEASON = {
+		Name = "CurseSeason",
+		Description = "The season of curses begins.",
+		RewardText = "+$15,000 | +80 CE | +10 Strength | +10 Rep",
 		Grant = function(stats)
 			stats.Money = (stats.Money or 0) + 15000
-			stats.CursedEnergy = (stats.CursedEnergy or 0) + 100
-			stats.Strength = math.clamp((stats.Strength or 0) + 15, 0, 100)
+			stats.CursedEnergy = (stats.CursedEnergy or 0) + 80
+			stats.Strength = math.clamp((stats.Strength or 0) + 10, 0, 100)
 			stats.Reputation = (stats.Reputation or 0) + 10
-			return "+$15,000 Money, +100 Cursed Energy, +15 Strength, and +10 Reputation"
+			return "+$15,000 Money, +80 Cursed Energy, +10 Strength, and +10 Reputation"
 		end
 	},
 
-	SIXEYES = {
-		Name = "SixEyes",
-		Description = "A hidden code for the dedicated.",
-		RewardText = "+$75,000 | +300 CE | +20 Mastery | +20 Rep",
+	DOMAINOPENED = {
+		Name = "DomainOpened",
+		Description = "Your domain expands. Rest and recover.",
+		RewardText = "+200 CE | +15 Mastery | Max Health | Max Happiness",
 		Grant = function(stats)
-			stats.Money = (stats.Money or 0) + 75000
-			stats.CursedEnergy = (stats.CursedEnergy or 0) + 300
-			stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + 20, 0, 100)
-			stats.Reputation = (stats.Reputation or 0) + 20
-			return "+$75,000 Money, +300 Cursed Energy, +20 Technique Mastery, and +20 Reputation"
+			stats.CursedEnergy = (stats.CursedEnergy or 0) + 200
+			stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + 15, 0, 100)
+			stats.Health = 100
+			stats.Happiness = 100
+			return "+200 Cursed Energy, +15 Technique Mastery, Health restored to 100, and Happiness restored to 100"
+		end
+	},
+
+	SHADOWTHREAD = {
+		Name = "ShadowThread",
+		Description = "A hidden code for those who were there from the start.",
+		RewardText = "+$60,000 | +200 CE | +15 Mastery | +15 Rep",
+		Grant = function(stats)
+			stats.Money = (stats.Money or 0) + 60000
+			stats.CursedEnergy = (stats.CursedEnergy or 0) + 200
+			stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + 15, 0, 100)
+			stats.Reputation = (stats.Reputation or 0) + 15
+			return "+$60,000 Money, +200 Cursed Energy, +15 Technique Mastery, and +15 Reputation"
 		end
 	},
 }

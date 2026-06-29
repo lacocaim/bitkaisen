@@ -388,16 +388,16 @@ local function MobileLifeLog()
 
 	return create("Frame") {
 		Name = "LogContainer",
-		Size = UDim2.new(0.94, 0, 0, 120),
+		Size = UDim2.new(0.94, 0, 0.30, 0),
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.new(0.5, 0, 0, 0),
 		BackgroundColor3 = theme.Panel,
 		BorderSizePixel = 0,
+		ClipsDescendants = true,
 		LayoutOrder = 2,
 
 		create("UICorner") { CornerRadius = UDim.new(0, 10) },
 		create("UIStroke") { Color = theme.StrokeSoft },
-		create("UIFlexItem") { FlexMode = Enum.UIFlexMode.Fill },
 		create("UIGradient") {
 			Color = ColorSequence.new(theme.Panel, theme.Bg2),
 			Rotation = 90,
@@ -411,20 +411,12 @@ local function MobileLifeLog()
 			ScrollBarThickness = 3,
 			ScrollBarImageColor3 = theme.RedSoft,
 			CanvasSize = UDim2.new(0, 0, 0, 0),
-			ZIndex = 1,
+			AutomaticCanvasSize = Enum.AutomaticSize.Y,
+			ScrollingEnabled = true,
+			ScrollingDirection = Enum.ScrollingDirection.Y,
+			ElasticBehavior = Enum.ElasticBehavior.Always,
+			ZIndex = 2,
 
-			create("UIListLayout") {
-				SortOrder = Enum.SortOrder.LayoutOrder,
-				[vide.action(function(layout: UIListLayout)
-					layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-						if scrollRef then
-							local contentHeight = layout.AbsoluteContentSize.Y + 30
-							scrollRef.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
-							scrollRef.CanvasPosition = Vector2.new(0, contentHeight)
-						end
-					end)
-				end)] = true,
-			},
 			create("UIPadding") {
 				PaddingTop = UDim.new(0, 12),
 				PaddingBottom = UDim.new(0, 12),
@@ -449,6 +441,13 @@ local function MobileLifeLog()
 
 			[vide.action(function(sf: ScrollingFrame)
 				scrollRef = sf
+				-- scroll to bottom on new content
+				local function scrollToBottom()
+					if sf and sf.CanvasSize.Y.Offset > sf.AbsoluteSize.Y then
+						sf.CanvasPosition = Vector2.new(0, sf.AbsoluteContentSize.Y)
+					end
+				end
+				sf:GetPropertyChangedSignal("CanvasSize"):Connect(scrollToBottom)
 			end)] = true,
 		},
 	}

@@ -518,6 +518,7 @@ function BitKaisenStats.GetDefaultStats()
 		BloodlineStrength = 0,
 		DeathPaintingLineage = false,
 
+		HiddenKarma = 0,
 		Money = 0, Reputation = 0, TeacherRecommendations = 0, MissionsCompleted = 0, MissionsFailed = 0,
 		InJujutsuHigh = false, ActivitiesDoneThisAge = 0, RelationshipActionsThisAge = 0, RecentLifeEvents = {}, RecentQuietTexts = {},
 		Settings = { MusicVolume = 1, SFXVolume = 1, FastText = false, HighContrastText = false },

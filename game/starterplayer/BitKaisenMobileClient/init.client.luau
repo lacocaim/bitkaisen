@@ -48,6 +48,7 @@ end
 
 loadingScreen.bump("Registering navigation...")
 
+navRegistry.register({ id = "weekly", label = "WEEKLY", order = 0, color = theme.Blue })
 navRegistry.register({ id = "missions", label = "MISSIONS", order = 1, color = theme.Bad })
 navRegistry.register({ id = "activities", label = "ACTIVITIES", order = 2, color = theme.Orange })
 navRegistry.register({ id = "relationships", label = "RELATIONSHIPS", order = 3, color = Color3.fromRGB(255, 120, 190) })
@@ -62,6 +63,7 @@ navRegistry.register({ id = "binding_vows", label = "VOWS", order = 11, color = 
 
 loadingScreen.bump("Preparing panels...")
 
+tryInit("MobileWeeklyChallengesPanel", function() return require("@ui/mobile/panels/MobileWeeklyChallengesPanel") end)
 tryInit("MobileMissionsPanel", function() return require("@ui/mobile/panels/MobileMissionsPanel") end)
 tryInit("MobileActivitiesPanel", function() return require("@ui/mobile/panels/MobileActivitiesPanel") end)
 tryInit("MobileRelationshipsPanel", function() return require("@ui/mobile/panels/MobileRelationshipsPanel") end)

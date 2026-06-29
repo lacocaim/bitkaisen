@@ -3757,7 +3757,7 @@ function grantGroupJoinReward(player, stats)
 		player,
 		"GROUP REWARD",
 		"Thank you for being part of the BitKaisen community.",
-		"+$10,000 â€¢ +15 Reputation â€¢ +25 Health",
+		"+$10,000 • +15 Reputation • +25 Health",
 		"This is a one-time reward. Rejoining will not grant it again."
 	)
 
@@ -6777,13 +6777,13 @@ function registerCurseUserMissions()
 		end
 
 		mission.RewardText = mission.RewardText or (
-			"Choice rewards â€¢ $" ..
+			"Choice rewards • $" ..
 				tostring(mission.RewardMoney or 0) ..
-				" â€¢ CE +" ..
+				" • CE +" ..
 				tostring(mission.RewardCE or 0) ..
-				" â€¢ " ..
+				" • " ..
 				repText ..
-				" â€¢ Underground Progress"
+				" • Underground Progress"
 		)
 
 		table.insert(CURSE_USER_MISSIONS, mission)
@@ -8756,7 +8756,7 @@ function resolveCurseSorcererAttackChoice(player, stats, pending, option)
 			stats.CurseEvolutionProgress = math.max(0, (stats.CurseEvolutionProgress or 0) + math.random(8, 14))
 			reduceCurseHunger(stats, math.random(10, 22))
 			result ..= "\nYou fought them directly and overwhelmed them. Your threat level rose."
-			result ..= "\nRewards: <b>+" .. tostring(ceGain) .. " CE</b> â€¢ <b>+" .. tostring(threatGain) .. " Threat</b> â€¢ Sorcerers Killed: <b>" .. tostring(stats.SorcerersKilled) .. "</b>."
+			result ..= "\nRewards: <b>+" .. tostring(ceGain) .. " CE</b> • <b>+" .. tostring(threatGain) .. " Threat</b> • Sorcerers Killed: <b>" .. tostring(stats.SorcerersKilled) .. "</b>."
 		elseif gap >= 10 then
 			local ceGain = math.random(10, 22)
 			local threatGain = math.random(5, 10)
@@ -8768,20 +8768,20 @@ function resolveCurseSorcererAttackChoice(player, stats, pending, option)
 			reduceCurseHunger(stats, math.random(8, 16))
 			stats.Health = math.clamp((stats.Health or 100) - damage, 0, 100)
 			result ..= "\nYou won, but the sorcerer forced a real fight before falling."
-			result ..= "\nRewards: <b>+" .. tostring(ceGain) .. " CE</b> â€¢ <b>+" .. tostring(threatGain) .. " Threat</b> â€¢ Health <b>-" .. tostring(damage) .. "</b>."
+			result ..= "\nRewards: <b>+" .. tostring(ceGain) .. " CE</b> • <b>+" .. tostring(threatGain) .. " Threat</b> • Health <b>-" .. tostring(damage) .. "</b>."
 		elseif gap >= -25 then
 			local damage = math.random(14, 28)
 			stats.Health = math.clamp((stats.Health or 100) - damage, 0, 100)
 			stats.CurseThreat = math.max(0, (stats.CurseThreat or 0) + math.random(3, 8))
 			stats.HuntersEscaped = (tonumber(stats.HuntersEscaped) or 0) + 1
 			result ..= "\nThe fight tore through " .. territory .. ", but neither side finished it cleanly. " .. hunterName .. " survived and reported your existence."
-			result ..= "\nResult: Health <b>-" .. tostring(damage) .. "</b> â€¢ Exorcism Risk increased."
+			result ..= "\nResult: Health <b>-" .. tostring(damage) .. "</b> • Exorcism Risk increased."
 		elseif gap >= -70 then
 			local damage = math.random(25, 45)
 			stats.Health = math.clamp((stats.Health or 100) - damage, 0, 100)
 			stats.ExorcismRisk = math.clamp((stats.ExorcismRisk or 0) + math.random(8, 16), 0, 100)
 			result ..= "\nThe sorcerer nearly exorcised you. You survived, but your cursed body was pushed close to collapse."
-			result ..= "\nResult: Health <b>-" .. tostring(damage) .. "</b> â€¢ Exorcism Risk increased sharply."
+			result ..= "\nResult: Health <b>-" .. tostring(damage) .. "</b> • Exorcism Risk increased sharply."
 		else
 			stats.Health = 0
 			stats.Alive = false
@@ -8823,14 +8823,14 @@ function resolveCurseSorcererAttackChoice(player, stats, pending, option)
 			stats.SorcerersKilled = (stats.SorcerersKilled or 0) + 1
 			stats.CurseEvolutionProgress = math.max(0, (stats.CurseEvolutionProgress or 0) + math.random(8, 15))
 			result ..= "\nYou struck first and ended the hunt before the sorcerer could control the fight."
-			result ..= "\nRewards: <b>+" .. tostring(ceGain) .. " CE</b> â€¢ <b>+" .. tostring(threatGain) .. " Threat</b>."
+			result ..= "\nRewards: <b>+" .. tostring(ceGain) .. " CE</b> • <b>+" .. tostring(threatGain) .. " Threat</b>."
 		elseif gap >= -20 then
 			local damage = math.random(10, 24)
 			local threatGain = math.random(4, 9)
 			stats.Health = math.clamp((stats.Health or 100) - damage, 0, 100)
 			stats.CurseThreat = math.max(0, (stats.CurseThreat or 0) + threatGain)
 			result ..= "\nYour ambush disrupted the sorcerer, but they survived long enough to wound you before retreating."
-			result ..= "\nResult: Health <b>-" .. tostring(damage) .. "</b> â€¢ Threat <b>+" .. tostring(threatGain) .. "</b>."
+			result ..= "\nResult: Health <b>-" .. tostring(damage) .. "</b> • Threat <b>+" .. tostring(threatGain) .. "</b>."
 		else
 			local damage = math.random(22, 40)
 			stats.Health = math.clamp((stats.Health or 100) - damage, 0, 100)
@@ -8849,7 +8849,7 @@ function resolveCurseSorcererAttackChoice(player, stats, pending, option)
 		result ..= "\nYou fled before the sorcerer could pin you down. You survived, but your presence looked weaker."
 		result ..= "\nResult: Threat <b>-" .. tostring(threatDrop) .. "</b>"
 		if damage > 0 then
-			result ..= " â€¢ Health <b>-" .. tostring(damage) .. "</b>"
+			result ..= " • Health <b>-" .. tostring(damage) .. "</b>"
 		end
 		result ..= "."
 	end
@@ -8954,7 +8954,7 @@ function resolvePendingOutsideDojoApplication(player, stats)
 			"DOJO ACCEPTED",
 			"Six months after applying, your letter finally came back. You were accepted into " .. dojoName .. ".",
 			dojoName,
-			"Sensei: " .. senseiName .. " â€¢ " .. senseiGrade
+			"Sensei: " .. senseiName .. " • " .. senseiGrade
 		)
 
 		return "<font color='#7ee787'><b>[ DOJO ACCEPTED ]</b></font> You were accepted into <b>" .. dojoName .. "</b>. Your sensei is <b>" .. senseiName .. "</b> (" .. senseiGrade .. ", age " .. tostring(senseiAge) .. "). Open the Grand Dojo menu to train with your new dojo."
@@ -10299,7 +10299,7 @@ missionChoice.OnServerEvent:Connect(function(player, optionIndex)
 			table.insert(rewardParts, "Underground Progress +" .. tostring(progressGain))
 		end
 
-		local rewardSummary = "Rewards: " .. table.concat(rewardParts, " â€¢ ")
+		local rewardSummary = "Rewards: " .. table.concat(rewardParts, " • ")
 		if #rewardParts <= 0 then
 			rewardSummary = "Rewards: None"
 		end

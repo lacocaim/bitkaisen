@@ -716,6 +716,8 @@ function applyLossMult(currentValue, oldValue, mult, minValue, maxValue)
 	return result, result - currentValue
 end
 
+local getKarmaRiskMod -- forward declaration; defined below after isCurseUser
+
 function applyTraitBuffsFromSnapshot(stats, before, context, relationship)
 	if not stats or not before then
 		return ""
@@ -970,9 +972,8 @@ local function adjustKarma(stats, amount)
 	stats.HiddenKarma = math.clamp((tonumber(stats.HiddenKarma) or 0) + amount, -100, 100)
 end
 
-local function getKarmaRiskMod(stats)
+getKarmaRiskMod = function(stats)
 	local k = tonumber(stats and stats.HiddenKarma) or 0
-	-- karma +100 = 15% less risk, karma -100 = 20% more risk
 	return 1 - (k / 100) * 0.15 + (k < 0 and (-k / 100) * 0.05 or 0)
 end
 

@@ -49,6 +49,9 @@ do
 		BK_ChallengeService = require(ServerScriptService:WaitForChild("BitKaisenServer", 5):WaitForChild("BK_ChallengeService", 5))
 	end)
 	if not ok then warn("[GameManager] BK_ChallengeService failed to load: " .. tostring(result)) end
+	if BK_ChallengeService and BitKaisenSaveSystem then
+		BK_ChallengeService.Init(BitKaisenSaveSystem)
+	end
 end
 BK_Remotes.Init()
 
@@ -3908,6 +3911,9 @@ function loadOrStartLife(player)
 		syncMonetizationEntitlements(player, loaded)
 		BitKaisenRelationships.SanitizeOnLoad(loaded)
 		BitKaisenAssets.SanitizeOnLoad(loaded)
+		if BK_ChallengeService then
+			BK_ChallengeService.InitPlayer(player)
+		end
 
 		playerLives[player.UserId] = loaded
 

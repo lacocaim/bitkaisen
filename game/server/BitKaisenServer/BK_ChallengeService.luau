@@ -3,6 +3,12 @@
 
 local BK_ChallengeService = {}
 
+local _saveSystem = nil
+
+function BK_ChallengeService.Init(saveSystem)
+	_saveSystem = saveSystem
+end
+
 local CHALLENGE_POOL = {
 	-- Age / Life
 	{ Id = "reach_age_50",     Title = "Half a Century",         Desc = "Reach age 50 in a single life.",                  Category = "Life",      Goal = "Age 50",       Reward = "500 XP" },
@@ -125,13 +131,25 @@ for _, ch in ipairs(CHALLENGE_POOL) do
 end
 
 -- Returns the challenge table only if it's in this week's active pool and not yet done
-local function markComplete(userId, id)
+local function markComplete(player, id)
+	local userId = player.UserId
 	local done = getCompleted(userId)
 	if done[id] then return nil end
 	if not isActiveId(id) then return nil end
 	local ch = _poolById[id]
 	if not ch then return nil end
+
+	-- Check persistencia para prevenir doble recompensa al cambiar de servidor
+	local key = "wk_" .. getISOWeek() .. "_" .. id
+	if _saveSystem and _saveSystem.HasAccountRewardClaimed(player, key) then
+		done[id] = true
+		return nil
+	end
+
 	done[id] = true
+	if _saveSystem then
+		_saveSystem.MarkAccountRewardClaimed(player, key)
+	end
 	return ch
 end
 
@@ -139,12 +157,11 @@ end
 -- Called every time stats change. Returns list of newly completed challenges.
 function BK_ChallengeService.CheckStats(player, stats)
 	if not stats then return {} end
-	local userId = player.UserId
 	local newly = {}
 
 	local function check(id, condition)
 		if condition then
-			local ch = markComplete(userId, id)
+			local ch = markComplete(player, id)
 			if ch then table.insert(newly, ch) end
 		end
 	end
@@ -208,7 +225,7 @@ function BK_ChallengeService.OnEvent(player, eventType, data)
 
 	local function check(id, condition)
 		if condition then
-			local ch = markComplete(userId, id)
+			local ch = markComplete(player, id)
 			if ch then table.insert(newly, ch) end
 		end
 	end
@@ -256,6 +273,23 @@ function BK_ChallengeService.OnNewLife(player)
 end
 
 -- ── Public API ───────────────────────────────────────────────────────────────
+
+-- Pre-pobla el cache local desde accountRewards al hacer join para mostrar
+-- el estado correcto y prevenir que CheckStats re-otorgue recompensas.
+function BK_ChallengeService.InitPlayer(player)
+	if not _saveSystem then return end
+	local userId = player.UserId
+	local week = getISOWeek()
+	local done = getCompleted(userId)
+	getWeeklyChallenges()
+	for id in pairs(_cachedActiveIds) do
+		local key = "wk_" .. week .. "_" .. id
+		if _saveSystem.HasAccountRewardClaimed(player, key) then
+			done[id] = true
+		end
+	end
+end
+
 function BK_ChallengeService.GetCompletedIds(player)
 	return getCompleted(player.UserId)
 end

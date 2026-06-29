@@ -69,6 +69,7 @@ local function LifeLog()
 				rich = true,
 				auto = "y",
 				ws = 1,
+				w = -50
 			},
 
 			[vide.action(function(sf: ScrollingFrame)

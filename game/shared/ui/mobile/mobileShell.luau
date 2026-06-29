@@ -426,7 +426,7 @@ local function MobileLifeLog()
 
 			create("TextLabel") {
 				Name = "LogText",
-				Size = UDim2.new(1, 0, 0, 0),
+				Size = UDim2.new(1, -28, 0, 0),
 				AutomaticSize = Enum.AutomaticSize.Y,
 				BackgroundTransparency = 1,
 				Text = logContent,

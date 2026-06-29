@@ -414,7 +414,7 @@ local function MobileLifeLog()
 			AutomaticCanvasSize = Enum.AutomaticSize.Y,
 			ScrollingEnabled = true,
 			ScrollingDirection = Enum.ScrollingDirection.Y,
-			ElasticBehavior = Enum.ElasticBehavior.Always,
+			ElasticBehavior = Enum.ElasticBehavior.WhenScrollable,
 			ZIndex = 2,
 
 			create("UIPadding") {
@@ -443,11 +443,11 @@ local function MobileLifeLog()
 				scrollRef = sf
 				-- scroll to bottom on new content
 				local function scrollToBottom()
-					if sf and sf.CanvasSize.Y.Offset > sf.AbsoluteSize.Y then
-						sf.CanvasPosition = Vector2.new(0, sf.AbsoluteContentSize.Y)
+					if sf then
+						sf.CanvasPosition = Vector2.new(0, math.max(0, sf.AbsoluteContentSize.Y - sf.AbsoluteSize.Y))
 					end
 				end
-				sf:GetPropertyChangedSignal("CanvasSize"):Connect(scrollToBottom)
+				sf:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(scrollToBottom)
 			end)] = true,
 		},
 	}

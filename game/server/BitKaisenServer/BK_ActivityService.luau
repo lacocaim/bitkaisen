@@ -2706,7 +2706,10 @@ local function processActivity(player, activityId)
 		stats.Name = identity.FullName
 		stats.Gender = identity.Gender
 
-		stats.Age = math.random(16, 20)
+		local currentYear = (tonumber(stats.BirthYear) or 0) + (tonumber(stats.Age) or 0)
+		local newAge = math.random(16, 20)
+		stats.Age = newAge
+		stats.BirthYear = currentYear - newAge
 		stats.MonthsIntoAge = 0
 		stats.CurrentMonth = 1
 		stats.ActivitiesDoneThisAge = 0

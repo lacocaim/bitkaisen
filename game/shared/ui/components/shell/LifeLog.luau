@@ -8,6 +8,7 @@ local playerState = require("@ui-state/playerState")
 
 local create = vide.create
 local derive = vide.derive
+local effect = vide.effect
 
 local function LifeLog()
 	local logContent = derive(function()
@@ -20,6 +21,15 @@ local function LifeLog()
 	end)
 
 	local scrollRef: ScrollingFrame = nil :: any
+
+	effect(function()
+		playerState.logVersion()
+		task.delay(0, function()
+			if scrollRef then
+				scrollRef.CanvasPosition = Vector2.new(0, math.huge)
+			end
+		end)
+	end)
 
 	return container {
 		name = "LogContainer",
@@ -43,14 +53,6 @@ local function LifeLog()
 
 			create("UIListLayout") {
 				SortOrder = Enum.SortOrder.LayoutOrder,
-				[vide.action(function(layout: UIListLayout)
-					layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-						if scrollRef then
-							local contentHeight = layout.AbsoluteContentSize.Y + 40
-							scrollRef.CanvasPosition = Vector2.new(0, contentHeight)
-						end
-					end)
-				end)] = true,
 			},
 			create("UIPadding") {
 				PaddingTop = UDim.new(0, 20), PaddingBottom = UDim.new(0, 20),

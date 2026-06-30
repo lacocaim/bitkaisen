@@ -603,16 +603,18 @@ end
 
 local _lastChallengeCheck = {}
 
-function fireLifeUpdate(player, stats, message, forceResetLog)
+function fireLifeUpdate(player, stats, message, forceResetLog, isRejoin)
 	updateLifeEvent:FireClient(player, stats, message, forceResetLog == true)
 	if not BK_ChallengeService or not stats then return end
 
-	local isNewLife = forceResetLog == true
+	local isNewLife = forceResetLog == true and not isRejoin
 	local now = os.clock()
 	local lastCheck = _lastChallengeCheck[player.UserId] or 0
 
 	-- Only run stat checks every 3 seconds, but always run on new life
-	if not isNewLife and (now - lastCheck) < 3 then return end
+	if not isNewLife and not isRejoin and (now - lastCheck) < 3 then return end
+	-- Loaded stats are not stat changes — InitPlayer already restored the done map
+	if isRejoin then return end
 	_lastChallengeCheck[player.UserId] = now
 
 	local allNewly = {}
@@ -3925,7 +3927,7 @@ function loadOrStartLife(player)
 
 		welcomeMessage = welcomeMessage .. "\nResuming at age " .. tostring(loaded.Age or 0) .. "."
 
-		fireLifeUpdate(player, loaded, welcomeMessage, true)
+		fireLifeUpdate(player, loaded, welcomeMessage, true, true)
 	else
 		startNewLife(player)
 	end
@@ -10044,7 +10046,7 @@ devToolsAction.OnServerEvent:Connect(function(player, actionId, data)
 			fireLifeUpdate(player, stats, "<font color='#78beff'><b>[ DEV ]</b></font> Clan set to <b>" .. clan .. "</b>.")
 		end
 	elseif actionId == "stat_delta" then
-		local map = { CE = "CursedEnergy", Reputation = "Reputation", Fame = "Fame", Fear = "Fear" }
+		local map = { CE = "CursedEnergy", Reputation = "Reputation", Fame = "Fame", Fear = "Fear", Missions = "MissionsCompleted" }
 		local field = map[tostring(data.Stat or "")]
 		local amount = tonumber(data.Amount) or 0
 		if field then

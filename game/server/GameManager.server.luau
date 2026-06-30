@@ -49,9 +49,6 @@ do
 		BK_ChallengeService = require(ServerScriptService:WaitForChild("BitKaisenServer", 5):WaitForChild("BK_ChallengeService", 5))
 	end)
 	if not ok then warn("[GameManager] BK_ChallengeService failed to load: " .. tostring(result)) end
-	if BK_ChallengeService and BitKaisenSaveSystem then
-		BK_ChallengeService.Init(BitKaisenSaveSystem)
-	end
 end
 BK_Remotes.Init()
 
@@ -130,6 +127,9 @@ local BitKaisenAssets = require(ReplicatedStorage:WaitForChild("BitKaisenAssets"
 local BitKaisenSituations = require(ReplicatedStorage:WaitForChild("BitKaisenSituations"))
 local BitKaisenLegacy = require(ReplicatedStorage:WaitForChild("BitKaisenLegacy"))
 local BitKaisenSaveSystem = require(ServerScriptService:WaitForChild("BitKaisenSaveSystem"))
+if BK_ChallengeService then
+	BK_ChallengeService.Init(BitKaisenSaveSystem)
+end
 
 -- Put your own Roblox UserId(s) here. Anyone in this table can use dev_awaken
 -- and will see hidden dev activities.

@@ -331,6 +331,8 @@ local function init(playerGui: Instance)
 	local fleeButton = makeActionButton("FLEE", Color3.fromRGB(64, 64, 75), 5)
 	local resetButton = makeActionButton("RESET", Color3.fromRGB(90, 61, 31), 6)
 	resetButton.Visible = false
+	local blackFlashButton = makeActionButton("B.FLASH", Color3.fromRGB(48, 28, 90), 7)
+	blackFlashButton.Visible = false
 
 	-- Combat log
 	local logCard = Instance.new("Frame")
@@ -492,8 +494,8 @@ local function init(playerGui: Instance)
 		caption.Size = UDim2.new(1, -24, 0, 32)
 		caption.Position = UDim2.new(0, 12, 0, 14)
 		caption.BackgroundTransparency = 1
-		caption.Text = payload.IsTechnique and "TECHNIQUE TIMING" or "ATTACK TIMING"
-		caption.TextColor3 = theme.Gold
+		caption.Text = payload.IsBlackFlash and "BLACK FLASH" or (payload.IsTechnique and "TECHNIQUE TIMING" or "ATTACK TIMING")
+		caption.TextColor3 = payload.IsBlackFlash and theme.Purple or theme.Gold
 		caption.TextSize = 17
 		caption.Font = Enum.Font.GothamBlack
 		caption.TextXAlignment = Enum.TextXAlignment.Center
@@ -528,7 +530,7 @@ local function init(playerGui: Instance)
 
 		local sweet = Instance.new("Frame")
 		sweet.BorderSizePixel = 0
-		sweet.BackgroundColor3 = theme.Gold
+		sweet.BackgroundColor3 = payload.IsBlackFlash and theme.Purple or theme.Gold
 		sweet.ZIndex = 764
 		sweet.Parent = board
 		corner(sweet, 5)
@@ -958,6 +960,11 @@ local function init(playerGui: Instance)
 		setButtonEnabled(domainButton, playerTurn and domainReady)
 		setButtonEnabled(defendButton, playerTurn)
 		setButtonEnabled(fleeButton, playerTurn)
+		local bfCost = tonumber(state.BlackFlashCECost) or 35
+		local bfReady = playerTurn and (tonumber(state.PlayerCE) or 0) >= bfCost
+		blackFlashButton.Text = "B.FLASH " .. tostring(bfCost)
+		blackFlashButton.Visible = not defeated
+		setButtonEnabled(blackFlashButton, bfReady)
 		resetButton.Visible = defeated
 		setButtonEnabled(resetButton, defeated and state.CanReset == true)
 
@@ -1008,6 +1015,9 @@ local function init(playerGui: Instance)
 	end)
 	bindTap(domainButton, function()
 		if state.Phase == "player_turn" then combatAction:FireServer("domain") end
+	end)
+	bindTap(blackFlashButton, function()
+		if state.Phase == "player_turn" then combatAction:FireServer("black_flash") end
 	end)
 	bindTap(defendButton, function()
 		if state.Phase == "player_turn" then combatAction:FireServer("defend") end

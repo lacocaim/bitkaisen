@@ -12,6 +12,8 @@ local bindTap = mc.bindTap
 local create = vide.create
 local derive = vide.derive
 local indexes = vide.indexes
+local source = vide.source
+
 
 local TWEEN_QUICK = TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
@@ -155,14 +157,14 @@ local function MobileProfileHeader()
 			Rotation = 90,
 		},
 		create("UIPadding") {
-			PaddingTop = UDim.new(0, 10),
-			PaddingBottom = UDim.new(0, 10),
-			PaddingLeft = UDim.new(0, 14),
-			PaddingRight = UDim.new(0, 14),
+			PaddingTop = UDim.new(0, 6),
+			PaddingBottom = UDim.new(0, 6),
+			PaddingLeft = UDim.new(0, 10),
+			PaddingRight = UDim.new(0, 10),
 		},
 		create("UIListLayout") {
 			SortOrder = Enum.SortOrder.LayoutOrder,
-			Padding = UDim.new(0, 4),
+			Padding = UDim.new(0, 2),
 		},
 
 		create("TextLabel") {
@@ -485,35 +487,20 @@ local function MobileAgeButton()
 end
 
 local function MobileNavPanel()
-	return create("ScrollingFrame") {
+	return create("Frame") {
 		Name = "NavPanel",
-		Size = UDim2.new(0.94, 0, 0, 48),
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 0),
-		BackgroundColor3 = theme.Panel,
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
-		ScrollBarThickness = 3,
-		ScrollBarImageColor3 = theme.StrokeSoft,
-		CanvasSize = UDim2.new(0, 0, 0, 0),
-		AutomaticCanvasSize = Enum.AutomaticSize.Y,
-		ScrollingDirection = Enum.ScrollingDirection.Y,
 		ZIndex = 1,
 		LayoutOrder = 4,
 
-		create("UICorner") { CornerRadius = UDim.new(0, 10) },
-		create("UIStroke") { Color = theme.StrokeSoft },
-		create("UIFlexItem") { FlexMode = Enum.UIFlexMode.Fill },
 		create("UIListLayout") {
 			FillDirection = Enum.FillDirection.Vertical,
 			SortOrder = Enum.SortOrder.LayoutOrder,
 			Padding = UDim.new(0, 6),
 			HorizontalAlignment = Enum.HorizontalAlignment.Center,
-		},
-		create("UIPadding") {
-			PaddingTop = UDim.new(0, 6),
-			PaddingBottom = UDim.new(0, 6),
-			PaddingLeft = UDim.new(0, 8),
-			PaddingRight = UDim.new(0, 8),
 		},
 
 		indexes(function()
@@ -593,20 +580,72 @@ local function create_(playerGui: PlayerGui)
 		BorderSizePixel = 0,
 		Parent = gui,
 
-		create("UIListLayout") {
-			SortOrder = Enum.SortOrder.LayoutOrder,
-			Padding = UDim.new(0, 6),
-			HorizontalAlignment = Enum.HorizontalAlignment.Center,
-		},
-		create("UIPadding") {
-			PaddingTop = UDim.new(0, 4),
-			PaddingBottom = UDim.new(0, 6),
+		-- Contenido principal scrolleable (sin el age button)
+		create("ScrollingFrame") {
+			Name = "ContentScroll",
+			Size = UDim2.new(1, 0, 1, -316),
+			Position = UDim2.new(0, 0, 0, 0),
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			ScrollBarThickness = 0,
+			ScrollingDirection = Enum.ScrollingDirection.Y,
+			AutomaticCanvasSize = Enum.AutomaticSize.Y,
+			CanvasSize = UDim2.new(0, 0, 0, 0),
+			ElasticBehavior = Enum.ElasticBehavior.WhenScrollable,
+
+			create("UIListLayout") {
+				SortOrder = Enum.SortOrder.LayoutOrder,
+				Padding = UDim.new(0, 6),
+				HorizontalAlignment = Enum.HorizontalAlignment.Center,
+			},
+			create("UIPadding") {
+				PaddingTop = UDim.new(0, 4),
+				PaddingBottom = UDim.new(0, 6),
+			},
+
+			MobileProfileHeader(),
+			MobileLifeLog(),
 		},
 
-		MobileProfileHeader(),
-		MobileLifeLog(),
-		MobileAgeButton(),
-		MobileNavPanel(),
+		-- +AGE fijo entre el scroll y el nav (nunca tapado)
+		create("Frame") {
+			Name = "AgeButtonAnchor",
+			Size = UDim2.new(1, 0, 0, 58),
+			Position = UDim2.new(0, 0, 1, -316),
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			ZIndex = 10,
+			MobileAgeButton(),
+		},
+
+		-- Nav fija abajo: 258px scrolleable
+		create("ScrollingFrame") {
+			Name = "NavAnchor",
+			Size = UDim2.new(1, 0, 0, 258),
+			Position = UDim2.new(0, 0, 1, -258),
+			BackgroundColor3 = theme.Bg,
+			BorderSizePixel = 0,
+			ScrollBarThickness = 3,
+			ScrollBarImageColor3 = theme.StrokeSoft,
+			ScrollingDirection = Enum.ScrollingDirection.Y,
+			AutomaticCanvasSize = Enum.AutomaticSize.Y,
+			CanvasSize = UDim2.new(0, 0, 0, 0),
+			ElasticBehavior = Enum.ElasticBehavior.WhenScrollable,
+
+			create("UIStroke") {
+				Color = theme.StrokeSoft,
+				ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+				Thickness = 1,
+			},
+			create("UIPadding") {
+				PaddingTop = UDim.new(0, 6),
+				PaddingBottom = UDim.new(0, 6),
+				PaddingLeft = UDim.new(0, 8),
+				PaddingRight = UDim.new(0, 8),
+			},
+
+			MobileNavPanel(),
+		},
 	}
 
 	-- vide.action callbacks don't fire for Vide-created buttons in this tree,
@@ -614,7 +653,7 @@ local function create_(playerGui: PlayerGui)
 	do
 		local mainPanel = gui:FindFirstChild("MainPanel")
 		if mainPanel then
-			local ageBtn = mainPanel:FindFirstChild("AgeUpButton")
+			local ageBtn = mainPanel:FindFirstChild("AgeUpButton", true)
 			if ageBtn and ageBtn:IsA("TextButton") then
 				bindTap(ageBtn, function()
 					if _G.BitKaisenPlaySFX then _G.BitKaisenPlaySFX("Tick") end
@@ -625,19 +664,21 @@ local function create_(playerGui: PlayerGui)
 				end)
 			end
 
-			local navPanel = mainPanel:FindFirstChild("NavPanel")
-			if navPanel then
-				local function registerNavBtn(child)
-					if not child:IsA("TextButton") then return end
-					bindTap(child, function()
-						uiState.navigate(child.Name)
-					end)
-				end
+			local function registerNavBtn(child)
+				if not child:IsA("TextButton") then return end
+				bindTap(child, function()
+					uiState.navigate(child.Name)
+				end)
+			end
+			local function hookNavPanel(navPanel)
+				if not navPanel then return end
 				for _, child in ipairs(navPanel:GetChildren()) do
 					registerNavBtn(child)
 				end
 				navPanel.ChildAdded:Connect(registerNavBtn)
 			end
+			local navAnchor = mainPanel:FindFirstChild("NavAnchor")
+			hookNavPanel(navAnchor and navAnchor:FindFirstChild("NavPanel"))
 		end
 	end
 

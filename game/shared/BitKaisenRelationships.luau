@@ -1456,6 +1456,46 @@ local function addStartingCaretakerIfNeeded(stats)
 	return BitKaisenRelationships.AddRelationship(stats, caretaker)
 end
 
+local SIBLING_BACKGROUNDS = {
+	"Grew up in the same house, watching the same family pressure shape both of you.",
+	"Was always one step ahead growing up, for better or worse.",
+	"Shared a room with you for years before either of you understood what your family really was.",
+	"Knows the family history almost as well as you do, just from a different angle.",
+	"Was the one who taught you most of what you knew before anyone official did.",
+}
+
+local function addStartingSiblings(stats, familyName)
+	if math.random(1, 100) > 40 then
+		return
+	end
+
+	local siblingCount = math.random(1, 100) <= 20 and 2 or 1
+
+	for _ = 1, siblingCount do
+		local siblingGender = rollGender()
+		local sibling = BitKaisenRelationships.CreateRelationship(
+			"Sibling",
+			makeName(familyName, siblingGender),
+			"Sibling",
+			math.random(40, 80),
+			math.random(35, 75),
+			math.random(20, 60),
+			0,
+			0,
+			siblingGender
+		)
+
+		sibling.Gender = siblingGender
+		-- 90% chance of an older sibling (1-14 yrs), 10% chance of a twin (age 0).
+		sibling.Age = math.random(1, 100) <= 10 and 0 or math.random(1, 14)
+		sibling.Background = pickRandom(SIBLING_BACKGROUNDS)
+		sibling.YearsKnown = 0
+		ensureRelationshipTraits(stats, sibling)
+
+		BitKaisenRelationships.AddRelationship(stats, sibling)
+	end
+end
+
 function BitKaisenRelationships.GenerateStartingRelationships(stats)
 	BitKaisenRelationships.EnsureRelationships(stats)
 
@@ -1472,6 +1512,8 @@ function BitKaisenRelationships.GenerateStartingRelationships(stats)
 		addStartingCaretakerIfNeeded(stats)
 		return
 	end
+
+	addStartingSiblings(stats, familyName)
 
 	local mother = BitKaisenRelationships.CreateRelationship(
 		"Mother",

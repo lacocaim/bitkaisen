@@ -25,6 +25,31 @@ local DOMAIN_BY_TECHNIQUE = {
 
 local DEFAULT_DOMAIN = { Name = "Innate Territory", Type = "Personal Barrier", Color = "Gold", ClashBonus = 8 }
 
+-- Per-technique combat effects applied when Domain Expansion is used in a fight.
+-- DamageMult: multiplier on base domain damage (default 1.0)
+-- CERefund: CE restored to the player after expanding (default 0)
+-- Heal: HP restored to the player after expanding (default 0)
+-- CritChance: % chance to amplify damage by 1.5x (Ratio Technique gimmick)
+-- Log: narrative line added to the combat log
+local DOMAIN_CT_EFFECTS = {
+	["Limitless"]                 = { DamageMult = 1.15, CERefund = 0,  Heal = 0,  Log = "Unlimited Void fills the target's cognition with infinite information. All hits guaranteed." },
+	["Shrine"]                    = { DamageMult = 1.25, CERefund = 0,  Heal = 0,  Log = "Malevolent Shrine's open barrier slashes through every defense without discrimination." },
+	["Ten Shadows"]               = { DamageMult = 1.0,  CERefund = 0,  Heal = 15, Log = "Chimera Shadow Garden floods the field. Your shikigami absorb incoming force and mend your wounds." },
+	["Idle Transfiguration"]      = { DamageMult = 1.20, CERefund = 0,  Heal = 0,  Log = "Self-Embodiment of Perfection distorts the enemy's soul shape directly." },
+	["Copy"]                      = { DamageMult = 1.0,  CERefund = 25, Heal = 0,  Log = "Manifested Love Domain channels copied techniques with precise efficiency, recovering CE." },
+	["Rika Manifestation"]        = { DamageMult = 1.10, CERefund = 10, Heal = 0,  Log = "Rika amplifies the domain from within. Her presence sharpens every technique." },
+	["Blood Manipulation"]        = { DamageMult = 1.10, CERefund = 0,  Heal = 10, Log = "Crimson Binding Domain courses through the enemy's veins, feeding your recovery." },
+	["Cursed Speech"]             = { DamageMult = 1.05, CERefund = 0,  Heal = 0,  Log = "Commanding Silence. Every syllable inside the domain is an absolute decree." },
+	["Boogie Woogie"]             = { DamageMult = 1.0,  CERefund = 35, Heal = 0,  Log = "Resonant Switchyard warps space — CE cycles back through the rhythm of the barrier." },
+	["Ratio Technique"]           = { DamageMult = 1.0,  CERefund = 0,  Heal = 0,  CritChance = 40, Log = "Seven-to-Three Court locks the enemy in critical geometry. A weak point reveals itself." },
+	["Construction"]              = { DamageMult = 1.0,  CERefund = 0,  Heal = 20, Log = "Perfected Forge raises barriers that seal your injuries mid-expansion." },
+	["Cursed Spirit Manipulation"]= { DamageMult = 1.15, CERefund = 0,  Heal = 0,  Log = "Parade of Bound Curses overwhelms with sheer numbers. No defense covers every angle." },
+	["Puppet Manipulation"]       = { DamageMult = 1.0,  CERefund = 20, Heal = 0,  Log = "Mechanical Marionette Theater recycles CE through the puppet network." },
+	["Projection Sorcery"]        = { DamageMult = 1.15, CERefund = 0,  Heal = 0,  Log = "Framed Motion Palace locks the enemy into 24 frames. There is no escape." },
+	["Heavenly Restriction"]      = { DamageMult = 1.20, CERefund = 0,  Heal = 0,  Log = "Empty Barrier amplifies your physical output beyond natural limits. Pure body. Pure force." },
+	["Simple Domain"]             = { DamageMult = 0.90, CERefund = 30, Heal = 0,  Log = "Simple Domain neutralizes the field, trading raw power for CE efficiency." },
+}
+
 local STAGE_REQUIREMENTS = {
 	Seed = 20,
 	Incomplete = 55,
@@ -183,6 +208,11 @@ function BitKaisenDomains.GetPayload(stats)
 		ClashesLost = tonumber(stats.DomainClashesLost) or 0,
 		Requirements = STAGE_REQUIREMENTS,
 	}
+end
+
+function BitKaisenDomains.GetCTCombatEffect(stats)
+	local technique = techniqueName(stats)
+	return DOMAIN_CT_EFFECTS[technique]
 end
 
 return BitKaisenDomains

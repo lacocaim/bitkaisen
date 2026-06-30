@@ -368,6 +368,7 @@ function BitKaisenStats.GetDefaultStats()
 		CurseMutationCount = 0,
 		CurseLatestMutation = "None",
 		CursedResentment = 0,
+		CEAddiction = 0,
 		CurseRebirthEligible = false,
 		CurseRebirthCount = 0,
 		PreviousLifeName = nil,

@@ -17,6 +17,7 @@ local initialized = false
 
 local TECHNIQUE_MAX_USES = 3
 local TECHNIQUE_CE_COST = 18
+local BF_CE_COST = 35
 
 local TEST_PURCHASE_PLACE_IDS = {
 	[104206065947170] = true,
@@ -149,6 +150,7 @@ local function publicState(session)
 		CanReset = session.CanReset == true and session.Winner == "enemy" and session.Phase == "finished",
 		ResetProductId = tonumber(context.GetResetFightProductId and context.GetResetFightProductId()) or 0,
 		Domain = session.DomainPayload,
+		BlackFlashCECost = BF_CE_COST,
 		TestingPlace = isTestingPlace(),
 		PendingAttack = session.PendingAttackPublic,
 		PendingDefense = session.PendingDefensePublic,
@@ -361,7 +363,7 @@ function resolveEnemyCombo(player, session, accuracy, perfectHits)
 	end
 end
 
-local function startAttackCheck(player, session, isTechnique, autoResolve)
+local function startAttackCheck(player, session, isTechnique, autoResolve, isBlackFlash)
 	local stats = getStats(player)
 	local token = makeToken("attack")
 	local playerPower = BitKaisenCombat.GetCombatPower(stats)
@@ -376,6 +378,11 @@ local function startAttackCheck(player, session, isTechnique, autoResolve)
 		duration = math.max(1.12, duration - 0.12)
 		targetWidth = math.clamp(targetWidth * 0.72, 0.08, 0.15)
 		sweetWidth = math.clamp(sweetWidth * 0.55, 0.018, 0.045)
+	end
+	if isBlackFlash then
+		duration = math.max(1.05, duration - 0.18)
+		targetWidth = math.clamp(targetWidth * 0.68, 0.07, 0.11)
+		sweetWidth = math.clamp(sweetWidth * 0.4, 0.010, 0.020)
 	end
 	session.Phase = "attack_check"
 	session.PendingAttack = {
@@ -398,6 +405,7 @@ local function startAttackCheck(player, session, isTechnique, autoResolve)
 			SweetWidth = sweetWidth,
 			TargetSide = targetSide,
 			IsTechnique = isTechnique == true,
+			IsBlackFlash = isBlackFlash == true,
 		}
 	end
 	addLog(session, isTechnique and "Technique timing started." or "Attack timing started.")
@@ -419,6 +427,8 @@ function resolveAttack(player, session, accuracy, sweet)
 	local quality = math.clamp(tonumber(accuracy) or 0, 0, 1)
 	local isTechnique = pending.IsTechnique == true
 	local isSweet = sweet == true or quality >= 0.96
+	local isBlackFlash = session.BlackFlashPending == true
+	if isBlackFlash then session.BlackFlashPending = nil end
 	local critChance = isTechnique and 0 or getStrengthCritChance(stats)
 	if not isTechnique and quality >= 0.7 and math.random(1, 100) <= critChance then
 		isSweet = true
@@ -440,13 +450,30 @@ function resolveAttack(player, session, accuracy, sweet)
 		damage = math.min(damage, math.floor(session.Enemy.MaxHP * 0.18))
 	end
 	if isSweet then
-		addLog(session, isTechnique and "Perfect technique timing. Massive impact." or "Sweet spot. Maximum impact.")
+		if isBlackFlash then
+			addLog(session, "BLACK FLASH. Cursed energy and impact converged in the same instant.")
+		else
+			addLog(session, isTechnique and "Perfect technique timing. Massive impact." or "Sweet spot. Maximum impact.")
+		end
 	elseif quality >= 0.7 then
-		addLog(session, isTechnique and "Technique connected cleanly." or "Clean hit.")
+		addLog(session, isTechnique and "Technique connected cleanly." or (isBlackFlash and "Strong hit — timing nearly landed the Black Flash." or "Clean hit."))
 	elseif quality >= 0.35 then
-		addLog(session, isTechnique and "Technique grazed the target." or "Glancing hit.")
+		addLog(session, isTechnique and "Technique grazed the target." or (isBlackFlash and "Black Flash timing slipped. Weak impact." or "Glancing hit."))
 	else
-		addLog(session, isTechnique and "Technique timing failed." or "Mistimed attack.")
+		addLog(session, isTechnique and "Technique timing failed." or (isBlackFlash and "Black Flash failed. No amplification." or "Mistimed attack."))
+	end
+	if isBlackFlash then
+		if isSweet then
+			damage = math.floor(damage * 2.5)
+			damage = math.min(damage, math.floor(session.Enemy.MaxHP * 0.65))
+			local bfStats = getStats(player)
+			if bfStats then
+				bfStats.BlackFlashCount = (tonumber(bfStats.BlackFlashCount) or 0) + 1
+			end
+			fireMajorPopup(player, "BLACK FLASH", "For one instant, cursed energy and impact became the same moment.", "×2.5 DAMAGE", "BLACK FLASH #" .. tostring(tonumber(bfStats and bfStats.BlackFlashCount) or 1))
+		elseif quality >= 0.7 then
+			damage = math.floor(damage * 1.3)
+		end
 	end
 	if isTechnique then
 		session.TechniqueUses = (tonumber(session.TechniqueUses) or 0) + 1
@@ -642,8 +669,41 @@ local function resolveDomainAction(player, session)
 		addLog(session, "Domain Expansion: " .. tostring(domain.Name) .. ".")
 	end
 
+	-- CT-specific effect: modify damage before applying
+	local ctEffect = BitKaisenDomains.GetCTCombatEffect(stats)
+	if ctEffect then
+		if (ctEffect.DamageMult or 1) ~= 1 then
+			damage = math.floor(damage * ctEffect.DamageMult)
+		end
+		if ctEffect.CritChance and math.random(1, 100) <= ctEffect.CritChance then
+			damage = math.floor(damage * 1.5)
+			addLog(session, "Critical geometry aligned — damage amplified.")
+		end
+	end
+
 	session.Enemy.HP = math.clamp(session.Enemy.HP - damage, 0, session.Enemy.MaxHP)
 	addLog(session, "Domain dealt " .. tostring(damage) .. " damage.")
+
+	-- CT-specific effect: post-damage (CE refund, heal, narrative)
+	if ctEffect then
+		if (ctEffect.CERefund or 0) > 0 then
+			session.PlayerCE = math.clamp(session.PlayerCE + ctEffect.CERefund, 0, session.PlayerMaxCE or 999)
+			stats.CursedEnergy = math.floor(session.PlayerCE + 0.5)
+		end
+		if (ctEffect.Heal or 0) > 0 then
+			session.PlayerHP = math.clamp(session.PlayerHP + ctEffect.Heal, 0, session.PlayerMaxHP)
+			stats.Health = math.clamp(math.floor(session.PlayerHP + 0.5), 0, 100)
+		end
+		if ctEffect.Log then
+			addLog(session, ctEffect.Log)
+		end
+	end
+
+	-- Fire challenge event (fixes "use_domain" challenge never completing)
+	if context.OnChallengeEvent then
+		context.OnChallengeEvent(player, "domain_used", {})
+	end
+
 	local progressText = BitKaisenDomains.AddProgress(stats, BitKaisenDomains.GetProgressGain(stats, progressReason), progressReason)
 	if progressText ~= "" then
 		addLog(session, "Domain mastery improved.")
@@ -714,6 +774,27 @@ local function handleAction(player, action, payload)
 				end)
 			else
 				startAttackCheck(player, session, true)
+			end
+		end
+	elseif action == "black_flash" and session.Phase == "player_turn" then
+		if session.PlayerCE < BF_CE_COST then
+			addLog(session, "Not enough CE for Black Flash. Need " .. tostring(BF_CE_COST) .. " CE.")
+			sendState(player, session)
+		else
+			session.PlayerCE = math.max(0, session.PlayerCE - BF_CE_COST)
+			local bfStats = getStats(player)
+			if bfStats then bfStats.CursedEnergy = math.floor(session.PlayerCE + 0.5) end
+			session.BlackFlashPending = true
+			addLog(session, "Black Flash attempt. Hit the timing window at the exact moment.")
+			if bfStats and bfStats.Settings and bfStats.Settings.SkipCombatSkillChecks == true then
+				startAttackCheck(player, session, false, true, true)
+				task.delay(0.15, function()
+					if sessions[player.UserId] == session and session.PendingAttack then
+						resolveAttack(player, session, 1.0, true)
+					end
+				end)
+			else
+				startAttackCheck(player, session, false, false, true)
 			end
 		end
 	elseif action == "domain" and session.Phase == "player_turn" then

@@ -431,6 +431,82 @@ BitKaisenLifeEvents.Database = {
 			"Your students learned from a rough session, but the Grand Dojo took damage."
 		},
 		Effects = { ClanReputation = 2, DojoPrestige = 1, DojoCondition = -6, Happiness = -2 }
+	},
+
+	-- Bounty / Wanted events
+	{
+		Id = "bounty_posted_publicly",
+		Category = "Wanted",
+		MinAge = 16,
+		MaxAge = 100,
+		Weight = 8,
+		MinWantedLevel = 2,
+		Texts = {
+			"A wanted notice with your description circulated through the sorcerer underground.",
+			"Your name appeared on a bounty board. Anyone with cursed energy and a death wish could come for you now.",
+			"Jujutsu Society posted a public alert. Your face was everywhere people like you gathered."
+		},
+		Effects = { WantedLevel = 1, Reputation = -6, Happiness = -5 }
+	},
+
+	{
+		Id = "bounty_hunter_close_call",
+		Category = "Wanted",
+		MinAge = 16,
+		MaxAge = 100,
+		Weight = 7,
+		MinWantedLevel = 3,
+		Texts = {
+			"A bounty hunter tracked you to your last known location. You noticed too late but got out just in time.",
+			"Someone following you for three blocks turned out to be a licensed hunter. You lost them in a crowd.",
+			"A masked figure with a Jujutsu Society contractor badge cornered you briefly. You slipped out before it escalated."
+		},
+		Effects = { WantedLevel = 1, Health = -8, Happiness = -7 }
+	},
+
+	{
+		Id = "bounty_hunter_intimidated",
+		Category = "Wanted",
+		MinAge = 16,
+		MaxAge = 100,
+		Weight = 6,
+		MinWantedLevel = 3,
+		Texts = {
+			"A bounty hunter found you, but your cursed energy flared before they could act. They walked away.",
+			"The hunter who came for your bounty hesitated when they felt what you were capable of. They chose to live.",
+			"You didn't run. You just looked at the hunter until they decided the bounty wasn't worth it."
+		},
+		Effects = { WantedLevel = 1, TechniqueMastery = 1, Happiness = -3 }
+	},
+
+	{
+		Id = "bounty_hunter_ambush",
+		Category = "Wanted",
+		MinAge = 18,
+		MaxAge = 100,
+		Weight = 5,
+		MinWantedLevel = 4,
+		Texts = {
+			"Two bounty hunters cornered you in an alley. You walked out. They didn't.",
+			"A coordinated ambush hit you from three directions at once. You survived on instinct and cursed energy alone.",
+			"A bounty hunter team tracked you for a week. Their preparation was impressive. It wasn't enough."
+		},
+		Effects = { WantedLevel = 2, Health = -18, Happiness = -10, CursedEnergy = -8 }
+	},
+
+	{
+		Id = "bounty_bribed_away",
+		Category = "Wanted",
+		MinAge = 16,
+		MaxAge = 100,
+		Weight = 6,
+		MinWantedLevel = 4,
+		Texts = {
+			"You paid off an official to quietly bury your bounty record. It cost a lot, but it bought breathing room.",
+			"A contact connected you to someone who could make wanted notices disappear — for a price you paid without hesitation.",
+			"You funneled money to the right hands and watched your heat level drop. Expensive, but worth it."
+		},
+		Effects = { WantedLevel = -3, Money = -600, Reputation = 2, Happiness = 4 }
 	}
 
 }

@@ -492,6 +492,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 				npc.Alive = tostring(npc.Status or "Tracked") ~= "Dead"
 				npc.Background = tostring(npc.Background or npc.PublicNote or "A notable figure from your era.")
 				npc.NotableSourceId = npc.Id
+				if npc.Romance == nil then npc.Romance = 0 end
 				relationship = npc
 				stats.NotableVersion = (tonumber(stats.NotableVersion) or 0) + 1
 				break
@@ -673,25 +674,43 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 			Friend = true,
 			["Best Friend"] = true,
 			Classmate = true,
-			["Mission Partner"] = true
+			["Mission Partner"] = true,
+			["Notable Sorcerer"] = true,
 		}
 
 		if not allowedRoles[relationship.Role] then
 			fireLifeUpdate(player, stats, "That relationship cannot become romantic.")
 			return
 		end
+
+		if relationship.Role == "Notable Sorcerer" and tostring(relationship.Status or "") ~= "Active" then
+			fireLifeUpdate(player, stats, relationship.Name .. " is not old enough for that yet.")
+			return
+		end
+
 		BitKaisenRelationships.AdjustRelationship(relationship, {
 			Romance = math.random(10, 20),
 			Bond = math.random(2, 5),
 			Trust = math.random(0, 3)
 		})
 
-		local flirtLines = {
-			"You flirted with " .. relationship.Name .. ". They seemed to notice.",
-			"You tried flirting with " .. relationship.Name .. ", and the moment actually landed.",
-			"You and " .. relationship.Name .. " shared a moment that felt different from usual.",
-			"You flirted with " .. relationship.Name .. ". The tension between you shifted slightly."
-		}
+		local flirtLines
+		if relationship.Role == "Notable Sorcerer" then
+			flirtLines = {
+				"You approached " .. relationship.Name .. " after a joint mission. The moment lingered longer than expected.",
+				relationship.Name .. " caught you looking. Neither of you said anything, but something shifted.",
+				"You found a reason to talk to " .. relationship.Name .. " again. They noticed the pattern.",
+				"You said something honest to " .. relationship.Name .. ". They didn't deflect it. That surprised you.",
+				relationship.Name .. " looked at you differently after that conversation. You're not sure what it means yet.",
+			}
+		else
+			flirtLines = {
+				"You flirted with " .. relationship.Name .. ". They seemed to notice.",
+				"You tried flirting with " .. relationship.Name .. ", and the moment actually landed.",
+				"You and " .. relationship.Name .. " shared a moment that felt different from usual.",
+				"You flirted with " .. relationship.Name .. ". The tension between you shifted slightly.",
+			}
+		end
 
 		logMessage = pickRandom(flirtLines)
 
@@ -715,11 +734,17 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 			Friend = true,
 			["Best Friend"] = true,
 			Classmate = true,
-			["Mission Partner"] = true
+			["Mission Partner"] = true,
+			["Notable Sorcerer"] = true,
 		}
 
 		if not allowedRoles[relationship.Role] then
 			fireLifeUpdate(player, stats, "That relationship cannot become romantic.")
+			return
+		end
+
+		if relationship.Role == "Notable Sorcerer" and tostring(relationship.Status or "") ~= "Active" then
+			fireLifeUpdate(player, stats, relationship.Name .. " is not old enough for that yet.")
 			return
 		end
 
@@ -749,6 +774,24 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 				Trust = math.random(4, 8),
 				Romance = math.random(12, 24)
 			})
+
+			-- Move Notable Sorcerer into Relationships so Partner actions work
+			if relationship.NotableSourceId then
+				stats.Relationships = stats.Relationships or {}
+				local alreadyMoved = false
+				for _, r in ipairs(stats.Relationships) do
+					if r.Id == relationship.Id then alreadyMoved = true break end
+				end
+				if not alreadyMoved then
+					table.insert(stats.Relationships, relationship)
+				end
+				for i, npc in ipairs(stats.NotableSorcerers or {}) do
+					if tostring(npc.Id) == tostring(relationship.Id) then
+						table.remove(stats.NotableSorcerers, i)
+						break
+					end
+				end
+			end
 
 			stats.Happiness = math.clamp((stats.Happiness or 100) + math.random(8, 16), 0, 100)
 

@@ -59,6 +59,7 @@ local FLIRTABLE_ROLES = {
 	Friend = true,
 	["Best Friend"] = true,
 	["Mission Partner"] = true,
+	["Notable Sorcerer"] = true,
 }
 
 local ROMANCE_ROLES = {
@@ -330,15 +331,6 @@ local function getActionsForRelationship(relationship)
 		return actions
 	end
 
-	if role == "Notable Sorcerer" then
-		return addMurderAction({
-			{ Id = "talk", Text = "Talk" },
-			{ Id = "compliment", Text = "Compliment" },
-			{ Id = "train_together", Text = "Train" },
-			{ Id = "pair_mission", Text = "Mission" },
-		}, relationship)
-	end
-
 	if role == "Ward" then
 		local actions = {
 			{ Id = "talk", Text = "Talk" },
@@ -465,6 +457,21 @@ local function getActionsForRelationship(relationship)
 			{ Id = "adopt_child", Text = "Adopt" },
 			{ Id = "divorce", Text = "Divorce", Confirm = true },
 		}, relationship)
+	end
+
+	if role == "Notable Sorcerer" then
+		local isActive = tostring(relationship.Status or "") == "Active"
+		local actions = {
+			{ Id = "talk", Text = "Talk" },
+			{ Id = "train_together", Text = "Train" },
+		}
+		if isActive then
+			table.insert(actions, { Id = "flirt", Text = "Flirt" })
+			if (relationship.Bond or 0) >= 40 and (relationship.Trust or 0) >= 25 and (relationship.Romance or 0) >= 30 then
+				table.insert(actions, { Id = "ask_out", Text = "Ask Out" })
+			end
+		end
+		return actions
 	end
 
 	if role == "Ex-Spouse" then

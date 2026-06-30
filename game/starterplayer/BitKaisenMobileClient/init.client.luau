@@ -60,6 +60,7 @@ navRegistry.register({ id = "rivals", label = "RIVALS", order = 8, color = theme
 navRegistry.register({ id = "history", label = "HISTORY", order = 9, color = theme.Blue })
 navRegistry.register({ id = "mentor", label = "MENTOR", order = 10, color = Color3.fromRGB(55, 200, 230) })
 navRegistry.register({ id = "binding_vows", label = "VOWS", order = 11, color = Color3.fromRGB(220, 180, 255) })
+navRegistry.register({ id = "technique_mastery", label = "MASTERY", order = 12, color = theme.Purple })
 
 loadingScreen.bump("Preparing panels...")
 

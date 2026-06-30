@@ -300,7 +300,7 @@ local function getAchievementPayload(player)
 			return definition.IsUnlocked(stats)
 		end)
 
-		if ok and result == true then
+		if (ok and result == true) or isClaimed then
 			isUnlocked = true
 			unlockedCount += 1
 		end

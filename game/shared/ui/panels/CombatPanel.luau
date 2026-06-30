@@ -364,9 +364,11 @@ local function init(playerGui: Instance)
 	local attackButton = makeButton("ATTACK", Color3.fromRGB(119, 43, 53))
 	local techniqueButton = makeButton("TECHNIQUE", Color3.fromRGB(73, 52, 126))
 	local domainButton = makeButton("DOMAIN", Color3.fromRGB(91, 58, 145))
+	local blackFlashButton = makeButton("B.FLASH", Color3.fromRGB(48, 28, 90))
 	local defendButton = makeButton("DEFEND", Color3.fromRGB(48, 91, 112))
 	local fleeButton = makeButton("FLEE", Color3.fromRGB(64, 64, 75))
 	local resetButton = makeButton("RESET", Color3.fromRGB(90, 61, 31))
+	blackFlashButton.Visible = false
 	resetButton.Visible = false
 
 	local logBox = Instance.new("ScrollingFrame")
@@ -469,10 +471,11 @@ local function init(playerGui: Instance)
 		corner(panel, 10)
 		stroke(panel, theme.Gold, 1, 0.15)
 
-		local caption = label(panel, payload.IsTechnique and "TECHNIQUE TIMING" or "ATTACK TIMING", 15, true)
+		local captionText = payload.IsBlackFlash and "BLACK FLASH" or (payload.IsTechnique and "TECHNIQUE TIMING" or "ATTACK TIMING")
+		local caption = label(panel, captionText, 15, true)
 		caption.Position = UDim2.new(0, 18, 0, 12)
 		caption.Size = UDim2.new(1, -36, 0, 24)
-		caption.TextColor3 = theme.Gold
+		caption.TextColor3 = payload.IsBlackFlash and theme.Purple or theme.Gold
 		caption.TextXAlignment = Enum.TextXAlignment.Center
 
 		local board = Instance.new("Frame")
@@ -503,7 +506,7 @@ local function init(playerGui: Instance)
 
 		local sweet = Instance.new("Frame")
 		sweet.BorderSizePixel = 0
-		sweet.BackgroundColor3 = theme.Gold
+		sweet.BackgroundColor3 = payload.IsBlackFlash and theme.Purple or theme.Gold
 		sweet.ZIndex = 764
 		sweet.Parent = board
 		corner(sweet, 4)
@@ -873,9 +876,14 @@ local function init(playerGui: Instance)
 		local domainCost = tonumber(domain.Cost) or 0
 		local domainReady = domain.Unlocked == true and (tonumber(state.PlayerCE) or 0) >= domainCost
 		domainButton.Text = domain.Unlocked == true and ("DOMAIN " .. tostring(domainCost)) or "DOMAIN"
+		local bfCost = tonumber(state.BlackFlashCECost) or 35
+		local bfReady = playerTurn and (tonumber(state.PlayerCE) or 0) >= bfCost
+		blackFlashButton.Text = "B.FLASH " .. tostring(bfCost)
+		blackFlashButton.Visible = not defeated
 		setButtonEnabled(attackButton, playerTurn)
 		setButtonEnabled(techniqueButton, playerTurn and techniqueRemaining > 0 and (tonumber(state.PlayerCE) or 0) >= (tonumber(state.TechniqueCECost) or 0))
 		setButtonEnabled(domainButton, playerTurn and domainReady)
+		setButtonEnabled(blackFlashButton, bfReady)
 		setButtonEnabled(defendButton, playerTurn)
 		setButtonEnabled(fleeButton, playerTurn)
 		resetButton.Visible = defeated
@@ -925,6 +933,9 @@ local function init(playerGui: Instance)
 	end)
 	domainButton.MouseButton1Click:Connect(function()
 		if state.Phase == "player_turn" then combatAction:FireServer("domain") end
+	end)
+	blackFlashButton.MouseButton1Click:Connect(function()
+		if state.Phase == "player_turn" then combatAction:FireServer("black_flash") end
 	end)
 	defendButton.MouseButton1Click:Connect(function()
 		if state.Phase == "player_turn" then combatAction:FireServer("defend") end

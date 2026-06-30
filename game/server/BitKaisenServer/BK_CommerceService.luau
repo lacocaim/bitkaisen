@@ -1333,6 +1333,7 @@ local function grantCEBoost15(player, stats, silent)
 
 	stats.Purchases = stats.Purchases or {}
 	stats.Purchases.CEBoosts = (tonumber(stats.Purchases.CEBoosts) or 0) + 1
+	stats.CEAddiction = math.clamp((tonumber(stats.CEAddiction) or 0) + 12, 0, 100)
 
 	if not silent then
 		fireMajorPopup(

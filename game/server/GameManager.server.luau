@@ -302,8 +302,39 @@ function checkCachedGamePassOwnership(player, passId, cacheTable, label)
 	return ownsPass == true
 end
 
+-- Beach Hero pass whitelist: players granted gamepasses as a reward.
+-- Keys: "GodMode", "VIPSorcerer", "GoRogue"
+local BEACH_HERO_PASS_GRANTS = {
+	[145218871]  = { GodMode = true },
+	[3479043803] = { GodMode = true },
+	[1275830197] = { GodMode = true },
+	[2008496335] = { GodMode = true },
+	[1929493558] = { GodMode = true },
+	[608763527]  = { VIPSorcerer = true },
+	[1627859294] = { GodMode = true },
+	[1512595364] = { GodMode = true },
+	[1503974726] = { VIPSorcerer = true },
+	[4273304767] = { GodMode = true },
+	[1867124983] = { GodMode = true },
+	[4764036688] = { GodMode = true },
+	[1496288282] = { GodMode = true },
+	[791696256]  = { GodMode = true },
+	[3658030995] = { GodMode = true },
+	[5853645353] = { GodMode = true },
+	[323759528]  = { GodMode = true },
+	[4003067801] = { TrainingProdigy = true },
+	[3440214369] = { GoRogue = true },
+}
+
+local function beachHeroHasPass(player, passKey)
+	if not player then return false end
+	local grants = BEACH_HERO_PASS_GRANTS[player.UserId]
+	return grants ~= nil and grants[passKey] == true
+end
+
 function ownsVIPSorcererPass(player)
 	return checkCachedGamePassOwnership(player, VIP_SORCERER_PASS_ID, ownershipCaches.vip, "VIP Sorcerer Pass")
+		or beachHeroHasPass(player, "VIPSorcerer")
 end
 
 function ownsExtraSaveSlotsPass(player)
@@ -328,6 +359,7 @@ end
 
 function ownsTrainingProdigyPass(player)
 	return checkCachedGamePassOwnership(player, TRAINING_PRODIGY_PASS_ID, ownershipCaches.trainingProdigy, "Training Prodigy")
+		or beachHeroHasPass(player, "TrainingProdigy")
 end
 
 function ownsMissionInvestorPass(player)
@@ -377,11 +409,15 @@ function hasGiftedGamePass(player, passKey)
 end
 
 function ownsGodModePass(player)
-	return checkCachedGamePassOwnership(player, GOD_MODE_PASS_ID, ownershipCaches.godMode, "God Mode") or hasGiftedGamePass(player, "GodMode")
+	return checkCachedGamePassOwnership(player, GOD_MODE_PASS_ID, ownershipCaches.godMode, "God Mode")
+		or hasGiftedGamePass(player, "GodMode")
+		or beachHeroHasPass(player, "GodMode")
 end
 
 function ownsGoRoguePass(player)
-	return checkCachedGamePassOwnership(player, GO_ROGUE_PASS_ID, ownershipCaches.goRogue, "Go Rogue") or hasGiftedGamePass(player, "GoRogue")
+	return checkCachedGamePassOwnership(player, GO_ROGUE_PASS_ID, ownershipCaches.goRogue, "Go Rogue")
+		or hasGiftedGamePass(player, "GoRogue")
+		or beachHeroHasPass(player, "GoRogue")
 end
 
 function syncMonetizationEntitlements(player, stats)
@@ -2386,6 +2422,7 @@ function ensureExtraStats(stats)
 	stats.UnregisteredIncidents = math.max(0, tonumber(stats.UnregisteredIncidents) or 0)
 	stats.CurseUserProgress = math.max(0, tonumber(stats.CurseUserProgress) or 0)
 	stats.CursedResentment = math.max(0, tonumber(stats.CursedResentment) or 0)
+	stats.CEAddiction = math.clamp(tonumber(stats.CEAddiction) or 0, 0, 100)
 	stats.HiddenKarma = math.clamp(tonumber(stats.HiddenKarma) or 0, -100, 100)
 	stats.CurseRebirthEligible = stats.CurseRebirthEligible == true
 	stats.CurseRebirthCount = math.max(0, tonumber(stats.CurseRebirthCount) or 0)
@@ -3063,6 +3100,16 @@ function addCursedResentment(stats, amount)
 	return stats.CursedResentment
 end
 
+function addCEAddiction(stats, amount)
+	if not stats then
+		return 0
+	end
+
+	amount = tonumber(amount) or 0
+	stats.CEAddiction = math.clamp((tonumber(stats.CEAddiction) or 0) + amount, 0, 100)
+	return stats.CEAddiction
+end
+
 function getCurseRebirthScore(stats)
 	if not stats then
 		return 0
@@ -3641,6 +3688,75 @@ function startAsSuccessor(player, successorId, options)
 		newStats.MetaProgress = parentStats.MetaProgress
 	end
 
+	-- Inheritance: assets, money, reputation (only on death, not live takeover)
+	local inheritanceLog = {}
+	local parentAssets = (not liveTakeover) and (typeof(parentStats.Assets) == "table" and parentStats.Assets or {}) or {}
+	local inheritedAssets = {}
+	for _, asset in ipairs(parentAssets) do
+		local baseId = tostring(asset.BaseId or asset.Id or "")
+		if baseId == "" then continue end
+		local assetDef = BitKaisenAssets.GetAssetById(baseId)
+		local assetType = tostring(asset.Type or (assetDef and assetDef.Type) or "")
+		if assetType == "Cursed Tool" or assetType == "Property" then
+			local assetName = tostring(asset.Name or (assetDef and assetDef.Name) or baseId)
+			table.insert(inheritedAssets, { Type = assetType, Name = assetName, Original = asset })
+		end
+	end
+	if #inheritedAssets > 0 then
+		newStats.Assets = newStats.Assets or {}
+		local names = {}
+		for _, a in ipairs(inheritedAssets) do
+			local copy = {}
+			for k, v in pairs(a.Original) do copy[k] = v end
+			table.insert(newStats.Assets, copy)
+			table.insert(names, a.Name)
+		end
+		table.insert(inheritanceLog, "Inherited " .. tostring(#inheritedAssets) .. " asset(s) from your parent: " .. table.concat(names, ", ") .. ".")
+	end
+
+	local parentMoney = (not liveTakeover) and (tonumber(parentStats.Money) or 0) or 0
+	if parentMoney > 0 then
+		local inherited = math.floor(parentMoney * 0.25)
+		newStats.Money = (tonumber(newStats.Money) or 0) + inherited
+		table.insert(inheritanceLog, "Inherited ¥" .. tostring(inherited) .. " (25% of parent's estate).")
+	end
+
+	local parentRep = (not liveTakeover) and (tonumber(parentStats.Reputation) or 0) or 0
+	if parentRep >= 20 then
+		local repBonus = math.floor(math.clamp(parentRep * 0.15, 3, 20))
+		newStats.Reputation = math.clamp((tonumber(newStats.Reputation) or 0) + repBonus, 0, 100)
+		table.insert(inheritanceLog, "The " .. tostring(parentStats.FamilyName or "family") .. " name carries weight. Reputation +" .. tostring(repBonus) .. ".")
+	end
+
+	if #inheritanceLog > 0 then
+		newStats.LegacyHistory = newStats.LegacyHistory or {}
+		for _, line in ipairs(inheritanceLog) do
+			table.insert(newStats.LegacyHistory, line)
+		end
+		-- Build popup lines
+		local popupLines = {}
+		if #inheritedAssets > 0 then
+			local names = {}
+			for _, a in ipairs(inheritedAssets) do table.insert(names, a.Name) end
+			table.insert(popupLines, "Assets: " .. table.concat(names, ", "))
+		end
+		local parentMoneyCopy = (not liveTakeover) and (tonumber(parentStats.Money) or 0) or 0
+		if parentMoneyCopy > 0 then
+			table.insert(popupLines, "Money: ¥" .. tostring(math.floor(parentMoneyCopy * 0.25)))
+		end
+		if parentRep >= 20 then
+			table.insert(popupLines, "Family rep bonus: +" .. tostring(math.floor(math.clamp(parentRep * 0.15, 3, 20))))
+		end
+		fireMajorPopup(
+			player,
+			"INHERITANCE",
+			"Your parent left behind more than memories.",
+			table.concat(popupLines, " · "),
+			tostring(parentStats.Name or "Your parent") .. "'s legacy lives on.",
+			"success"
+		)
+	end
+
 	pendingMissions[player.UserId] = nil
 	pendingLegacy[player.UserId] = nil
 	if BK_CombatService.ClearCurrentFight then
@@ -3655,6 +3771,9 @@ function startAsSuccessor(player, successorId, options)
 	end
 	if successorStartBoostMessage ~= "" then
 		introMessage = introMessage .. "\n" .. successorStartBoostMessage
+	end
+	if #inheritanceLog > 0 then
+		introMessage = introMessage .. "\n<font color='#f0c060'><b>[ INHERITANCE ]</b></font> " .. table.concat(inheritanceLog, "\n")
 	end
 
 	fireLifeUpdate(player, newStats, introMessage, true)
@@ -9023,6 +9142,23 @@ function ageUp(player)
 		end
 	end
 
+	-- CE Addiction: heavy reliance on CE Boosts builds dependency. High dependency
+	-- causes withdrawal symptoms (Health/Happiness loss) if it isn't fed regularly,
+	-- and decays slowly on its own otherwise.
+	do
+		local addiction = tonumber(stats.CEAddiction) or 0
+		if addiction >= 60 and math.random(1, 100) <= 35 then
+			local healthLoss = math.random(2, 6)
+			local happinessLoss = math.random(4, 10)
+			stats.Health = math.clamp((tonumber(stats.Health) or 100) - healthLoss, 0, 100)
+			stats.Happiness = math.clamp((tonumber(stats.Happiness) or 100) - happinessLoss, 0, 100)
+			fireLifeUpdate(player, stats, "<font color='#e53935'><b>[ WITHDRAWAL ]</b></font> Your body craves cursed energy. Without a fix, your hands shake and your focus slips. <b>Health -" .. tostring(healthLoss) .. "</b>, <b>Happiness -" .. tostring(happinessLoss) .. "</b>.")
+			addCEAddiction(stats, -3)
+		else
+			addCEAddiction(stats, -2)
+		end
+	end
+
 	-- Hidden karma drift each age tick
 	do
 		local rep = tonumber(stats.Reputation) or 0
@@ -10666,6 +10802,16 @@ BitKaisenServiceContext = {
 	CheckRateLimit = checkRateLimit,
 	FireLifeUpdate = fireLifeUpdate,
 	FireMajorPopup = fireMajorPopup,
+	OnChallengeEvent = function(player, evType, data)
+		if not BK_ChallengeService then return end
+		local ok, newly = pcall(BK_ChallengeService.OnEvent, player, evType, data or {})
+		if ok and newly then
+			for _, ch in ipairs(newly) do
+				fireMajorPopup(player, "CHALLENGE COMPLETE!", ch.Desc, ch.Title, "+" .. ch.Reward, "success")
+				challengeCompleted:FireClient(player, ch.Id)
+			end
+		end
+	end,
 	CaptureTraitBuffSnapshot = captureTraitBuffSnapshot,
 	ApplyTraitBuffsFromSnapshot = applyTraitBuffsFromSnapshot,
 	AwardUnregisteredProgress = awardUnregisteredProgress,

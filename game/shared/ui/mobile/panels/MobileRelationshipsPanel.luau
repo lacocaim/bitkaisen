@@ -38,6 +38,7 @@ local FLIRTABLE_ROLES = {
 	Friend = true,
 	["Best Friend"] = true,
 	["Mission Partner"] = true,
+	["Notable Sorcerer"] = true,
 }
 
 local ROMANCE_ROLES = {
@@ -153,7 +154,15 @@ local function getActionsForRelationship(relationship)
 	end
 
 	if role == "Notable Sorcerer" then
-		return addMurder({ { Id = "talk", Text = "Talk" }, { Id = "compliment", Text = "Compliment" }, { Id = "train_together", Text = "Train" }, { Id = "pair_mission", Text = "Mission" } })
+		local isActive = tostring(relationship.Status or "") == "Active"
+		local actions = { { Id = "talk", Text = "Talk" }, { Id = "train_together", Text = "Train" } }
+		if isActive then
+			table.insert(actions, { Id = "flirt", Text = "Flirt" })
+			if (relationship.Bond or 0) >= 40 and (relationship.Trust or 0) >= 25 and (relationship.Romance or 0) >= 30 then
+				table.insert(actions, { Id = "ask_out", Text = "Ask Out" })
+			end
+		end
+		return actions
 	end
 	if role == "Ward" then
 		local actions = { { Id = "talk", Text = "Talk" }, { Id = "encourage_child", Text = "Encourage" }, { Id = "protect_child", Text = "Protect" } }
@@ -504,7 +513,33 @@ local function createRelationshipCard(parent: GuiObject, relationship, order: nu
 
 	local actionsHolder: Frame? = nil
 	if isExpanded then
-		actionsHolder = createActionsGrid(card, relationship, 5)
+		if role == "Notable Sorcerer" then
+			local personality = tostring(relationship.Personality or relationship.Trait or "")
+			local background = tostring(relationship.Background or relationship.PublicNote or "")
+			if personality ~= "" then
+				mobileLabel({
+					parent = card,
+					text = personality,
+					size = 11,
+					color = Color3.fromRGB(200, 180, 255),
+					font = Enum.Font.GothamMedium,
+					order = 5,
+					wrap = true,
+				})
+			end
+			if background ~= "" then
+				mobileLabel({
+					parent = card,
+					text = background,
+					size = 11,
+					color = Color3.fromRGB(165, 165, 185),
+					font = Enum.Font.GothamMedium,
+					order = 6,
+					wrap = true,
+				})
+			end
+		end
+		actionsHolder = createActionsGrid(card, relationship, 7)
 	end
 
 	local expandBtn = Instance.new("TextButton")

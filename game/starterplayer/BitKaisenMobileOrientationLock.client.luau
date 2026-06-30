@@ -17,9 +17,9 @@ if mode == "Mobile" then
 	end)
 else
 	pcall(function()
-		StarterGui.ScreenOrientation = Enum.ScreenOrientation.Sensor
+		StarterGui.ScreenOrientation = Enum.ScreenOrientation.Portrait
 	end)
 	pcall(function()
-		playerGui.ScreenOrientation = Enum.ScreenOrientation.Sensor
+		playerGui.ScreenOrientation = Enum.ScreenOrientation.Portrait
 	end)
 end

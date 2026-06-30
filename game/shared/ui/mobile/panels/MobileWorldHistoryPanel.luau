@@ -38,6 +38,7 @@ local RIBBON_COLORS = {
 }
 
 local activeTab = "history"
+local rendering = false
 local historyTabBtn: TextButton
 local titlesTabBtn: TextButton
 local livesTabBtn: TextButton
@@ -63,6 +64,7 @@ local function updateTabStyles()
 end
 
 local function renderHistory()
+	rendering = true
 	clearList()
 	activeTab = "history"
 	updateTabStyles()
@@ -70,6 +72,7 @@ local function renderHistory()
 	local ok, data = pcall(function()
 		return getWorldHistory:InvokeServer()
 	end)
+	rendering = false
 
 	if not ok or typeof(data) ~= "table" then
 		local errCard = mc.mobileCard({ parent = scroll, order = 1 })
@@ -153,6 +156,7 @@ local function renderHistory()
 end
 
 local function renderTitles()
+	rendering = true
 	clearList()
 	activeTab = "titles"
 	updateTabStyles()
@@ -160,6 +164,7 @@ local function renderTitles()
 	local ok, data = pcall(function()
 		return getTitles:InvokeServer()
 	end)
+	rendering = false
 
 	if not ok or typeof(data) ~= "table" then
 		local errCard = mc.mobileCard({ parent = scroll, order = 1 })
@@ -206,17 +211,20 @@ local function renderTitles()
 end
 
 local function renderLives()
+	rendering = true
 	clearList()
 	activeTab = "lives"
 	updateTabStyles()
 
 	if not getPastLives then
+		rendering = false
 		local errCard = mc.mobileCard({ parent = scroll, order = 1 })
 		mc.mobileLabel({ parent = errCard, text = "Cemetery unavailable — rejoin to enable it.", size = 13, color = theme.SubText, order = 1 })
 		return
 	end
 
 	local ok, data = pcall(function() return getPastLives:InvokeServer() end)
+	rendering = false
 	if not ok or typeof(data) ~= "table" then
 		local errCard = mc.mobileCard({ parent = scroll, order = 1 })
 		mc.mobileLabel({ parent = errCard, text = "Could not load past lives.", size = 14, color = theme.Bad, font = Enum.Font.GothamBold, order = 1 })
@@ -267,11 +275,13 @@ local function makeMobileBar(parent, label, value, barColor, order)
 end
 
 local function renderInfluence()
+	rendering = true
 	clearList()
 	activeTab = "influence"
 	updateTabStyles()
 
 	local ok, data = pcall(function() return getWorldHistory:InvokeServer() end)
+	rendering = false
 	if not ok or typeof(data) ~= "table" then
 		local errCard = mc.mobileCard({ parent = scroll, order = 1 })
 		mc.mobileLabel({ parent = errCard, text = "Could not load influence data.", size = 14, color = theme.Bad, font = Enum.Font.GothamBold, order = 1 })
@@ -366,7 +376,7 @@ local function buildTabBar()
 		textSize = 13,
 		order = 1,
 		callback = function()
-			if activeTab ~= "history" then renderHistory() end
+			if activeTab ~= "history" and not rendering then renderHistory() end
 		end,
 	})
 
@@ -380,7 +390,7 @@ local function buildTabBar()
 		textSize = 13,
 		order = 2,
 		callback = function()
-			if activeTab ~= "titles" then renderTitles() end
+			if activeTab ~= "titles" and not rendering then renderTitles() end
 		end,
 	})
 
@@ -394,7 +404,7 @@ local function buildTabBar()
 		textSize = 13,
 		order = 3,
 		callback = function()
-			if activeTab ~= "lives" then renderLives() end
+			if activeTab ~= "lives" and not rendering then renderLives() end
 		end,
 	})
 
@@ -408,7 +418,7 @@ local function buildTabBar()
 		textSize = 13,
 		order = 4,
 		callback = function()
-			if activeTab ~= "influence" then renderInfluence() end
+			if activeTab ~= "influence" and not rendering then renderInfluence() end
 		end,
 	})
 end

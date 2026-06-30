@@ -168,6 +168,7 @@ scrollPadding.Parent = scroll
 
 local isOpen = false
 local activeTab = "history"
+local rendering = false
 
 responsiveScale.attach(window, 1114, 778)
 
@@ -244,9 +245,11 @@ local function updateTabStyles()
 end
 
 local function renderHistory()
+	rendering = true
 	clear()
 	updateTabStyles()
 	local ok, data = pcall(function() return getWorldHistory:InvokeServer() end)
+	rendering = false
 	if not ok or typeof(data) ~= "table" then
 		text(card(70), "Could not load world history.", 13, COLORS.Red, 20, true)
 		return
@@ -274,9 +277,11 @@ local function renderHistory()
 end
 
 local function renderTitles()
+	rendering = true
 	clear()
 	updateTabStyles()
 	local ok, data = pcall(function() return getTitles:InvokeServer() end)
+	rendering = false
 	if not ok or typeof(data) ~= "table" then
 		text(card(70), "Could not load titles.", 13, COLORS.Red, 20, true)
 		return
@@ -444,13 +449,16 @@ local function makeTombstone(parent, lifeData, index)
 end
 
 local function renderLives()
+	rendering = true
 	clear()
 	updateTabStyles()
 	if not getPastLives then
+		rendering = false
 		text(card(70), "Cemetery unavailable — rejoin to enable it.", 13, COLORS.SubText, 20, false)
 		return
 	end
 	local ok, data = pcall(function() return getPastLives:InvokeServer() end)
+	rendering = false
 	if not ok or typeof(data) ~= "table" then
 		text(card(70), "Could not load past lives.", 13, COLORS.Red, 20, true)
 		return
@@ -538,9 +546,11 @@ local function makeStatBar(parent, label, value, barColor, yOffset)
 end
 
 local function renderInfluence()
+	rendering = true
 	clear()
 	updateTabStyles()
 	local ok, data = pcall(function() return getWorldHistory:InvokeServer() end)
+	rendering = false
 	if not ok or typeof(data) ~= "table" then
 		text(card(70), "Could not load influence data.", 13, COLORS.Red, 20, true)
 		return
@@ -585,28 +595,28 @@ local function renderInfluence()
 end
 
 historyTab.MouseButton1Click:Connect(function()
-	if activeTab ~= "history" then
+	if activeTab ~= "history" and not rendering then
 		activeTab = "history"
 		renderHistory()
 	end
 end)
 
 titlesTab.MouseButton1Click:Connect(function()
-	if activeTab ~= "titles" then
+	if activeTab ~= "titles" and not rendering then
 		activeTab = "titles"
 		renderTitles()
 	end
 end)
 
 livesTab.MouseButton1Click:Connect(function()
-	if activeTab ~= "lives" then
+	if activeTab ~= "lives" and not rendering then
 		activeTab = "lives"
 		renderLives()
 	end
 end)
 
 influenceTab.MouseButton1Click:Connect(function()
-	if activeTab ~= "influence" then
+	if activeTab ~= "influence" and not rendering then
 		activeTab = "influence"
 		renderInfluence()
 	end

@@ -67,6 +67,7 @@ local function NavButton(entry: { id: string, label: string, color: Color3? })
 
 	local btn = container {
 		name = entry.id .. "Button",
+		w = px(190),
 		h = px(32),
 		color = function()
 			return isActive() and theme.Panel3 or theme.Panel2
@@ -87,7 +88,6 @@ local function NavButton(entry: { id: string, label: string, color: Color3? })
 			if _G.BitKaisenPlaySFX then _G.BitKaisenPlaySFX("Click") end
 			uiState.navigate(entry.id)
 		end,
-		create("UIFlexItem") { FlexMode = Enum.UIFlexMode.Fill },
 		theStroke,
 		theScale,
 		theAccent,
@@ -99,6 +99,8 @@ local function NavButton(entry: { id: string, label: string, color: Color3? })
 			size = px(18),
 			font = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.ExtraBold),
 			truncate = "end",
+			xalign = "left",
+			x = 16, w = -28,
 			ws = 1, hs = 1,
 		},
 	}
@@ -108,10 +110,16 @@ local function NavButton(entry: { id: string, label: string, color: Color3? })
 end
 
 local function NavPanel()
-	return create("Frame") {
+	return create("ScrollingFrame") {
 		Name = "NavPanel",
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
+		ScrollingDirection = Enum.ScrollingDirection.X,
+		CanvasSize = UDim2.new(0, 0, 0, 0),
+		AutomaticCanvasSize = Enum.AutomaticSize.X,
+		ScrollBarThickness = 3,
+		ScrollBarImageColor3 = theme.Stroke,
+		ElasticBehavior = Enum.ElasticBehavior.WhenScrollable,
 
 		create("UIListLayout") {
 			Name = "NavLayout",

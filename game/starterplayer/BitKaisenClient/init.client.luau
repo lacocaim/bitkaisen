@@ -142,7 +142,7 @@ local function applyResponsiveLayout(mainPanel: Frame)
 			layout.VerticalAlignment = Enum.VerticalAlignment.Center
 		end
 	else
-		local navPanelObj = navPanel :: Frame
+		local navPanelObj = navPanel :: ScrollingFrame
 		navPanelObj.Size = UDim2.new(0.945, 0, 0, 40)
 		navPanelObj.Position = UDim2.new(0.025, 0, 0.003, 0)
 

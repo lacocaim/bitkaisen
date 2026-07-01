@@ -3527,7 +3527,7 @@ function startNewLife(player)
 			Clan = tostring(oldStats.Clan or oldStats.FamilyName or ""),
 			Age = tonumber(oldStats.Age) or 0,
 			Grade = tostring(oldStats.Grade or "Unranked"),
-			Technique = tostring(oldStats.Technique or "None"),
+			Technique = tostring(oldStats.CursedTechnique or "None"),
 			Missions = tonumber(oldStats.MissionsCompleted) or 0,
 			Reputation = tonumber(oldStats.Reputation) or 0,
 			Ribbon = getLifeRibbon(oldStats),

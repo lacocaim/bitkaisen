@@ -68,6 +68,16 @@ end
 
 if game:GetService("RunService"):IsStudio() then print("[BK] Booting Computer shell") end
 
+do
+	local sound = Instance.new("Sound")
+	sound.SoundId = "rbxassetid://77695327434474"
+	sound.Volume = 0.4
+	sound.Looped = true
+	sound.RollOffMaxDistance = 0
+	sound.Parent = game:GetService("SoundService")
+	sound:Play()
+end
+
 loadingScreen.bump("Registering navigation...")
 
 navRegistry.register({ id = "weekly", label = "WEEKLY", order = 0, color = theme.Blue })

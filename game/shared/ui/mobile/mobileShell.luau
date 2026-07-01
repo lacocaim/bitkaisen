@@ -119,12 +119,14 @@ local function DossierBar(label: string, color: Color3, getValue: () -> number)
 	}
 end
 
-local function DInfoRow(label: string, val: any, color: Color3?)
+local function DInfoRow(label: string, val: any, color: Color3?, valueName: string?)
 	return create("Frame") {
-		Size = UDim2.new(1, 0, 0, 17),
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundTransparency = 1,
+		create("UISizeConstraint") { MinSize = Vector2.new(0, 17) },
 		create("TextLabel") {
-			Size = UDim2.new(0, 60, 1, 0),
+			Size = UDim2.new(0, 60, 0, 17),
 			BackgroundTransparency = 1,
 			Text = "• " .. string.upper(label),
 			TextColor3 = LABEL,
@@ -134,8 +136,10 @@ local function DInfoRow(label: string, val: any, color: Color3?)
 			TextYAlignment = Enum.TextYAlignment.Center,
 		},
 		create("TextLabel") {
+			Name = valueName,
 			Position = UDim2.new(0, 62, 0, 0),
-			Size = UDim2.new(1, -62, 1, 0),
+			Size = UDim2.new(1, -62, 0, 0),
+			AutomaticSize = Enum.AutomaticSize.Y,
 			BackgroundTransparency = 1,
 			Text = val,
 			TextColor3 = color or theme.Text,
@@ -144,7 +148,6 @@ local function DInfoRow(label: string, val: any, color: Color3?)
 			TextXAlignment = Enum.TextXAlignment.Left,
 			TextYAlignment = Enum.TextYAlignment.Center,
 			TextWrapped = true,
-			ClipsDescendants = true,
 		},
 	}
 end
@@ -469,7 +472,7 @@ local function MobileProfileHeader()
 							TextWrapped = true,
 						},
 					},
-					DInfoRow("Traits",  traitVal,   theme.Gold),
+					DInfoRow("Traits",  traitVal,   theme.Gold, "Traits"),
 				},
 
 				-- Right column

@@ -611,6 +611,7 @@ local function init(playerGui: Instance)
 		stop.MouseButton1Click:Connect(function() submit(false) end)
 		root.InputBegan:Connect(function(input)
 			if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.Space then submit(false) end
+			if input.UserInputType == Enum.UserInputType.Gamepad1 and (input.KeyCode == Enum.KeyCode.ButtonA or input.KeyCode == Enum.KeyCode.ButtonB) then submit(false) end
 		end)
 		activeMinigame = {
 			Root = root,
@@ -684,7 +685,7 @@ local function init(playerGui: Instance)
 			corner(button, 48)
 			stroke(button, Color3.fromRGB(255, 255, 255), 2, 0.4)
 			startedAt = os.clock()
-			button.MouseButton1Click:Connect(function()
+			local function triggerDodge()
 				if finished or hitId ~= activeHitId then return end
 				local elapsed = os.clock() - startedAt
 				local success = elapsed <= windowSeconds
@@ -702,6 +703,12 @@ local function init(playerGui: Instance)
 				shakeGui(button)
 				activeHitId += 1
 				task.delay(0.08, nextHit)
+			end
+			button.MouseButton1Click:Connect(triggerDodge)
+			root.InputBegan:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.Gamepad1 and (input.KeyCode == Enum.KeyCode.ButtonA or input.KeyCode == Enum.KeyCode.ButtonB) then
+					triggerDodge()
+				end
 			end)
 			task.delay(windowSeconds, function()
 				if not finished and hitId == activeHitId and button and button.Parent then
@@ -761,7 +768,7 @@ local function init(playerGui: Instance)
 		end
 		heartbeatPulse()
 		local clicked = false
-		button.MouseButton1Click:Connect(function()
+		local function triggerCounter()
 			if clicked then return end
 			clicked = true
 			pulseAlive = false
@@ -771,6 +778,12 @@ local function init(playerGui: Instance)
 			shakeGui(button)
 			combatMinigameResult:FireServer(payload.Token, "counter", 1, {})
 			task.delay(0.2, destroyMinigame)
+		end
+		button.MouseButton1Click:Connect(triggerCounter)
+		root.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.Gamepad1 and (input.KeyCode == Enum.KeyCode.ButtonA or input.KeyCode == Enum.KeyCode.ButtonB) then
+				triggerCounter()
+			end
 		end)
 		task.delay(tonumber(payload.Window) or 1.3, function()
 			if activeMinigame and activeMinigame.Root == root then
@@ -902,7 +915,9 @@ local function init(playerGui: Instance)
 		if state.PendingAttack then
 			if state.PendingAttack.Token ~= lastAttackToken then
 				lastAttackToken = state.PendingAttack.Token
-				openAttackMinigame(state.PendingAttack)
+				if not state.PendingAttack.IsBlackFlash then
+					openAttackMinigame(state.PendingAttack)
+				end
 			end
 		else
 			lastAttackToken = nil

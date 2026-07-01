@@ -104,9 +104,15 @@ function BitKaisenCombat.GetCombatPower(stats, options)
 	local strength = tonumber(stats.Strength) or 0
 	local health = tonumber(stats.Health) or 100
 	local reputation = tonumber(stats.Reputation) or 0
+	local speed = tonumber(stats.Speed) or 0
+	local durability = tonumber(stats.Durability) or 0
 	local grade = cleanGrade(stats.Grade)
 	local technique = getTechnique(stats)
 	local origin = tostring(stats.Origin or stats.Clan or "Minor Sorcerer Family")
+
+	-- Damage and CE Efficiency are derived, not stored directly on stats.
+	local damage = strength * 0.5 + cursedEnergy * 0.3
+	local ceEfficiency = mastery * 0.6 + cursedEnergy * 0.2
 
 	local power = 0
 	power += cursedEnergy * 0.78
@@ -114,6 +120,10 @@ function BitKaisenCombat.GetCombatPower(stats, options)
 	power += strength * 0.42
 	power += math.max(0, health) * 0.18
 	power += math.max(0, reputation) * 0.12
+	power += speed * 0.35
+	power += durability * 0.30
+	power += damage * 0.20
+	power += ceEfficiency * 0.15
 	power += GRADE_POWER[grade] or 0
 	power += ORIGIN_POWER[origin] or 0
 
@@ -175,7 +185,8 @@ function BitKaisenCombat.ResolveMissionCombat(stats, missionData, options)
 	missionData = missionData or {}
 
 	local playerBase = BitKaisenCombat.GetCombatPower(stats, options)
-	local playerRoll = math.random(8, 34)
+	local speedBonus = math.floor((tonumber(stats and stats.Speed) or 0) / 5)
+	local playerRoll = math.random(8, 34) + speedBonus
 	local enemyPower = BitKaisenCombat.GetEnemyPower(missionData, options)
 	local playerPower = playerBase + playerRoll
 	local margin = playerPower - enemyPower
@@ -200,16 +211,17 @@ function BitKaisenCombat.ResolveMissionCombat(stats, missionData, options)
 	local riskMult = BitKaisenTraits.GetModifier(stats, "RiskMult", 1)
 	local baseDamage = tonumber(missionData.DmgPenalty) or math.max(8, math.floor(enemyPower * 0.25))
 	local smartsReduction = math.floor((tonumber(stats and stats.Smarts) or 0) / 7)
+	local durabilityReduction = math.floor((tonumber(stats and stats.Durability) or 0) / 10)
 	local damage = 0
 
 	if success then
 		if margin < 8 then
-			damage = math.max(2, math.floor((baseDamage * 0.45 * riskMult) - smartsReduction))
+			damage = math.max(2, math.floor((baseDamage * 0.45 * riskMult) - smartsReduction - durabilityReduction))
 		elseif margin < 35 then
-			damage = math.max(0, math.floor((baseDamage * 0.22 * riskMult) - smartsReduction))
+			damage = math.max(0, math.floor((baseDamage * 0.22 * riskMult) - smartsReduction - durabilityReduction))
 		end
 	else
-		damage = math.max(4, math.floor((baseDamage * (margin <= -55 and 1.18 or 0.88) * riskMult) - smartsReduction))
+		damage = math.max(4, math.floor((baseDamage * (margin <= -55 and 1.18 or 0.88) * riskMult) - smartsReduction - durabilityReduction))
 	end
 
 	damage = math.max(0, math.floor((damage * (techniqueModifiers.DamageTakenMult or 1)) + 0.5))
@@ -220,7 +232,8 @@ function BitKaisenCombat.ResolveMissionCombat(stats, missionData, options)
 		masteryGain += techniqueModifiers.MasteryGainBonus or 0
 	end
 
-	local ceBonus = success and math.max(0, math.floor(((tonumber(missionData.RewardCE) or 0) * 0.08) * (techniqueModifiers.CursedEnergyRewardMult or 1))) or 0
+	local ceEfficiencyMult = 1 + (((tonumber(stats and stats.TechniqueMastery) or 0) * 0.6 + (tonumber(stats and stats.CursedEnergy) or 0) * 0.2) / 200)
+	local ceBonus = success and math.max(0, math.floor(((tonumber(missionData.RewardCE) or 0) * 0.08) * (techniqueModifiers.CursedEnergyRewardMult or 1) * ceEfficiencyMult)) or 0
 	local summary = "Combat: <b>" .. outcome .. "</b> (Power " .. tostring(playerPower) .. " vs Threat " .. tostring(enemyPower) .. ")."
 	if damage > 0 then
 		summary ..= " Health <b>-" .. tostring(damage) .. "</b>."

@@ -44,15 +44,28 @@ local function setupTapRouter()
 		end)
 		if not ok or not objs then return end
 
+		-- Find the topmost ScreenGui (highest DisplayOrder) that has any element at this position.
+		-- This prevents buttons in lower-DisplayOrder GUIs (e.g. MobileGui) from firing through
+		-- an overlay in a higher-DisplayOrder GUI (e.g. SettingsGui).
+		local topOrder = -math.huge
+		local topSg = nil
+		for _, obj in ipairs(objs) do
+			local sg = obj:FindFirstAncestorWhichIsA("ScreenGui")
+			if sg and sg.Enabled and (sg.DisplayOrder > topOrder) then
+				topOrder = sg.DisplayOrder
+				topSg = sg
+			end
+		end
+
 		for _, obj in ipairs(objs) do
 			local cb = registeredButtons[obj]
 			if cb then
 				local sg = obj:FindFirstAncestorWhichIsA("ScreenGui")
-				if sg and sg.Enabled and obj.Visible then
+				if sg and sg == topSg and obj.Visible then
 					local now = tick()
 					if lastFireTime[obj] and (now - lastFireTime[obj]) < TAP_DEBOUNCE then return end
 					lastFireTime[obj] = now
-						task.spawn(cb)
+					task.spawn(cb)
 					return
 				end
 			end

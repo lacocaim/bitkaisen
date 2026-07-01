@@ -2397,6 +2397,10 @@ function ensureExtraStats(stats)
 	stats.MonthsIntoAge = math.clamp(tonumber(stats.MonthsIntoAge) or 0, 0, 11)
 	ensureEraYearState(stats, false)
 
+	stats.Speed = math.max(0, math.min(100, tonumber(stats.Speed) or 0))
+	stats.Durability = math.max(0, math.min(100, tonumber(stats.Durability) or 0))
+	stats.Damage = math.max(0, math.min(100, tonumber(stats.Damage) or 0))
+	stats.CEEfficiency = math.max(0, math.min(100, tonumber(stats.CEEfficiency) or 0))
 	stats.Money = math.floor((tonumber(stats.Money) or 0) * 100 + 0.5) / 100
 	stats.AFKStabilizationUnlocked = stats.AFKStabilizationUnlocked == true
 	stats.AFKStabilizationEarned = math.max(0, math.floor((tonumber(stats.AFKStabilizationEarned) or 0) * 100 + 0.5) / 100)
@@ -6515,6 +6519,7 @@ function applyRandomLifeScenarioEffects(stats, effects)
 		stats.Health = 0
 		stats.DeathReason = tostring(effects.DeathReason or "Killed during a life event")
 		stats.DeathMessage = tostring(effects.DeathMessage or stats.DeathReason)
+		stats.CauseOfDeath = stats.CauseOfDeath or stats.DeathReason
 	end
 
 	stats.Alignment = getMoralAlignment(stats)
@@ -8191,7 +8196,8 @@ function resolveVesselEscortDialogue(player, stats, option)
 
 		if stats.Health <= 0 then
 			stats.Alive = false
-			resultText = resultText .. "\nYour body gave out after the mission." 
+			stats.CauseOfDeath = stats.CauseOfDeath or "Killed during a mission"
+			resultText = resultText .. "\nYour body gave out after the mission."
 		end
 	end
 
@@ -9774,6 +9780,7 @@ function resolveMission(player, stats, missionData, choiceOption)
 
 		if stats.Health <= 0 then
 			stats.Alive = false
+			stats.CauseOfDeath = stats.CauseOfDeath or "Died on a mission"
 			stats.MissionsFailed += 1
 			adjustKarma(stats, -3)
 			logMessage = logMessage .. "\nYou died on the mission."
@@ -9975,6 +9982,7 @@ function resolveMission(player, stats, missionData, choiceOption)
 
 		if stats.Health <= 0 then
 			stats.Alive = false
+			stats.CauseOfDeath = stats.CauseOfDeath or "Killed in action"
 			logMessage = logMessage .. "\nYou were killed in action."
 		end
 	end

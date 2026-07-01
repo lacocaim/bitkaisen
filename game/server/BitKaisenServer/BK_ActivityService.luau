@@ -1769,9 +1769,13 @@ local function processActivity(player, activityId)
 		local gain = math.max(1, math.floor((update16Gain(stats, 5, 12, false) + strengthBonus) * passiveMult * prodigyMult * doubleMult * vipMult + 0.5))
 		stats.PhysicalConditioningThisAge += 1
 		stats.Strength = math.max(0, (tonumber(stats.Strength) or 0) + gain)
+		local speedGain = math.max(0, math.floor(gain * 0.5))
+		local durabilityGain = math.max(0, math.floor(gain * 0.5))
+		stats.Speed = math.max(0, (tonumber(stats.Speed) or 0) + speedGain)
+		stats.Durability = math.max(0, (tonumber(stats.Durability) or 0) + durabilityGain)
 		stats.Health = math.clamp((stats.Health or 100) - math.random(1, 5), 0, 100)
 		stats.Happiness = math.clamp((stats.Happiness or 100) - math.random(0, 3), 0, 100)
-		logMessage = "You pushed your body through physical conditioning. Strength +" .. tostring(gain) .. "."
+		logMessage = "You pushed your body through physical conditioning. Strength +" .. tostring(gain) .. ", Speed +" .. tostring(speedGain) .. ", Durability +" .. tostring(durabilityGain) .. "."
 
 	elseif activityId == "study_theory" then
 		stats.Smarts = math.clamp((stats.Smarts or 0) + update16Gain(stats, 3, 8, true), 0, 100)
@@ -3539,8 +3543,12 @@ local function processActivity(player, activityId)
 			stats.Origin = "Ryomen Clan"
 			stats.Clan = "Ryomen Clan"
 			stats.FamilyName = "Ryomen"
-			stats.CursedTechnique = "Shrine"
-			stats.InnateTechnique = "Shrine"
+			if not stats.CursedTechnique or stats.CursedTechnique == "" or stats.CursedTechnique == "None" then
+				stats.CursedTechnique = "Shrine"
+				stats.InnateTechnique = "Shrine"
+			else
+				stats.InnateTechnique = stats.CursedTechnique
+			end
 			stats.TechniqueKnown = true
 			stats.TechniqueUsable = true
 			stats.TechniqueAwakened = true
@@ -3548,8 +3556,9 @@ local function processActivity(player, activityId)
 			stats.TechniqueMastery = math.clamp((tonumber(stats.TechniqueMastery) or 0) + 18, 0, 100)
 			stats.Fear = math.clamp((tonumber(stats.Fear) or 0) + 30, 0, 100)
 			stats.WantedLevel = math.clamp((tonumber(stats.WantedLevel) or 0) + 12, 0, 100)
-			fireMajorPopup(player, "SUKUNA AWAKENED", "The fingers answered from inside your body.", "Shrine", "Your life changed violently.")
-			fireLifeUpdate(player, stats, "<font color='#d6455d'><b>[ SUKUNA ]</b></font> You survived the fingers and awakened <b>Shrine</b>. Fear and wanted level surged.")
+			local ctName = tostring(stats.CursedTechnique or "Shrine")
+			fireMajorPopup(player, "SUKUNA AWAKENED", "The fingers answered from inside your body.", ctName, "Your life changed violently.")
+			fireLifeUpdate(player, stats, "<font color='#d6455d'><b>[ SUKUNA ]</b></font> You survived the fingers. Sukuna incarnated but your cursed technique remained your own.")
 		else
 			stats.CursedEnergy = math.max(0, (tonumber(stats.CursedEnergy) or 0) + 60)
 			stats.Health = math.clamp((tonumber(stats.Health) or 100) - 35, 1, 100)

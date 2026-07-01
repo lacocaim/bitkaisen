@@ -1,9 +1,6 @@
 local Players = game:GetService("Players")
 local GuiService = game:GetService("GuiService")
 local UserInputService = game:GetService("UserInputService")
-if UserInputService.GamepadEnabled then
-	GuiService.AutoSelectGuiEnabled = false
-end
 
 local experienceMode = require("@ui-state/experienceMode")
 local mode = experienceMode.resolve()

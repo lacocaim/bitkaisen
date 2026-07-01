@@ -59,64 +59,35 @@ end
 local BitKaisenSaveSystem = {}
 
 local CODE_ORDER = {
-	"SUMMERUPDATE",
-	"CURSESEASON",
-	"DOMAINOPENED",
-	"SHADOWTHREAD",
+	"SUMMERPT2",
+	"VEILOFCURSES",
 }
 
 local CODE_DEFINITIONS = {
 
-	SUMMERUPDATE = {
-		Name = "SummerUpdate",
-		Description = "Summer is here. The cursed world never rests.",
-		RewardText = "+$25,000 | +120 CE | +12 Mastery | +12 Rep | +12 Happiness",
+	SUMMERPT2 = {
+		Name = "SummerPT2",
+		Description = "The second wave hits. The cursed world evolves.",
+		RewardText = "+$20,000 | +100 CE | +10 Mastery | +10 Rep",
 		Grant = function(stats)
-			stats.Money = (stats.Money or 0) + 25000
-			stats.CursedEnergy = (stats.CursedEnergy or 0) + 120
-			stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + 12, 0, 100)
-			stats.Reputation = (stats.Reputation or 0) + 12
-			stats.Happiness = math.clamp((stats.Happiness or 100) + 12, 0, 100)
-			return "+$25,000 Money, +120 Cursed Energy, +12 Technique Mastery, +12 Reputation, and +12 Happiness"
-		end
-	},
-
-	CURSESEASON = {
-		Name = "CurseSeason",
-		Description = "The season of curses begins.",
-		RewardText = "+$15,000 | +80 CE | +10 Strength | +10 Rep",
-		Grant = function(stats)
-			stats.Money = (stats.Money or 0) + 15000
-			stats.CursedEnergy = (stats.CursedEnergy or 0) + 80
-			stats.Strength = math.clamp((stats.Strength or 0) + 10, 0, 100)
+			stats.Money = (stats.Money or 0) + 20000
+			stats.CursedEnergy = (stats.CursedEnergy or 0) + 100
+			stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + 10, 0, 100)
 			stats.Reputation = (stats.Reputation or 0) + 10
-			return "+$15,000 Money, +80 Cursed Energy, +10 Strength, and +10 Reputation"
+			return "+$20,000 Money, +100 Cursed Energy, +10 Technique Mastery, and +10 Reputation"
 		end
 	},
 
-	DOMAINOPENED = {
-		Name = "DomainOpened",
-		Description = "Your domain expands. Rest and recover.",
-		RewardText = "+200 CE | +15 Mastery | Max Health | Max Happiness",
+	VEILOFCURSES = {
+		Name = "VeilOfCurses",
+		Description = "Beyond the veil, something stirs.",
+		RewardText = "+$10,000 | +60 CE | +8 Strength | Max Health",
 		Grant = function(stats)
-			stats.CursedEnergy = (stats.CursedEnergy or 0) + 200
-			stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + 15, 0, 100)
+			stats.Money = (stats.Money or 0) + 10000
+			stats.CursedEnergy = (stats.CursedEnergy or 0) + 60
+			stats.Strength = math.clamp((stats.Strength or 0) + 8, 0, 100)
 			stats.Health = 100
-			stats.Happiness = 100
-			return "+200 Cursed Energy, +15 Technique Mastery, Health restored to 100, and Happiness restored to 100"
-		end
-	},
-
-	SHADOWTHREAD = {
-		Name = "ShadowThread",
-		Description = "A hidden code for those who were there from the start.",
-		RewardText = "+$60,000 | +200 CE | +15 Mastery | +15 Rep",
-		Grant = function(stats)
-			stats.Money = (stats.Money or 0) + 60000
-			stats.CursedEnergy = (stats.CursedEnergy or 0) + 200
-			stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + 15, 0, 100)
-			stats.Reputation = (stats.Reputation or 0) + 15
-			return "+$60,000 Money, +200 Cursed Energy, +15 Technique Mastery, and +15 Reputation"
+			return "+$10,000 Money, +60 Cursed Energy, +8 Strength, and Health restored to 100"
 		end
 	},
 }

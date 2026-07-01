@@ -477,6 +477,16 @@ local function reconcileRelationshipTimeline(stats, relationship)
 		ageAtMet = math.max(18, ageAtMet or ((tonumber(relationship.Age) or playerAge + 25) - playerAge))
 		relationship.AgeAtMet = ageAtMet
 		relationship.Age = math.max(18, ageAtMet + playerAge)
+	elseif role == "Sibling" then
+		yearsKnown = math.max(yearsKnown, playerAge)
+		relationship.MetAtAge = 0
+		-- AgeAtMet es la edad del hermano cuando el jugador nació (puede ser negativa si es menor)
+		if ageAtMet == nil then
+			local currentAge = tonumber(relationship.Age) or 0
+			ageAtMet = currentAge - playerAge
+			relationship.AgeAtMet = ageAtMet
+		end
+		relationship.Age = math.max(0, ageAtMet + playerAge)
 	elseif role == "Caretaker" then
 		yearsKnown = math.max(yearsKnown, playerAge)
 		relationship.MetAtAge = 0

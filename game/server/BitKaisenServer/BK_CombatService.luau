@@ -278,6 +278,10 @@ local resolveCounter
 
 local function beginEnemyCombo(player, session, guarded, autoResolve, warningOverride)
 	local hits = math.random(session.Enemy.ComboMin, session.Enemy.ComboMax)
+	if (tonumber(session.EnemyAdvantage) or 0) > 0 then
+		hits = hits + 1
+		session.EnemyAdvantage = 0
+	end
 	local token = makeToken("defense")
 	session.Phase = "enemy_attack"
 	session.PendingAttack = nil
@@ -470,9 +474,16 @@ function resolveAttack(player, session, accuracy, sweet)
 			if bfStats then
 				bfStats.BlackFlashCount = (tonumber(bfStats.BlackFlashCount) or 0) + 1
 			end
-			fireMajorPopup(player, "BLACK FLASH", "For one instant, cursed energy and impact became the same moment.", "×2.5 DAMAGE", "BLACK FLASH #" .. tostring(tonumber(bfStats and bfStats.BlackFlashCount) or 1))
+			addLog(session, "BLACK FLASH #" .. tostring(tonumber(bfStats and bfStats.BlackFlashCount) or 1) .. " — ×2.5 damage.")
 		elseif quality >= 0.7 then
 			damage = math.floor(damage * 1.3)
+		elseif quality < 0.35 then
+			-- penalización por fallar Black Flash: CE extra perdida y el enemigo gana ventaja
+			session.PlayerCE = math.max(0, session.PlayerCE - 15)
+			local pfStats = getStats(player)
+			if pfStats then pfStats.CursedEnergy = math.floor(session.PlayerCE + 0.5) end
+			session.EnemyAdvantage = (tonumber(session.EnemyAdvantage) or 0) + 1
+			addLog(session, "The failed attempt left you exposed. The enemy senses the opening.")
 		end
 	end
 	if isTechnique then

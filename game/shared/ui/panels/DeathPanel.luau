@@ -125,10 +125,23 @@ local function init(playerGui: Instance)
 	subtitle.ZIndex = 902
 	subtitle.Parent = window
 
+	local causeLabel = Instance.new("TextLabel")
+	causeLabel.Name = "CauseOfDeathLabel"
+	causeLabel.Size = UDim2.new(1, -50, 0, 22)
+	causeLabel.Position = UDim2.new(0, 25, 0, 88)
+	causeLabel.BackgroundTransparency = 1
+	causeLabel.TextColor3 = Color3.fromRGB(220, 100, 100)
+	causeLabel.TextSize = 12
+	causeLabel.Font = Enum.Font.GothamBold
+	causeLabel.TextXAlignment = Enum.TextXAlignment.Center
+	causeLabel.Text = ""
+	causeLabel.ZIndex = 902
+	causeLabel.Parent = window
+
 	local biographyBox = Instance.new("Frame")
 	biographyBox.Name = "BiographyBox"
 	biographyBox.Size = UDim2.new(1, -70, 0, 175)
-	biographyBox.Position = UDim2.new(0, 35, 0, 105)
+	biographyBox.Position = UDim2.new(0, 35, 0, 118)
 	biographyBox.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
 	biographyBox.BorderSizePixel = 0
 	biographyBox.ZIndex = 902
@@ -155,7 +168,7 @@ local function init(playerGui: Instance)
 	local statsText = Instance.new("TextLabel")
 	statsText.Name = "StatsText"
 	statsText.Size = UDim2.new(1, -70, 0, 28)
-	statsText.Position = UDim2.new(0, 35, 0, 290)
+	statsText.Position = UDim2.new(0, 35, 0, 303)
 	statsText.BackgroundTransparency = 1
 	statsText.TextColor3 = Color3.fromRGB(170, 170, 190)
 	statsText.TextSize = 12
@@ -168,7 +181,7 @@ local function init(playerGui: Instance)
 	local ribbonLabel = Instance.new("TextLabel")
 	ribbonLabel.Name = "RibbonLabel"
 	ribbonLabel.Size = UDim2.new(1, -70, 0, 70)
-	ribbonLabel.Position = UDim2.new(0, 35, 0, 318)
+	ribbonLabel.Position = UDim2.new(0, 35, 0, 331)
 	ribbonLabel.TextWrapped = true
 	ribbonLabel.BackgroundTransparency = 1
 	ribbonLabel.TextColor3 = Color3.fromRGB(255, 200, 80)
@@ -183,7 +196,7 @@ local function init(playerGui: Instance)
 	local buttonsHolder = Instance.new("Frame")
 	buttonsHolder.Name = "ButtonsHolder"
 	buttonsHolder.Size = UDim2.new(1, -70, 0, 260)
-	buttonsHolder.Position = UDim2.new(0, 35, 0, 390)
+	buttonsHolder.Position = UDim2.new(0, 35, 0, 403)
 	buttonsHolder.BackgroundTransparency = 1
 	buttonsHolder.ZIndex = 902
 	buttonsHolder.Parent = window
@@ -724,6 +737,10 @@ local function init(playerGui: Instance)
 		updateRCTReviveButtonForStats(stats)
 
 		biographyText.Text = buildBiography(stats)
+
+		local cause = tostring(stats.CauseOfDeath or stats.DeathReason or "")
+		causeLabel.Text = cause ~= "" and ("Cause of death: " .. cause) or ""
+		causeLabel.Visible = cause ~= ""
 
 		local ribbonText, ribbonColor = getRibbon(stats)
 		local karma = tonumber(stats.HiddenKarma) or 0

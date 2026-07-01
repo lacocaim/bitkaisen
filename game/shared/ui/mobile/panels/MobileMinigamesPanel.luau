@@ -175,6 +175,7 @@ local function openBlackFlashTiming(payload)
 	root.BackgroundTransparency = 0.3
 	root.BorderSizePixel = 0
 	root.ZIndex = 760
+	root.Active = false
 	root.Parent = gui
 
 	local panel = Instance.new("Frame")

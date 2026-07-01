@@ -243,6 +243,21 @@ local function init(playerGui: Instance)
 	subtitleLabel.ZIndex = 903
 	subtitleLabel.Parent = scroll
 
+	-- Cause of death
+	local causeLabel = Instance.new("TextLabel")
+	causeLabel.Name = "CauseOfDeathLabel"
+	causeLabel.Size = UDim2.new(1, 0, 0, 18)
+	causeLabel.BackgroundTransparency = 1
+	causeLabel.Text = ""
+	causeLabel.TextColor3 = Color3.fromRGB(220, 100, 100)
+	causeLabel.TextSize = 11
+	causeLabel.Font = Enum.Font.GothamBold
+	causeLabel.TextXAlignment = Enum.TextXAlignment.Center
+	causeLabel.LayoutOrder = 3
+	causeLabel.ZIndex = 903
+	causeLabel.Visible = false
+	causeLabel.Parent = scroll
+
 	-- Ribbon
 	local ribbonLabel = Instance.new("TextLabel")
 	ribbonLabel.Name = "RibbonLabel"
@@ -254,7 +269,7 @@ local function init(playerGui: Instance)
 	ribbonLabel.TextSize = 13
 	ribbonLabel.Font = Enum.Font.GothamBlack
 	ribbonLabel.TextXAlignment = Enum.TextXAlignment.Center
-	ribbonLabel.LayoutOrder = 3
+	ribbonLabel.LayoutOrder = 4
 	ribbonLabel.ZIndex = 903
 	ribbonLabel.Parent = scroll
 
@@ -295,7 +310,7 @@ local function init(playerGui: Instance)
 	statsLabel.TextWrapped = true
 	statsLabel.TextXAlignment = Enum.TextXAlignment.Center
 	statsLabel.Text = ""
-	statsLabel.LayoutOrder = 4
+	statsLabel.LayoutOrder = 5
 	statsLabel.ZIndex = 903
 	statsLabel.Parent = scroll
 
@@ -305,7 +320,7 @@ local function init(playerGui: Instance)
 	actionsFrame.Size = UDim2.new(1, 0, 0, 0)
 	actionsFrame.AutomaticSize = Enum.AutomaticSize.Y
 	actionsFrame.BackgroundTransparency = 1
-	actionsFrame.LayoutOrder = 5
+	actionsFrame.LayoutOrder = 6
 	actionsFrame.ZIndex = 903
 	actionsFrame.Parent = scroll
 
@@ -613,6 +628,10 @@ local function init(playerGui: Instance)
 		if _G.BitKaisenPlaySFX then _G.BitKaisenPlaySFX("Death") end
 
 		biographyLabel.Text = buildBiography(stats)
+
+		local cause = tostring(stats.CauseOfDeath or stats.DeathReason or "")
+		causeLabel.Text = cause ~= "" and ("Cause of death: " .. cause) or ""
+		causeLabel.Visible = cause ~= ""
 
 		local ribbonText, ribbonColor = getRibbon(stats)
 		local karma = tonumber(stats.HiddenKarma) or 0

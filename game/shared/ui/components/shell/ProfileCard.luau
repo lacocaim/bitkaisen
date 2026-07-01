@@ -250,6 +250,14 @@ local function ProfileCard()
 				local s = playerState.stats()
 				return s and s.Strength or 0
 			end),
+			StatBar("Speed", Color3.fromRGB(96, 220, 200), function()
+				local s = playerState.stats()
+				return s and s.Speed or 0
+			end),
+			StatBar("Durability", Color3.fromRGB(150, 150, 160), function()
+				local s = playerState.stats()
+				return s and s.Durability or 0
+			end),
 		},
 	}
 end

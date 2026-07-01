@@ -910,9 +910,11 @@ local function openDetailCard(relationship)
 	detailName.Text = name
 	detailRole.Text = alive and (role .. " • " .. status) or (role .. " • Deceased")
 	detailRole.TextColor3 = alive and roleColor(role) or COLORS.Dead
+	local gender = tostring(relationship.Gender or "")
 	detailInfo.Text = string.format(
-		"<b>Age:</b> %s\n<b>Grade:</b> %s\n<b>Cursed Energy:</b> %s\n<b>Technique:</b> %s\n<b>Traits:</b> %s",
+		"<b>Age:</b> %s%s\n<b>Grade:</b> %s\n<b>Cursed Energy:</b> %s\n<b>Technique:</b> %s\n<b>Traits:</b> %s",
 		(age > 0 and tostring(age) or "Unknown"),
+		(gender ~= "" and gender ~= "Unknown") and ("  ·  " .. gender) or "",
 		grade,
 		tostring(ce),
 		technique,

@@ -493,6 +493,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 				npc.Background = tostring(npc.Background or npc.PublicNote or "A notable figure from your era.")
 				npc.NotableSourceId = npc.Id
 				if npc.Romance == nil then npc.Romance = 0 end
+				BK_WorldHistoryService.RepairNotable(npc)
 				relationship = npc
 				stats.NotableVersion = (tonumber(stats.NotableVersion) or 0) + 1
 				break

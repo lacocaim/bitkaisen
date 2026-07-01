@@ -369,7 +369,8 @@ local ROMANCE_ALLOWED_ROLES = {
 	Classmate = true,
 	["Mission Partner"] = true,
 	Partner = true,
-	Spouse = true
+	Spouse = true,
+	["Notable Sorcerer"] = true
 }
 
 local function pickRandom(list)

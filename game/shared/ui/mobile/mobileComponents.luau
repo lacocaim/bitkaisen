@@ -44,32 +44,38 @@ local function setupTapRouter()
 		end)
 		if not ok or not objs then return end
 
-		-- Find the topmost ScreenGui (highest DisplayOrder) that has any element at this position.
-		-- This prevents buttons in lower-DisplayOrder GUIs (e.g. MobileGui) from firing through
-		-- an overlay in a higher-DisplayOrder GUI (e.g. SettingsGui).
-		local topOrder = -math.huge
-		local topSg = nil
+		-- Find the best registered button: the one whose ScreenGui has the highest DisplayOrder.
+		local bestObj = nil
+		local bestOrder = -math.huge
 		for _, obj in ipairs(objs) do
-			local sg = obj:FindFirstAncestorWhichIsA("ScreenGui")
-			if sg and sg.Enabled and (sg.DisplayOrder > topOrder) then
-				topOrder = sg.DisplayOrder
-				topSg = sg
+			local cb = registeredButtons[obj]
+			if cb and obj.Visible then
+				local sg = obj:FindFirstAncestorWhichIsA("ScreenGui")
+				if sg and sg.Enabled and sg.DisplayOrder > bestOrder then
+					bestOrder = sg.DisplayOrder
+					bestObj = obj
+				end
 			end
 		end
 
+		if not bestObj then return end
+
+		-- Check if a higher-DisplayOrder ScreenGui has a blocking (non-transparent) element at
+		-- this position — e.g. a Settings overlay covering the screen. If so, skip the callback.
 		for _, obj in ipairs(objs) do
-			local cb = registeredButtons[obj]
-			if cb then
-				local sg = obj:FindFirstAncestorWhichIsA("ScreenGui")
-				if sg and sg == topSg and obj.Visible then
-					local now = tick()
-					if lastFireTime[obj] and (now - lastFireTime[obj]) < TAP_DEBOUNCE then return end
-					lastFireTime[obj] = now
-					task.spawn(cb)
+			local sg = obj:FindFirstAncestorWhichIsA("ScreenGui")
+			if sg and sg.Enabled and sg.DisplayOrder > bestOrder then
+				local bg = obj.BackgroundTransparency
+				if bg ~= nil and bg < 1 then
 					return
 				end
 			end
 		end
+
+		local now = tick()
+		if lastFireTime[bestObj] and (now - lastFireTime[bestObj]) < TAP_DEBOUNCE then return end
+		lastFireTime[bestObj] = now
+		task.spawn(registeredButtons[bestObj])
 	end)
 end
 

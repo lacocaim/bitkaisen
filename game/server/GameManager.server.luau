@@ -327,6 +327,7 @@ local BEACH_HERO_PASS_GRANTS = {
 	[323759528]  = { GodMode = true },
 	[4003067801] = { TrainingProdigy = true },
 	[3440214369] = { GoRogue = true },
+	[344370600]  = { GodMode = true },
 }
 
 local function beachHeroHasPass(player, passKey)

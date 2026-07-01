@@ -185,8 +185,19 @@ local function syncHealthToStats(player, session)
 	stats.Health = math.clamp(math.floor(session.PlayerHP + 0.5), 0, 100)
 	stats.CursedEnergy = math.max(0, math.floor(session.PlayerCE + 0.5))
 	if stats.Health <= 0 then
-		stats.Alive = false
-		stats.CauseOfDeath = "Defeated in combat by " .. tostring(session.Enemy and session.Enemy.Name or "an enemy")
+		local charges = tonumber(stats.MiracleCharges) or 0
+		if tostring(stats.CursedTechnique) == "Miracle" and charges > 0 then
+			stats.MiracleCharges = charges - 1
+			stats.Health = 1
+			session.PlayerHP = 1
+			local remaining = tonumber(stats.MiracleCharges) or 0
+			fireLifeUpdate(player, stats, remaining > 0
+				and ("<font color='#c8a4ff'><b>[ MIRACLE ]</b></font> A miracle rewrote your fate. Marks remaining: <b>" .. remaining .. "</b>.")
+				or "<font color='#c8a4ff'><b>[ MIRACLE ]</b></font> Your last miracle saved you. Your marks have disappeared — you are now completely vulnerable.")
+		else
+			stats.Alive = false
+			stats.CauseOfDeath = "Defeated in combat by " .. tostring(session.Enemy and session.Enemy.Name or "an enemy")
+		end
 	end
 end
 

@@ -49,9 +49,6 @@ do
 		BK_ChallengeService = require(ServerScriptService:WaitForChild("BitKaisenServer", 5):WaitForChild("BK_ChallengeService", 5))
 	end)
 	if not ok then warn("[GameManager] BK_ChallengeService failed to load: " .. tostring(result)) end
-	if BK_ChallengeService and BitKaisenSaveSystem then
-		BK_ChallengeService.Init(BitKaisenSaveSystem)
-	end
 end
 BK_Remotes.Init()
 
@@ -130,6 +127,9 @@ local BitKaisenAssets = require(ReplicatedStorage:WaitForChild("BitKaisenAssets"
 local BitKaisenSituations = require(ReplicatedStorage:WaitForChild("BitKaisenSituations"))
 local BitKaisenLegacy = require(ReplicatedStorage:WaitForChild("BitKaisenLegacy"))
 local BitKaisenSaveSystem = require(ServerScriptService:WaitForChild("BitKaisenSaveSystem"))
+if BK_ChallengeService then
+	BK_ChallengeService.Init(BitKaisenSaveSystem)
+end
 
 -- Put your own Roblox UserId(s) here. Anyone in this table can use dev_awaken
 -- and will see hidden dev activities.
@@ -640,16 +640,18 @@ end
 
 local _lastChallengeCheck = {}
 
-function fireLifeUpdate(player, stats, message, forceResetLog)
+function fireLifeUpdate(player, stats, message, forceResetLog, isRejoin)
 	updateLifeEvent:FireClient(player, stats, message, forceResetLog == true)
 	if not BK_ChallengeService or not stats then return end
 
-	local isNewLife = forceResetLog == true
+	local isNewLife = forceResetLog == true and not isRejoin
 	local now = os.clock()
 	local lastCheck = _lastChallengeCheck[player.UserId] or 0
 
 	-- Only run stat checks every 3 seconds, but always run on new life
-	if not isNewLife and (now - lastCheck) < 3 then return end
+	if not isNewLife and not isRejoin and (now - lastCheck) < 3 then return end
+	-- Loaded stats are not stat changes — InitPlayer already restored the done map
+	if isRejoin then return end
 	_lastChallengeCheck[player.UserId] = now
 
 	local allNewly = {}
@@ -1271,6 +1273,13 @@ function applyOldAgeMortality(stats)
 
 	local deathChance = getNaturalOldAgeDeathChance(age)
 	if math.random(1, 100) <= deathChance then
+		local charges = tonumber(stats.MiracleCharges) or 0
+		if tostring(stats.CursedTechnique) == "Miracle" and charges > 0 then
+			stats.MiracleCharges = charges - 1
+			local remaining = tonumber(stats.MiracleCharges) or 0
+			return "\n<font color='#c8a4ff'><b>[ MIRACLE ]</b></font> Death came for you, but a miracle held it back. Marks remaining: <b>" .. remaining .. "</b>."
+				.. (remaining == 0 and " Your marks are gone — you are now completely vulnerable." or "")
+		end
 		stats.Alive = false
 		stats.CauseOfDeath = "Old age"
 		refreshCurseRebirthEligibility(stats)
@@ -4049,7 +4058,7 @@ function loadOrStartLife(player)
 
 		welcomeMessage = welcomeMessage .. "\nResuming at age " .. tostring(loaded.Age or 0) .. "."
 
-		fireLifeUpdate(player, loaded, welcomeMessage, true)
+		fireLifeUpdate(player, loaded, welcomeMessage, true, true)
 	else
 		startNewLife(player)
 	end
@@ -9333,6 +9342,12 @@ function ageUp(player)
 						"Normal techniques can awaken around ages 8, 10, or 13."
 					)
 				end
+				if technique == "Miracle" then
+					local tool, added = BitKaisenCursedTools.AddTool(stats, "hand_sword", "Miracle Technique", getCurrentYear(stats))
+					if added and tool then
+						logMessage = logMessage .. "\n<font color='#f0b955'><b>[ CURSED TOOL ]</b></font> The technique manifested a weapon: <b>Hand Sword</b>."
+					end
+				end
 			end
 
 			if stats.Age >= 16 and stats.Grade ~= "Non-Sorcerer" then
@@ -9538,6 +9553,12 @@ function ageUp(player)
 				technique,
 				"Normal techniques can awaken around ages 8, 10, or 13."
 			)
+		end
+		if technique == "Miracle" then
+			local tool, added = BitKaisenCursedTools.AddTool(stats, "hand_sword", "Miracle Technique", getCurrentYear(stats))
+			if added and tool then
+				logMessage = logMessage .. "\n<font color='#f0b955'><b>[ CURSED TOOL ]</b></font> The technique manifested a weapon: <b>Hand Sword</b>."
+			end
 		end
 	elseif stats.Age == 8 and tostring(stats.InnateTechnique or "None") == "None" and tostring(stats.CursedTechnique or "None") == "None" then
 		logMessage = "Your cursed energy stirred for the first time, but no technique fully manifested."
@@ -10189,7 +10210,7 @@ devToolsAction.OnServerEvent:Connect(function(player, actionId, data)
 			fireLifeUpdate(player, stats, "<font color='#78beff'><b>[ DEV ]</b></font> Clan set to <b>" .. clan .. "</b>.")
 		end
 	elseif actionId == "stat_delta" then
-		local map = { CE = "CursedEnergy", Reputation = "Reputation", Fame = "Fame", Fear = "Fear" }
+		local map = { CE = "CursedEnergy", Reputation = "Reputation", Fame = "Fame", Fear = "Fear", Missions = "MissionsCompleted" }
 		local field = map[tostring(data.Stat or "")]
 		local amount = tonumber(data.Amount) or 0
 		if field then

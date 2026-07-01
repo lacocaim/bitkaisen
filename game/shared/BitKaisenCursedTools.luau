@@ -83,6 +83,16 @@ BitKaisenCursedTools.Definitions = {
 		Effects = { CombatPower = 12, DefensePower = 8, CEGainMult = 1.08 },
 		DropWeight = 1,
 	},
+	{
+		Id = "hand_sword",
+		Name = "Hand Sword",
+		Rarity = "Epic",
+		Type = "Weapon",
+		Description = "A blade condensed from pure cursed energy, manifested through the Miracle technique. Its edge does not distinguish between luck and fate.",
+		EffectText = "+12 combat power while equipped.",
+		Effects = { CombatPower = 12 },
+		DropWeight = 0,
+	},
 }
 
 local byId = {}

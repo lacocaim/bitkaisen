@@ -185,6 +185,7 @@ local defaultLifeStats: LifeStats = {
 	WorldHistory = {},
 	NotableSorcerers = {},
 	UnlockedTitles = {},
+	MiracleCharges = 0,
 	CursedTools = {},
 	ClanWarState = {},
 	ClanWarHistory = {},

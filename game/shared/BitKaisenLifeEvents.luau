@@ -507,6 +507,66 @@ BitKaisenLifeEvents.Database = {
 			"You funneled money to the right hands and watched your heat level drop. Expensive, but worth it."
 		},
 		Effects = { WantedLevel = -3, Money = -600, Reputation = 2, Happiness = 4 }
+	},
+
+	{
+		Id = "miracle_charge_bystander_escape",
+		Category = "Normal",
+		MinAge = 6,
+		MaxAge = 90,
+		Weight = 4,
+		RequiredTechnique = "Miracle",
+		Texts = {
+			"A child stepped off a curb directly into traffic — and a car swerved at the last instant for no clear reason. You forgot what you saw within the hour.",
+			"A stranger's bag caught on a railing just before she fell down a flight of stairs. You can't remember her face by evening.",
+			"A coin rolled off a table and landed perfectly upright on its edge. You stared at it for a moment, then forgot completely.",
+		},
+		Effects = { MiracleCharges = 1 }
+	},
+
+	{
+		Id = "miracle_charge_near_miss",
+		Category = "Normal",
+		MinAge = 10,
+		MaxAge = 90,
+		Weight = 3,
+		RequiredTechnique = "Miracle",
+		Texts = {
+			"Something grazed your cheek at high speed. You never worked out what it was.",
+			"A support beam groaned above you in an old building. It held. The memory was gone before you reached the door.",
+			"You stepped over a crack in the road without looking. The concrete gave way seconds after you passed.",
+		},
+		Effects = { MiracleCharges = 1 }
+	},
+
+	{
+		Id = "miracle_charge_witnessed_coincidence",
+		Category = "Normal",
+		MinAge = 8,
+		MaxAge = 90,
+		Weight = 3,
+		RequiredTechnique = "Miracle",
+		Texts = {
+			"Two people you'd never met said the exact same sentence at the exact same time on opposite sides of the street. You filed it away somewhere deep.",
+			"A curse you'd been tracking vanished from a location before you arrived — someone else was there and walked away unharmed. Pure chance.",
+			"You watched a sparring match end exactly in a draw, down to the half-second. The instructor called it a once-in-a-decade outcome.",
+		},
+		Effects = { MiracleCharges = 1 }
+	},
+
+	{
+		Id = "miracle_charge_impossible_timing",
+		Category = "CurseUser",
+		MinAge = 12,
+		MaxAge = 90,
+		Weight = 3,
+		RequiredTechnique = "Miracle",
+		Texts = {
+			"A cursed spirit attacked you in an alley and froze — for no reason you could identify — just long enough for a sorcerer to arrive and finish it.",
+			"You were trapped inside a barrier technique and it collapsed a second before you passed out. The caster claimed it wasn't their doing.",
+			"Your technique misfired and the energy dispersed harmlessly into the air instead of back into your body. You marked it as a fluke.",
+		},
+		Effects = { MiracleCharges = 1 }
 	}
 
 }
@@ -656,6 +716,14 @@ local function matchesEvent(stats, eventData)
 
 	if eventData.RequiresTechnique and not hasTechnique(stats) then
 		return false
+	end
+
+	if eventData.RequiredTechnique then
+		local ct = tostring(stats.CursedTechnique or "None")
+		local it = tostring(stats.InnateTechnique or "None")
+		if ct ~= eventData.RequiredTechnique and it ~= eventData.RequiredTechnique then
+			return false
+		end
 	end
 
 	if eventData.RequiresJujutsuHigh and not stats.InJujutsuHigh then
@@ -872,6 +940,10 @@ function BitKaisenLifeEvents.ApplyEvent(stats, eventData)
 
 	if effects.DojoCondition then
 		stats.DojoCondition = math.clamp((tonumber(stats.DojoCondition) or 100) + effects.DojoCondition, 0, 100)
+	end
+
+	if effects.MiracleCharges and tostring(stats.CursedTechnique) == "Miracle" then
+		stats.MiracleCharges = math.clamp((tonumber(stats.MiracleCharges) or 0) + effects.MiracleCharges, 0, 6)
 	end
 
 	rememberEvent(stats, eventData.Id)

@@ -124,7 +124,12 @@ local function ProfileCard()
 	local clanText = derive(function() return helpers.getLineageText(stats()) end)
 	local techText = derive(function()
 		local s = stats()
-		return "Technique: " .. tostring(s and s.CursedTechnique or "None")
+		local technique = tostring(s and s.CursedTechnique or "None")
+		if technique == "Miracle" then
+			local charges = tonumber(s and s.MiracleCharges) or 0
+			return "Technique: Miracle | Marks: " .. tostring(charges) .. "/6"
+		end
+		return "Technique: " .. technique
 	end)
 	local traitText = derive(function()
 		local s = stats()

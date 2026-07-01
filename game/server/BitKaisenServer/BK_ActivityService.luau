@@ -72,6 +72,19 @@ local function saveStats(player, reason)
 	end
 end
 
+local function applyMiracleSave(stats, player)
+	if (tonumber(stats.Health) or 100) > 0 then return false end
+	local charges = tonumber(stats.MiracleCharges) or 0
+	if tostring(stats.CursedTechnique) ~= "Miracle" or charges <= 0 then return false end
+	stats.MiracleCharges = charges - 1
+	stats.Health = 1
+	local remaining = tonumber(stats.MiracleCharges) or 0
+	fireLifeUpdate(player, stats, remaining > 0
+		and ("<font color='#c8a4ff'><b>[ MIRACLE ]</b></font> A miracle rewrote your fate. Marks remaining: <b>" .. remaining .. "</b>.")
+		or "<font color='#c8a4ff'><b>[ MIRACLE ]</b></font> Your last miracle saved you. Your marks have disappeared — you are now completely vulnerable.")
+	return true
+end
+
 local function forceAwaken(player, stats, reason)
 	if context.ForceAwaken then
 		return context.ForceAwaken(player, stats, reason)
@@ -753,7 +766,7 @@ local function resolveRCTMemoryMinigame(player, token, result)
 		stats.CursedEnergy = math.max(0, (tonumber(stats.CursedEnergy) or 0) - math.random(4, 10))
 		fireLifeUpdate(player, stats, "<font color='#7fcfe0'><b>[ RCT ]</b></font> The sequence slipped. You gained RCT progress, but the failed reversal strained your body.")
 	end
-	if stats.Health <= 0 then stats.Alive = false end
+	if stats.Health <= 0 and not applyMiracleSave(stats, player) then stats.Alive = false end
 	saveStats(player, "rct memory minigame")
 end
 
@@ -1132,7 +1145,7 @@ local function resolveBurglaryMinigame(player, token, result)
 		stats.Reputation = math.clamp((tonumber(stats.Reputation) or 0) - math.random(2, 5), -100, 100)
 		logMessage = "<font color='#c28a4d'><b>[ BURGLARY ]</b></font> You were caught during the job. Money <b>-$" .. tostring(fine) .. "</b>, and your Wanted Level increased."
 	end
-	if stats.Health <= 0 then
+	if stats.Health <= 0 and not applyMiracleSave(stats, player) then
 		stats.Alive = false
 		logMessage ..= "\nYou did not survive the escape."
 	end
@@ -1209,7 +1222,7 @@ local function resolveBlackFlashMinigame(player, token, accuracy)
 		logMessage ..= BitKaisenTechniqueEvolution.AddPressure(stats, math.max(1, math.floor(masteryGain * (accuracy >= 0.94 and 2 or 1))), "Black Flash timing")
 	end
 
-	if stats.Health <= 0 then
+	if stats.Health <= 0 and not applyMiracleSave(stats, player) then
 		stats.Alive = false
 		logMessage ..= "\nYour body could not handle the failed timing drill."
 	end
@@ -3532,9 +3545,11 @@ local function processActivity(player, activityId)
 		stats.CursedFingers = 0
 		local roll = math.random(1, 100)
 		if roll <= 20 then
-			stats.Alive = false
 			stats.Health = 0
-			fireLifeUpdate(player, stats, "<font color='#d6455d'><b>[ SUKUNA ]</b></font> You consumed the fingers. The curse overwhelmed your body and killed you.")
+			if not applyMiracleSave(stats, player) then
+				stats.Alive = false
+				fireLifeUpdate(player, stats, "<font color='#d6455d'><b>[ SUKUNA ]</b></font> You consumed the fingers. The curse overwhelmed your body and killed you.")
+			end
 		elseif roll <= 65 then
 			stats.Origin = "Ryomen Clan"
 			stats.Clan = "Ryomen Clan"
@@ -3577,7 +3592,7 @@ local function processActivity(player, activityId)
 		else
 			stats.Health = math.clamp((tonumber(stats.Health) or 100) - math.random(35, 70), 0, 100)
 			stats.WantedLevel = math.clamp((tonumber(stats.WantedLevel) or 0) + 8, 0, 100)
-			if stats.Health <= 0 then stats.Alive = false end
+			if stats.Health <= 0 and not applyMiracleSave(stats, player) then stats.Alive = false end
 			fireLifeUpdate(player, stats, "<font color='#d6455d'><b>[ SUKUNA ]</b></font> The vessel nearly tore you apart." .. (stats.Alive and " You escaped wounded." or " You died in the fight."))
 		end
 		saveStats(player, "sukuna vessel ritual")
@@ -3786,7 +3801,7 @@ local function processActivity(player, activityId)
 	logMessage = maybeTeacherRecommendation(player, stats, logMessage)
 	logMessage = checkPromotionAndPopup(player, stats, logMessage)
 
-	if stats.Health <= 0 then
+	if stats.Health <= 0 and not applyMiracleSave(stats, player) then
 		stats.Alive = false
 		logMessage = logMessage .. "\nYour body could not handle the strain."
 	end

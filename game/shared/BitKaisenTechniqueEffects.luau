@@ -121,6 +121,12 @@ local PROFILES = {
 		MasteryGainBonus = 1,
 		Note = "Your body handled the exchange with unnatural precision."
 	},
+	["miracle"] = {
+		PowerBonus = 0,
+		DamageTakenMult = 0.93,
+		MasteryGainBonus = 1,
+		Note = "Reality bent slightly in your favor — not enough to notice, until it mattered."
+	},
 }
 
 local BRANCH_BONUSES = {

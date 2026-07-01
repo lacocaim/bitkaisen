@@ -1236,6 +1236,13 @@ function applyOldAgeMortality(stats)
 
 	local deathChance = getNaturalOldAgeDeathChance(age)
 	if math.random(1, 100) <= deathChance then
+		local charges = tonumber(stats.MiracleCharges) or 0
+		if tostring(stats.CursedTechnique) == "Miracle" and charges > 0 then
+			stats.MiracleCharges = charges - 1
+			local remaining = tonumber(stats.MiracleCharges) or 0
+			return "\n<font color='#c8a4ff'><b>[ MIRACLE ]</b></font> Death came for you, but a miracle held it back. Marks remaining: <b>" .. remaining .. "</b>."
+				.. (remaining == 0 and " Your marks are gone — you are now completely vulnerable." or "")
+		end
 		stats.Alive = false
 		stats.CauseOfDeath = "Old age"
 		refreshCurseRebirthEligibility(stats)
@@ -9192,6 +9199,12 @@ function ageUp(player)
 						"Normal techniques can awaken around ages 8, 10, or 13."
 					)
 				end
+				if technique == "Miracle" then
+					local tool, added = BitKaisenCursedTools.AddTool(stats, "hand_sword", "Miracle Technique", getCurrentYear(stats))
+					if added and tool then
+						logMessage = logMessage .. "\n<font color='#f0b955'><b>[ CURSED TOOL ]</b></font> The technique manifested a weapon: <b>Hand Sword</b>."
+					end
+				end
 			end
 
 			if stats.Age >= 16 and stats.Grade ~= "Non-Sorcerer" then
@@ -9397,6 +9410,12 @@ function ageUp(player)
 				technique,
 				"Normal techniques can awaken around ages 8, 10, or 13."
 			)
+		end
+		if technique == "Miracle" then
+			local tool, added = BitKaisenCursedTools.AddTool(stats, "hand_sword", "Miracle Technique", getCurrentYear(stats))
+			if added and tool then
+				logMessage = logMessage .. "\n<font color='#f0b955'><b>[ CURSED TOOL ]</b></font> The technique manifested a weapon: <b>Hand Sword</b>."
+			end
 		end
 	elseif stats.Age == 8 and tostring(stats.InnateTechnique or "None") == "None" and tostring(stats.CursedTechnique or "None") == "None" then
 		logMessage = "Your cursed energy stirred for the first time, but no technique fully manifested."

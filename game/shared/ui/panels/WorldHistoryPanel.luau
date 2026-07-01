@@ -302,7 +302,7 @@ local function makeTombstone(parent, lifeData, index)
 
 	-- outer wrapper
 	local wrap = Instance.new("Frame")
-	wrap.Size = UDim2.new(0, 160, 0, 270)
+	wrap.Size = UDim2.new(0, 160, 0, 296)
 	wrap.BackgroundTransparency = 1
 	wrap.BorderSizePixel = 0
 	wrap.ZIndex = 627
@@ -434,11 +434,25 @@ local function makeTombstone(parent, lifeData, index)
 	clanLabel.ZIndex = 630
 	clanLabel.Parent = stone
 
+	-- technique · missions
+	local techLabel = Instance.new("TextLabel")
+	techLabel.BackgroundTransparency = 1
+	techLabel.Size = UDim2.new(1, -10, 0, 18)
+	techLabel.Position = UDim2.new(0, 5, 0, 212)
+	techLabel.Text = "Technique: " .. tostring(lifeData.Technique or "None") .. "  ·  Missions: " .. tostring(lifeData.Missions or 0)
+	techLabel.TextColor3 = COLORS.SubText
+	techLabel.TextSize = 12
+	techLabel.Font = Enum.Font.Gotham
+	techLabel.TextXAlignment = Enum.TextXAlignment.Center
+	techLabel.TextWrapped = true
+	techLabel.ZIndex = 630
+	techLabel.Parent = stone
+
 	-- index number at bottom
 	local numLabel = Instance.new("TextLabel")
 	numLabel.BackgroundTransparency = 1
 	numLabel.Size = UDim2.new(1, 0, 0, 20)
-	numLabel.Position = UDim2.new(0, 0, 0, 212)
+	numLabel.Position = UDim2.new(0, 0, 0, 236)
 	numLabel.Text = "— #" .. tostring(index) .. " —"
 	numLabel.TextColor3 = Color3.fromRGB(120, 108, 155)
 	numLabel.TextSize = 13
@@ -483,7 +497,7 @@ local function renderLives()
 	grid.Parent = scroll
 
 	local gridLayout = Instance.new("UIGridLayout")
-	gridLayout.CellSize = UDim2.new(0, 170, 0, 290)
+	gridLayout.CellSize = UDim2.new(0, 170, 0, 316)
 	gridLayout.CellPadding = UDim2.new(0, 20, 0, 32)
 	gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center

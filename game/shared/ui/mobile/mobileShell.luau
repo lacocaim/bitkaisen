@@ -543,16 +543,13 @@ local function MobileLifeLog()
 
 	local function scrollToBottom()
 		if scrollRef and scrollRef.Parent then
-			local target = math.max(0, scrollRef.AbsoluteCanvasSize.Y - scrollRef.AbsoluteSize.Y)
-			scrollRef.CanvasPosition = Vector2.new(0, target)
+			scrollRef.CanvasPosition = Vector2.new(0, math.huge)
 		end
 	end
 
 	vide.effect(function()
 		local _ = playerState.logVersion()
-		task.defer(function()
-			task.defer(scrollToBottom)
-		end)
+		task.defer(scrollToBottom)
 	end)
 
 	return create("Frame") {

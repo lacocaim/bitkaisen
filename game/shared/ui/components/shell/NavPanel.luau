@@ -117,8 +117,8 @@ local function NavPanel()
 		ScrollingDirection = Enum.ScrollingDirection.X,
 		CanvasSize = UDim2.new(0, 0, 0, 0),
 		AutomaticCanvasSize = Enum.AutomaticSize.X,
-		ScrollBarThickness = 3,
-		ScrollBarImageColor3 = theme.Stroke,
+		ScrollBarThickness = 6,
+		ScrollBarImageColor3 = theme.SubText,
 		ElasticBehavior = Enum.ElasticBehavior.WhenScrollable,
 
 		create("UIListLayout") {

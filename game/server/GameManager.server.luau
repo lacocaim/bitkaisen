@@ -2292,6 +2292,8 @@ function applyCharacterCustomization(player, payload)
 		return { Success = false, Message = "No active life." }
 	end
 
+	local hadLegacyTimeline = stats.LegacyTimelineLocked == true
+
 	if typeof(payload) ~= "table" then
 		return { Success = false, Message = "Invalid data." }
 	end
@@ -2367,7 +2369,10 @@ function applyCharacterCustomization(player, payload)
 		stats.EraStartYear = stats.BirthYear
 		stats.LegacyTimelineLocked = true
 	else
-		stats.LegacyTimelineLocked = false
+		-- Heirs arrive here with LegacyTimelineLocked already set by preserveLegacyTimeline
+		-- (BitKaisenLegacy.luau). Without an explicit custom BirthYear, keep that lock so
+		-- ensureEraYearState doesn't force-reset the inherited timeline back to era start.
+		stats.LegacyTimelineLocked = hadLegacyTimeline
 	end
 	stats.UpbringingModifiersApplied = false
 	applyUpbringingStartModifiers(stats)

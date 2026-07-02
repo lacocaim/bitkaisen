@@ -1294,6 +1294,22 @@ BitKaisenActivities.Database = {
 	},
 
 	{
+		Id = "black_market_shop",
+		Title = "Visit Black Market",
+		Description = "Browse illegal cursed tools and contraband curse items. Buying or selling raises your Wanted Level.",
+		MinAge = 16,
+		MaxAge = 120,
+		RequiresTechnique = false,
+		RequiresSorcerer = false,
+		RequiresCurseUser = false,
+		RequiresJujutsuHigh = false,
+		OpensPanel = "blackmarket",
+		ButtonColor = Color3.fromRGB(120, 45, 130),
+		LockedText = "You need to be at least 16 to access the black market.",
+		HideWhenLocked = true
+	},
+
+	{
 		Id = "curse_user_hide_society",
 		Title = "Hide From Jujutsu Society",
 		Description = "Lay low, erase tracks, and keep scouts from connecting incidents back to you.",
@@ -1744,7 +1760,8 @@ function BitKaisenActivities.GenerateActivityList(stats)
 				Description = activity.Description,
 				ButtonColor = activity.ButtonColor,
 				CanDo = true,
-				LockedReason = nil
+				LockedReason = nil,
+				OpensPanel = activity.OpensPanel
 			})
 		else
 			if not activity.HideWhenLocked then
@@ -1754,7 +1771,8 @@ function BitKaisenActivities.GenerateActivityList(stats)
 					Description = activity.Description,
 					ButtonColor = activity.ButtonColor,
 					CanDo = false,
-					LockedReason = reason
+					LockedReason = reason,
+					OpensPanel = activity.OpensPanel
 				})
 			end
 		end
@@ -1859,6 +1877,8 @@ local CATEGORY_MAP = {
 	curse_force_evolution = "Curse Spirit",
 	curse_devour_remnant = "Curse Spirit",
 
+	black_market_shop = "Underworld",
+
 	curse_user_black_market = "Curse User",
 	curse_user_hide_society = "Curse User",
 	curse_user_illegal_job = "Curse User",
@@ -1879,7 +1899,7 @@ local CATEGORY_MAP = {
 local CATEGORY_ORDER = {
 	"Life", "School", "Training", "Jujutsu High", "Mentor",
 	"Missions", "Dojo/Clan", "Social", "Minigames",
-	"Curse Spirit", "Curse User", "Era", "Premium",
+	"Curse Spirit", "Underworld", "Curse User", "Era", "Premium",
 }
 
 function BitKaisenActivities.GetActivityCategory(activityId)

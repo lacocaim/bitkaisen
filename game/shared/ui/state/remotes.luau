@@ -33,6 +33,8 @@ return {
 	devToolsAction = function() return get("DevToolsAction") end,
 	getAssets = function() return get("GetAssets") end,
 	assetAction = function() return get("AssetAction") end,
+	getBlackMarket = function() return get("GetBlackMarket") end,
+	blackMarketAction = function() return get("BlackMarketAction") end,
 	getClanWar = function() return get("GetClanWar") end,
 	clanWarAction = function() return get("ClanWarAction") end,
 	getDomain = function() return get("GetDomain") end,

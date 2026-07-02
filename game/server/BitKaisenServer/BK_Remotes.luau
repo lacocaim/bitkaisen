@@ -41,6 +41,9 @@ local REMOTE_DEFINITIONS = {
 	GetAssets = "RemoteFunction",
 	AssetAction = "RemoteEvent",
 
+	GetBlackMarket = "RemoteFunction",
+	BlackMarketAction = "RemoteEvent",
+
 	-- Update 13: Clan War System
 	GetClanWar = "RemoteFunction",
 	ClanWarAction = "RemoteEvent",

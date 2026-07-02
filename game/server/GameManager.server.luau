@@ -29,6 +29,7 @@ local BK_AchievementService = require(ServerScriptService:WaitForChild("BitKaise
 local BK_DevCommands = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_DevCommands"))
 local BK_DojoService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_DojoService"))
 local BK_AssetService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_AssetService"))
+BK_BlackMarketService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_BlackMarketService"))
 local BK_RelationshipService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_RelationshipService"))
 local BK_ActivityService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_ActivityService"))
 local BK_MissionService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_MissionService"))
@@ -71,6 +72,8 @@ getDevTools = BK_Remotes.Get("GetDevTools")
 devToolsAction = BK_Remotes.Get("DevToolsAction")
 local getAssets = BK_Remotes.Get("GetAssets")
 local assetAction = BK_Remotes.Get("AssetAction")
+getBlackMarket = BK_Remotes.Get("GetBlackMarket")
+blackMarketAction = BK_Remotes.Get("BlackMarketAction")
 local getClanWar = BK_Remotes.Get("GetClanWar")
 local clanWarAction = BK_Remotes.Get("ClanWarAction")
 local getDomain = BK_Remotes.Get("GetDomain")
@@ -227,6 +230,7 @@ local RATE_LIMITS = {
 	MissionChoice = 0.3,
 	RelationshipAction = 0.75,
 	AssetAction = 0.3,
+	BlackMarketAction = 0.3,
 	StartNewLife = 1.5,
 	StartAsSuccessor = 1.5,
 	UpdateSettings = 0.1,
@@ -10299,6 +10303,10 @@ getAssets.OnServerInvoke = function(player)
 	return BK_AssetService.GetAssetsPayload(player)
 end
 
+getBlackMarket.OnServerInvoke = function(player)
+	return BK_BlackMarketService.GetBlackMarketPayload(player)
+end
+
 getClanWar.OnServerInvoke = function(player)
 	return BK_ClanWarService.GetClanWarPayload(player)
 end
@@ -10582,6 +10590,17 @@ assetAction.OnServerEvent:Connect(function(player, actionId, assetId)
 
 	-- Tell asset UI listeners to refresh after the server finishes the action.
 	assetAction:FireClient(player)
+end)
+
+blackMarketAction.OnServerEvent:Connect(function(player, actionId, targetId)
+	if not checkRateLimit(player, "BlackMarketAction") then
+		return
+	end
+
+	BK_BlackMarketService.ProcessBlackMarketAction(player, actionId, targetId)
+
+	-- Tell black market UI listeners to refresh after the server finishes the action.
+	blackMarketAction:FireClient(player)
 end)
 
 clanWarAction.OnServerEvent:Connect(function(player, actionId)
@@ -10967,6 +10986,7 @@ BK_CodeService.Init(BitKaisenServiceContext)
 BK_AchievementService.Init(BitKaisenServiceContext)
 BK_DojoService.Init(BitKaisenServiceContext)
 BK_AssetService.Init(BitKaisenServiceContext)
+BK_BlackMarketService.Init(BitKaisenServiceContext)
 BK_ClanWarService.Init(BitKaisenServiceContext)
 BK_DomainService.Init(BitKaisenServiceContext)
 BK_GodModeService.Init(BitKaisenServiceContext)

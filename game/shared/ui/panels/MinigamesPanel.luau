@@ -6,6 +6,8 @@ local GuiService = game:GetService("GuiService")
 local RunService = game:GetService("RunService")
 
 local responsiveScale = require("@ui/responsiveScale")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local L = BitKaisenLocale.getClientLocale()
 local MinigamesPanel = {}
 
 local gui: ScreenGui
@@ -392,7 +394,7 @@ local function openBlackjack(payload)
 
 	local hit = makeBlackjackButton(panel, "HIT", 0.035, Color3.fromRGB(44, 112, 82))
 	local stand = makeBlackjackButton(panel, "STAND", 0.345, Color3.fromRGB(64, 89, 134))
-	local leave = makeBlackjackButton(panel, payload.Done and "CLOSE" or "LEAVE", 0.655, Color3.fromRGB(124, 54, 60))
+	local leave = makeBlackjackButton(panel, payload.Done and BitKaisenLocale.t(L, "ui.close") or BitKaisenLocale.t(L, "ui.leave"), 0.655, Color3.fromRGB(124, 54, 60))
 
 	active = {
 		Kind = "Blackjack",

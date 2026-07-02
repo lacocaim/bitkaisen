@@ -5,6 +5,9 @@ local GroupService = game:GetService("GroupService")
 local uiState = require("@ui-state/uiState")
 local mc = require("@ui/mobile/mobileComponents")
 local overlayManager = require("@ui-state/overlayManager")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _fr(key, fallback) return BitKaisenLocale.tOrFallback(_L, "ui." .. key, nil, fallback) end
 
 local theme = mc.theme
 local player = Players.LocalPlayer
@@ -46,7 +49,7 @@ local function fetchPayload()
 		end
 		return payload
 	end
-	state.Status = "Could not load free reward right now."
+	state.Status = _fr("free_reward_error_load", "Could not load free reward right now.")
 	return state.Payload
 end
 
@@ -57,27 +60,27 @@ local function updateVisuals()
 	local groupVerified = payload.GroupVerified == true
 	local claimed = payload.Claimed == true
 
-	likeBtn.Text = state.Liked and "LIKED ✓" or "👍  I LIKED THE GAME"
+	likeBtn.Text = state.Liked and _fr("free_reward_liked", "LIKED ✓") or _fr("free_reward_like_btn", "👍  I LIKED THE GAME")
 	likeBtn.BackgroundColor3 = state.Liked and Color3.fromRGB(28, 72, 45) or theme.Button
 
-	groupBtn.Text = groupVerified and "JOINED ✓" or "👥  JOIN / CHECK GROUP"
+	groupBtn.Text = groupVerified and _fr("free_reward_joined", "JOINED ✓") or _fr("free_reward_join_btn", "👥  JOIN / CHECK GROUP")
 	groupBtn.BackgroundColor3 = groupVerified and Color3.fromRGB(28, 72, 45) or theme.Button
 
 	if claimed then
-		claimBtn.Text = "CLAIMED"
+		claimBtn.Text = _fr("free_reward_claimed", "CLAIMED")
 		claimBtn.BackgroundColor3 = theme.Card
 		statusLabel.TextColor3 = theme.Gold
-		statusLabel.Text = "You already claimed this free reward."
+		statusLabel.Text = _fr("free_reward_already", "You already claimed this free reward.")
 	elseif state.Status ~= "" then
-		claimBtn.Text = "VERIFY & CLAIM"
+		claimBtn.Text = _fr("free_reward_verify", "VERIFY & CLAIM")
 		claimBtn.BackgroundColor3 = Color3.fromRGB(28, 72, 45)
 		statusLabel.TextColor3 = theme.SubText
 		statusLabel.Text = state.Status
 	else
-		claimBtn.Text = "VERIFY & CLAIM"
+		claimBtn.Text = _fr("free_reward_verify", "VERIFY & CLAIM")
 		claimBtn.BackgroundColor3 = Color3.fromRGB(28, 72, 45)
 		statusLabel.TextColor3 = theme.SubText
-		statusLabel.Text = "Complete both steps, then verify to claim."
+		statusLabel.Text = _fr("free_reward_complete", "Complete both steps, then verify to claim.")
 	end
 end
 
@@ -99,7 +102,7 @@ local function refresh()
 
 	mc.mobileLabel({
 		parent = rewardCard,
-		text = "🎁  FREE REWARD",
+		text = _fr("free_reward_title", "🎁  FREE REWARD"),
 		size = 17,
 		color = theme.Gold,
 		font = Enum.Font.GothamBlack,
@@ -108,7 +111,7 @@ local function refresh()
 
 	mc.mobileLabel({
 		parent = rewardCard,
-		text = "x2 Technique Mastery Boost (5 Minutes)",
+		text = _fr("free_reward_boost", "x2 Technique Mastery Boost (5 Minutes)"),
 		size = 14,
 		color = theme.Text,
 		font = Enum.Font.GothamBold,
@@ -117,7 +120,7 @@ local function refresh()
 
 	mc.mobileLabel({
 		parent = rewardCard,
-		text = "Claim a limited mastery boost after supporting the game.",
+		text = _fr("free_reward_desc", "Claim a limited mastery boost after supporting the game."),
 		size = 13,
 		color = theme.SubText,
 		order = 3,
@@ -130,7 +133,7 @@ local function refresh()
 
 	mc.mobileLabel({
 		parent = stepsCard,
-		text = "STEPS",
+		text = _fr("free_reward_steps", "STEPS"),
 		size = 14,
 		color = theme.Gold,
 		font = Enum.Font.GothamBlack,
@@ -139,7 +142,7 @@ local function refresh()
 
 	mc.mobileLabel({
 		parent = stepsCard,
-		text = "1. Like the game  •  2. Join our Roblox group",
+		text = _fr("free_reward_step_list", "1. Like the game  •  2. Join our Roblox group"),
 		size = 13,
 		color = theme.SubText,
 		order = 2,
@@ -147,7 +150,7 @@ local function refresh()
 
 	likeBtn = mc.mobileButton({
 		parent = stepsCard,
-		text = "👍  I LIKED THE GAME",
+		text = _fr("free_reward_like_btn", "👍  I LIKED THE GAME"),
 		size = UDim2.new(1, 0, 0, 48),
 		color = theme.Button,
 		textColor = theme.Text,
@@ -155,14 +158,14 @@ local function refresh()
 		order = 3,
 		callback = function()
 			state.Liked = true
-			state.Status = "Like confirmed. Join the group, then press VERIFY."
+			state.Status = _fr("free_reward_like_confirm", "Like confirmed. Join the group, then press VERIFY.")
 			updateVisuals()
 		end,
 	})
 
 	groupBtn = mc.mobileButton({
 		parent = stepsCard,
-		text = "👥  JOIN / CHECK GROUP",
+		text = _fr("free_reward_join_btn", "👥  JOIN / CHECK GROUP"),
 		size = UDim2.new(1, 0, 0, 48),
 		color = theme.Button,
 		textColor = theme.Text,
@@ -173,9 +176,9 @@ local function refresh()
 				return GroupService:PromptJoinAsync(GROUP_ID)
 			end)
 			if ok and (result == Enum.GroupMembershipStatus.Joined or result == Enum.GroupMembershipStatus.AlreadyMember) then
-				state.Status = "Group membership checked."
+				state.Status = _fr("free_reward_group_ok", "Group membership checked.")
 			else
-				state.Status = "Join the group, then press this again to check."
+				state.Status = _fr("free_reward_group_join", "Join the group, then press this again to check.")
 			end
 			fetchPayload()
 			updateVisuals()
@@ -215,7 +218,7 @@ local function refresh()
 					fetchPayload()
 				end
 			else
-				state.Status = "Could not claim right now."
+				state.Status = _fr("free_reward_error_claim", "Could not claim right now.")
 				fetchPayload()
 			end
 			updateVisuals()
@@ -256,7 +259,7 @@ local function init()
 	sheet = mc.mobileSheet({
 		name = "MobileFreeRewardsSheet",
 		parent = gui,
-		title = "FREE REWARD",
+		title = _fr("free_reward_title", "FREE REWARD"),
 		onClose = function()
 			uiState.closeRoute()
 		end,

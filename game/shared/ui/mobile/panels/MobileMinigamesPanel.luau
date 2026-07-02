@@ -3,8 +3,10 @@ local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 
 local mc = require("@ui/mobile/mobileComponents")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
 
 local theme = mc.theme
+local L = BitKaisenLocale.getClientLocale()
 local corner = mc.corner
 local stroke = mc.stroke
 local bindTap = mc.bindTap
@@ -320,7 +322,7 @@ local function openBlackjack(payload)
 
 	local hit = makeActionButton(panel, "HIT", UDim2.new(0, 16, 0, btnY), UDim2.new(1, -32, 0, btnH), Color3.fromRGB(44, 112, 82))
 	local stand = makeActionButton(panel, "STAND", UDim2.new(0, 16, 0, btnY + btnH + btnGap), UDim2.new(1, -32, 0, btnH), Color3.fromRGB(64, 89, 134))
-	local leave = makeActionButton(panel, payload.Done and "CLOSE" or "LEAVE", UDim2.new(0, 16, 0, btnY + (btnH + btnGap) * 2), UDim2.new(1, -32, 0, btnH), Color3.fromRGB(124, 54, 60))
+	local leave = makeActionButton(panel, payload.Done and BitKaisenLocale.tOrFallback(L, "ui.close", nil, "Close") or BitKaisenLocale.tOrFallback(L, "ui.leave", nil, "Leave"), UDim2.new(0, 16, 0, btnY + (btnH + btnGap) * 2), UDim2.new(1, -32, 0, btnH), Color3.fromRGB(124, 54, 60))
 
 	active = { Kind = "Blackjack", Token = token, Root = root }
 

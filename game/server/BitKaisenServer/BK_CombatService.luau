@@ -8,6 +8,18 @@ local RunService = game:GetService("RunService")
 local BitKaisenCombat = require(ReplicatedStorage:WaitForChild("BitKaisenCombat"))
 local BitKaisenCursedTools = require(ReplicatedStorage:WaitForChild("BitKaisenCursedTools"))
 local BitKaisenDomains = require(ReplicatedStorage:WaitForChild("BitKaisenDomains"))
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+
+local function _ct(session, key, fallback)
+	local p = session and session.Player
+	if not p then return fallback end
+	return BitKaisenLocale.tOrFallback(BitKaisenLocale.getPlayerLocale(p.UserId), "combat." .. key, nil, fallback)
+end
+local function _cl(session, key, params, fallback)
+	local s = _ct(session, key, fallback)
+	if params then for k, v in pairs(params) do s = s:gsub("{" .. k .. "}", tostring(v)) end end
+	return s
+end
 
 local BK_CombatService = {}
 
@@ -196,7 +208,7 @@ local function syncHealthToStats(player, session)
 				or "<font color='#c8a4ff'><b>[ MIRACLE ]</b></font> Your last miracle saved you. Your marks have disappeared — you are now completely vulnerable.")
 		else
 			stats.Alive = false
-			stats.CauseOfDeath = "Defeated in combat by " .. tostring(session.Enemy and session.Enemy.Name or "an enemy")
+			stats.CauseOfDeath = _cl(session, "cause_of_death", {enemy = tostring(session.Enemy and session.Enemy.Name or "an enemy")}, "Defeated in combat by " .. tostring(session.Enemy and session.Enemy.Name or "an enemy"))
 		end
 	end
 end
@@ -243,15 +255,15 @@ local function finishCombat(player, session, winner, reason)
 				end
 			end
 			local ceToolText = ceBonus > 0 and (" (including +" .. tostring(ceBonus) .. " from " .. tostring(ceTool and ceTool.Name or "equipped cursed tool") .. ")") or ""
-			addLog(session, "Victory. Rewards: +$" .. tostring(moneyGain) .. ", +" .. tostring(repGain) .. " reputation, +" .. tostring(ceGain) .. " CE" .. ceToolText .. "." .. dropText)
+			addLog(session, _cl(session, "log_victory", {money = moneyGain, rep = repGain, ce = ceGain, tools = ceToolText .. "." .. dropText}, "Victory. Rewards: +$" .. tostring(moneyGain) .. ", +" .. tostring(repGain) .. " reputation, +" .. tostring(ceGain) .. " CE" .. ceToolText .. "." .. dropText))
 			fireLifeUpdate(player, stats, "<font color='#7ee787'><b>[ COMBAT ]</b></font> You defeated <b>" .. session.Enemy.Name .. "</b>. Rewards: <b>+$" .. tostring(moneyGain) .. "</b>, Reputation <b>+" .. tostring(repGain) .. "</b>, CE <b>+" .. tostring(ceGain) .. "</b>" .. ceToolText .. "." .. (dropText ~= "" and ("\n<font color='#f0b955'><b>[ CURSED TOOL ]</b></font>" .. dropText) or ""))
 		elseif winner == "enemy" then
 			stats.CombatLosses = (tonumber(stats.CombatLosses) or 0) + 1
-			addLog(session, "Defeat. " .. tostring(reason or "You were overwhelmed."))
+			addLog(session, _cl(session, "log_defeat", {reason = tostring(reason or _ct(session, "log_defeat_default", "You were overwhelmed."))}, "Defeat. " .. tostring(reason or "You were overwhelmed.")))
 			fireLifeUpdate(player, stats, "<font color='#e53935'><b>[ COMBAT ]</b></font> You were defeated by <b>" .. session.Enemy.Name .. "</b>. " .. tostring(reason or "Your health collapsed."))
 		elseif winner == "fled" then
 			stats.CombatFlees = (tonumber(stats.CombatFlees) or 0) + 1
-			addLog(session, "You escaped the fight.")
+			addLog(session, _ct(session, "log_escaped", "You escaped the fight."))
 			fireLifeUpdate(player, stats, "<font color='#ffcd69'><b>[ COMBAT ]</b></font> You escaped from <b>" .. session.Enemy.Name .. "</b>.")
 		end
 		local domainReason = winner == "player" and "combat_win" or (winner == "enemy" and "combat_loss" or nil)
@@ -259,7 +271,7 @@ local function finishCombat(player, session, winner, reason)
 			local domainGain = BitKaisenDomains.GetProgressGain(stats, domainReason)
 			local domainText = BitKaisenDomains.AddProgress(stats, domainGain, domainReason)
 			if domainText ~= "" then
-				addLog(session, "Domain progress gained from combat pressure.")
+				addLog(session, _ct(session, "log_domain_progress", "Domain progress gained from combat pressure."))
 			end
 		end
 		if typeof(session.OnFinish) == "function" then
@@ -311,11 +323,11 @@ local function beginEnemyCombo(player, session, guarded, autoResolve, warningOve
 			Token = token,
 			Hits = hits,
 			Window = 0.8,
-			Warning = tostring(warningOverride or (session.Enemy.Name .. " is attacking. Prepare to dodge!")),
+			Warning = tostring(warningOverride or _cl(session, "log_warning_dodge", {enemy = session.Enemy.Name}, session.Enemy.Name .. " is attacking. Prepare to dodge!")),
 			Guarded = guarded == true,
 		}
 	end
-	addLog(session, session.Enemy.Name .. " prepares a " .. tostring(hits) .. " hit combo.")
+	addLog(session, _cl(session, "log_prepares_combo", {enemy = session.Enemy.Name, hits = hits}, session.Enemy.Name .. " prepares a " .. tostring(hits) .. " hit combo."))
 	sendState(player, session)
 	task.delay(5, function()
 		if sessions[player.UserId] == session and session.PendingDefense and session.PendingDefense.Token == token then
@@ -341,9 +353,9 @@ function resolveEnemyCombo(player, session, accuracy, perfectHits)
 	session.PendingDefense = nil
 	session.PendingDefensePublic = nil
 	if damage <= 0 then
-		addLog(session, "Perfect defense. You avoided the full combo.")
+		addLog(session, _ct(session, "log_perfect_defense", "Perfect defense. You avoided the full combo."))
 	else
-		addLog(session, "Defense resolved. Health -" .. tostring(damage) .. ".")
+		addLog(session, _cl(session, "log_defense_resolved", {dmg = damage}, "Defense resolved. Health -" .. tostring(damage) .. "."))
 	end
 	if session.PlayerHP <= 0 then
 		finishCombat(player, session, "enemy", "You were beaten down during the enemy combo.")
@@ -355,7 +367,7 @@ function resolveEnemyCombo(player, session, accuracy, perfectHits)
 		session.Phase = "counter"
 		session.PendingCounter = { Token = token, StartedAt = os.clock(), ExpiresAt = os.clock() + 1.15 }
 		session.PendingCounterPublic = { Token = token, Window = 1.15, Warning = "Counter opening." }
-		addLog(session, "Counter opening. Strike now.")
+		addLog(session, _ct(session, "log_counter_open", "Counter opening. Strike now."))
 		syncHealthToStats(player, session)
 		sendState(player, session)
 		task.delay(1.35, function()
@@ -366,7 +378,7 @@ function resolveEnemyCombo(player, session, accuracy, perfectHits)
 	else
 		session.Round += 1
 		session.Phase = "pause"
-		addLog(session, "You regain your stance.")
+		addLog(session, _ct(session, "log_regain_stance", "You regain your stance."))
 		syncHealthToStats(player, session)
 		sendState(player, session)
 		task.delay(0.35, function()
@@ -423,7 +435,7 @@ local function startAttackCheck(player, session, isTechnique, autoResolve, isBla
 			IsBlackFlash = isBlackFlash == true,
 		}
 	end
-	addLog(session, isTechnique and "Technique timing started." or "Attack timing started.")
+	addLog(session, isTechnique and _ct(session, "log_tech_timing", "Technique timing started.") or _ct(session, "log_attack_timing", "Attack timing started."))
 	sendState(player, session)
 	task.delay(5, function()
 		if sessions[player.UserId] == session and session.PendingAttack and session.PendingAttack.Token == token then
@@ -466,16 +478,16 @@ function resolveAttack(player, session, accuracy, sweet)
 	end
 	if isSweet then
 		if isBlackFlash then
-			addLog(session, "BLACK FLASH. Cursed energy and impact converged in the same instant.")
+			addLog(session, _ct(session, "log_black_flash", "BLACK FLASH. Cursed energy and impact converged in the same instant."))
 		else
-			addLog(session, isTechnique and "Perfect technique timing. Massive impact." or "Sweet spot. Maximum impact.")
+			addLog(session, isTechnique and _ct(session, "log_perfect_tech", "Perfect technique timing. Massive impact.") or _ct(session, "log_perfect_hit", "Sweet spot. Maximum impact."))
 		end
 	elseif quality >= 0.7 then
-		addLog(session, isTechnique and "Technique connected cleanly." or (isBlackFlash and "Strong hit — timing nearly landed the Black Flash." or "Clean hit."))
+		addLog(session, isTechnique and _ct(session, "log_clean_tech", "Technique connected cleanly.") or (isBlackFlash and _ct(session, "log_strong_bf", "Strong hit — timing nearly landed the Black Flash.") or _ct(session, "log_clean_hit", "Clean hit.")))
 	elseif quality >= 0.35 then
-		addLog(session, isTechnique and "Technique grazed the target." or (isBlackFlash and "Black Flash timing slipped. Weak impact." or "Glancing hit."))
+		addLog(session, isTechnique and _ct(session, "log_graze_tech", "Technique grazed the target.") or (isBlackFlash and _ct(session, "log_weak_bf", "Black Flash timing slipped. Weak impact.") or _ct(session, "log_glancing_hit", "Glancing hit.")))
 	else
-		addLog(session, isTechnique and "Technique timing failed." or (isBlackFlash and "Black Flash failed. No amplification." or "Mistimed attack."))
+		addLog(session, isTechnique and _ct(session, "log_failed_tech", "Technique timing failed.") or (isBlackFlash and _ct(session, "log_bf_failed", "Black Flash failed. No amplification.") or _ct(session, "log_mistimed", "Mistimed attack.")))
 	end
 	if isBlackFlash then
 		if isSweet then
@@ -485,7 +497,7 @@ function resolveAttack(player, session, accuracy, sweet)
 			if bfStats then
 				bfStats.BlackFlashCount = (tonumber(bfStats.BlackFlashCount) or 0) + 1
 			end
-			addLog(session, "BLACK FLASH #" .. tostring(tonumber(bfStats and bfStats.BlackFlashCount) or 1) .. " — ×2.5 damage.")
+			addLog(session, _cl(session, "log_bf_number", {n = tostring(tonumber(bfStats and bfStats.BlackFlashCount) or 1)}, "BLACK FLASH #" .. tostring(tonumber(bfStats and bfStats.BlackFlashCount) or 1) .. " — ×2.5 damage."))
 		elseif quality >= 0.7 then
 			damage = math.floor(damage * 1.3)
 		elseif quality < 0.35 then
@@ -494,7 +506,7 @@ function resolveAttack(player, session, accuracy, sweet)
 			local pfStats = getStats(player)
 			if pfStats then pfStats.CursedEnergy = math.floor(session.PlayerCE + 0.5) end
 			session.EnemyAdvantage = (tonumber(session.EnemyAdvantage) or 0) + 1
-			addLog(session, "The failed attempt left you exposed. The enemy senses the opening.")
+			addLog(session, _ct(session, "log_exposed", "The failed attempt left you exposed. The enemy senses the opening."))
 		end
 	end
 	if isTechnique then
@@ -502,7 +514,7 @@ function resolveAttack(player, session, accuracy, sweet)
 		session.PlayerCE = math.max(0, session.PlayerCE - (tonumber(session.TechniqueCECost) or TECHNIQUE_CE_COST))
 	end
 	session.Enemy.HP = math.clamp(session.Enemy.HP - damage, 0, session.Enemy.MaxHP)
-	addLog(session, session.Enemy.Name .. " takes " .. tostring(damage) .. " damage.")
+	addLog(session, _cl(session, "log_enemy_takes", {enemy = session.Enemy.Name, dmg = damage}, session.Enemy.Name .. " takes " .. tostring(damage) .. " damage."))
 	session.PendingAttack = nil
 	session.PendingAttackPublic = nil
 	if session.Enemy.HP <= 0 then
@@ -510,7 +522,7 @@ function resolveAttack(player, session, accuracy, sweet)
 		return
 	end
 	session.Phase = "pause"
-	addLog(session, "The enemy reels. Prepare for the counterattack.")
+	addLog(session, _ct(session, "log_enemy_reels", "The enemy reels. Prepare for the counterattack."))
 	sendState(player, session)
 	task.delay(0.15, function()
 		if sessions[player.UserId] == session and session.Phase == "pause" then
@@ -530,17 +542,17 @@ function resolveCounter(player, session, success)
 		local damage = math.max(8, math.floor((math.min(BitKaisenCombat.GetCombatPower(stats), 260) * 0.11) + math.min(18, strength * 0.025)))
 		damage = math.min(damage, math.floor(session.Enemy.MaxHP * 0.16))
 		session.Enemy.HP = math.clamp(session.Enemy.HP - damage, 0, session.Enemy.MaxHP)
-		addLog(session, "Counter attack landed for " .. tostring(damage) .. ".")
+		addLog(session, _cl(session, "log_counter_hit", {dmg = damage}, "Counter attack landed for " .. tostring(damage) .. "."))
 		if session.Enemy.HP <= 0 then
 			finishCombat(player, session, "player")
 			return
 		end
 	else
-		addLog(session, "Counter missed.")
+		addLog(session, _ct(session, "log_counter_miss", "Counter missed."))
 	end
 	session.Round += 1
 	session.Phase = "pause"
-	addLog(session, "You reset your footing.")
+	addLog(session, _ct(session, "log_reset_stance", "You reset your footing."))
 	sendState(player, session)
 	task.delay(0.35, function()
 		if sessions[player.UserId] == session and session.Phase == "pause" then
@@ -561,6 +573,7 @@ function BK_CombatService.StartCombat(player, source, enemyConfig)
 	local playerCE = math.max(0, tonumber(stats.CursedEnergy) or 0)
 	local session = {
 		Source = tostring(source or "Combat"),
+		Player = player,
 		Enemy = enemy,
 		Phase = "player_turn",
 		Round = 1,
@@ -582,7 +595,8 @@ function BK_CombatService.StartCombat(player, source, enemyConfig)
 		Metadata = typeof(enemyConfig and enemyConfig.Metadata) == "table" and enemyConfig.Metadata or nil,
 	}
 	sessions[player.UserId] = session
-	addLog(session, enemy.Name .. " engaged you in combat.")	fireMajorPopup(player, "COMBAT STARTED", enemy.Name .. " has forced a fight.", enemy.Grade, "Attack, defend, or flee.")
+	addLog(session, _cl(session, "log_engaged", {enemy = enemy.Name}, enemy.Name .. " engaged you in combat."))
+	fireMajorPopup(player, _ct(session, "log_combat_started", "COMBAT STARTED"), _cl(session, "log_combat_forced", {enemy = enemy.Name}, enemy.Name .. " has forced a fight."), enemy.Grade, _ct(session, "log_combat_hint", "Attack, defend, or flee."))
 	sendState(player, session)
 	return true
 end
@@ -597,7 +611,7 @@ function BK_CombatService.ClearCurrentFight(player, reason)
 		return false
 	end
 	sessions[player.UserId] = nil
-	addLog(session, "Fight cleared" .. (reason and (" (" .. tostring(reason) .. ")") or "") .. ".")
+	addLog(session, _cl(session, "log_fight_cleared", {reason = reason and (" (" .. tostring(reason) .. ")") or ""}, "Fight cleared" .. (reason and (" (" .. tostring(reason) .. ")") or "") .. "."))
 	sendState(player, nil)
 	return true
 end
@@ -629,7 +643,7 @@ function BK_CombatService.ResetCurrentFight(player, reason)
 		fireLifeUpdate(player, stats, "<font color='#7ee787'><b>[ COMBAT RESET ]</b></font> Your fight was reset to its starting stats.")
 		forceSaveStats(player, "combat_reset")
 	end
-	addLog(session, "Fight reset to starting stats" .. (reason and (" (" .. tostring(reason) .. ")") or "") .. ".")
+	addLog(session, _cl(session, "log_fight_reset", {reason = reason and (" (" .. tostring(reason) .. ")") or ""}, "Fight reset to starting stats" .. (reason and (" (" .. tostring(reason) .. ")") or "") .. "."))
 	sendState(player, session)
 	return true
 end
@@ -641,18 +655,18 @@ local function resolveDomainAction(player, session)
 	local domain = BitKaisenDomains.GetCombatPayload(stats)
 	local uses = tonumber(session.DomainUses) or 0
 	if domain.Unlocked ~= true then
-		addLog(session, "Your domain has not manifested yet.")
+		addLog(session, _ct(session, "log_domain_none", "Your domain has not manifested yet."))
 		sendState(player, session)
 		return
 	end
 	if uses >= (tonumber(session.DomainMaxUses) or 1) then
-		addLog(session, "You cannot expand your domain again in this fight.")
+		addLog(session, _ct(session, "log_domain_cooldown", "You cannot expand your domain again in this fight."))
 		sendState(player, session)
 		return
 	end
 	local cost = tonumber(domain.Cost) or 100
 	if session.PlayerCE < cost then
-		addLog(session, "Not enough CE to expand your domain. Need " .. tostring(cost) .. " CE.")
+		addLog(session, _cl(session, "log_domain_no_ce", {cost = cost}, "Not enough CE to expand your domain. Need " .. tostring(cost) .. " CE."))
 		sendState(player, session)
 		return
 	end
@@ -673,14 +687,14 @@ local function resolveDomainAction(player, session)
 		if playerRoll >= enemyRoll then
 			stats.DomainClashesWon = (tonumber(stats.DomainClashesWon) or 0) + 1
 			damage = math.floor(damage * 1.15)
-			addLog(session, tostring(domain.Name) .. " won the domain clash.")
+			addLog(session, _cl(session, "log_domain_won", {domain = tostring(domain.Name)}, tostring(domain.Name) .. " won the domain clash."))
 			progressReason = "clash"
 		else
 			stats.DomainClashesLost = (tonumber(stats.DomainClashesLost) or 0) + 1
 			local backlash = math.max(8, math.floor(session.Enemy.Power * 0.14))
 			session.PlayerHP = math.clamp(session.PlayerHP - backlash, 0, session.PlayerMaxHP)
 			stats.Health = math.clamp(math.floor(session.PlayerHP + 0.5), 0, 100)
-			addLog(session, tostring(domain.Name) .. " lost the domain clash. Backlash hit for " .. tostring(backlash) .. ".")
+			addLog(session, _cl(session, "log_domain_lost", {domain = tostring(domain.Name), dmg = backlash}, tostring(domain.Name) .. " lost the domain clash. Backlash hit for " .. tostring(backlash) .. "."))
 			if session.PlayerHP <= 0 then
 				finishCombat(player, session, "enemy", "Your domain collapsed under the clash.")
 				return
@@ -688,7 +702,7 @@ local function resolveDomainAction(player, session)
 			damage = math.floor(damage * 0.45)
 		end
 	else
-		addLog(session, "Domain Expansion: " .. tostring(domain.Name) .. ".")
+		addLog(session, _cl(session, "log_domain_expand", {domain = tostring(domain.Name)}, "Domain Expansion: " .. tostring(domain.Name) .. "."))
 	end
 
 	-- CT-specific effect: modify damage before applying
@@ -699,12 +713,12 @@ local function resolveDomainAction(player, session)
 		end
 		if ctEffect.CritChance and math.random(1, 100) <= ctEffect.CritChance then
 			damage = math.floor(damage * 1.5)
-			addLog(session, "Critical geometry aligned — damage amplified.")
+			addLog(session, _ct(session, "log_domain_crit", "Critical geometry aligned — damage amplified."))
 		end
 	end
 
 	session.Enemy.HP = math.clamp(session.Enemy.HP - damage, 0, session.Enemy.MaxHP)
-	addLog(session, "Domain dealt " .. tostring(damage) .. " damage.")
+	addLog(session, _cl(session, "log_domain_dealt", {dmg = damage}, "Domain dealt " .. tostring(damage) .. " damage."))
 
 	-- CT-specific effect: post-damage (CE refund, heal, narrative)
 	if ctEffect then
@@ -728,7 +742,7 @@ local function resolveDomainAction(player, session)
 
 	local progressText = BitKaisenDomains.AddProgress(stats, BitKaisenDomains.GetProgressGain(stats, progressReason), progressReason)
 	if progressText ~= "" then
-		addLog(session, "Domain mastery improved.")
+		addLog(session, _ct(session, "log_domain_mastery", "Domain mastery improved."))
 	end
 	if session.Enemy.HP <= 0 then
 		finishCombat(player, session, "player")
@@ -781,10 +795,10 @@ local function handleAction(player, action, payload)
 		local maxUses = tonumber(session.TechniqueMaxUses) or TECHNIQUE_MAX_USES
 		local cost = tonumber(session.TechniqueCECost) or TECHNIQUE_CE_COST
 		if uses >= maxUses then
-			addLog(session, "No technique uses left this fight.")
+			addLog(session, _ct(session, "log_no_tech_uses", "No technique uses left this fight."))
 			sendState(player, session)
 		elseif session.PlayerCE < cost then
-			addLog(session, "Not enough cursed energy for a technique. Need " .. tostring(cost) .. " CE.")
+			addLog(session, _cl(session, "log_no_tech_ce", {cost = cost}, "Not enough cursed energy for a technique. Need " .. tostring(cost) .. " CE."))
 			sendState(player, session)
 		else
 			if stats and stats.Settings and stats.Settings.SkipCombatSkillChecks == true then
@@ -800,14 +814,14 @@ local function handleAction(player, action, payload)
 		end
 	elseif action == "black_flash" and session.Phase == "player_turn" then
 		if session.PlayerCE < BF_CE_COST then
-			addLog(session, "Not enough CE for Black Flash. Need " .. tostring(BF_CE_COST) .. " CE.")
+			addLog(session, _cl(session, "log_bf_no_ce", {cost = BF_CE_COST}, "Not enough CE for Black Flash. Need " .. tostring(BF_CE_COST) .. " CE."))
 			sendState(player, session)
 		else
 			session.PlayerCE = math.max(0, session.PlayerCE - BF_CE_COST)
 			local bfStats = getStats(player)
 			if bfStats then bfStats.CursedEnergy = math.floor(session.PlayerCE + 0.5) end
 			session.BlackFlashPending = true
-			addLog(session, "Black Flash attempt. Hit the timing window at the exact moment.")
+			addLog(session, _ct(session, "log_bf_timing", "Black Flash attempt. Hit the timing window at the exact moment."))
 			if bfStats and bfStats.Settings and bfStats.Settings.SkipCombatSkillChecks == true then
 				startAttackCheck(player, session, false, true, true)
 				task.delay(0.15, function()
@@ -839,8 +853,8 @@ local function handleAction(player, action, payload)
 		if math.random(1, 100) <= chance then
 			finishCombat(player, session, "fled")
 		else
-			local caughtWarning = "You got caught! " .. session.Enemy.Name .. " is attacking. Prepare to dodge!"
-			addLog(session, "Flee failed. You got caught as the enemy attacks.")
+			local caughtWarning = _cl(session, "cause_of_death_got_caught", {enemy = session.Enemy.Name}, "You got caught! " .. session.Enemy.Name .. " is attacking. Prepare to dodge!")
+			addLog(session, _ct(session, "log_flee_caught", "Flee failed. You got caught as the enemy attacks."))
 			beginEnemyCombo(player, session, false, false, caughtWarning)
 		end
 	end

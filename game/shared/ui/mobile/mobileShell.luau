@@ -1,4 +1,5 @@
 local TweenService = game:GetService("TweenService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local vide = require("@packages/vide")
 local theme = require("@ui/theme")
 local helpers = require("@ui/helpers")
@@ -7,7 +8,31 @@ local uiState = require("@ui-state/uiState")
 local navRegistry = require("@ui-state/navRegistry")
 local remotes = require("@ui-state/remotes")
 local mc = require("@ui/mobile/mobileComponents")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
 local bindTap = mc.bindTap
+
+local L = BitKaisenLocale.getClientLocale()
+local function _ui(key, fallback) return BitKaisenLocale.tOrFallback(L, "ui." .. key, nil, fallback) end
+
+local MONTH_KEYS = { "month_1","month_2","month_3","month_4","month_5","month_6","month_7","month_8","month_9","month_10","month_11","month_12" }
+local MONTH_FALLBACKS = { "January","February","March","April","May","June","July","August","September","October","November","December" }
+local ERA_KEYS = { ["Modern Era"] = "era_modern", ["Edo Era"] = "era_edo", ["Heian Era"] = "era_heian", ["Collapse Era"] = "era_collapse" }
+local ERA_FALLBACKS = { ["Modern Era"] = "Modern Era", ["Edo Era"] = "Edo Era", ["Heian Era"] = "Heian Era", ["Collapse Era"] = "Collapse Era" }
+local PATH_KEYS = {
+	["Civilian"] = "path_civilian", ["Awakened Civilian"] = "path_awakened_civilian",
+	["Unregistered Sorcerer"] = "path_unregistered", ["Registered Sorcerer"] = "path_registered",
+	["Jujutsu High Sorcerer"] = "path_jjh_sorcerer", ["Jujutsu Mentor"] = "path_jujutsu_mentor",
+	["Curse User"] = "path_curse_user", ["Cursed Spirit"] = "path_cursed_spirit",
+}
+local ALIGN_KEYS = {
+	["Infamous Evil"] = "align_infamous_evil", ["Evil"] = "align_evil", ["Shady"] = "align_shady",
+	["Neutral"] = "align_neutral", ["Respected"] = "align_respected", ["Honored"] = "align_honored",
+}
+
+local function locMonth(idx) return _ui(MONTH_KEYS[idx] or "month_1", MONTH_FALLBACKS[idx] or "January") end
+local function locEra(era) local k = ERA_KEYS[era] return k and _ui(k, ERA_FALLBACKS[era] or era) or era end
+local function locPath(path) local k = PATH_KEYS[path] return k and _ui(k, path) or (path or _ui("path_undecided","Undecided")) end
+local function locAlign(a) local k = ALIGN_KEYS[a] return k and _ui(k, a) or a end
 
 local create = vide.create
 local derive = vide.derive
@@ -156,7 +181,7 @@ local function MobileProfileHeader()
 	local ageVal    = derive(function() local s = stats() return s and helpers.getAgeDisplay(s) or "0" end)
 	local monthVal  = derive(function() local s = stats() return s and tostring(s.CurrentMonth or 1) or "1" end)
 	local yearVal   = derive(function() local s = stats() return s and tostring(helpers.getCurrentYear(s)) or "—" end)
-	local eraVal    = derive(function() local s = stats() return s and helpers.getCurrentEraDisplay(s) or "—" end)
+	local eraVal    = derive(function() local s = stats() return s and locEra(helpers.getCurrentEraDisplay(s)) or "—" end)
 	local rankVal   = derive(function()
 		local s = stats()
 		if not s then return "—" end
@@ -166,7 +191,7 @@ local function MobileProfileHeader()
 	local worldVal  = derive(function()
 		local s = stats()
 		if not s then return "—" end
-		return tostring(s.LifePath or helpers.getRoutePathText(s) or "Undecided")
+		return locPath(tostring(s.LifePath or helpers.getRoutePathText(s) or "Undecided"))
 	end)
 	local fameVal   = derive(function() local s = stats() return tostring(math.clamp(tonumber(s and s.Fame) or 0, 0, 100)) end)
 	local fearVal   = derive(function() local s = stats() return tostring(math.clamp(tonumber(s and s.Fear) or 0, 0, 100)) end)
@@ -177,13 +202,27 @@ local function MobileProfileHeader()
 	local moneyVal  = derive(function() local s = stats() return "$" .. helpers.formatMoneyAmount(s and s.Money or 0) end)
 	local repVal    = derive(function() local s = stats() return tostring(s and s.Reputation or 0) end)
 	local repColor  = derive(function() local s = stats() return (tonumber(s and s.Reputation) or 0) < 0 and theme.Red or theme.Gold end)
-	local schoolVal = derive(function() return helpers.getSchoolDisplay(stats()) end)
-	local pathVal   = derive(function() return helpers.getRoutePathText(stats()) end)
+	local schoolVal = derive(function()
+		local s = stats()
+		if not s then return _ui("school_none", "None") end
+		if s.InJujutsuHigh then return _ui("school_jjh", "Jujutsu High") end
+		if s.IsJujutsuMentor then return _ui("school_mentor", "JJH Mentor") .. " (" .. tostring(s.MentorRank or _ui("school_none","None")) .. ")" end
+		if s.GraduatedJujutsuHigh then return _ui("school_graduate", "JJH Graduate") end
+		if s.GraduatedSchool then return _ui("school_grad", "Graduated") end
+		local stage = tostring(s.SchoolStage or "None")
+		if stage ~= "None" and stage ~= "Graduated" then
+			local perf = math.floor(tonumber(s.SchoolPerformance) or 50)
+			local grade = tostring(s.ReportCardGrade or "N/A")
+			return stage .. " | " .. grade .. " (" .. tostring(perf) .. "%)"
+		end
+		return _ui("school_none", "None")
+	end)
+	local pathVal   = derive(function() return locPath(helpers.getRoutePathText(stats())) end)
 	local pathColor = derive(function() return helpers.getRouteColor(stats()) end)
 	local alignVal  = derive(function()
 		local s = stats()
 		if helpers.isProfileCurseLife(s) then return tostring(s and (s.CurseThreatClass or s.SocietyStatus) or "Local") end
-		return helpers.getDisplayedAlignment(s)
+		return locAlign(helpers.getDisplayedAlignment(s))
 	end)
 	local alignColor = derive(function()
 		local s = stats()
@@ -273,13 +312,13 @@ local function MobileProfileHeader()
 			LayoutOrder = 2,
 			create("UIPadding") { PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 4), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) },
 			create("UIListLayout") { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 2) },
-			DossierBar("Health",    theme.Red,                    function() local s = stats() return s and s.Health    or 100 end),
-			DossierBar("Happiness", theme.Green,                  function() local s = stats() return s and s.Happiness or 100 end),
-			DossierBar("Smarts",    theme.Gold,                   function() local s = stats() return s and s.Smarts    or 50  end),
-			DossierBar("Looks",     Color3.fromRGB(96, 170, 255), function() local s = stats() return s and s.Looks     or 50  end),
-			DossierBar("Strength",  Color3.fromRGB(236, 116, 76), function() local s = stats() return s and s.Strength  or 0   end),
-			DossierBar("Speed",     Color3.fromRGB(96, 220, 200), function() local s = stats() return s and s.Speed     or 0   end),
-			DossierBar("Durability",Color3.fromRGB(150, 150, 160),function() local s = stats() return s and s.Durability or 0  end),
+			DossierBar(BitKaisenLocale.tOrFallback(L, "ui.stat_health",     nil, "Health"),     theme.Red,                    function() local s = stats() return s and s.Health     or 100 end),
+			DossierBar(BitKaisenLocale.tOrFallback(L, "ui.stat_happiness",  nil, "Happiness"),  theme.Green,                  function() local s = stats() return s and s.Happiness  or 100 end),
+			DossierBar(BitKaisenLocale.tOrFallback(L, "ui.stat_smarts",     nil, "Smarts"),     theme.Gold,                   function() local s = stats() return s and s.Smarts     or 50  end),
+			DossierBar(BitKaisenLocale.tOrFallback(L, "ui.stat_looks",      nil, "Looks"),      Color3.fromRGB(96, 170, 255), function() local s = stats() return s and s.Looks      or 50  end),
+			DossierBar(BitKaisenLocale.tOrFallback(L, "ui.stat_strength",   nil, "Strength"),   Color3.fromRGB(236, 116, 76), function() local s = stats() return s and s.Strength   or 0   end),
+			DossierBar(BitKaisenLocale.tOrFallback(L, "ui.stat_speed",      nil, "Speed"),      Color3.fromRGB(96, 220, 200), function() local s = stats() return s and s.Speed      or 0   end),
+			DossierBar(BitKaisenLocale.tOrFallback(L, "ui.stat_durability", nil, "Durability"), Color3.fromRGB(150, 150, 160), function() local s = stats() return s and s.Durability or 0  end),
 		},
 
 		-- Divider
@@ -305,7 +344,7 @@ local function MobileProfileHeader()
 					Position = UDim2.new(0, 0, 0, 0),
 					Size = UDim2.new(1, -50, 0, 10),
 					BackgroundTransparency = 1,
-					Text = "SUBJECT",
+					Text = BitKaisenLocale.tOrFallback(L, "ui.subject", nil, "SUBJECT"),
 					TextColor3 = DIMLO,
 					TextSize = 7,
 					Font = Enum.Font.GothamBlack,
@@ -336,9 +375,12 @@ local function MobileProfileHeader()
 					BackgroundTransparency = 1,
 					RichText = true,
 					Text = derive(function()
+						local lAge  = BitKaisenLocale.tOrFallback(L, "ui.label_age",  nil, "AGE")
+						local lYear = BitKaisenLocale.tOrFallback(L, "ui.label_year", nil, "YEAR")
+						local lEra  = BitKaisenLocale.tOrFallback(L, "ui.label_era",  nil, "ERA")
 						return string.format(
-							'<font color="#6e6c88" size="7">AGE</font>  <b>%s</b>    <font color="#6e6c88" size="7">YEAR</font>  <b>%s</b>    <font color="#6e6c88" size="7">ERA</font>  <b>%s</b>',
-							ageVal(), yearVal(), eraVal()
+							'<font color="#6e6c88" size="7">%s</font>  <b>%s</b>    <font color="#6e6c88" size="7">%s</font>  <b>%s</b>    <font color="#6e6c88" size="7">%s</font>  <b>%s</b>',
+							lAge, ageVal(), lYear, yearVal(), lEra, eraVal()
 						)
 					end),
 					TextColor3 = Color3.fromRGB(210, 208, 230),
@@ -433,11 +475,11 @@ local function MobileProfileHeader()
 					BackgroundTransparency = 1,
 					LayoutOrder = 1,
 					create("UIListLayout") { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 4) },
-					DInfoRow("Rank",    rankVal,    theme.Gold),
-					DInfoRow("World",   worldVal,   theme.Gold),
-					DInfoRow("Fame",    fameVal,    theme.Orange),
-					DInfoRow("Fear",    fearVal,    theme.Red),
-					DInfoRow("Lineage", lineageVal, theme.Text),
+					DInfoRow(_ui("dossier_rank",    "Rank"),    rankVal,    theme.Gold),
+					DInfoRow(_ui("dossier_world",   "World"),   worldVal,   theme.Gold),
+					DInfoRow(_ui("dossier_fame",    "Fame"),    fameVal,    theme.Orange),
+					DInfoRow(_ui("dossier_fear",    "Fear"),    fearVal,    theme.Red),
+					DInfoRow(_ui("dossier_lineage", "Lineage"), lineageVal, theme.Text),
 					create("TextButton") {
 						Size = UDim2.new(1, 0, 0, 17),
 						BackgroundTransparency = 1,
@@ -449,7 +491,7 @@ local function MobileProfileHeader()
 						create("TextLabel") {
 							Size = UDim2.new(0, 60, 1, 0),
 							BackgroundTransparency = 1,
-							Text = "• TECHNIQUE",
+							Text = "• " .. _ui("dossier_technique", "TECHNIQUE"),
 							TextColor3 = LABEL,
 							TextSize = 7,
 							Font = Enum.Font.GothamBold,
@@ -469,7 +511,7 @@ local function MobileProfileHeader()
 							TextWrapped = true,
 						},
 					},
-					DInfoRow("Traits",  traitVal,   theme.Gold),
+					DInfoRow(_ui("dossier_traits", "Traits"), traitVal, theme.Gold),
 				},
 
 				-- Right column
@@ -480,12 +522,12 @@ local function MobileProfileHeader()
 					BackgroundTransparency = 1,
 					LayoutOrder = 2,
 					create("UIListLayout") { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 4) },
-					DInfoRow("CE",        ceVal,     theme.Purple),
-					DInfoRow("Money",     moneyVal,  theme.Green),
-					DInfoRow("Rep",       repVal,    repColor),
-					DInfoRow("School",    schoolVal, theme.Blue),
-					DInfoRow("Path",      pathVal,   pathColor),
-					DInfoRow("Alignment", alignVal,  alignColor),
+					DInfoRow(_ui("dossier_ce",        "CE"),        ceVal,     theme.Purple),
+					DInfoRow(_ui("dossier_money",     "Money"),     moneyVal,  theme.Green),
+					DInfoRow(_ui("dossier_rep",       "Rep"),       repVal,    repColor),
+					DInfoRow(_ui("dossier_school",    "School"),    schoolVal, theme.Blue),
+					DInfoRow(_ui("dossier_path",      "Path"),      pathVal,   pathColor),
+					DInfoRow(_ui("dossier_alignment", "Alignment"), alignVal,  alignColor),
 				},
 			},
 		},
@@ -576,7 +618,7 @@ local function MobileLifeLog()
 				Position = UDim2.new(0, 10, 0, 4),
 				Size = UDim2.new(0.5, 0, 0, 12),
 				BackgroundTransparency = 1,
-				Text = "SYSTEM LOG",
+				Text = BitKaisenLocale.tOrFallback(L, "ui.system_log", nil, "SYSTEM LOG"),
 				TextColor3 = Color3.fromRGB(180, 80, 80),
 				TextSize = 9,
 				Font = Enum.Font.GothamBlack,

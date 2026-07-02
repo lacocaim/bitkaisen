@@ -8,6 +8,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local BitKaisenActivities = require(ReplicatedStorage:WaitForChild("BitKaisenActivities"))
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
 local BitKaisenRelationships = require(ReplicatedStorage:WaitForChild("BitKaisenRelationships"))
 local BitKaisenAssets = require(ReplicatedStorage:WaitForChild("BitKaisenAssets"))
 local BitKaisenTraits = require(ReplicatedStorage:WaitForChild("BitKaisenTraits"))
@@ -18,6 +19,12 @@ local BitKaisenStats = require(ReplicatedStorage:WaitForChild("BitKaisenStats"))
 
 local BK_ActivityService = {}
 local context = {}
+
+-- Short alias so each logMessage line stays readable
+local function tAct(player, key, params, fallback)
+	local locale = BitKaisenLocale.getPlayerLocale(player.UserId)
+	return BitKaisenLocale.tOrFallback(locale, "activities." .. key, params, fallback)
+end
 local minigameSessions = {}
 local completeMinigameConnection = nil
 
@@ -1660,7 +1667,7 @@ local function processActivity(player, activityId)
 	if activityId == "play_outside" then
 		stats.Happiness = math.clamp((stats.Happiness or 100) + update16Gain(stats, 3, 8, true), 0, 100)
 		stats.Health = math.clamp((stats.Health or 100) + update16Gain(stats, 0, 3, true), 0, 100)
-		logMessage = "You spent time playing outside and enjoying a normal childhood moment."
+		logMessage = tAct(player, "play_outside", nil, "You spent time playing outside and enjoying a normal childhood moment.")
 
 	elseif activityId == "spend_time_family" then
 		stats.Happiness = math.clamp((stats.Happiness or 100) + update16Gain(stats, 3, 9, true), 0, 100)
@@ -1669,28 +1676,28 @@ local function processActivity(player, activityId)
 	elseif activityId == "watch_shadows" then
 		stats.CursedEnergy += update16Gain(stats, 1, 4, false)
 		stats.Happiness = math.clamp((stats.Happiness or 100) - math.random(0, 3), 0, 100)
-		logMessage = "You watched the strange shapes that moved where no one else looked."
+		logMessage = tAct(player, "watch_shadows", nil, "You watched the strange shapes that moved where no one else looked.")
 
 	elseif activityId == "ask_about_curses" then
 		stats.Smarts = math.clamp((stats.Smarts or 0) + update16Gain(stats, 2, 5, true), 0, 100)
-		logMessage = "You asked questions about curses and the strange things around you."
+		logMessage = tAct(player, "ask_about_curses", nil, "You asked questions about curses and the strange things around you.")
 
 	elseif activityId == "basic_school_study" then
 		stats.Smarts = math.clamp((stats.Smarts or 0) + update16Gain(stats, 3, 7, true), 0, 100)
 		stats.Happiness = math.clamp((stats.Happiness or 100) - math.random(0, 3), 0, 100)
-		logMessage = "You focused on schoolwork and improved your general knowledge."
+		logMessage = tAct(player, "basic_school_study", nil, "You focused on schoolwork and improved your general knowledge.")
 
 	elseif activityId == "school_attend_class" then
 		stats.SchoolPerformance = math.clamp((tonumber(stats.SchoolPerformance) or 50) + math.random(3, 7), 0, 100)
 		stats.SchoolAttendance = math.clamp((tonumber(stats.SchoolAttendance) or 100) + math.random(2, 5), 0, 100)
 		stats.Smarts = math.clamp((stats.Smarts or 0) + math.random(1, 3), 0, 100)
-		logMessage = "You attended class and paid attention. Your grades improved."
+		logMessage = tAct(player, "school_attend_class", nil, "You attended class and paid attention. Your grades improved.")
 
 	elseif activityId == "school_study_exams" then
 		stats.SchoolPerformance = math.clamp((tonumber(stats.SchoolPerformance) or 50) + math.random(8, 15), 0, 100)
 		stats.Smarts = math.clamp((stats.Smarts or 0) + math.random(2, 5), 0, 100)
 		stats.Happiness = math.clamp((stats.Happiness or 100) - math.random(3, 8), 0, 100)
-		logMessage = "You crammed for exams. Your test scores jumped, but you felt drained."
+		logMessage = tAct(player, "school_study_exams", nil, "You crammed for exams. Your test scores jumped, but you felt drained.")
 
 	elseif activityId == "school_join_club" then
 		local clubOptions = { "Kendo Club", "Science Club", "Art Club", "Athletics Club", "Cooking Club", "Drama Club", "Student Council", "Library Committee" }
@@ -1699,13 +1706,13 @@ local function processActivity(player, activityId)
 		stats.Happiness = math.clamp((stats.Happiness or 100) + math.random(3, 8), 0, 100)
 		stats.SchoolAttendance = math.clamp((tonumber(stats.SchoolAttendance) or 100) + math.random(2, 4), 0, 100)
 		stats.SchoolPerformance = math.clamp((tonumber(stats.SchoolPerformance) or 50) + math.random(1, 3), 0, 100)
-		logMessage = "You joined " .. pick .. "! School feels more fun now."
+		logMessage = tAct(player, "school_join_club", { club = pick }, "You joined " .. pick .. "! School feels more fun now.")
 
 	elseif activityId == "school_skip" then
 		stats.Happiness = math.clamp((stats.Happiness or 100) + math.random(3, 8), 0, 100)
 		stats.SchoolAttendance = math.clamp((tonumber(stats.SchoolAttendance) or 100) - math.random(8, 15), 0, 100)
 		stats.SchoolPerformance = math.clamp((tonumber(stats.SchoolPerformance) or 50) - math.random(3, 7), 0, 100)
-		logMessage = "You skipped school. It felt good, but your grades took a hit."
+		logMessage = tAct(player, "school_skip", nil, "You skipped school. It felt good, but your grades took a hit.")
 
 	elseif activityId == "mentor_teach_class" then
 		local xpGain = math.random(8, 16) + math.floor((tonumber(stats.Smarts) or 0) * 0.08)
@@ -1714,7 +1721,7 @@ local function processActivity(player, activityId)
 		stats.Smarts = math.clamp((stats.Smarts or 0) + math.random(0, 2), 0, 100)
 		local pay = math.random(500, 1200)
 		stats.Money = math.max(0, (tonumber(stats.Money) or 0) + pay)
-		logMessage = "You taught a class on cursed energy fundamentals. Mentor XP <b>+" .. tostring(xpGain) .. "</b>, earned <b>$" .. tostring(pay) .. "</b>."
+		logMessage = tAct(player, "mentor_teach_class", { xp = xpGain, pay = pay }, "You taught a class on cursed energy fundamentals. Mentor XP <b>+" .. tostring(xpGain) .. "</b>, earned <b>$" .. tostring(pay) .. "</b>.")
 
 	elseif activityId == "mentor_supervise_mission" then
 		local xpGain = math.random(12, 25)
@@ -1725,14 +1732,14 @@ local function processActivity(player, activityId)
 		stats.Health = math.clamp((stats.Health or 100) - damage, 0, 100)
 		stats.StudentsMentored = math.max(0, (tonumber(stats.StudentsMentored) or 0) + 1)
 		stats.Reputation = (tonumber(stats.Reputation) or 0) + math.random(2, 5)
-		logMessage = "You supervised students on a real mission. Mentor XP <b>+" .. tostring(xpGain) .. "</b>, CE <b>+" .. tostring(ceGain) .. "</b>, Health <b>-" .. tostring(damage) .. "</b>."
+		logMessage = tAct(player, "mentor_supervise", { xp = xpGain, ce = ceGain, dmg = damage }, "You supervised students on a real mission. Mentor XP <b>+" .. tostring(xpGain) .. "</b>, CE <b>+" .. tostring(ceGain) .. "</b>, Health <b>-" .. tostring(damage) .. "</b>.")
 
 	elseif activityId == "mentor_grade_students" then
 		local xpGain = math.random(6, 12)
 		stats.MentorXP = math.max(0, (tonumber(stats.MentorXP) or 0) + xpGain)
 		stats.Recommendations = math.max(0, (tonumber(stats.Recommendations) or 0) + math.random(0, 1))
 		stats.Smarts = math.clamp((stats.Smarts or 0) + math.random(0, 1), 0, 100)
-		logMessage = "You evaluated student progress and filed reports. Mentor XP <b>+" .. tostring(xpGain) .. "</b>."
+		logMessage = tAct(player, "mentor_grade", { xp = xpGain }, "You evaluated student progress and filed reports. Mentor XP <b>+" .. tostring(xpGain) .. "</b>.")
 
 	elseif activityId == "mentor_prodigy" then
 		local xpGain = math.random(18, 35)
@@ -1743,7 +1750,7 @@ local function processActivity(player, activityId)
 		stats.Reputation = (tonumber(stats.Reputation) or 0) + repGain
 		stats.StudentsMentored = math.max(0, (tonumber(stats.StudentsMentored) or 0) + 1)
 		stats.Happiness = math.clamp((stats.Happiness or 100) + math.random(2, 6), 0, 100)
-		logMessage = "You personally mentored a prodigious student. Mentor XP <b>+" .. tostring(xpGain) .. "</b>, CE <b>+" .. tostring(ceGain) .. "</b>, Reputation <b>+" .. tostring(repGain) .. "</b>."
+		logMessage = tAct(player, "mentor_prodigy", { xp = xpGain, ce = ceGain, rep = repGain }, "You personally mentored a prodigious student. Mentor XP <b>+" .. tostring(xpGain) .. "</b>, CE <b>+" .. tostring(ceGain) .. "</b>, Reputation <b>+" .. tostring(repGain) .. "</b>.")
 
 	elseif activityId == "train_ce" then
 		local assetBonuses = BitKaisenAssets.GetPassiveBonuses(stats)
@@ -1762,15 +1769,15 @@ local function processActivity(player, activityId)
 		end
 
 		if bonus > 0 then
-			logMessage = "You trained your cursed energy using the resources you own."
+			logMessage = tAct(player, "train_ce_bonus", nil, "You trained your cursed energy using the resources you own.")
 		else
-			logMessage = "You trained your cursed energy."
+			logMessage = tAct(player, "train_ce", nil, "You trained your cursed energy.")
 		end
 
 	elseif activityId == "physical_conditioning" then
 		stats.PhysicalConditioningThisAge = math.clamp(tonumber(stats.PhysicalConditioningThisAge) or 0, 0, 3)
 		if stats.PhysicalConditioningThisAge >= 3 then
-			fireLifeUpdate(player, stats, "You have already completed 3 physical conditioning sessions this age. Age up before pushing your body again.")
+			fireLifeUpdate(player, stats, tAct(player, "physical_conditioning_limit", nil, "You have already completed 3 physical conditioning sessions this age. Age up before pushing your body again."))
 			return false
 		end
 		local assetBonuses = BitKaisenAssets.GetPassiveBonuses(stats)
@@ -1788,23 +1795,23 @@ local function processActivity(player, activityId)
 		stats.Durability = math.max(0, (tonumber(stats.Durability) or 0) + durabilityGain)
 		stats.Health = math.clamp((stats.Health or 100) - math.random(1, 5), 0, 100)
 		stats.Happiness = math.clamp((stats.Happiness or 100) - math.random(0, 3), 0, 100)
-		logMessage = "You pushed your body through physical conditioning. Strength +" .. tostring(gain) .. ", Speed +" .. tostring(speedGain) .. ", Durability +" .. tostring(durabilityGain) .. "."
+		logMessage = tAct(player, "physical_conditioning", { str = gain, spd = speedGain, dur = durabilityGain }, "You pushed your body through physical conditioning. Strength +" .. tostring(gain) .. ", Speed +" .. tostring(speedGain) .. ", Durability +" .. tostring(durabilityGain) .. ".")
 
 	elseif activityId == "study_theory" then
 		stats.Smarts = math.clamp((stats.Smarts or 0) + update16Gain(stats, 3, 8, true), 0, 100)
 		stats.Happiness = math.clamp((stats.Happiness or 100) - math.random(1, 5), 0, 100)
-		logMessage = "You studied jujutsu theory."
+		logMessage = tAct(player, "study_theory", nil, "You studied jujutsu theory.")
 
 	elseif activityId == "expand_curse_knowledge" then
 		stats.Smarts = math.clamp((stats.Smarts or 0) + update16Gain(stats, 5, 10, true), 0, 100)
 		stats.CursedEnergy += update16Gain(stats, 2, 6, false)
 		stats.Reputation += math.random(0, 2)
-		logMessage = "You expanded your knowledge on curses, studying how they form, hunt, and hide from normal people."
+		logMessage = tAct(player, "expand_curse_knowledge", nil, "You expanded your knowledge on curses, studying how they form, hunt, and hide from normal people.")
 
 	elseif activityId == "meditate" then
 		stats.Happiness = math.clamp((stats.Happiness or 100) + update16Gain(stats, 4, 10, true), 0, 100)
 		stats.CursedEnergy += update16Gain(stats, 1, 5, false)
-		logMessage = "You meditated and stabilized your energy."
+		logMessage = tAct(player, "meditate", nil, "You meditated and stabilized your energy.")
 
 	elseif activityId == "rest" then
 		local assetBonuses = BitKaisenAssets.GetPassiveBonuses(stats)
@@ -1814,9 +1821,9 @@ local function processActivity(player, activityId)
 		stats.Happiness = math.clamp((stats.Happiness or 100) + update16Gain(stats, 2, 8, true), 0, 100)
 
 		if bonus > 0 then
-			logMessage = "You rested in a safer space and recovered."
+			logMessage = tAct(player, "rest_bonus", nil, "You rested in a safer space and recovered.")
 		else
-			logMessage = "You rested and recovered."
+			logMessage = tAct(player, "rest", nil, "You rested and recovered.")
 		end
 
 	elseif activityId == "doctor" then
@@ -1824,13 +1831,13 @@ local function processActivity(player, activityId)
 
 		if stats.Money < cost then
 			stats.ActivitiesDoneThisAge -= 1
-			fireLifeUpdate(player, stats, "A doctor visit costs $" .. cost .. ".")
+			fireLifeUpdate(player, stats, tAct(player, "doctor_no_money", { cost = cost }, "A doctor visit costs $" .. cost .. "."))
 			return
 		end
 
 		stats.Money -= cost
 		stats.Health = math.clamp((stats.Health or 100) + math.random(22, 40), 0, 100)
-		logMessage = "You visited a doctor and recovered."
+		logMessage = tAct(player, "doctor", nil, "You visited a doctor and recovered.")
 
 	elseif activityId == "socialize" then
 		stats.Happiness = math.clamp((stats.Happiness or 100) + math.random(6, 14), 0, 100)
@@ -1840,7 +1847,7 @@ local function processActivity(player, activityId)
 		end
 
 		local relationshipMessage, popupData = BitKaisenRelationships.HandleSocialize(stats)
-		logMessage = relationshipMessage or "You spent time with people."
+		logMessage = relationshipMessage or tAct(player, "socialize", nil, "You spent time with people.")
 		fireRelationshipPopup(player, popupData)
 
 
@@ -1849,14 +1856,14 @@ local function processActivity(player, activityId)
 		ensureJoinedDojoState(stats)
 
 		if isCurseLife(stats) then
-			logMessage = "A human dojo would not accept you as you are now. You watched from outside while their barriers rejected your cursed presence."
+			logMessage = tAct(player, "join_dojo_curse_life", nil, "A human dojo would not accept you as you are now. You watched from outside while their barriers rejected your cursed presence.")
 		elseif isCurseUser(stats) then
-			logMessage = "Most official dojos will not risk housing a known Curse User. You need underground contacts, not a public dojo."
+			logMessage = tAct(player, "join_dojo_curse_user", nil, "Most official dojos will not risk housing a known Curse User. You need underground contacts, not a public dojo.")
 		elseif getJoinedDojo(stats) then
 			local dojo = getJoinedDojo(stats)
-			logMessage = "You are already training with <b>" .. tostring(dojo.Name) .. "</b>."
+			logMessage = tAct(player, "join_dojo_already", { dojo = dojo.Name }, "You are already training with <b>" .. tostring(dojo.Name) .. "</b>.")
 		elseif stats.ClanFounded == true and ownsAssetById(stats, "grand_dojo") then
-			logMessage = "You already founded your own Grand Dojo. Other instructors treat you like a peer instead of a student."
+			logMessage = tAct(player, "join_dojo_grand", nil, "You already founded your own Grand Dojo. Other instructors treat you like a peer instead of a student.")
 		else
 			local dojo = pickJoinableDojo(stats)
 			setJoinedDojo(stats, dojo)
@@ -1869,16 +1876,17 @@ local function processActivity(player, activityId)
 				stats.SocietyStatus = "Dojo Affiliated Sorcerer"
 			end
 
-			logMessage = "You applied to <b>" .. tostring(dojo.Name) .. "</b> and were accepted as an outside student."
-			logMessage ..= "\nFocus: <b>" .. tostring(dojo.Focus) .. "</b> | Rank: <b>" .. tostring(dojo.Rank) .. "</b>."
-			logMessage ..= "\nYou now have access to dojo training and small dojo assignments."
+			logMessage = tAct(player, "join_dojo_success", { name = dojo.Name, focus = dojo.Focus, rank = dojo.Rank },
+				"You applied to <b>" .. tostring(dojo.Name) .. "</b> and were accepted as an outside student." ..
+				"\nFocus: <b>" .. tostring(dojo.Focus) .. "</b> | Rank: <b>" .. tostring(dojo.Rank) .. "</b>." ..
+				"\nYou now have access to dojo training and small dojo assignments.")
 		end
 
 	elseif activityId == "train_at_joined_dojo" then
 		local dojo = getJoinedDojo(stats)
 
 		if not dojo then
-			logMessage = "You are not part of another dojo yet. Use <b>Join Another Dojo</b> first."
+			logMessage = tAct(player, "train_dojo_none", nil, "You are not part of another dojo yet. Use <b>Join Another Dojo</b> first.")
 		else
 			local ceGain = math.random(3, 7)
 			local masteryGain = math.random(1, 3)
@@ -1905,15 +1913,16 @@ local function processActivity(player, activityId)
 			dojo.Progress = math.max(0, (dojo.Progress or 0) + progressGain)
 			setJoinedDojo(stats, dojo)
 
-			logMessage = "You trained at <b>" .. tostring(dojo.Name) .. "</b>. The instructors pushed your cursed energy control and corrected your bad habits."
-			logMessage ..= "\nDojo Progress: <b>" .. tostring(dojo.Progress or 0) .. "</b> | Dojo Trust: <b>" .. tostring(dojo.Trust or 0) .. "/100</b>."
+			logMessage = tAct(player, "train_dojo", { dojo = dojo.Name, progress = dojo.Progress or 0, trust = dojo.Trust or 0 },
+				"You trained at <b>" .. tostring(dojo.Name) .. "</b>. The instructors pushed your cursed energy control and corrected your bad habits." ..
+				"\nDojo Progress: <b>" .. tostring(dojo.Progress or 0) .. "</b> | Dojo Trust: <b>" .. tostring(dojo.Trust or 0) .. "/100</b>.")
 		end
 
 	elseif activityId == "dojo_assignment" then
 		local dojo = getJoinedDojo(stats)
 
 		if not dojo then
-			logMessage = "No dojo trusts you with assignments yet. Join another dojo first."
+			logMessage = tAct(player, "dojo_assign_none", nil, "No dojo trusts you with assignments yet. Join another dojo first.")
 		else
 			local roll = math.random(1, 100)
 			local rewardMoney = math.random(80, 220)
@@ -1933,9 +1942,9 @@ local function processActivity(player, activityId)
 			if roll <= 18 then
 				damage = math.random(4, 12)
 				stats.Health = math.clamp((stats.Health or 100) - damage, 0, 100)
-				logMessage = "Your dojo sent you on a small assignment for <b>" .. tostring(dojo.Name) .. "</b>. You completed it, but got hurt covering for another student."
+				logMessage = tAct(player, "dojo_assign_hurt", { dojo = dojo.Name }, "Your dojo sent you on a small assignment for <b>" .. tostring(dojo.Name) .. "</b>. You completed it, but got hurt covering for another student.")
 			else
-				logMessage = "Your dojo sent you on a small assignment for <b>" .. tostring(dojo.Name) .. "</b>. You handled it cleanly and earned more trust."
+				logMessage = tAct(player, "dojo_assign_clean", { dojo = dojo.Name }, "Your dojo sent you on a small assignment for <b>" .. tostring(dojo.Name) .. "</b>. You handled it cleanly and earned more trust.")
 			end
 
 			stats.Money = math.max(0, (stats.Money or 0) + rewardMoney)
@@ -1946,9 +1955,9 @@ local function processActivity(player, activityId)
 			dojo.Assignments = math.max(0, (dojo.Assignments or 0) + 1)
 			setJoinedDojo(stats, dojo)
 
-			logMessage ..= "\nEarned <b>$" .. tostring(rewardMoney) .. "</b>, reputation, and dojo progress."
+			logMessage ..= tAct(player, "dojo_assign_earned", { money = rewardMoney }, "\nEarned <b>$" .. tostring(rewardMoney) .. "</b>, reputation, and dojo progress.")
 			if damage > 0 then
-				logMessage ..= "\nHealth -" .. tostring(damage) .. "."
+				logMessage ..= tAct(player, "dojo_assign_health", { dmg = damage }, "\nHealth -" .. tostring(damage) .. ".")
 			end
 		end
 
@@ -1956,7 +1965,7 @@ local function processActivity(player, activityId)
 		local dojo = getJoinedDojo(stats)
 
 		if not dojo then
-			logMessage = "You are not currently joined to another dojo."
+			logMessage = tAct(player, "leave_dojo_none", nil, "You are not currently joined to another dojo.")
 		else
 			local oldName = tostring(dojo.Name or "your dojo")
 			local oldTrust = tonumber(dojo.Trust) or 0
@@ -1967,9 +1976,9 @@ local function processActivity(player, activityId)
 				stats.Reputation = (stats.Reputation or 0) + 1
 			end
 
-			logMessage = "You left <b>" .. oldName .. "</b> and returned to independent training."
+			logMessage = tAct(player, "leave_dojo", { dojo = oldName }, "You left <b>" .. oldName .. "</b> and returned to independent training.")
 			if oldTrust >= 50 then
-				logMessage ..= "\nBecause you left respectfully, some instructors still speak well of you."
+				logMessage ..= tAct(player, "leave_dojo_respect", nil, "\nBecause you left respectfully, some instructors still speak well of you.")
 			end
 		end
 
@@ -1988,7 +1997,7 @@ local function processActivity(player, activityId)
 		stats.WantedLevel = math.clamp((tonumber(stats.WantedLevel) or 0) + math.random(1, 3), 0, 100)
 		stats.Reputation = (tonumber(stats.Reputation) or 0) - math.random(2, 7)
 		stats.SocietyStatus = (stats.WantedLevel or 0) >= 8 and "Wanted Curse User" or "Underground Curse User"
-		logMessage = "You met a black market curse broker and accepted information Jujutsu Society would never approve. You earned <b>$" .. tostring(pay) .. "</b>, but your wanted level rose."
+		logMessage = tAct(player, "curse_user_bm", { pay = pay }, "You met a black market curse broker and accepted information Jujutsu Society would never approve. You earned <b>$" .. tostring(pay) .. "</b>, but your wanted level rose.")
 
 	elseif activityId == "curse_user_hide_society" then
 		if not isCurseUser(stats) then
@@ -2003,7 +2012,7 @@ local function processActivity(player, activityId)
 		stats.CursedResentment = math.clamp((tonumber(stats.CursedResentment) or 0) + resentmentGain, 0, 999)
 		stats.Happiness = math.clamp((tonumber(stats.Happiness) or 100) - math.random(0, 4), 0, 100)
 		stats.SocietyStatus = (stats.WantedLevel or 0) >= 8 and "Wanted Curse User" or "Hidden Curse User"
-		logMessage = "You erased tracks, avoided scouts, and let the underground go quiet around you. Wanted Level <b>-" .. tostring(wantedDrop) .. "</b>."
+		logMessage = tAct(player, "curse_user_hide", { drop = wantedDrop }, "You erased tracks, avoided scouts, and let the underground go quiet around you. Wanted Level <b>-" .. tostring(wantedDrop) .. "</b>.")
 
 	elseif activityId == "curse_user_illegal_job" then
 		if not isCurseUser(stats) then
@@ -2024,9 +2033,9 @@ local function processActivity(player, activityId)
 		stats.CursedResentment = math.clamp((tonumber(stats.CursedResentment) or 0) + math.random(5, 14), 0, 999)
 		stats.Reputation = (tonumber(stats.Reputation) or 0) - math.random(5, 12)
 		stats.SocietyStatus = "Wanted Curse User"
-		logMessage = "You completed an illegal curse job. The payout was real, but so was the heat. Earned <b>$" .. tostring(pay) .. "</b>, CE <b>+" .. tostring(ceGain) .. "</b>."
+		logMessage = tAct(player, "curse_user_illegal", { pay = pay, ce = ceGain }, "You completed an illegal curse job. The payout was real, but so was the heat. Earned <b>$" .. tostring(pay) .. "</b>, CE <b>+" .. tostring(ceGain) .. "</b>.")
 		if injury > 0 then
-			logMessage ..= " Health <b>-" .. tostring(injury) .. "</b>."
+			logMessage ..= tAct(player, "curse_user_illegal_dmg", { dmg = injury }, " Health <b>-" .. tostring(injury) .. "</b>.")
 		end
 
 	elseif activityId == "curse_user_secret_training" then
@@ -2045,7 +2054,7 @@ local function processActivity(player, activityId)
 		stats.CursedResentment = math.clamp((tonumber(stats.CursedResentment) or 0) + math.random(2, 8), 0, 999)
 		stats.PrivateTrainingSessions = (tonumber(stats.PrivateTrainingSessions) or 0) + 1
 		stats.SocietyStatus = (stats.WantedLevel or 0) >= 8 and "Wanted Curse User" or "Rogue Sorcerer"
-		logMessage = "You trained where no teacher could stop you. CE <b>+" .. tostring(ceGain) .. "</b>, Technique Mastery <b>+" .. tostring(masteryGain) .. "%</b>."
+		logMessage = tAct(player, "curse_user_secret", { ce = ceGain, mastery = masteryGain }, "You trained where no teacher could stop you. CE <b>+" .. tostring(ceGain) .. "</b>, Technique Mastery <b>+" .. tostring(masteryGain) .. "%</b>.")
 
 	elseif activityId == "curse_user_threaten_informant" then
 		if not isCurseUser(stats) then
@@ -2060,7 +2069,7 @@ local function processActivity(player, activityId)
 		stats.CursedResentment = math.clamp((tonumber(stats.CursedResentment) or 0) + math.random(4, 10), 0, 999)
 		stats.WantedLevel = math.clamp((tonumber(stats.WantedLevel) or 0) + math.random(1, 5), 0, 100)
 		stats.Reputation = (tonumber(stats.Reputation) or 0) - math.random(4, 10)
-		logMessage = "You leaned on an informant until they gave up a useful lead. You gained money and information, but your name became uglier underground."
+		logMessage = tAct(player, "curse_user_threaten", nil, "You leaned on an informant until they gave up a useful lead. You gained money and information, but your name became uglier underground.")
 
 	elseif activityId == "dojo_send_students_patrol" then
 		if stats.ClanFounded ~= true or not ownsAssetById(stats, "grand_dojo") then
@@ -2103,11 +2112,11 @@ local function processActivity(player, activityId)
 		if math.random(1, 100) <= successChance then
 			stats.Money += earned
 			stats.Reputation = (tonumber(stats.Reputation) or 0) + math.random(1, 4)
-			logMessage = "Your students handled a minor patrol and brought credit back to the Grand Dojo. Earned <b>$" .. tostring(earned) .. "</b>."
+			logMessage = tAct(player, "dojo_patrol_success", { money = earned }, "Your students handled a minor patrol and brought credit back to the Grand Dojo. Earned <b>$" .. tostring(earned) .. "</b>.")
 		else
 			adjustDojoCondition(stats, -math.random(3, 8))
 			stats.Reputation = (tonumber(stats.Reputation) or 0) - math.random(0, 2)
-			logMessage = "Your student patrol got messy. They survived and learned, but the dojo took reputation pressure and needed repairs."
+			logMessage = tAct(player, "dojo_patrol_fail", nil, "Your student patrol got messy. They survived and learned, but the dojo took reputation pressure and needed repairs.")
 		end
 		if #promotedNames > 0 then
 			logMessage ..= "\n<b>Promotion:</b> " .. table.concat(promotedNames, "; ") .. "."
@@ -2139,7 +2148,7 @@ local function processActivity(player, activityId)
 		stats.ClanTrainingSessions = (tonumber(stats.ClanTrainingSessions) or 0) + 1
 		stats.ClanReputation = math.max(0, (tonumber(stats.ClanReputation) or 0) + math.random(3, 7))
 		stats.DojoPrestige = math.max(0, (tonumber(stats.DojoPrestige) or 0) + math.random(2, 6))
-		logMessage = "You reviewed student grades, corrected training plans, and logged <b>+" .. tostring(totalProgress) .. "</b> total student progress."
+		logMessage = tAct(player, "dojo_grade_review", { progress = totalProgress }, "You reviewed student grades, corrected training plans, and logged <b>+" .. tostring(totalProgress) .. "</b> total student progress.")
 		if #promotedNames > 0 then
 			logMessage ..= "\n<b>Promotion:</b> " .. table.concat(promotedNames, "; ") .. "."
 		end
@@ -2175,9 +2184,9 @@ local function processActivity(player, activityId)
 		adjustDojoCondition(stats, -math.random(4, 10))
 		stats.ClanReputation = math.max(0, (tonumber(stats.ClanReputation) or 0) + math.random(2, 6))
 		stats.DojoPrestige = math.max(0, (tonumber(stats.DojoPrestige) or 0) + math.random(3, 8))
-		logMessage = "You paired students for hard sparring. Grade, CE, cursed technique, and potential all affected who improved fastest."
+		logMessage = tAct(player, "dojo_sparring", nil, "You paired students for hard sparring. Grade, CE, cursed technique, and potential all affected who improved fastest.")
 		if strongest then
-			logMessage ..= "\nTop student today: <b>" .. tostring(strongest.Name) .. "</b> (" .. tostring(strongest.Grade or "Non-Sorcerer") .. ")."
+			logMessage ..= tAct(player, "dojo_sparring_top", { name = strongest.Name, grade = strongest.Grade or "Non-Sorcerer" }, "\nTop student today: <b>" .. tostring(strongest.Name) .. "</b> (" .. tostring(strongest.Grade or "Non-Sorcerer") .. ").")
 		end
 		if #promotedNames > 0 then
 			logMessage ..= "\n<b>Promotion:</b> " .. table.concat(promotedNames, "; ") .. "."
@@ -2227,7 +2236,7 @@ local function processActivity(player, activityId)
 		stats.CurseThreat = math.max(0, (tonumber(stats.CurseThreat) or 0) + math.random(2, 6))
 		stats.Health = math.clamp((tonumber(stats.Health) or 100) - damage, 0, 100)
 		addSocietyAttention(stats, math.random(2, 7))
-		logMessage = "You forced your cursed body toward its next shape. Evolution Progress <b>+" .. tostring(evoGain) .. "</b>, Health <b>-" .. tostring(damage) .. "</b>." .. evolutionNote
+		logMessage = tAct(player, "curse_force_evo", { evo = evoGain, dmg = damage }, "You forced your cursed body toward its next shape. Evolution Progress <b>+" .. tostring(evoGain) .. "</b>, Health <b>-" .. tostring(damage) .. "</b>.") .. evolutionNote
 
 	elseif activityId == "curse_devour_remnant" then
 		if not canUseCurseActivity(stats) then
@@ -2246,9 +2255,9 @@ local function processActivity(player, activityId)
 			stats.Health = math.clamp((tonumber(stats.Health) or 100) - math.random(6, 18), 0, 100)
 			addSocietyAttention(stats, math.random(4, 10))
 		end
-		logMessage = "You devoured unstable cursed remnants. CE <b>+" .. tostring(ceGain) .. "</b>, Evolution Progress <b>+" .. tostring(evoGain) .. "</b>."
+		logMessage = tAct(player, "curse_devour", { ce = ceGain, evo = evoGain }, "You devoured unstable cursed remnants. CE <b>+" .. tostring(ceGain) .. "</b>, Evolution Progress <b>+" .. tostring(evoGain) .. "</b>.")
 		if backlash then
-			logMessage ..= " The remnant fought back inside your cursed body."
+			logMessage ..= tAct(player, "curse_devour_backlash", nil, " The remnant fought back inside your cursed body.")
 		end
 		logMessage ..= evolutionNote
 
@@ -2327,9 +2336,9 @@ local function processActivity(player, activityId)
 		stats.ExorcismRisk = math.clamp((stats.ExorcismRisk or 0) + math.random(5, 12), 0, 100)
 		stats.SorcererAttackCooldown = 0
 		if beginCurseSorcererAttack(player, stats, "You deliberately exposed your cursed energy and dared the jujutsu world to answer.") then
-			logMessage = "You exposed your cursed energy on purpose. A sorcerer answered the challenge."
+			logMessage = tAct(player, "curse_lure_hit", nil, "You exposed your cursed energy on purpose. A sorcerer answered the challenge.")
 		else
-			logMessage = "You exposed your cursed energy, but no sorcerer reached you this time. Your threat still rose."
+			logMessage = tAct(player, "curse_lure_miss", nil, "You exposed your cursed energy, but no sorcerer reached you this time. Your threat still rose.")
 		end
 
 	elseif activityId == "curse_claim_territory" then
@@ -2431,14 +2440,14 @@ local function processActivity(player, activityId)
 		stats.Health = math.clamp((stats.Health or 100) - math.random(1, 4), 0, 100)
 		stats.Happiness = math.clamp((stats.Happiness or 100) - math.random(0, 3), 0, 100)
 
-		logMessage =
+		logMessage = tAct(player, "practice_technique", { technique = technique, gain = stats.TechniqueMastery - oldMastery },
 			"You practiced <b>" .. technique .. "</b> and improved your cursed technique control." ..
-			"\nTechnique Mastery increased by <b>" .. tostring(stats.TechniqueMastery - oldMastery) .. "%</b>."
+			"\nTechnique Mastery increased by <b>" .. tostring(stats.TechniqueMastery - oldMastery) .. "%</b>.")
 		logMessage ..= BitKaisenTechniqueEvolution.AddPressure(stats, math.random(3, 7), "technique practice")
 		logMessage ..= progressTechniqueAllies(stats)
 
 		if stats.TechniqueMastery >= 25 and oldMastery < 25 then
-			logMessage = logMessage .. "\nYour technique reached <b>Refined Control</b>."
+			logMessage ..= tAct(player, "practice_technique_refined", nil, "\nYour technique reached <b>Refined Control</b>.")
 
 			fireMajorPopup(
 				player,
@@ -2448,7 +2457,7 @@ local function processActivity(player, activityId)
 				"Technique Mastery now gives stronger mission value."
 			)
 		elseif stats.TechniqueMastery >= 50 and oldMastery < 50 then
-			logMessage = logMessage .. "\nYour technique reached <b>Advanced Application</b>."
+			logMessage ..= tAct(player, "practice_technique_advanced", nil, "\nYour technique reached <b>Advanced Application</b>.")
 
 			fireMajorPopup(
 				player,
@@ -2458,7 +2467,7 @@ local function processActivity(player, activityId)
 				"Future technique choices can use this milestone."
 			)
 		elseif stats.TechniqueMastery >= 75 and oldMastery < 75 then
-			logMessage = logMessage .. "\nYour technique reached <b>Elite Mastery</b>."
+			logMessage ..= tAct(player, "practice_technique_elite", nil, "\nYour technique reached <b>Elite Mastery</b>.")
 
 			fireMajorPopup(
 				player,
@@ -2468,7 +2477,7 @@ local function processActivity(player, activityId)
 				"Rare mastery events can be added later."
 			)
 		elseif stats.TechniqueMastery >= 95 and oldMastery < 95 then
-			logMessage = logMessage .. "\nYour technique reached <b>Complete Mastery</b>."
+			logMessage ..= tAct(player, "practice_technique_complete", nil, "\nYour technique reached <b>Complete Mastery</b>.")
 
 			fireMajorPopup(
 				player,
@@ -2589,15 +2598,15 @@ local function processActivity(player, activityId)
 		stats.TeacherRecommendations = math.max(0, (tonumber(stats.TeacherRecommendations) or 0) + math.random(0, 1))
 		if dutyRoll == 1 then
 			stats.Health = math.clamp((stats.Health or 100) - math.random(1, 5), 0, 100)
-			logMessage = "You handled a field report for Jujutsu High and cleaned up a minor curse trail."
+			logMessage = tAct(player, "jh_duty_field", nil, "You handled a field report for Jujutsu High and cleaned up a minor curse trail.")
 		elseif dutyRoll == 2 then
 			stats.Smarts = math.clamp((stats.Smarts or 0) + math.random(1, 3), 0, 100)
-			logMessage = "You assisted with case files and learned how higher-ups classify incidents."
+			logMessage = tAct(player, "jh_duty_files", nil, "You assisted with case files and learned how higher-ups classify incidents.")
 		else
 			stats.Happiness = math.clamp((stats.Happiness or 100) + math.random(1, 4), 0, 100)
-			logMessage = "You escorted a junior sorcerer through a controlled assignment."
+			logMessage = tAct(player, "jh_duty_escort", nil, "You escorted a junior sorcerer through a controlled assignment.")
 		end
-		logMessage ..= "\nAffiliation Reputation <b>+" .. tostring(affGain) .. "</b>, CE <b>+" .. tostring(ceGain) .. "</b>." .. adjustWorldReputation(stats, 1, 0, 2)
+		logMessage ..= tAct(player, "jh_duty_stats", { aff = affGain, ce = ceGain }, "\nAffiliation Reputation <b>+" .. tostring(affGain) .. "</b>, CE <b>+" .. tostring(ceGain) .. "</b>.") .. adjustWorldReputation(stats, 1, 0, 2)
 		if stats.AffiliationReputation >= 70 then
 			stats.AffiliationRank = "Trusted Operative"
 		elseif stats.AffiliationReputation >= 35 then
@@ -2620,13 +2629,13 @@ local function processActivity(player, activityId)
 		local standing = (tonumber(stats.AffiliationReputation) or 0) + math.floor((tonumber(stats.MissionsCompleted) or 0) * 2) + math.floor((tonumber(stats.Fame) or 0) / 2)
 		if standing < 18 then
 			stats.Happiness = math.clamp((stats.Happiness or 100) - 3, 0, 100)
-			logMessage = "Jujutsu High denied your assistant request. You need more affiliation standing or completed missions first."
+			logMessage = tAct(player, "jh_assistant_denied", nil, "Jujutsu High denied your assistant request. You need more affiliation standing or completed missions first.")
 		else
 			stats.AssistantName = rollAssistantName()
 			stats.AssistantTrust = math.random(18, 32)
 			stats.AssistantSkill = math.random(12, 28)
 			stats.AffiliationReputation = math.clamp((tonumber(stats.AffiliationReputation) or 0) + 3, 0, 100)
-			logMessage = "Jujutsu High assigned <b>" .. tostring(stats.AssistantName) .. "</b> as your field assistant."
+			logMessage = tAct(player, "jh_assistant_assigned", { name = stats.AssistantName }, "Jujutsu High assigned <b>" .. tostring(stats.AssistantName) .. "</b> as your field assistant.")
 			fireMajorPopup(player, "ASSISTANT ASSIGNED", "Your affiliation approved support staff.", tostring(stats.AssistantName), "Train together to improve mission support and technique growth.")
 		end
 
@@ -2643,7 +2652,7 @@ local function processActivity(player, activityId)
 		stats.AssistantSkill = math.clamp((tonumber(stats.AssistantSkill) or 0) + skillGain, 0, 100)
 		stats.TechniqueMastery = math.clamp((tonumber(stats.TechniqueMastery) or 0) + masteryGain, 0, 100)
 		stats.Happiness = math.clamp((stats.Happiness or 100) + math.random(0, 3), 0, 100)
-		logMessage = "You trained with <b>" .. tostring(stats.AssistantName) .. "</b>. Assistant Trust <b>+" .. tostring(trustGain) .. "</b>, Assistant Skill <b>+" .. tostring(skillGain) .. "</b>, Technique Mastery <b>+" .. tostring(masteryGain) .. "%</b>."
+		logMessage = tAct(player, "jh_train_assistant", { name = stats.AssistantName, trust = trustGain, skill = skillGain, mastery = masteryGain }, "You trained with <b>" .. tostring(stats.AssistantName) .. "</b>. Assistant Trust <b>+" .. tostring(trustGain) .. "</b>, Assistant Skill <b>+" .. tostring(skillGain) .. "</b>, Technique Mastery <b>+" .. tostring(masteryGain) .. "%</b>.")
 
 	elseif activityId == "evolve_technique" then
 		local technique = tostring(stats.CursedTechnique or "None")
@@ -2686,7 +2695,7 @@ local function processActivity(player, activityId)
 		stats.CursedEnergy += math.random(8, 18)
 		stats.Health = math.clamp((stats.Health or 100) - strain, 0, 100)
 		stats.Reputation += math.random(2, 5)
-		logMessage = "You evolved <b>" .. technique .. "</b> from <b>" .. oldStage .. "</b> into <b>" .. branchName .. "</b>. Health <b>-" .. tostring(strain) .. "</b>." .. adjustWorldReputation(stats, 2, math.random(0, 2), 3)
+		logMessage = tAct(player, "jh_evolve", { technique = technique, from = oldStage, to = branchName, dmg = strain }, "You evolved <b>" .. technique .. "</b> from <b>" .. oldStage .. "</b> into <b>" .. branchName .. "</b>. Health <b>-" .. tostring(strain) .. "</b>.") .. adjustWorldReputation(stats, 2, math.random(0, 2), 3)
 		fireMajorPopup(player, "TECHNIQUE EVOLUTION", "Your innate technique reached a new application.", branchName, "Further evolution unlocks at higher mastery thresholds.")
 
 	elseif activityId == "body_hop" then
@@ -2749,10 +2758,11 @@ local function processActivity(player, activityId)
 
 		stats.BodyHopsUsed = (tonumber(stats.BodyHopsUsed) or 0) + 1
 
-		logMessage = "<font color='#b27aff'><b>[ BODY HOP ]</b></font> You abandoned <b>" .. oldName .. "</b> (age " .. tostring(oldAge) .. ") and transplanted your brain into a new host."
-		logMessage = logMessage .. "\nNew identity: <b>" .. tostring(stats.Name) .. "</b>, age <b>" .. tostring(stats.Age) .. "</b>."
-		logMessage = logMessage .. "\nYour cursed energy, technique mastery, and knowledge carried over."
-		logMessage = logMessage .. "\nTotal body hops: <b>" .. tostring(stats.BodyHopsUsed) .. "</b>."
+		logMessage = tAct(player, "body_hop", { old_name = oldName, old_age = oldAge, new_name = stats.Name, new_age = stats.Age, hops = stats.BodyHopsUsed },
+			"<font color='#b27aff'><b>[ BODY HOP ]</b></font> You abandoned <b>" .. oldName .. "</b> (age " .. tostring(oldAge) .. ") and transplanted your brain into a new host." ..
+			"\nNew identity: <b>" .. tostring(stats.Name) .. "</b>, age <b>" .. tostring(stats.Age) .. "</b>." ..
+			"\nYour cursed energy, technique mastery, and knowledge carried over." ..
+			"\nTotal body hops: <b>" .. tostring(stats.BodyHopsUsed) .. "</b>.")
 
 		fireMajorPopup(player, "BODY HOP", "Your brain found a new host.", tostring(stats.Name) .. ", Age " .. tostring(stats.Age), "CE, technique, mastery, and smarts preserved. Body hops: " .. tostring(stats.BodyHopsUsed))
 
@@ -2767,7 +2777,7 @@ local function processActivity(player, activityId)
 		stats.JujutsuHighPopularity = math.clamp((tonumber(stats.JujutsuHighPopularity) or 0) + popGain, 0, 100)
 		stats.AffiliationReputation = math.clamp((tonumber(stats.AffiliationReputation) or 0) + affGain, 0, 100)
 		stats.Happiness = math.clamp((stats.Happiness or 100) + math.random(2, 6), 0, 100)
-		logMessage = "You attended a Jujutsu High event and spent time with peers. Popularity <b>+" .. tostring(popGain) .. "</b>, Affiliation Reputation <b>+" .. tostring(affGain) .. "</b>."
+		logMessage = tAct(player, "jh_school_event", { pop = popGain, aff = affGain }, "You attended a Jujutsu High event and spent time with peers. Popularity <b>+" .. tostring(popGain) .. "</b>, Affiliation Reputation <b>+" .. tostring(affGain) .. "</b>.")
 
 	elseif activityId == "goodwill_event" then
 		if stats.InJujutsuHigh ~= true then
@@ -2785,11 +2795,11 @@ local function processActivity(player, activityId)
 			stats.GoodwillWins = math.max(0, (tonumber(stats.GoodwillWins) or 0) + 1)
 			stats.JujutsuHighPopularity = math.clamp((tonumber(stats.JujutsuHighPopularity) or 0) + math.random(10, 18), 0, 100)
 			stats.AffiliationReputation = math.clamp((tonumber(stats.AffiliationReputation) or 0) + math.random(8, 14), 0, 100)
-			logMessage = "You fought in the Goodwill Event and helped your school win. Health <b>-" .. tostring(injury) .. "</b>." .. adjustWorldReputation(stats, 4, 2, 4)
+			logMessage = tAct(player, "goodwill_win", { dmg = injury }, "You fought in the Goodwill Event and helped your school win. Health <b>-" .. tostring(injury) .. "</b>.") .. adjustWorldReputation(stats, 4, 2, 4)
 			fireMajorPopup(player, "GOODWILL EVENT", "Your school won the exchange contest.", "Victory", "Popularity and affiliation standing increased.")
 		else
 			stats.JujutsuHighPopularity = math.clamp((tonumber(stats.JujutsuHighPopularity) or 0) + math.random(2, 6), 0, 100)
-			logMessage = "You fought in the Goodwill Event but your school lost the exchange. Health <b>-" .. tostring(injury) .. "</b>." .. adjustWorldReputation(stats, 1, 1, 1)
+			logMessage = tAct(player, "goodwill_lose", { dmg = injury }, "You fought in the Goodwill Event but your school lost the exchange. Health <b>-" .. tostring(injury) .. "</b>.") .. adjustWorldReputation(stats, 1, 1, 1)
 		end
 
 	elseif activityId == "underground_tournament" then
@@ -2821,7 +2831,8 @@ local function processActivity(player, activityId)
 		stats.Reputation = (tonumber(stats.Reputation) or 0) + math.max(1, wins * 3)
 
 		local repNote = adjustWorldReputation(stats, wins + (wins >= 3 and 3 or 0), math.max(1, wins), wins + 1)
-		logMessage = "You entered an underground tournament and finished as <b>" .. resultTitle .. "</b>. Last bracket pressure: <b>" .. opponentText .. "</b>. Power read: <b>" .. tostring(playerPower) .. "</b>. Money <b>+$" .. tostring(cash) .. "</b>, CE <b>+" .. tostring(ceGain) .. "</b>, Technique Mastery <b>+" .. tostring(masteryGain) .. "%</b>, Health <b>-" .. tostring(injury) .. "</b>." .. repNote
+		logMessage = tAct(player, "tournament", { result = resultTitle, opponent = opponentText, power = playerPower, money = cash, ce = ceGain, mastery = masteryGain, dmg = injury },
+			"You entered an underground tournament and finished as <b>" .. resultTitle .. "</b>. Last bracket pressure: <b>" .. opponentText .. "</b>. Power read: <b>" .. tostring(playerPower) .. "</b>. Money <b>+$" .. tostring(cash) .. "</b>, CE <b>+" .. tostring(ceGain) .. "</b>, Technique Mastery <b>+" .. tostring(masteryGain) .. "%</b>, Health <b>-" .. tostring(injury) .. "</b>.") .. repNote
 
 		if wins >= 3 then
 			fireMajorPopup(player, "TOURNAMENT CHAMPION", "You cleared the underground bracket.", "Champion", "Your name spread through unofficial sorcerer circles.")
@@ -2836,7 +2847,7 @@ local function processActivity(player, activityId)
 		stats.CursedEnergy += ceGain
 		stats.Health = math.clamp((stats.Health or 100) - healthCost, 0, 100)
 		stats.Happiness = math.clamp((stats.Happiness or 100) - math.random(1, 5), 0, 100)
-		logMessage = "You compressed <b>" .. tostring(sessions) .. "</b> cursed-energy sessions into one block. CE <b>+" .. tostring(ceGain) .. "</b>, Health <b>-" .. tostring(healthCost) .. "</b>."
+		logMessage = tAct(player, "bulk_train_ce", { sessions = sessions, ce = ceGain, dmg = healthCost }, "You compressed <b>" .. tostring(sessions) .. "</b> cursed-energy sessions into one block. CE <b>+" .. tostring(ceGain) .. "</b>, Health <b>-" .. tostring(healthCost) .. "</b>.")
 
 	elseif activityId == "bulk_practice_technique" then
 		local technique = tostring(stats.CursedTechnique or "None")
@@ -2851,7 +2862,7 @@ local function processActivity(player, activityId)
 		stats.TechniqueMastery = math.clamp((tonumber(stats.TechniqueMastery) or 0) + masteryGain, 0, 100)
 		stats.CursedEnergy += ceGain
 		stats.Health = math.clamp((stats.Health or 100) - healthCost, 0, 100)
-		logMessage = "You bulk-practiced <b>" .. technique .. "</b>. Technique Mastery <b>+" .. tostring(masteryGain) .. "%</b>, CE <b>+" .. tostring(ceGain) .. "</b>, Health <b>-" .. tostring(healthCost) .. "</b>."
+		logMessage = tAct(player, "bulk_practice", { technique = technique, mastery = masteryGain, ce = ceGain, dmg = healthCost }, "You bulk-practiced <b>" .. technique .. "</b>. Technique Mastery <b>+" .. tostring(masteryGain) .. "%</b>, CE <b>+" .. tostring(ceGain) .. "</b>, Health <b>-" .. tostring(healthCost) .. "</b>.")
 
 	elseif activityId == "bulk_mission_sweep" then
 		local missions = 3
@@ -2873,7 +2884,11 @@ local function processActivity(player, activityId)
 		stats.Money += completed * math.random(180, 420)
 		stats.Reputation += completed * math.random(1, 3)
 		stats.Health = math.clamp((stats.Health or 100) - damage, 0, 100)
-		logMessage = "You ran a bulk mission sweep: <b>" .. tostring(completed) .. "</b> cleared, <b>" .. tostring(failed) .. "</b> failed." .. (damage > 0 and " Health <b>-" .. tostring(damage) .. "</b>." or "") .. adjustWorldReputation(stats, completed, failed, completed)
+		logMessage = tAct(player, "bulk_mission", { completed = completed, failed = failed }, "You ran a bulk mission sweep: <b>" .. tostring(completed) .. "</b> cleared, <b>" .. tostring(failed) .. "</b> failed.")
+		if damage > 0 then
+			logMessage ..= tAct(player, "bulk_mission_injury", { dmg = damage }, " Health <b>-" .. tostring(damage) .. "</b>.")
+		end
+		logMessage ..= adjustWorldReputation(stats, completed, failed, completed)
 
 	elseif activityId == "premium_select_clan" then
 		local cost = 5000
@@ -2908,7 +2923,7 @@ local function processActivity(player, activityId)
 		stats.FamilyName = selected.Family
 		stats.FamilyType = "Sorcerer"
 		stats.CursedEnergy += selected.CE
-		logMessage = "You rolled a featured clan path: <b>" .. selected.Clan .. "</b>. CE <b>+" .. tostring(selected.CE) .. "</b>."
+		logMessage = tAct(player, "premium_clan", { clan = selected.Clan, ce = selected.CE }, "You rolled a featured clan path: <b>" .. selected.Clan .. "</b>. CE <b>+" .. tostring(selected.CE) .. "</b>.")
 
 	elseif activityId == "premium_select_ct" then
 		local cost = 7500
@@ -2926,7 +2941,7 @@ local function processActivity(player, activityId)
 		stats.TechniqueUsable = true
 		stats.TechniqueAwakened = true
 		stats.TechniqueMastery = math.max(tonumber(stats.TechniqueMastery) or 0, 10)
-		logMessage = "You selected a featured cursed technique: <b>Shrine</b>."
+		logMessage = tAct(player, "premium_ct", nil, "You selected a featured cursed technique: <b>Shrine</b>.")
 		fireMajorPopup(player, "FEATURED TECHNIQUE", "A premium technique path was selected.", "Shrine", "Technique evolution can now follow the Shrine line.")
 
 	elseif activityId == "era_lore_encounter" then
@@ -3868,6 +3883,18 @@ function BK_ActivityService.GetActivityListPayload(player)
 	for _, activity in ipairs(list) do
 		if shouldShowActivityForPlayer(player, stats, activity) then
 			table.insert(filtered, activity)
+		end
+	end
+
+	local locale = BitKaisenLocale.getPlayerLocale(player.UserId)
+	if locale ~= "en" then
+		for _, entry in ipairs(filtered) do
+			local id = entry.Id or ""
+			entry.Title = BitKaisenLocale.tOrFallback(locale, "activities." .. id .. ".title", nil, entry.Title)
+			entry.Description = BitKaisenLocale.tOrFallback(locale, "activities." .. id .. ".desc", nil, entry.Description)
+			if entry.LockedReason then
+				entry.LockedReason = BitKaisenLocale.tOrFallback(locale, "activities." .. id .. ".locked", nil, entry.LockedReason)
+			end
 		end
 	end
 

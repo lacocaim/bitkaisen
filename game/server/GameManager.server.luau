@@ -114,6 +114,7 @@ local getAFKStabilization = BK_Remotes.Get("GetAFKStabilization")
 local afkStabilizationAction = BK_Remotes.Get("AFKStabilizationAction")
 local afkStabilizationUpdate = BK_Remotes.Get("AFKStabilizationUpdate")
 
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
 local BitKaisenStats = require(ReplicatedStorage:WaitForChild("BitKaisenStats"))
 local BitKaisenMissions = require(ReplicatedStorage:WaitForChild("BitKaisenMissions"))
 local BitKaisenActivities = require(ReplicatedStorage:WaitForChild("BitKaisenActivities"))
@@ -639,6 +640,12 @@ function checkRateLimit(player, actionKey)
 end
 
 local _lastChallengeCheck = {}
+
+local function tSys(player, key, params, fallback)
+	local locale = BitKaisenLocale.getPlayerLocale(player.UserId)
+	return BitKaisenLocale.tOrFallback(locale, "system." .. key, params, fallback)
+end
+
 
 function fireLifeUpdate(player, stats, message, forceResetLog, isRejoin)
 	updateLifeEvent:FireClient(player, stats, message, forceResetLog == true)
@@ -4050,13 +4057,16 @@ function loadOrStartLife(player)
 
 		playerLives[player.UserId] = loaded
 
-		local welcomeMessage = "<font color='#a782ff'><b>[ SAVE LOADED ]</b></font> Welcome back, <b>" .. tostring(loaded.Name or "Unknown") .. "</b>."
+		local welcomeMessage = tSys(player, "save_loaded", { name = loaded.Name or "Unknown" },
+			"<font color='#a782ff'><b>[ SAVE LOADED ]</b></font> Welcome back, <b>" .. tostring(loaded.Name or "Unknown") .. "</b>.")
 
 		if loaded.Generation and loaded.Generation > 1 then
-			welcomeMessage = welcomeMessage .. "\nGeneration " .. tostring(loaded.Generation) .. " of the " .. tostring(loaded.FamilyName or "Unknown") .. " bloodline."
+			welcomeMessage = welcomeMessage .. tSys(player, "save_loaded_gen", { gen = loaded.Generation, family = loaded.FamilyName or "Unknown" },
+				"\nGeneration " .. tostring(loaded.Generation) .. " of the " .. tostring(loaded.FamilyName or "Unknown") .. " bloodline.")
 		end
 
-		welcomeMessage = welcomeMessage .. "\nResuming at age " .. tostring(loaded.Age or 0) .. "."
+		welcomeMessage = welcomeMessage .. tSys(player, "save_loaded_age", { age = loaded.Age or 0 },
+			"\nResuming at age " .. tostring(loaded.Age or 0) .. ".")
 
 		fireLifeUpdate(player, loaded, welcomeMessage, true, true)
 	else
@@ -5132,7 +5142,8 @@ do
 			Month = stats.CurrentMonth
 		})
 
-		local logMessage = "<font color='#ffcd69'><b>[ SIGNED VOW ]</b></font> You signed the <b>" .. customVow.Name .. "</b>. " .. customVow.CostText .. ". " .. customVow.BonusText .. "."
+		local logMessage = tSys(player, "vow_signed", { name = customVow.Name, cost = customVow.CostText, bonus = customVow.BonusText },
+			"<font color='#ffcd69'><b>[ SIGNED VOW ]</b></font> You signed the <b>" .. customVow.Name .. "</b>. " .. customVow.CostText .. ". " .. customVow.BonusText .. ".")
 		fireLifeUpdate(player, stats, logMessage)
 
 		saveStats(player)
@@ -5194,7 +5205,8 @@ do
 		})
 
 		local breakText = tostring(target.BreakCostText or "The vow backlash damages your cursed energy.")
-		local logMessage = "<font color='#e64e5f'><b>[ BROKEN CONTRACT ]</b></font> You broke the <b>" .. tostring(target.Name) .. "</b>. " .. breakText
+		local logMessage = tSys(player, "vow_broken_contract", { name = target.Name, text = breakText },
+			"<font color='#e64e5f'><b>[ BROKEN CONTRACT ]</b></font> You broke the <b>" .. tostring(target.Name) .. "</b>. " .. breakText)
 		fireLifeUpdate(player, stats, logMessage)
 
 		saveStats(player)
@@ -5290,7 +5302,8 @@ do
 			Month = stats.CurrentMonth
 		})
 
-		local logMessage = "<font color='#ffcd69'><b>[ BINDING VOW ]</b></font> You made the <b>" .. vow.Name .. "</b>. " .. vow.CostText .. " " .. vow.BonusText
+		local logMessage = tSys(player, "vow_made", { name = vow.Name, cost = vow.CostText, bonus = vow.BonusText },
+			"<font color='#ffcd69'><b>[ BINDING VOW ]</b></font> You made the <b>" .. vow.Name .. "</b>. " .. vow.CostText .. " " .. vow.BonusText)
 		fireLifeUpdate(player, stats, logMessage)
 
 		saveStats(player)
@@ -5376,7 +5389,8 @@ do
 		})
 
 		local breakText = tostring(vow.BreakCostText or "The vow backlash damages your cursed energy.")
-		local logMessage = "<font color='#e64e5f'><b>[ BROKEN VOW ]</b></font> You broke the <b>" .. tostring(vow.Name) .. "</b>. " .. breakText
+		local logMessage = tSys(player, "vow_broken", { name = vow.Name, text = breakText },
+			"<font color='#e64e5f'><b>[ BROKEN VOW ]</b></font> You broke the <b>" .. tostring(vow.Name) .. "</b>. " .. breakText)
 		fireLifeUpdate(player, stats, logMessage)
 
 		saveStats(player)
@@ -6478,12 +6492,33 @@ function tryStartRandomLifeScenario(player, stats, forceScenario)
 
 	rememberLifeScenario(stats, scenario.Id)
 
+	local displayScenario = scenario
+	local _sLang = BitKaisenLocale.getScenarioLocale(BitKaisenLocale.getPlayerLocale(player.UserId), scenario.Id)
+	if _sLang then
+		displayScenario = {}
+		for k, v in pairs(scenario) do displayScenario[k] = v end
+		if _sLang.title then displayScenario.Title = _sLang.title end
+		if _sLang.body  then displayScenario.Body  = _sLang.body  end
+		if _sLang.options and scenario.Options then
+			local _opts = {}
+			for i, opt in ipairs(scenario.Options) do
+				local _topt = _sLang.options[i] or {}
+				local _o = {}
+				for k, v in pairs(opt) do _o[k] = v end
+				if _topt.text then _o.Text = _topt.text end
+				_opts[i] = _o
+			end
+			displayScenario.Options = _opts
+		end
+	end
+	local displayOptions = buildScenarioOptions(displayScenario)
+
 	showMissionSituation:FireClient(player, {
 		Type = "RandomLifeScenario",
-		Title = scenario.Title or "Life Scenario",
-		MissionTitle = scenario.Title or "Life Scenario",
-		Body = scenario.Body or "You need to make a choice.",
-		Options = options
+		Title = displayScenario.Title or "Life Scenario",
+		MissionTitle = displayScenario.Title or "Life Scenario",
+		Body = displayScenario.Body or "You need to make a choice.",
+		Options = displayOptions
 	})
 
 	return true
@@ -6558,7 +6593,13 @@ function resolveRandomLifeScenarioChoice(player, stats, scenario, option)
 		end
 	end
 
-	local resultText = tostring(option.Description or "You made your choice.")
+	local resultText = option.Description or "You made your choice."
+	local _oLang = BitKaisenLocale.getScenarioLocale(BitKaisenLocale.getPlayerLocale(player.UserId), scenario.Id)
+	if _oLang and _oLang.options and option.Index then
+		local _otopt = _oLang.options[option.Index]
+		if _otopt and _otopt.desc then resultText = _otopt.desc end
+	end
+	resultText = tostring(resultText)
 	local logMessage = "<font color='#b27aff'><b>[ SCENARIO ]</b></font> " .. resultText
 
 	local unregisteredScenarioProgress = getUnregisteredProgressGainFromEffects(option.Effects)
@@ -6610,6 +6651,15 @@ function addRandomLifeEvent(player, stats, currentMessage, forceEvent)
 
 	if not eventData then
 		return currentMessage
+	end
+
+	-- Swap the English text for a translation before ApplyEvent builds the log message
+	local locale = BitKaisenLocale.getPlayerLocale(player.UserId)
+	if locale ~= "en" and eventData.TextIndex then
+		local translated = BitKaisenLocale.tEvent(locale, eventData.Id, eventData.TextIndex)
+		if translated then
+			eventData.Text = translated
+		end
 	end
 
 	local eventMessage = BitKaisenLifeEvents.ApplyEvent(stats, eventData)
@@ -7195,7 +7245,7 @@ function completeUnregisteredGradeUp(player, stats, newGrade, logMessage)
 
 		logMessage = appendLine(
 			logMessage,
-			"Your unregistered power and public danger finally crossed the line. The jujutsu world stopped seeing you as a future student and branded you as a curse user."
+			tSys(player, "unreg_curse_user", nil, "Your unregistered power and public danger finally crossed the line. The jujutsu world stopped seeing you as a future student and branded you as a curse user.")
 		)
 
 		fireMajorPopup(
@@ -7215,7 +7265,7 @@ function completeUnregisteredGradeUp(player, stats, newGrade, logMessage)
 
 	logMessage = appendLine(
 		logMessage,
-		"Your unregistered strength was recognized. You rose to <b>Unregistered " .. tostring(cleanGrade) .. "</b>. If you grade up again before registering, you may be branded a curse user."
+		tSys(player, "unreg_grade_up", { grade = cleanGrade }, "Your unregistered strength was recognized. You rose to <b>Unregistered " .. tostring(cleanGrade) .. "</b>. If you grade up again before registering, you may be branded a curse user.")
 	)
 
 	fireMajorPopup(
@@ -7257,7 +7307,8 @@ function awardUnregisteredProgress(player, stats, amount, reason, logMessage)
 
 	logMessage = appendLine(
 		logMessage,
-		"<font color='#b27aff'><b>[ UNREGISTERED ]</b></font> " .. reasonText .. " +" .. tostring(gain) .. " progress (" .. tostring(stats.UnregisteredProgress) .. "/" .. tostring(requirement) .. ")."
+		tSys(player, "unreg_progress", { reason = reasonText, gain = gain, progress = stats.UnregisteredProgress, requirement = requirement },
+			"<font color='#b27aff'><b>[ UNREGISTERED ]</b></font> " .. reasonText .. " +" .. tostring(gain) .. " progress (" .. tostring(stats.UnregisteredProgress) .. "/" .. tostring(requirement) .. ").")
 	)
 
 	while stats.UnregisteredProgress >= requirement and not stats.InJujutsuHigh and not isCurseUser(stats) do
@@ -9398,7 +9449,7 @@ function ageUp(player)
 				if tostring(stats.Affiliation or "") == "Jujutsu High" then
 					stats.AffiliationRank = "Graduate"
 				end
-				logMessage = logMessage .. "\nYou graduated from Jujutsu High as an official <b>" .. tostring(stats.Grade or "Sorcerer") .. "</b>."
+				logMessage = logMessage .. tSys(player, "jh_graduation", { grade = stats.Grade or "Sorcerer" }, "\nYou graduated from Jujutsu High as an official <b>" .. tostring(stats.Grade or "Sorcerer") .. "</b>.")
 				fireMajorPopup(
 					player,
 					"JUJUTSU HIGH GRADUATION",
@@ -9419,7 +9470,7 @@ function ageUp(player)
 				ensureCursedSpiritFlavor(stats)
 				stats.CurseThreat = math.max(0, (stats.CurseThreat or 0) + math.random(0, 3))
 				stats.ExorcismRisk = math.clamp((stats.ExorcismRisk or 0) + math.random(0, 2), 0, 100)
-				logMessage = logMessage .. "\nYour cursed presence lingered through another year. Threat: <b>" .. tostring(stats.CurseThreat or 0) .. "</b> | Hunger: <b>" .. tostring(stats.CurseHunger or 0) .. "% (" .. getCurseHungerText(stats) .. ")</b>."
+				logMessage = logMessage .. tSys(player, "curse_year_linger", { threat = stats.CurseThreat or 0, hunger = stats.CurseHunger or 0, hunger_text = getCurseHungerText(stats) }, "\nYour cursed presence lingered through another year. Threat: <b>" .. tostring(stats.CurseThreat or 0) .. "</b> | Hunger: <b>" .. tostring(stats.CurseHunger or 0) .. "% (" .. getCurseHungerText(stats) .. ")</b>.")
 				if math.random(1, 100) <= 65 then
 					local curseEventText = rollCursedSpiritLifeEvent(player, stats)
 					if curseEventText ~= "" then
@@ -9441,7 +9492,7 @@ function ageUp(player)
 				addCursedResentment(stats, 20)
 				refreshCurseRebirthEligibility(stats)
 			end
-			logMessage = logMessage .. "\nYour body gave out."
+			logMessage = logMessage .. tSys(player, "body_gave_out", nil, "\nYour body gave out.")
 		end
 
 		local higherUpsStarted = maybeBeginHigherUpsInvitation(player, stats)
@@ -9477,6 +9528,32 @@ function ageUp(player)
 	stats.Happiness = math.clamp((stats.Happiness or 100) + math.random(-4, 4), 0, 100)
 
 	local logMessage = BitKaisenLifeEvents.GetQuietYearText(stats)
+	-- Swap for translated quiet text if the player's locale has one
+	do
+		local locale = BitKaisenLocale.getPlayerLocale(player.UserId)
+		if locale ~= "en" then
+			local pool = BitKaisenLocale.getQuietYearTexts(locale)
+			if pool and #pool > 0 then
+				stats.RecentQuietTextsLocale = stats.RecentQuietTextsLocale or {}
+				local recent = stats.RecentQuietTextsLocale
+				local available = {}
+				for i, text in ipairs(pool) do
+					local used = false
+					for _, r in ipairs(recent) do if r == i then used = true; break end end
+					if not used then table.insert(available, { idx = i, text = text }) end
+				end
+				if #available == 0 then
+					available = {}
+					for i, text in ipairs(pool) do table.insert(available, { idx = i, text = text }) end
+					stats.RecentQuietTextsLocale = {}
+				end
+				local pick = available[math.random(1, #available)]
+				logMessage = pick.text
+				table.insert(stats.RecentQuietTextsLocale, 1, pick.idx)
+				while #stats.RecentQuietTextsLocale > 5 do table.remove(stats.RecentQuietTextsLocale) end
+			end
+		end
+	end
 	logMessage = logMessage .. BK_JobService.AdvanceYear(player, stats)
 	logMessage = logMessage .. BK_WorldHistoryService.AdvanceYear(player, stats)
 	logMessage = logMessage .. BK_ClanWarService.AdvanceYear(player, stats)
@@ -9536,7 +9613,7 @@ function ageUp(player)
 
 	if awakened and technique then
 		if awakenType == "Innate" then
-			logMessage = "Your inherited technique finally stopped sleeping. <b>" .. technique .. "</b> became usable."
+			logMessage = tSys(player, "awaken_innate", { technique = technique }, "Your inherited technique finally stopped sleeping. <b>" .. technique .. "</b> became usable.")
 			fireMajorPopup(
 				player,
 				"INNATE TECHNIQUE AWAKENED",
@@ -9545,7 +9622,7 @@ function ageUp(player)
 				"Innate techniques are inherited at birth, but usually become usable around age 10-11."
 			)
 		else
-			logMessage = "Your cursed energy finally took shape. You awakened <b>" .. technique .. "</b>."
+			logMessage = tSys(player, "awaken_cursed", { technique = technique }, "Your cursed energy finally took shape. You awakened <b>" .. technique .. "</b>.")
 			fireMajorPopup(
 				player,
 				"CURSED TECHNIQUE AWAKENED",
@@ -9561,18 +9638,18 @@ function ageUp(player)
 			end
 		end
 	elseif stats.Age == 8 and tostring(stats.InnateTechnique or "None") == "None" and tostring(stats.CursedTechnique or "None") == "None" then
-		logMessage = "Your cursed energy stirred for the first time, but no technique fully manifested."
+		logMessage = tSys(player, "awaken_stir", nil, "Your cursed energy stirred for the first time, but no technique fully manifested.")
 	elseif stats.Age == 10 and tostring(stats.CursedTechnique or "None") == "None" then
 		if tostring(stats.InnateTechnique or "None") ~= "None" then
-			logMessage = "Your innate technique pressed against the surface, but it did not fully answer yet."
+			logMessage = tSys(player, "awaken_surface", nil, "Your innate technique pressed against the surface, but it did not fully answer yet.")
 		else
-			logMessage = "Your cursed energy grew unstable for a moment, but no technique manifested."
+			logMessage = tSys(player, "awaken_unstable", nil, "Your cursed energy grew unstable for a moment, but no technique manifested.")
 		end
 	end
 
 	if stats.Age >= 13 and stats.CursedTechnique ~= "None" and not isOfficialJujutsuSorcerer(stats) and not isCurseLife(stats) and not isCurseUser(stats) then
 		if math.random(1, 100) <= 15 then
-			logMessage = "A jujutsu recruiter noticed your cursed energy. You can apply to Jujutsu High when you are old enough."
+			logMessage = tSys(player, "recruiter_notice", nil, "A jujutsu recruiter noticed your cursed energy. You can apply to Jujutsu High when you are old enough.")
 		end
 	end
 
@@ -9634,7 +9711,7 @@ function ageUp(player)
 		stats.CurseThreat = math.max(0, (stats.CurseThreat or 0) + math.random(0, 3))
 		stats.ExorcismRisk = math.clamp((stats.ExorcismRisk or 0) + math.random(0, 2), 0, 100)
 		addCurseHunger(stats, math.random(6, 12))
-		logMessage = logMessage .. "\nYour cursed presence grew quietly. Threat: <b>" .. tostring(stats.CurseThreat or 0) .. "</b> | Hunger: <b>" .. tostring(stats.CurseHunger or 0) .. "%</b>."
+		logMessage = logMessage .. tSys(player, "curse_year", { threat = stats.CurseThreat or 0, hunger = stats.CurseHunger or 0 }, "\nYour cursed presence grew quietly. Threat: <b>" .. tostring(stats.CurseThreat or 0) .. "</b> | Hunger: <b>" .. tostring(stats.CurseHunger or 0) .. "%</b>.")
 		if math.random(1, 100) <= 65 then
 			local curseEventText = rollCursedSpiritLifeEvent(player, stats)
 			if curseEventText ~= "" then
@@ -9655,7 +9732,7 @@ function ageUp(player)
 			addCursedResentment(stats, 20)
 			refreshCurseRebirthEligibility(stats)
 		end
-		logMessage = logMessage .. "\nYour body gave out."
+		logMessage = logMessage .. tSys(player, "body_gave_out", nil, "\nYour body gave out.")
 	end
 
 	local dojoApplicationText = resolvePendingOutsideDojoApplication(player, stats)
@@ -10982,6 +11059,15 @@ end)
 
 Players.PlayerAdded:Connect(function(player)
 	BK_DevCommands.HookPlayer(player)
+	-- Grab locale early so translations are ready before any text fires
+	task.defer(function()
+		local ok, localeId = pcall(function()
+			return player.LocaleId
+		end)
+		if ok and localeId then
+			BitKaisenLocale.setPlayerLocale(player.UserId, localeId)
+		end
+	end)
 	loadOrStartLife(player)
 	task.defer(function()
 		BK_CommerceService.ClaimGiftMailbox(player)
@@ -10992,6 +11078,7 @@ Players.PlayerRemoving:Connect(function(player)
 	BK_AFKService.PlayerRemoving(player)
 	BK_RivalService.ClearPlayer(player)
 	forceSaveStats(player, "PlayerRemoving")
+	BitKaisenLocale.clearPlayer(player.UserId)
 	BitKaisenSaveSystem.ReleaseSession(player.UserId)
 
 	if autosaveLoops[player.UserId] then

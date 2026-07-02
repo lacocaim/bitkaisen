@@ -3,6 +3,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local BitKaisenCursedTools = require(ReplicatedStorage:WaitForChild("BitKaisenCursedTools"))
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
 
 local BitKaisenLifeEvents = {}
 
@@ -753,35 +754,39 @@ local function matchesEvent(stats, eventData)
 	return true
 end
 
-function BitKaisenLifeEvents.GetQuietYearText(stats)
+function BitKaisenLifeEvents.GetQuietYearText(stats, playerLocale)
 	stats.RecentQuietTexts = stats.RecentQuietTexts or {}
 
+	local sourceTexts = QuietYearTexts
+	if playerLocale and playerLocale ~= "en" then
+		local localized = BitKaisenLocale.getQuietYearTexts(playerLocale)
+		if localized and #localized > 0 then
+			sourceTexts = localized
+		end
+	end
+
 	local available = {}
-
-	for _, text in ipairs(QuietYearTexts) do
+	for _, text in ipairs(sourceTexts) do
 		local recentlyUsed = false
-
 		for _, recentText in ipairs(stats.RecentQuietTexts) do
 			if recentText == text then
 				recentlyUsed = true
 				break
 			end
 		end
-
 		if not recentlyUsed then
 			table.insert(available, text)
 		end
 	end
 
 	if #available <= 0 then
-		available = QuietYearTexts
+		available = sourceTexts
 		stats.RecentQuietTexts = {}
 	end
 
 	local chosen = available[math.random(1, #available)]
 
 	table.insert(stats.RecentQuietTexts, 1, chosen)
-
 	while #stats.RecentQuietTexts > 5 do
 		table.remove(stats.RecentQuietTexts)
 	end
@@ -828,15 +833,18 @@ function BitKaisenLifeEvents.RollEvent(stats)
 
 		if roll <= currentWeight then
 			local chosenText = eventData.Text
+			local chosenIndex = nil
 
 			if eventData.Texts and #eventData.Texts > 0 then
-				chosenText = eventData.Texts[math.random(1, #eventData.Texts)]
+				chosenIndex = math.random(1, #eventData.Texts)
+				chosenText = eventData.Texts[chosenIndex]
 			end
 
 			return {
 				Id = eventData.Id,
 				Category = eventData.Category,
 				Text = chosenText,
+				TextIndex = chosenIndex,
 				Effects = eventData.Effects or {}
 			}
 		end
@@ -845,7 +853,7 @@ function BitKaisenLifeEvents.RollEvent(stats)
 	return nil
 end
 
-function BitKaisenLifeEvents.ApplyEvent(stats, eventData)
+function BitKaisenLifeEvents.ApplyEvent(stats, eventData, playerLocale)
 	if not stats or not eventData then
 		return ""
 	end
@@ -949,6 +957,10 @@ function BitKaisenLifeEvents.ApplyEvent(stats, eventData)
 	rememberEvent(stats, eventData.Id)
 
 	local text = tostring(eventData.Text or "Something happened.")
+	if playerLocale and playerLocale ~= "en" and eventData.Id and eventData.TextIndex then
+		local translated = BitKaisenLocale.tEvent(playerLocale, eventData.Id, eventData.TextIndex)
+		if translated then text = translated end
+	end
 	if ceToolBonus > 0 then
 		text ..= "\n<font color='#f0b955'><b>[ CURSED TOOL ]</b></font> " .. tostring(ceToolName or "Your equipped cursed tool") .. " stabilized the gain: <b>+" .. tostring(ceToolBonus) .. " bonus CE</b>."
 	end

@@ -5,6 +5,9 @@ local UserInputService = game:GetService("UserInputService")
 local uiState = require("@ui-state/uiState")
 local responsiveScale = require("@ui/responsiveScale")
 local playerState = require("@ui-state/playerState")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _ms(key, fallback) return BitKaisenLocale.tOrFallback(_L, "missions." .. key, nil, fallback) end
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -62,7 +65,7 @@ stroke.Parent = window
 
 local title = Instance.new("TextLabel")
 title.BackgroundTransparency = 1
-title.Text = "AVAILABLE MISSIONS"
+title.Text = _ms("title", "MISSIONS")
 title.TextColor3 = THEME.Text
 title.Font = Enum.Font.GothamBlack
 title.TextXAlignment = Enum.TextXAlignment.Left
@@ -181,7 +184,7 @@ end
 
 local function getMissionEmptyMessage()
 	local stats = playerState.stats()
-	if not stats then return "No missions available.\nLoading your sorcerer profile..." end
+	if not stats then return _ms("loading", "Loading...") end
 
 	local age = tonumber(stats.Age) or 0
 	local grade = tostring(stats.Grade or "Non-Sorcerer")
@@ -194,18 +197,18 @@ local function getMissionEmptyMessage()
 	local isOfficialSorcerer = (stats.InJujutsuHigh == true or stats.RegisteredSorcerer == true)
 		and not isUnregistered
 
-	if age < 16 then return "No official missions available.\nYou need to be at least 16." end
-	if not hasTechnique then return "No missions available.\nAwaken a cursed technique first." end
+	if age < 16 then return _ms("need_age", "No official missions available.\nYou need to be at least 16.") end
+	if not hasTechnique then return _ms("need_technique", "No missions available.\nAwaken a cursed technique first.") end
 	if not isOfficialSorcerer then
 		if isUnregistered then
-			return "No official missions available.\nApply to Jujutsu High to register your " .. grade .. "."
+			return _ms("apply_register", "No official missions available.\nApply to Jujutsu High to register your ") .. grade .. "."
 		end
-		return "No official missions available.\nApply to Jujutsu High and become a registered sorcerer first."
+		return _ms("apply_jjh", "No official missions available.\nApply to Jujutsu High and become a registered sorcerer first.")
 	end
 	if stats.TechniqueUsable == false then
-		return "No missions available.\nYour technique exists, but it is not usable in missions yet."
+		return _ms("technique_unusable", "No missions available.\nYour technique exists, but it is not usable in missions yet.")
 	end
-	return "No missions available.\nCheck your official grade or try again later."
+	return _ms("check_grade", "No missions available.\nCheck your official grade or try again later.")
 end
 
 local function createMissionCard(missionData)
@@ -254,15 +257,15 @@ local function createMissionCard(missionData)
 	missionRisk.TextSize = isMobile and 11 or 13
 	missionRisk.Font = Enum.Font.GothamBlack
 	missionRisk.TextXAlignment = Enum.TextXAlignment.Left
-	missionRisk.Text = "RISK \u{2022} " .. tostring(missionData.Grade or "Unknown")
+	missionRisk.Text = _ms("risk", "RISK") .. " \u{2022} " .. tostring(missionData.Grade or "Unknown")
 	missionRisk.ZIndex = 624
 	missionRisk.Parent = card
 
 	local rewardText = missionData.RewardText
 	if not rewardText or rewardText == "" then
 		local rewardRep = tonumber(missionData.RewardRep) or 0
-		local repText = "Rep +" .. tostring(rewardRep)
-		if rewardRep < 0 then repText = "Rep " .. tostring(rewardRep) end
+		local repText = _ms("rep", "Rep") .. " +" .. tostring(rewardRep)
+		if rewardRep < 0 then repText = _ms("rep", "Rep") .. " " .. tostring(rewardRep) end
 		rewardText = "CE +" .. tostring(missionData.RewardCE or 0)
 			.. " \u{2022} $" .. tostring(missionData.RewardMoney or 0)
 			.. " \u{2022} " .. repText
@@ -289,7 +292,7 @@ local function createMissionCard(missionData)
 	acceptBtn.TextColor3 = THEME.Text
 	acceptBtn.TextSize = isMobile and 11 or 13
 	acceptBtn.Font = Enum.Font.GothamBlack
-	acceptBtn.Text = "ACCEPT"
+	acceptBtn.Text = _ms("accept", "ACCEPT MISSION")
 	acceptBtn.AutoButtonColor = false
 	acceptBtn.BorderSizePixel = 0
 	acceptBtn.ZIndex = 624
@@ -315,13 +318,13 @@ end
 
 local function refresh()
 	clear()
-	subtitle.Text = "Loading missions..."
+	subtitle.Text = _ms("loading", "Loading...")
 	local ok, board = pcall(function()
 		return getMissionBoard:InvokeServer()
 	end)
 	if not ok then
 		subtitle.Text = "Accept missions from the Jujutsu Society."
-		createMessageCard("Could not load missions.\nCheck server output.", Color3.fromRGB(220, 90, 90))
+		createMessageCard(_ms("load_error", "Could not load missions.\nCheck server output."), Color3.fromRGB(220, 90, 90))
 		return
 	end
 	if not board or #board <= 0 then

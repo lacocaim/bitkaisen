@@ -4,6 +4,20 @@ local TweenService = game:GetService("TweenService")
 
 local uiState = require("@ui-state/uiState")
 local mc = require("@ui/mobile/mobileComponents")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+
+local function _relStr(key, fallback)
+	return BitKaisenLocale.tOrFallback(_L, "panels.rel." .. key, nil, fallback)
+end
+local function _relLookup(subtable, key, fallback)
+	if _L == "en" then return fallback end
+	local lang = BitKaisenLocale.t(_L, "panels.rel." .. subtable .. "." .. key)
+	return (lang ~= "panels.rel." .. subtable .. "." .. key) and lang or fallback
+end
+local function _ra(key, fallback)
+	return BitKaisenLocale.tOrFallback(_L, "panels.rel.actions." .. key, nil, fallback)
+end
 
 local theme = mc.theme
 local corner = mc.corner
@@ -119,17 +133,28 @@ local function getStatusLine(relationship): string
 	local status = tostring(relationship.Status or "Neutral")
 	local age = getRelationshipAge(relationship)
 	local gender = getRelationshipGender(relationship)
-	local line = status
-	if gender ~= "Unknown" then line = line .. " · " .. gender end
-	if age > 0 then line = line .. " · Age " .. tostring(age) end
+	local tStatus = _relLookup("status", status, status)
+	local tGender = if gender == "Male" then _relStr("male", "Male")
+	               elseif gender == "Female" then _relStr("female", "Female")
+	               else nil
+	local line = tStatus
+	if tGender then line = line .. " · " .. tGender end
+	if age > 0 then line = line .. " · " .. _relStr("age", "Age") .. " " .. tostring(age) end
 	if role == "Child" then
-		line = line .. " · " .. tostring(relationship.Custody or "With You")
+		local custody = tostring(relationship.Custody or "With You")
+		line = line .. " · " .. (custody == "With You" and _relStr("with_you", "With You") or custody)
 	elseif role == "Partner" then
-		line = line .. " · Dating " .. tostring(relationship.YearsDating or 0) .. "y"
+		local yrs = tostring(relationship.YearsDating or 0)
+		local t = _relStr("dating", "Dating {n}y"):gsub("{n}", yrs)
+		line = line .. " · " .. t
 	elseif role == "Spouse" then
-		line = line .. " · Married " .. tostring(relationship.YearsMarried or 0) .. "y"
+		local yrs = tostring(relationship.YearsMarried or 0)
+		local t = _relStr("married", "Married {n}y"):gsub("{n}", yrs)
+		line = line .. " · " .. t
 	elseif (relationship.YearsKnown or 0) > 0 then
-		line = line .. " · " .. tostring(relationship.YearsKnown) .. "y known"
+		local yrs = tostring(relationship.YearsKnown)
+		local t = _relStr("years_known", "{n}y known"):gsub("{n}", yrs)
+		line = line .. " · " .. t
 	end
 	return line
 end
@@ -140,83 +165,83 @@ local function getActionsForRelationship(relationship)
 	local function addMurder(actions)
 		local blocked = { Child = true, Ward = true, Mother = true, Father = true, Caretaker = true, Sibling = true, Teacher = true, Student = true }
 		if relationship.Alive ~= false and not blocked[role] then
-			table.insert(actions, { Id = "murder_relationship", Text = "Murder", Confirm = true })
+			table.insert(actions, { Id = "murder_relationship", Text = _ra("murder", "Murder"), Confirm = true })
 		end
 		return actions
 	end
 
 	if relationship.Alive == false then
-		local actions = { { Id = "forget_relationship", Text = "Forget", Confirm = true } }
+		local actions = { { Id = "forget_relationship", Text = _ra("forget", "Forget"), Confirm = true } }
 		if canBrainTransplant then
-			table.insert(actions, { Id = "brain_transplant", Text = "Transplant", Confirm = true })
+			table.insert(actions, { Id = "brain_transplant", Text = _ra("transplant", "Transplant"), Confirm = true })
 		end
 		return actions
 	end
 
 	if role == "Notable Sorcerer" then
 		local isActive = tostring(relationship.Status or "") == "Active"
-		local actions = { { Id = "talk", Text = "Talk" }, { Id = "train_together", Text = "Train" } }
+		local actions = { { Id = "talk", Text = _ra("talk", "Talk") }, { Id = "train_together", Text = _ra("train", "Train") } }
 		if isActive then
-			table.insert(actions, { Id = "flirt", Text = "Flirt" })
+			table.insert(actions, { Id = "flirt", Text = _ra("flirt", "Flirt") })
 			if (relationship.Bond or 0) >= 40 and (relationship.Trust or 0) >= 25 and (relationship.Romance or 0) >= 30 then
-				table.insert(actions, { Id = "ask_out", Text = "Ask Out" })
+				table.insert(actions, { Id = "ask_out", Text = _ra("ask_out", "Ask Out") })
 			end
 		end
 		return actions
 	end
 	if role == "Ward" then
-		local actions = { { Id = "talk", Text = "Talk" }, { Id = "encourage_child", Text = "Encourage" }, { Id = "protect_child", Text = "Protect" } }
-		if (relationship.Age or 0) >= 8 then table.insert(actions, { Id = "train_child", Text = "Train CE" }) end
-		if (relationship.Age or 0) >= 12 and relationship.DojoStudent ~= true then table.insert(actions, { Id = "recruit_dojo", Text = "Recruit Dojo" }) end
+		local actions = { { Id = "talk", Text = _ra("talk", "Talk") }, { Id = "encourage_child", Text = _ra("encourage", "Encourage") }, { Id = "protect_child", Text = _ra("protect", "Protect") } }
+		if (relationship.Age or 0) >= 8 then table.insert(actions, { Id = "train_child", Text = _ra("train_ce", "Train CE") }) end
+		if (relationship.Age or 0) >= 12 and relationship.DojoStudent ~= true then table.insert(actions, { Id = "recruit_dojo", Text = _ra("recruit_dojo", "Recruit Dojo") }) end
 		return actions
 	end
 	if role == "Child" then
-		local actions = { { Id = "teach_child", Text = "Teach" }, { Id = "protect_child", Text = "Protect" }, { Id = "encourage_child", Text = "Encourage" }, { Id = "take_over_child", Text = "Take Over", Confirm = true }, { Id = "disown_child", Text = "Disown", Confirm = true } }
+		local actions = { { Id = "teach_child", Text = _ra("teach", "Teach") }, { Id = "protect_child", Text = _ra("protect", "Protect") }, { Id = "encourage_child", Text = _ra("encourage", "Encourage") }, { Id = "take_over_child", Text = _ra("take_over", "Take Over"), Confirm = true }, { Id = "disown_child", Text = _ra("disown", "Disown"), Confirm = true } }
 		if relationship.Custody == "Shared" or relationship.Custody == "With Ex-Spouse" then
-			table.insert(actions, { Id = "custody_visit", Text = "Custody Visit" })
+			table.insert(actions, { Id = "custody_visit", Text = _ra("custody_visit", "Custody Visit") })
 		end
-		if (relationship.Age or 0) >= 8 then table.insert(actions, { Id = "train_child", Text = "Train CE" }) end
+		if (relationship.Age or 0) >= 8 then table.insert(actions, { Id = "train_child", Text = _ra("train_ce", "Train CE") }) end
 		return actions
 	end
 	if role == "Student" then
-		return { { Id = "talk", Text = "Talk" }, { Id = "encourage_child", Text = "Encourage" }, { Id = "train_together", Text = "Train" }, { Id = "ask_advice", Text = "Guide" } }
+		return { { Id = "talk", Text = _ra("talk", "Talk") }, { Id = "encourage_child", Text = _ra("encourage", "Encourage") }, { Id = "train_together", Text = _ra("train", "Train") }, { Id = "ask_advice", Text = _ra("guide", "Guide") } }
 	end
 	if role == "Mother" or role == "Father" or role == "Caretaker" or role == "Sibling" then
-		return { { Id = "talk", Text = "Talk" }, { Id = "family_time", Text = "Family Time" }, { Id = "ask_advice", Text = "Ask Advice" }, { Id = "apologize", Text = "Apologize" } }
+		return { { Id = "talk", Text = _ra("talk", "Talk") }, { Id = "family_time", Text = _ra("family_time", "Family Time") }, { Id = "ask_advice", Text = _ra("ask_advice", "Ask Advice") }, { Id = "apologize", Text = _ra("apologize", "Apologize") } }
 	end
 	if role == "Teacher" then
-		return { { Id = "ask_advice", Text = "Ask Advice" }, { Id = "train_together", Text = "Train" }, { Id = "mentor_session", Text = "Mentor Session" }, { Id = "ask_recommendation", Text = "Recommendation" } }
+		return { { Id = "ask_advice", Text = _ra("ask_advice", "Ask Advice") }, { Id = "train_together", Text = _ra("train", "Train") }, { Id = "mentor_session", Text = _ra("mentor_session", "Mentor Session") }, { Id = "ask_recommendation", Text = _ra("recommendation", "Recommendation") } }
 	end
 	if role == "Rival" then
-		return addMurder({ { Id = "talk", Text = "Talk" }, { Id = "spar", Text = "Spar" }, { Id = "challenge", Text = "Challenge" }, { Id = "acknowledge", Text = "Acknowledge" } })
+		return addMurder({ { Id = "talk", Text = _ra("talk", "Talk") }, { Id = "spar", Text = _ra("spar", "Spar") }, { Id = "challenge", Text = _ra("challenge", "Challenge") }, { Id = "acknowledge", Text = _ra("acknowledge", "Acknowledge") } })
 	end
 	if role == "Classmate" then
-		return addMurder({ { Id = "talk", Text = "Talk" }, { Id = "study_together", Text = "Study" }, { Id = "train_together", Text = "Train" }, { Id = "spend_time", Text = "Hang Out" } })
+		return addMurder({ { Id = "talk", Text = _ra("talk", "Talk") }, { Id = "study_together", Text = _ra("study", "Study") }, { Id = "train_together", Text = _ra("train", "Train") }, { Id = "spend_time", Text = _ra("hang_out", "Hang Out") } })
 	end
 	if role == "Friend" or role == "Best Friend" then
-		local actions = { { Id = "talk", Text = "Talk" }, { Id = "spend_time", Text = "Hang Out" }, { Id = "deep_talk", Text = "Open Up" }, { Id = "train_together", Text = "Train" }, { Id = "flirt", Text = "Flirt" }, { Id = "remove_relationship", Text = "Remove", Confirm = true } }
+		local actions = { { Id = "talk", Text = _ra("talk", "Talk") }, { Id = "spend_time", Text = _ra("hang_out", "Hang Out") }, { Id = "deep_talk", Text = _ra("open_up", "Open Up") }, { Id = "train_together", Text = _ra("train", "Train") }, { Id = "flirt", Text = _ra("flirt", "Flirt") }, { Id = "remove_relationship", Text = _ra("remove", "Remove"), Confirm = true } }
 		if (relationship.Bond or 0) >= 45 and (relationship.Trust or 0) >= 35 and (relationship.Romance or 0) >= 25 then
-			table.insert(actions, { Id = "ask_out", Text = "Ask Out" })
+			table.insert(actions, { Id = "ask_out", Text = _ra("ask_out", "Ask Out") })
 		end
 		return addMurder(actions)
 	end
 	if role == "Mission Partner" then
-		local actions = { { Id = "talk", Text = "Talk" }, { Id = "train_together", Text = "Train" }, { Id = "pair_mission", Text = "Paired Mission" }, { Id = "deep_talk", Text = "Open Up" }, { Id = "flirt", Text = "Flirt" }, { Id = "remove_relationship", Text = "Remove", Confirm = true } }
+		local actions = { { Id = "talk", Text = _ra("talk", "Talk") }, { Id = "train_together", Text = _ra("train", "Train") }, { Id = "pair_mission", Text = _ra("paired_mission", "Paired Mission") }, { Id = "deep_talk", Text = _ra("open_up", "Open Up") }, { Id = "flirt", Text = _ra("flirt", "Flirt") }, { Id = "remove_relationship", Text = _ra("remove", "Remove"), Confirm = true } }
 		if (relationship.Bond or 0) >= 45 and (relationship.Trust or 0) >= 35 and (relationship.Romance or 0) >= 25 then
-			table.insert(actions, { Id = "ask_out", Text = "Ask Out" })
+			table.insert(actions, { Id = "ask_out", Text = _ra("ask_out", "Ask Out") })
 		end
 		return addMurder(actions)
 	end
 	if role == "Partner" then
-		return addMurder({ { Id = "spend_time", Text = "Spend Time" }, { Id = "deep_talk", Text = "Open Up" }, { Id = "give_gift", Text = "Gift" }, { Id = "propose", Text = "Propose" }, { Id = "remove_relationship", Text = "Break Up", Confirm = true } })
+		return addMurder({ { Id = "spend_time", Text = _ra("spend_time", "Spend Time") }, { Id = "deep_talk", Text = _ra("open_up", "Open Up") }, { Id = "give_gift", Text = _ra("gift", "Gift") }, { Id = "propose", Text = _ra("propose", "Propose") }, { Id = "remove_relationship", Text = _ra("break_up", "Break Up"), Confirm = true } })
 	end
 	if role == "Spouse" then
-		return addMurder({ { Id = "spend_time", Text = "Spend Time" }, { Id = "deep_talk", Text = "Open Up" }, { Id = "give_gift", Text = "Gift" }, { Id = "start_family", Text = "Start Family" }, { Id = "adopt_child", Text = "Adopt" }, { Id = "divorce", Text = "Divorce", Confirm = true } })
+		return addMurder({ { Id = "spend_time", Text = _ra("spend_time", "Spend Time") }, { Id = "deep_talk", Text = _ra("open_up", "Open Up") }, { Id = "give_gift", Text = _ra("gift", "Gift") }, { Id = "start_family", Text = _ra("start_family", "Start Family") }, { Id = "adopt_child", Text = _ra("adopt", "Adopt") }, { Id = "divorce", Text = _ra("divorce", "Divorce"), Confirm = true } })
 	end
 	if role == "Ex-Spouse" then
-		return addMurder({ { Id = "talk", Text = "Talk" }, { Id = "apologize", Text = "Apologize" }, { Id = "discuss_custody", Text = "Custody" }, { Id = "remove_relationship", Text = "Remove", Confirm = true } })
+		return addMurder({ { Id = "talk", Text = _ra("talk", "Talk") }, { Id = "apologize", Text = _ra("apologize", "Apologize") }, { Id = "discuss_custody", Text = _ra("custody", "Custody") }, { Id = "remove_relationship", Text = _ra("remove", "Remove"), Confirm = true } })
 	end
-	return addMurder({ { Id = "talk", Text = "Talk" }, { Id = "spend_time", Text = "Hang Out" }, { Id = "ask_advice", Text = "Ask Advice" }, { Id = "remove_relationship", Text = "Remove", Confirm = true } })
+	return addMurder({ { Id = "talk", Text = _ra("talk", "Talk") }, { Id = "spend_time", Text = _ra("hang_out", "Hang Out") }, { Id = "ask_advice", Text = _ra("ask_advice", "Ask Advice") }, { Id = "remove_relationship", Text = _ra("remove", "Remove"), Confirm = true } })
 end
 
 local function normalizeRelationships(result)
@@ -265,7 +290,7 @@ local function promptChildName(callback: (string?) -> ())
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Position = UDim2.fromOffset(16, 14)
 	titleLabel.Size = UDim2.new(1, -32, 0, 24)
-	titleLabel.Text = "CHILD NAME"
+	titleLabel.Text = _relStr("child_name_title", "CHILD NAME")
 	titleLabel.TextColor3 = theme.Gold
 	titleLabel.Font = Enum.Font.GothamBlack
 	titleLabel.TextSize = 16
@@ -277,7 +302,7 @@ local function promptChildName(callback: (string?) -> ())
 	input.Size = UDim2.new(1, -32, 0, 44)
 	input.BackgroundColor3 = theme.Card
 	input.BorderSizePixel = 0
-	input.PlaceholderText = "Optional name"
+	input.PlaceholderText = _relStr("child_name_placeholder", "Optional name")
 	input.Text = ""
 	input.TextColor3 = theme.Text
 	input.PlaceholderColor3 = theme.Muted
@@ -295,7 +320,7 @@ local function promptChildName(callback: (string?) -> ())
 
 	mobileButton({
 		parent = box,
-		text = "RANDOM",
+		text = _relStr("child_name_random", "RANDOM"),
 		size = UDim2.new(0.47, 0, 0, 48),
 		position = UDim2.new(0, 16, 1, -60),
 		color = theme.Card,
@@ -305,7 +330,7 @@ local function promptChildName(callback: (string?) -> ())
 
 	mobileButton({
 		parent = box,
-		text = "USE NAME",
+		text = _relStr("child_name_use", "USE NAME"),
 		size = UDim2.new(0.47, 0, 0, 48),
 		position = UDim2.new(0.53, 0, 1, -60),
 		color = theme.Purple,
@@ -406,7 +431,7 @@ local function createActionsGrid(parent: GuiObject, relationship, order: number)
 
 			if action.Confirm and btn:GetAttribute("Confirmed") ~= true then
 				btn:SetAttribute("Confirmed", true)
-				btn.Text = "CONFIRM?"
+				btn.Text = _relStr("confirm_action", "CONFIRM?")
 				btn.TextColor3 = theme.Bad
 				task.delay(2.5, function()
 					if btn and btn.Parent and btn:GetAttribute("Confirmed") == true then
@@ -472,7 +497,7 @@ local function createRelationshipCard(parent: GuiObject, relationship, order: nu
 
 	mobileLabel({
 		parent = card,
-		text = (alive and role or (role .. " †")) .. "  ·  " .. getStatusLine(relationship),
+		text = (alive and _relLookup("roles", role, role) or (_relLookup("roles", role, role) .. " †")) .. "  ·  " .. getStatusLine(relationship),
 		size = 13,
 		color = rColor,
 		font = Enum.Font.GothamBold,
@@ -550,7 +575,7 @@ local function createRelationshipCard(parent: GuiObject, relationship, order: nu
 	expandBtn.TextColor3 = alive and theme.SubText or theme.Muted
 	expandBtn.TextSize = 13
 	expandBtn.Font = Enum.Font.GothamBold
-	expandBtn.Text = isExpanded and "▲  Hide Actions" or "▼  Actions"
+	expandBtn.Text = isExpanded and _relStr("hide_actions", "▲  Hide Actions") or _relStr("show_actions", "▼  Actions")
 	expandBtn.AutoButtonColor = false
 	expandBtn.ZIndex = 5
 	expandBtn.LayoutOrder = 6
@@ -561,7 +586,7 @@ local function createRelationshipCard(parent: GuiObject, relationship, order: nu
 		if expandedCardId == relationship.Id then
 			expandedCardId = nil
 			if actionsHolder then actionsHolder:Destroy() end
-			expandBtn.Text = "▼  Actions"
+			expandBtn.Text = _relStr("show_actions", "▼  Actions")
 		else
 			if expandedCardId then
 				local prev = scrollFrame:FindFirstChild("RelCard_" .. tostring(expandedCardId))

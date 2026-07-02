@@ -3,6 +3,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local uiState = require("@ui-state/uiState")
 local responsiveScale = require("@ui/responsiveScale")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _rv(key, fallback) return BitKaisenLocale.tOrFallback(_L, "rivals." .. key, nil, fallback) end
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -73,7 +76,7 @@ local title = Instance.new("TextLabel")
 title.BackgroundTransparency = 1
 title.Position = UDim2.new(0, 24, 0, 16)
 title.Size = UDim2.new(1, -90, 0, 34)
-title.Text = "RIVALS"
+title.Text = _rv("title", "RIVALS")
 title.TextColor3 = COLORS.Gold
 title.TextSize = 22
 title.Font = Enum.Font.GothamBlack

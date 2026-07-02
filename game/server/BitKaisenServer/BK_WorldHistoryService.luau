@@ -5,6 +5,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local BitKaisenCursedTools = require(ReplicatedStorage:WaitForChild("BitKaisenCursedTools"))
+local BitKaisenLocale      = require(ReplicatedStorage:WaitForChild("locale"))
 
 local BK_WorldHistoryService = {}
 
@@ -148,6 +149,10 @@ local TITLE_DEFINITIONS = {
 	{ Id = "honored_one", Name = "Honored One", Requirement = "Reach top-tier stats and major feats.", Check = function(stats) return (tonumber(stats.CursedEnergy) or 0) >= 5000 and (tonumber(stats.TechniqueMastery) or 0) >= 95 and (tonumber(stats.Fame) or 0) >= 80 end },
 }
 
+local function tWorld(locale, key, params, fallback)
+	return BitKaisenLocale.tOrFallback(locale, "world." .. key, params, fallback)
+end
+
 local function pick(list)
 	return list[math.random(1, #list)]
 end
@@ -216,20 +221,20 @@ local function isVillainPath(stats)
 	return path:find("rogue", 1, true) ~= nil or path:find("curse", 1, true) ~= nil or (tonumber(stats.Fear) or 0) >= 70 or (tonumber(stats.WantedLevel) or 0) >= 45
 end
 
-local function makeWorldEvent(stats)
+local function makeWorldEvent(stats, locale)
 	local event = pick(WORLD_EVENTS)
 	local region = pick(REGIONS)
 	local text
 	local outcome = "Neutral"
 	if isVillainPath(stats) then
-		text = string.format(event.Villain, region)
+		text = tWorld(locale, event.Id .. "_villain", { region = region }, string.format(event.Villain, region))
 		outcome = "Caused"
 	elseif playerPower(stats) >= 95 then
-		text = string.format(event.Hero, region)
+		text = tWorld(locale, event.Id .. "_hero", { region = region }, string.format(event.Hero, region))
 		outcome = "Prevented"
 		stats.Fame = math.clamp((tonumber(stats.Fame) or 0) + math.random(1, 3), 0, 100)
 	else
-		text = string.format(event.Neutral, region)
+		text = tWorld(locale, event.Id .. "_neutral", { region = region }, string.format(event.Neutral, region))
 	end
 	return BK_WorldHistoryService.AddHistory(stats, {
 		Type = event.Type,
@@ -239,12 +244,22 @@ local function makeWorldEvent(stats)
 	})
 end
 
-local function makeNotableBirth(stats, forced)
+local function makeNotableBirth(stats, forced, locale)
 	if not forced and math.random(1, 100) > 28 then return nil end
 	local birth = weightedPick(BIRTH_TYPES)
 	local clan = pick(CLANS)
 	local name = pick(FIRST_NAMES) .. " " .. clan
-	local text = birth.Kind == "Potential Special Grade" and string.format(birth.Template, name, clan) or string.format(birth.Template, clan, name)
+	local kindKeyMap = {
+		["Immense CE"]             = "birth_immense_ce",
+		["Heavenly Restriction"]   = "birth_heavenly_restriction",
+		["Potential Special Grade"]= "birth_special_grade",
+		["Cursed Lineage"]         = "birth_cursed_lineage",
+	}
+	local kindKey = kindKeyMap[birth.Kind] or ("birth_" .. birth.Kind:lower():gsub(" ", "_"))
+	local englishFallback = birth.Kind == "Potential Special Grade"
+		and string.format(birth.Template, name, clan)
+		or  string.format(birth.Template, clan, name)
+	local text = tWorld(locale, kindKey, { clan = clan, name = name }, englishFallback)
 	local npc = {
 		Id = "notable_" .. tostring(os.time()) .. "_" .. tostring(math.random(1000, 9999)),
 		Name = name,
@@ -315,11 +330,14 @@ end
 function BK_WorldHistoryService.AdvanceYear(player, stats)
 	BK_WorldHistoryService.EnsureWorldState(stats)
 	ageNotables(stats)
-	local worldEntry = makeWorldEvent(stats)
-	local _, birthText = makeNotableBirth(stats, #stats.NotableSorcerers == 0)
-	local lines = { "\n<font color='#78beff'><b>[ WORLD EVENT ]</b></font> " .. tostring(worldEntry.Text) }
+	local locale = BitKaisenLocale.getPlayerLocale(player.UserId)
+	local worldEntry = makeWorldEvent(stats, locale)
+	local _, birthText = makeNotableBirth(stats, #stats.NotableSorcerers == 0, locale)
+	local eventHeader = tWorld(locale, "event_header", nil, "[ WORLD EVENT ]")
+	local lines = { "\n<font color='#78beff'><b>" .. eventHeader .. "</b></font> " .. tostring(worldEntry.Text) }
 	if birthText then
-		table.insert(lines, "<font color='#d9b45f'><b>[ NOTABLE BIRTH ]</b></font> " .. birthText)
+		local birthHeader = tWorld(locale, "birth_header", nil, "[ NOTABLE BIRTH ]")
+		table.insert(lines, "<font color='#d9b45f'><b>" .. birthHeader .. "</b></font> " .. birthText)
 	end
 	return table.concat(lines, "\n")
 end

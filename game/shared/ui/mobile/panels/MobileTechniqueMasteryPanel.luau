@@ -8,6 +8,8 @@ local playerState = require("@ui-state/playerState")
 local mc = require("@ui/mobile/mobileComponents")
 
 local BitKaisenTechniqueEffects = require(ReplicatedStorage:WaitForChild("BitKaisenTechniqueEffects"))
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local L = BitKaisenLocale.getClientLocale()
 
 local theme = mc.theme
 local player = Players.LocalPlayer
@@ -276,7 +278,7 @@ local function refresh()
 
 	mc.mobileLabel({
 		parent = statsCard,
-		text = "STATS",
+		text = BitKaisenLocale.tOrFallback(L, "ui.stats", nil, "Stats"),
 		size = 14,
 		color = theme.Text,
 		font = Enum.Font.GothamBlack,

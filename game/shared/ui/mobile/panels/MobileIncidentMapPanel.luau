@@ -3,6 +3,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
 local mc = require("@ui/mobile/mobileComponents")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _im(key, fallback) return BitKaisenLocale.tOrFallback(_L, "incident_map." .. key, nil, fallback) end
 
 local theme = mc.theme
 local bindTap = mc.bindTap
@@ -106,13 +109,16 @@ local function makeLocationCard(location, actions, role)
 	statsGrid.SortOrder = Enum.SortOrder.LayoutOrder
 	statsGrid.Parent = statsRow
 
+	local function sv(key, val, fallback)
+		return _im(key, fallback):gsub("{v}", tostring(val))
+	end
 	local stats = {
-		{ "Threat: " .. tostring(location.Threat or 0) .. "%", statColor(location.Threat) },
-		{ "Fear: " .. tostring(location.Fear or 0) .. "%", statColor(location.Fear) },
-		{ "Attn: " .. tostring(location.SocietyAttention or 0) .. "%", statColor(location.SocietyAttention, "bad") },
-		{ "Residue: " .. tostring(location.CursedResidue or 0) .. "%", statColor(location.CursedResidue) },
-		{ "Control: " .. tostring(location.Control or 0) .. "%", theme.Purple },
-		{ "Grade: " .. tostring(location.RecommendedGrade or "?"), theme.Gold },
+		{ sv("threat", location.Threat or 0, "Threat: {v}%"), statColor(location.Threat) },
+		{ sv("fear", location.Fear or 0, "Fear: {v}%"), statColor(location.Fear) },
+		{ sv("attn", location.SocietyAttention or 0, "Attn: {v}%"), statColor(location.SocietyAttention, "bad") },
+		{ sv("residue", location.CursedResidue or 0, "Residue: {v}%"), statColor(location.CursedResidue) },
+		{ sv("control", location.Control or 0, "Control: {v}%"), theme.Purple },
+		{ _im("grade", "Grade: {v}"):gsub("{v}", tostring(location.RecommendedGrade or "?")), theme.Gold },
 	}
 
 	for i, stat in ipairs(stats) do
@@ -128,7 +134,9 @@ local function makeLocationCard(location, actions, role)
 		label.Parent = statsRow
 	end
 
-	local rumorText = "Rumor: " .. tostring(location.Rumor or "None") .. " | " .. (location.ActiveIncident and "Active Incident" or "Quiet")
+	local rumorKey = location.ActiveIncident and "rumor_active" or "rumor_quiet"
+	local rumorFallback = location.ActiveIncident and "Rumor: {rumor} | Active Incident" or "Rumor: {rumor} | Quiet"
+	local rumorText = _im(rumorKey, rumorFallback):gsub("{rumor}", tostring(location.Rumor or "None"))
 	mc.mobileLabel({
 		parent = card,
 		text = rumorText,
@@ -178,12 +186,12 @@ function renderMap(payload)
 	if not payload or payload.Error then
 		mc.mobileLabel({
 			parent = scroll,
-			text = tostring(payload and payload.Error or "Could not load Incident Map."),
+			text = tostring(payload and payload.Error or _im("error_default", "Could not load Incident Map.")),
 			size = 13,
 			color = theme.Bad,
 			order = 1,
 		})
-		subtitle.Text = "Error loading map"
+		subtitle.Text = _im("error_load", "Error loading map")
 		return
 	end
 
@@ -237,7 +245,7 @@ local function buildHeader(parent)
 	title.Size = UDim2.new(0.6, 0, 0, 20)
 	title.Position = UDim2.new(0, 14, 0, 6)
 	title.BackgroundTransparency = 1
-	title.Text = "INCIDENT MAP"
+	title.Text = _im("title", "INCIDENT MAP")
 	title.TextColor3 = theme.Gold
 	title.TextSize = 16
 	title.Font = Enum.Font.GothamBlack
@@ -248,7 +256,7 @@ local function buildHeader(parent)
 	subtitle.Size = UDim2.new(1, -130, 0, 16)
 	subtitle.Position = UDim2.new(0, 14, 0, 28)
 	subtitle.BackgroundTransparency = 1
-	subtitle.Text = "Loading..."
+	subtitle.Text = _im("loading", "Loading...")
 	subtitle.TextColor3 = theme.SubText
 	subtitle.TextSize = 11
 	subtitle.Font = Enum.Font.GothamBold
@@ -262,7 +270,7 @@ local function buildHeader(parent)
 	refreshBtn.Size = UDim2.fromOffset(70, 32)
 	refreshBtn.BackgroundColor3 = theme.Card
 	refreshBtn.BorderSizePixel = 0
-	refreshBtn.Text = "REFRESH"
+	refreshBtn.Text = _im("refresh", "REFRESH")
 	refreshBtn.TextColor3 = theme.Blue
 	refreshBtn.TextSize = 11
 	refreshBtn.Font = Enum.Font.GothamBlack

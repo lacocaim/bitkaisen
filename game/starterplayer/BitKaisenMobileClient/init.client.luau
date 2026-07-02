@@ -32,6 +32,27 @@ local uiState = require("@ui-state/uiState")
 local navRegistry = require("@ui-state/navRegistry")
 local remotes = require("@ui-state/remotes")
 local px = require("@ui/px")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function navT(key, fallback) return BitKaisenLocale.tOrFallback(_L, "ui." .. key, nil, fallback) end
+
+local _MONTH_KEYS = {"month_1","month_2","month_3","month_4","month_5","month_6","month_7","month_8","month_9","month_10","month_11","month_12"}
+local _MONTH_FALLBACKS = {"January","February","March","April","May","June","July","August","September","October","November","December"}
+local _ERA_KEYS = { ["Modern Era"]="era_modern", ["Edo Era"]="era_edo", ["Heian Era"]="era_heian", ["Collapse Era"]="era_collapse" }
+local function _locMonth(i) return navT(_MONTH_KEYS[i] or "month_1", _MONTH_FALLBACKS[i] or "January") end
+local function _locEra(e) local k=_ERA_KEYS[e] return k and navT(k,e) or e end
+local function getLogTimeLabelLocale(stats)
+	if not stats then return "" end
+	local age = tonumber(stats.Age) or 0
+	local month = math.clamp(tonumber(stats.CurrentMonth) or 1, 1, 12)
+	local year = helpers.getCurrentYear(stats)
+	local era = _locEra(helpers.getCurrentEraDisplay(stats))
+	local tpl = navT("age_header", "Age {age} • {month} {year} • {era}")
+	return "<font color='#7a2a2a'><b>[ " .. tpl
+		:gsub("{age}", age):gsub("{month}", _locMonth(month)):gsub("{year}", year):gsub("{era}", era)
+		.. " ]</b></font>"
+end
 
 local mobileShell = require("@ui/mobile/mobileShell")
 local mobilePopup = require("@ui/mobile/mobilePopup")
@@ -58,19 +79,19 @@ end
 
 loadingScreen.bump("Registering navigation...")
 
-navRegistry.register({ id = "weekly", label = "WEEKLY", order = 0, color = theme.Blue })
-navRegistry.register({ id = "missions", label = "MISSIONS", order = 1, color = theme.Bad })
-navRegistry.register({ id = "activities", label = "ACTIVITIES", order = 2, color = theme.Orange })
-navRegistry.register({ id = "relationships", label = "RELATIONSHIPS", order = 3, color = Color3.fromRGB(255, 120, 190) })
-navRegistry.register({ id = "assets", label = "ASSETS", order = 4, color = theme.Gold })
-navRegistry.register({ id = "jobs", label = "JOBS", order = 5, color = theme.Green })
-navRegistry.register({ id = "affiliations", label = "AFFILIATIONS", order = 6, color = theme.Purple })
-navRegistry.register({ id = "domain", label = "DOMAIN", order = 7, color = Color3.fromRGB(190, 130, 255) })
-navRegistry.register({ id = "rivals", label = "RIVALS", order = 8, color = theme.Red })
-navRegistry.register({ id = "history", label = "HISTORY", order = 9, color = theme.Blue })
-navRegistry.register({ id = "mentor", label = "MENTOR", order = 10, color = Color3.fromRGB(55, 200, 230) })
-navRegistry.register({ id = "binding_vows", label = "VOWS", order = 11, color = Color3.fromRGB(220, 180, 255) })
-navRegistry.register({ id = "technique_mastery", label = "MASTERY", order = 12, color = theme.Purple })
+navRegistry.register({ id = "weekly",            label = navT("nav_weekly",        "WEEKLY"),        order = 0,  color = theme.Blue })
+navRegistry.register({ id = "missions",          label = navT("nav_missions",       "MISSIONS"),       order = 1,  color = theme.Bad })
+navRegistry.register({ id = "activities",        label = navT("nav_activities",     "ACTIVITIES"),     order = 2,  color = theme.Orange })
+navRegistry.register({ id = "relationships",     label = navT("nav_relationships",  "RELATIONSHIPS"),  order = 3,  color = Color3.fromRGB(255, 120, 190) })
+navRegistry.register({ id = "assets",            label = navT("nav_assets",         "ASSETS"),         order = 4,  color = theme.Gold })
+navRegistry.register({ id = "jobs",              label = navT("nav_jobs",           "JOBS"),           order = 5,  color = theme.Green })
+navRegistry.register({ id = "affiliations",      label = navT("nav_affiliations",   "AFFILIATIONS"),   order = 6,  color = theme.Purple })
+navRegistry.register({ id = "domain",            label = navT("nav_domain",         "DOMAIN"),         order = 7,  color = Color3.fromRGB(190, 130, 255) })
+navRegistry.register({ id = "rivals",            label = navT("nav_rivals",         "RIVALS"),         order = 8,  color = theme.Red })
+navRegistry.register({ id = "history",           label = navT("nav_history",        "HISTORY"),        order = 9,  color = theme.Blue })
+navRegistry.register({ id = "mentor",            label = navT("nav_mentor",         "MENTOR"),         order = 10, color = Color3.fromRGB(55, 200, 230) })
+navRegistry.register({ id = "binding_vows",      label = navT("nav_vows",           "VOWS"),           order = 11, color = Color3.fromRGB(220, 180, 255) })
+navRegistry.register({ id = "technique_mastery", label = navT("nav_mastery",        "MASTERY"),        order = 12, color = theme.Purple })
 
 loadingScreen.bump("Preparing panels...")
 
@@ -178,7 +199,7 @@ local function handleLifeUpdate(updatedStats, logMessage, forceResetLog)
 
 	if logMessage then
 		local currentTimeKey = helpers.getLogTimeKey(updatedStats)
-		local formattedAge = helpers.getLogTimeLabel(updatedStats)
+		local formattedAge = getLogTimeLabelLocale(updatedStats)
 		local now = os.clock()
 		logMessage = tostring(logMessage)
 

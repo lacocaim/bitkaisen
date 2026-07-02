@@ -1,9 +1,13 @@
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local MarketplaceService = game:GetService("MarketplaceService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local remotes = require("@ui-state/remotes")
 local responsiveScale = require("@ui/responsiveScale")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local L = BitKaisenLocale.getClientLocale()
+local function _cc(key, fallback) return BitKaisenLocale.tOrFallback(L, "customization." .. key, nil, fallback) end
 
 local player = Players.LocalPlayer
 
@@ -647,7 +651,7 @@ local function createLockedPill(parent)
 	pill.Name = "LockedPill"
 	pill.BackgroundColor3 = Color3.fromRGB(54, 40, 28)
 	pill.BorderSizePixel = 0
-	pill.Text = "GOD MODE"
+	pill.Text = _cc("god_mode_pill", "GOD MODE")
 	pill.TextColor3 = THEME.Gold
 	pill.TextSize = 9
 	pill.Font = Enum.Font.GothamBlack
@@ -921,28 +925,28 @@ function refreshPage()
 	if not titleLabel or not subtitleLabel then return end
 
 	if currentPage == 1 then
-		titleLabel.Text = "CREATE CHARACTER"
-		pageLabel.Text = "Page 1/2 • Identity"
+		titleLabel.Text = _cc("create_title", "CREATE CHARACTER")
+		pageLabel.Text = _cc("page1_sub", "Page 1/2  •  Identity")
 		subtitleLabel.Text = "Choose your identity for this life. Clan, cursed technique, and birth origin are still rolled by the game."
 		leftTitleLabel.Text = "Birth Profile"
 		leftHintLabel.Text = "First Name"
-		randomizeButton.Text = "RANDOMIZE"
+		randomizeButton.Text = _cc("btn_randomize", "RANDOMIZE")
 		backButton.Visible = false
-		continueButton.Text = "CONTINUE"
+		continueButton.Text = _cc("btn_continue", "CONTINUE")
 
 		if nameBox then
 			nameBox.Visible = true
 			nameBox.Text = tostring(state.FirstName or DEFAULTS.FirstName)
 		end
 	else
-		titleLabel.Text = "BIRTH PATH"
-		pageLabel.Text = "Page 2/2 • Circumstances"
+		titleLabel.Text = _cc("birth_title", "BIRTH PATH")
+		pageLabel.Text = _cc("page2_sub", "Page 2/2  •  Circumstances")
 		subtitleLabel.Text = "Era and upbringing are free. God Mode unlocks advanced birth options."
 		leftTitleLabel.Text = "Life Foundation"
 		leftHintLabel.Text = "Profile Summary"
-		randomizeButton.Text = "RANDOMIZE PATH"
+		randomizeButton.Text = _cc("btn_random", "RANDOMIZE PATH")
 		backButton.Visible = true
-		continueButton.Text = "FINISH"
+		continueButton.Text = _cc("btn_finish", "FINISH")
 
 		if nameBox then
 			nameBox.Visible = false
@@ -1269,7 +1273,7 @@ function buildUI()
 		refreshPage()
 	end)
 
-	backButton = makeButton(bottomBar, "BackButton", "BACK", THEME.Button)
+	backButton = makeButton(bottomBar, "BackButton", BitKaisenLocale.t(L, "ui.back"), THEME.Button)
 	backButton.Size = UDim2.new(0, 104, 0, 36)
 	backButton.Position = UDim2.new(1, -280, 0, 18)
 	backButton.Visible = false
@@ -1296,7 +1300,7 @@ function buildUI()
 			end
 
 			if tostring(state.FirstName or "") == "" then
-				setStatusMessage("Enter a first name before continuing.", true)
+				setStatusMessage(_cc("err_name", "Enter a first name before continuing."), true)
 				return
 			end
 
@@ -1321,7 +1325,7 @@ function buildUI()
 		local identity = lockedIdentityState or state
 
 		submitting = true
-		continueButton.Text = "SAVING..."
+		continueButton.Text = _cc("btn_saving", "SAVING...")
 
 		local payload = {
 			FirstName = identity.FirstName,
@@ -1349,7 +1353,7 @@ function buildUI()
 		local submitRemote = remotes.submitCharacterCustomization()
 		if not submitRemote then
 			submitting = false
-			continueButton.Text = "FINISH"
+			continueButton.Text = _cc("btn_finish", "FINISH")
 			setStatusMessage("Submit remote not available.", true)
 			return
 		end
@@ -1361,7 +1365,7 @@ function buildUI()
 		submitting = false
 
 		if ok and typeof(result) == "table" and result.Success == true then
-			continueButton.Text = "SAVED"
+			continueButton.Text = _cc("btn_saved", "SAVED")
 
 			task.delay(0.15, function()
 				if overlay then
@@ -1394,7 +1398,7 @@ function buildUI()
 				message = "Name rejected. Choose a different first name."
 			end
 
-			continueButton.Text = "FINISH"
+			continueButton.Text = _cc("btn_finish", "FINISH")
 			setStatusMessage(message, true)
 		end
 	end)

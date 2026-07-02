@@ -10,6 +10,9 @@ local player = Players.LocalPlayer
 
 local mobileComponents = require(script.Parent.Parent.mobileComponents)
 local overlayManager = require(script.Parent.Parent.Parent.state.overlayManager)
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _cb(key, fallback) return BitKaisenLocale.tOrFallback(_L, "combat." .. key, nil, fallback) end
 local uiState = require(script.Parent.Parent.Parent.state.uiState)
 local theme = mobileComponents.theme
 local corner = mobileComponents.corner
@@ -178,7 +181,7 @@ local function init(playerGui: Instance)
 	local titleLabel = Instance.new("TextLabel")
 	titleLabel.Size = UDim2.new(1, -50, 1, 0)
 	titleLabel.BackgroundTransparency = 1
-	titleLabel.Text = "COMBAT"
+	titleLabel.Text = _cb("title", "COMBAT")
 	titleLabel.TextColor3 = theme.Gold
 	titleLabel.TextSize = 20
 	titleLabel.Font = Enum.Font.GothamBlack
@@ -195,7 +198,7 @@ local function init(playerGui: Instance)
 
 	local enemyNameLabel = mobileLabel({
 		parent = enemyCard,
-		text = "Enemy",
+		text = _cb("enemy_label", "Enemy"),
 		size = 17,
 		font = Enum.Font.GothamBlack,
 		color = theme.Text,
@@ -204,7 +207,7 @@ local function init(playerGui: Instance)
 
 	local enemyInfo = mobileLabel({
 		parent = enemyCard,
-		text = "Grade",
+		text = _cb("enemy_label", "Enemy"),
 		size = 13,
 		color = theme.SubText,
 		order = 2,
@@ -242,7 +245,7 @@ local function init(playerGui: Instance)
 	local hpLabel = Instance.new("TextLabel")
 	hpLabel.Size = UDim2.new(0, 80, 1, 0)
 	hpLabel.BackgroundTransparency = 1
-	hpLabel.Text = "Health"
+	hpLabel.Text = _cb("bar_hp", "HP")
 	hpLabel.TextColor3 = theme.Green
 	hpLabel.TextSize = 14
 	hpLabel.Font = Enum.Font.GothamBold
@@ -273,7 +276,7 @@ local function init(playerGui: Instance)
 	local ceLabel = Instance.new("TextLabel")
 	ceLabel.Size = UDim2.new(0, 80, 1, 0)
 	ceLabel.BackgroundTransparency = 1
-	ceLabel.Text = "CE"
+	ceLabel.Text = _cb("bar_ce", "CE")
 	ceLabel.TextColor3 = theme.Blue
 	ceLabel.TextSize = 14
 	ceLabel.Font = Enum.Font.GothamBold
@@ -324,14 +327,14 @@ local function init(playerGui: Instance)
 		return btn
 	end
 
-	local attackButton = makeActionButton("ATTACK", Color3.fromRGB(119, 43, 53), 1)
-	local techniqueButton = makeActionButton("TECHNIQUE", Color3.fromRGB(73, 52, 126), 2)
-	local domainButton = makeActionButton("DOMAIN", Color3.fromRGB(91, 58, 145), 3)
-	local defendButton = makeActionButton("DEFEND", Color3.fromRGB(48, 91, 112), 4)
-	local fleeButton = makeActionButton("FLEE", Color3.fromRGB(64, 64, 75), 5)
-	local resetButton = makeActionButton("RESET", Color3.fromRGB(90, 61, 31), 6)
+	local attackButton = makeActionButton(_cb("btn_attack", "ATTACK"), Color3.fromRGB(119, 43, 53), 1)
+	local techniqueButton = makeActionButton(_cb("btn_technique", "TECHNIQUE"), Color3.fromRGB(73, 52, 126), 2)
+	local domainButton = makeActionButton(_cb("btn_domain", "DOMAIN"), Color3.fromRGB(91, 58, 145), 3)
+	local defendButton = makeActionButton(_cb("btn_defend", "DEFEND"), Color3.fromRGB(48, 91, 112), 4)
+	local fleeButton = makeActionButton(_cb("btn_flee", "FLEE"), Color3.fromRGB(64, 64, 75), 5)
+	local resetButton = makeActionButton(_cb("btn_reset", "RESET"), Color3.fromRGB(90, 61, 31), 6)
 	resetButton.Visible = false
-	local blackFlashButton = makeActionButton("B.FLASH", Color3.fromRGB(48, 28, 90), 7)
+	local blackFlashButton = makeActionButton(_cb("btn_bflash", "B.FLASH"), Color3.fromRGB(48, 28, 90), 7)
 	blackFlashButton.Visible = false
 
 	-- Combat log
@@ -455,8 +458,8 @@ local function init(playerGui: Instance)
 			Size = UDim2.new(ceRatio, 0, 1, 0),
 		}):Play()
 
-		hpLabel.Text = "HP " .. tostring(math.floor(tonumber(state.PlayerHP) or 0))
-		ceLabel.Text = "CE " .. tostring(math.floor(tonumber(state.PlayerCE) or 0))
+		hpLabel.Text = _cb("bar_hp", "HP") .. " " .. tostring(math.floor(tonumber(state.PlayerHP) or 0))
+		ceLabel.Text = _cb("bar_ce", "CE") .. " " .. tostring(math.floor(tonumber(state.PlayerCE) or 0))
 	end
 
 	local function destroyMinigame()
@@ -494,7 +497,7 @@ local function init(playerGui: Instance)
 		caption.Size = UDim2.new(1, -24, 0, 32)
 		caption.Position = UDim2.new(0, 12, 0, 14)
 		caption.BackgroundTransparency = 1
-		caption.Text = payload.IsBlackFlash and "BLACK FLASH" or (payload.IsTechnique and "TECHNIQUE TIMING" or "ATTACK TIMING")
+		caption.Text = payload.IsBlackFlash and _cb("minigame_bflash", "BLACK FLASH") or (payload.IsTechnique and _cb("minigame_tech", "TECHNIQUE TIMING") or _cb("minigame_attack", "ATTACK TIMING"))
 		caption.TextColor3 = payload.IsBlackFlash and theme.Purple or theme.Gold
 		caption.TextSize = 17
 		caption.Font = Enum.Font.GothamBlack
@@ -564,7 +567,7 @@ local function init(playerGui: Instance)
 		stop.Position = UDim2.new(0.5, 0, 0, 320)
 		stop.Size = UDim2.new(0.7, 0, 0, 52)
 		stop.BackgroundColor3 = theme.Purple
-		stop.Text = "HIT!"
+		stop.Text = _cb("btn_hit", "HIT!")
 		stop.TextColor3 = theme.Text
 		stop.TextSize = 18
 		stop.Font = Enum.Font.GothamBlack
@@ -614,12 +617,12 @@ local function init(playerGui: Instance)
 			local success = isSweet or accuracy >= 0.7
 			if isSweet then
 				playCombatSound(combatSounds.Critical)
-				popEnemyText("CRITICAL", theme.Gold, true)
+				popEnemyText(_cb("pop_critical", "CRITICAL"), theme.Gold, true)
 			elseif success then
 				playHitSound()
-				popEnemyText("HIT", theme.Green, false)
+				popEnemyText(_cb("pop_hit", "HIT"), theme.Green, false)
 			else
-				popEnemyText("MISS", theme.Bad, false)
+				popEnemyText(_cb("pop_miss", "MISS"), theme.Bad, false)
 			end
 			pulseFeedback(root, success and theme.Green or theme.Bad)
 			shakeGui(panel)
@@ -664,7 +667,7 @@ local function init(playerGui: Instance)
 		warning.Position = UDim2.new(0.5, 0, 0.14, 0)
 		warning.Size = UDim2.new(0.9, 0, 0, 56)
 		warning.BackgroundTransparency = 1
-		warning.Text = tostring(payload.Warning or "Incoming attack! Tap to dodge!")
+		warning.Text = tostring(payload.Warning or _cb("dodge_warning", "Incoming attack! Tap to dodge!"))
 		warning.TextColor3 = theme.Gold
 		warning.TextSize = 18
 		warning.Font = Enum.Font.GothamBlack
@@ -712,7 +715,7 @@ local function init(playerGui: Instance)
 			button.Position = UDim2.new(0.5, math.random(-60, 60), 0.52, math.random(-40, 40))
 			button.Size = UDim2.new(0, 120, 0, 120)
 			button.BackgroundColor3 = theme.Blue
-			button.Text = "DODGE"
+			button.Text = _cb("btn_dodge", "DODGE")
 			button.TextColor3 = theme.Text
 			button.TextSize = 18
 			button.Font = Enum.Font.GothamBlack
@@ -729,12 +732,12 @@ local function init(playerGui: Instance)
 				if success then
 					goodHits += 1
 					playCombatSound(combatSounds.Dodge)
-					popPlayerText("DODGE", theme.Green, false)
+					popPlayerText(_cb("pop_dodge", "DODGE"), theme.Green, false)
 					if elapsed <= windowSeconds * 0.38 then
 						perfectHits += 1
 					end
 				else
-					popPlayerText("MISS", theme.Bad, false)
+					popPlayerText(_cb("pop_miss", "MISS"), theme.Bad, false)
 				end
 				pulseFeedback(root, success and theme.Green or theme.Bad)
 				shakeGui(button)
@@ -743,7 +746,7 @@ local function init(playerGui: Instance)
 			end)
 			task.delay(windowSeconds, function()
 				if not finished and hitId == activeHitId and button and button.Parent then
-					popPlayerText("MISS", theme.Bad, false)
+					popPlayerText(_cb("pop_miss", "MISS"), theme.Bad, false)
 					pulseFeedback(root, theme.Bad)
 					activeHitId += 1
 					task.delay(0.08, nextHit)
@@ -772,7 +775,7 @@ local function init(playerGui: Instance)
 		button.Position = UDim2.new(0.5, 0, 0.5, 0)
 		button.Size = UDim2.new(0, 180, 0, 90)
 		button.BackgroundColor3 = theme.Bad
-		button.Text = "COUNTER!"
+		button.Text = _cb("btn_counter", "COUNTER!")
 		button.TextColor3 = theme.Text
 		button.TextSize = 22
 		button.Font = Enum.Font.GothamBlack
@@ -811,7 +814,7 @@ local function init(playerGui: Instance)
 			clicked = true
 			pulseAlive = false
 			playHitSound()
-			popEnemyText("COUNTER", theme.Green, false)
+			popEnemyText(_cb("pop_counter", "COUNTER"), theme.Green, false)
 			pulseFeedback(root, theme.Green)
 			shakeGui(button)
 			combatMinigameResult:FireServer(payload.Token, "counter", 1, {})
@@ -821,7 +824,7 @@ local function init(playerGui: Instance)
 		task.delay(tonumber(payload.Window) or 1.3, function()
 			if activeMinigame and activeMinigame.Root == root then
 				pulseAlive = false
-				popPlayerText("MISS", theme.Bad, false)
+				popPlayerText(_cb("pop_miss", "MISS"), theme.Bad, false)
 				pulseFeedback(root, theme.Bad)
 				combatMinigameResult:FireServer(payload.Token, "counter", 0, {})
 				task.delay(0.2, destroyMinigame)
@@ -849,10 +852,11 @@ local function init(playerGui: Instance)
 		corner(popup, 14)
 		stroke(popup, winner == "player" and theme.Gold or winner == "enemy" and theme.Bad or theme.Green, 2)
 
-		local resultTitle = winner == "player" and "VICTORY" or winner == "enemy" and "DEFEAT" or "ESCAPED"
-		local resultSub = winner == "player" and ("You defeated " .. tostring(enemyDisplayName or "the enemy") .. ".")
-			or winner == "enemy" and ("You were defeated by " .. tostring(enemyDisplayName or "the enemy") .. ".")
-			or "You escaped the fight."
+		local resultTitle = winner == "player" and _cb("result_victory", "VICTORY") or winner == "enemy" and _cb("result_defeat", "DEFEAT") or _cb("result_escaped", "ESCAPED")
+		local enemyStr = tostring(enemyDisplayName or _cb("enemy_label", "Enemy"))
+		local resultSub = winner == "player" and (_cb("you_defeated", "You defeated {enemy}."):gsub("{enemy}", enemyStr))
+			or winner == "enemy" and (_cb("you_lost", "You were defeated by {enemy}."):gsub("{enemy}", enemyStr))
+			or _cb("you_escaped", "You escaped the fight.")
 
 		local titleLbl = Instance.new("TextLabel")
 		titleLbl.Size = UDim2.new(1, -32, 0, 42)
@@ -911,7 +915,10 @@ local function init(playerGui: Instance)
 		end
 
 		enemyNameLabel.Text = tostring(state.EnemyName or "Enemy")
-		enemyInfo.Text = tostring(state.EnemyGrade or "Unknown") .. " | " .. tostring(state.EnemyKind or "Enemy") .. " | Round " .. tostring(state.Round or 1)
+		enemyInfo.Text = _cb("enemy_info", "{grade} | {kind} | Round {round}")
+			:gsub("{grade}", tostring(state.EnemyGrade or "Unknown"))
+			:gsub("{kind}", tostring(state.EnemyKind or _cb("enemy_label", "Enemy")))
+			:gsub("{round}", tostring(state.Round or 1))
 		updateBars()
 		refreshLog(state.Log)
 
@@ -948,12 +955,12 @@ local function init(playerGui: Instance)
 		local techniqueUses = tonumber(state.TechniqueUses) or 0
 		local techniqueMaxUses = tonumber(state.TechniqueMaxUses) or 3
 		local techniqueRemaining = math.max(0, techniqueMaxUses - techniqueUses)
-		techniqueButton.Text = "TECH " .. tostring(techniqueRemaining) .. "/" .. tostring(techniqueMaxUses)
+		techniqueButton.Text = _cb("tech_count", "TECH {r}/{m}"):gsub("{r}", techniqueRemaining):gsub("{m}", techniqueMaxUses)
 
 		local domain = state.Domain or {}
 		local domainCost = tonumber(domain.Cost) or 0
 		local domainReady = domain.Unlocked == true and (tonumber(state.PlayerCE) or 0) >= domainCost
-		domainButton.Text = domain.Unlocked == true and ("DOMAIN " .. tostring(domainCost)) or "DOMAIN"
+		domainButton.Text = domain.Unlocked == true and (_cb("domain_unlocked", "DOMAIN {cost}"):gsub("{cost}", domainCost)) or _cb("domain_locked", "DOMAIN")
 
 		setButtonEnabled(attackButton, playerTurn)
 		setButtonEnabled(techniqueButton, playerTurn and techniqueRemaining > 0 and (tonumber(state.PlayerCE) or 0) >= (tonumber(state.TechniqueCECost) or 0))
@@ -962,7 +969,7 @@ local function init(playerGui: Instance)
 		setButtonEnabled(fleeButton, playerTurn)
 		local bfCost = tonumber(state.BlackFlashCECost) or 35
 		local bfReady = playerTurn and (tonumber(state.PlayerCE) or 0) >= bfCost
-		blackFlashButton.Text = "B.FLASH " .. tostring(bfCost)
+		blackFlashButton.Text = _cb("bflash_count", "B.FLASH {cost}"):gsub("{cost}", bfCost)
 		blackFlashButton.Visible = not defeated
 		setButtonEnabled(blackFlashButton, bfReady)
 		resetButton.Visible = defeated
@@ -1036,7 +1043,7 @@ local function init(playerGui: Instance)
 			MarketplaceService:PromptProductPurchase(player, productId)
 		else
 			resetButton.Text = "SET ID"
-			task.delay(1, function() resetButton.Text = "RESET" end)
+			task.delay(1, function() resetButton.Text = _cb("btn_reset", "RESET") end)
 		end
 	end)
 

@@ -3,6 +3,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local uiState = require("@ui-state/uiState")
 local responsiveScale = require("@ui/responsiveScale")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _ment(key, fallback) return BitKaisenLocale.tOrFallback(_L, "mentor." .. key, nil, fallback) end
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -69,7 +72,7 @@ titleLabel.BackgroundTransparency = 1
 titleLabel.Font = Enum.Font.GothamBlack
 titleLabel.TextSize = 22
 titleLabel.TextColor3 = THEME.Text
-titleLabel.Text = "JUJUTSU MENTOR"
+titleLabel.Text = _ment("title", "JUJUTSU MENTOR")
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.ZIndex = 628
 titleLabel.Parent = panel

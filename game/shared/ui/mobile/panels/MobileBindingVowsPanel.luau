@@ -3,6 +3,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local uiState = require("@ui-state/uiState")
 local mc = require("@ui/mobile/mobileComponents")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _v(key, fallback) return BitKaisenLocale.tOrFallback(_L, "vows." .. key, nil, fallback) end
 
 local theme = mc.theme
 local bindTap = mc.bindTap
@@ -141,17 +144,18 @@ end
 
 local function getStatLine(): string
 	if typeof(currentStats) ~= "table" then
-		return "No active life loaded."
+		return _v("no_life", "No active life loaded.")
 	end
 	local age = safeNumber(currentStats.Age, 0)
 	local month = tostring(currentStats.CurrentMonthName or currentStats.CurrentMonth or "")
 	local grade = tostring(currentStats.Grade or "Non-Sorcerer")
 	local ce = safeNumber(currentStats.CursedEnergy, 0)
 	local mastery = safeNumber(currentStats.TechniqueMastery, 0)
+	local ageLabel = _v("age_label", "Age")
 	if month ~= "" then
-		return "Age " .. tostring(age) .. " \u{2022} " .. month .. "\n" .. grade .. " \u{2022} CE " .. tostring(ce) .. " \u{2022} Mastery " .. tostring(mastery)
+		return ageLabel .. " " .. tostring(age) .. " \u{2022} " .. month .. "\n" .. grade .. " \u{2022} CE " .. tostring(ce) .. " \u{2022} Mastery " .. tostring(mastery)
 	end
-	return "Age " .. tostring(age) .. " \u{2022} " .. grade .. "\nCE " .. tostring(ce) .. " \u{2022} Mastery " .. tostring(mastery)
+	return ageLabel .. " " .. tostring(age) .. " \u{2022} " .. grade .. "\nCE " .. tostring(ce) .. " \u{2022} Mastery " .. tostring(mastery)
 end
 
 local function getCustomOptions()
@@ -302,7 +306,7 @@ local function makeInfoCard(order: number)
 	local card = mc.mobileCard({ parent = scroll, order = order })
 	mc.mobileLabel({
 		parent = card,
-		text = "CURRENT LIFE",
+		text = _v("current_life", "CURRENT LIFE"),
 		size = 12,
 		color = theme.Gold,
 		font = Enum.Font.GothamBlack,
@@ -322,7 +326,7 @@ local function makeSelectorRow(parent: Frame, sectionNum: number, title: string,
 
 	mc.mobileLabel({
 		parent = card,
-		text = "Section " .. tostring(sectionNum) .. ": " .. title,
+		text = _v("section_label", "Section ") .. tostring(sectionNum) .. ": " .. title,
 		size = 12,
 		color = theme.Gold,
 		font = Enum.Font.GothamBlack,
@@ -399,7 +403,7 @@ local function makePreviewCard(sacrifice: any, reward: any, severity: any, power
 
 	mc.mobileLabel({
 		parent = card,
-		text = "PREVIEW",
+		text = _v("preview_label", "PREVIEW"),
 		size = 12,
 		color = theme.Gold,
 		font = Enum.Font.GothamBlack,
@@ -417,7 +421,7 @@ local function makePreviewCard(sacrifice: any, reward: any, severity: any, power
 
 	mc.mobileLabel({
 		parent = card,
-		text = if invalidSameStat then "This contract cancels itself out. Choose a different reward or sacrifice." else statement,
+		text = if invalidSameStat then _v("invalid_contract", "This contract cancels itself out. Choose a different reward or sacrifice.") else statement,
 		size = 13,
 		color = if invalidSameStat then theme.Bad else theme.Text,
 		order = 3,
@@ -425,7 +429,7 @@ local function makePreviewCard(sacrifice: any, reward: any, severity: any, power
 
 	mc.mobileLabel({
 		parent = card,
-		text = "Cost: " .. costText,
+		text = _v("cost_label", "Cost: ") .. costText,
 		size = 13,
 		color = theme.Bad,
 		order = 4,
@@ -433,7 +437,7 @@ local function makePreviewCard(sacrifice: any, reward: any, severity: any, power
 
 	mc.mobileLabel({
 		parent = card,
-		text = "Gain: " .. gainText,
+		text = _v("gain_label", "Gain: ") .. gainText,
 		size = 13,
 		color = theme.Green,
 		order = 5,
@@ -441,7 +445,7 @@ local function makePreviewCard(sacrifice: any, reward: any, severity: any, power
 
 	mc.mobileLabel({
 		parent = card,
-		text = "Req: " .. (if invalidSameStat then "Sacrifice and reward cannot be the same stat." else tostring(severity.RequirementText or "No requirement.")),
+		text = _v("req_label", "Req: ") .. (if invalidSameStat then _v("cannot_sign", "Sacrifice and reward cannot be the same stat.") else tostring(severity.RequirementText or "No requirement.")),
 		size = 12,
 		color = if invalidSameStat then theme.Bad else theme.SubText,
 		order = 6,
@@ -449,7 +453,7 @@ local function makePreviewCard(sacrifice: any, reward: any, severity: any, power
 
 	mc.mobileLabel({
 		parent = card,
-		text = "Penalty if broken: " .. penaltyText,
+		text = _v("penalty_label", "Penalty if broken: ") .. penaltyText,
 		size = 11,
 		color = theme.Bad,
 		font = Enum.Font.GothamBold,
@@ -459,7 +463,7 @@ local function makePreviewCard(sacrifice: any, reward: any, severity: any, power
 	if not invalidSameStat then
 		mc.mobileButton({
 			parent = card,
-			text = if pendingSignCustom then "CONFIRM SIGNATURE" else "SIGN CONTRACT",
+			text = if pendingSignCustom then _v("sign_confirm", "CONFIRM SIGNATURE") else _v("sign_btn", "SIGN CONTRACT"),
 			size = UDim2.new(1, 0, 0, 46),
 			color = if pendingSignCustom then theme.Red else theme.Purple,
 			textSize = 14,
@@ -484,7 +488,7 @@ local function makePreviewCard(sacrifice: any, reward: any, severity: any, power
 	else
 		mc.mobileLabel({
 			parent = card,
-			text = "Cannot sign — sacrifice and reward target the same stat.",
+			text = _v("cannot_sign", "Cannot sign — sacrifice and reward target the same stat."),
 			size = 12,
 			color = theme.Bad,
 			font = Enum.Font.GothamBold,
@@ -534,7 +538,7 @@ local function makeCustomTab()
 	local power = getPowerFromSeverity(severity)
 	local invalidSameStat = MATCHING_REWARD_BY_SACRIFICE[tostring(sacrifice.Id or "")] == tostring(reward.Id or "")
 
-	makeSelectorRow(scroll, 1, "What do you sacrifice?",
+	makeSelectorRow(scroll, 1, _v("sec1_title", "What do you sacrifice?"),
 		tostring(sacrifice.Name or "Unknown"),
 		tostring(sacrifice.Line or "Choose what the vow takes from you."),
 		function()
@@ -550,7 +554,7 @@ local function makeCustomTab()
 		10
 	)
 
-	makeSelectorRow(scroll, 2, "What do you gain?",
+	makeSelectorRow(scroll, 2, _v("sec2_title", "What do you gain?"),
 		tostring(reward.Name or "Unknown"),
 		tostring(reward.Line or "Choose what the vow gives you."),
 		function()
@@ -566,7 +570,7 @@ local function makeCustomTab()
 		11
 	)
 
-	makeSelectorRow(scroll, 3, "How strict is the vow?",
+	makeSelectorRow(scroll, 3, _v("sec3_title", "How strict is the vow?"),
 		tostring(severity.Name or "Unknown"),
 		tostring(severity.RequirementText or "No requirement listed."),
 		function()
@@ -594,7 +598,7 @@ local function makeCustomTab()
 	sectionHeader.Parent = scroll
 	mc.mobileLabel({
 		parent = sectionHeader,
-		text = "SIGNED CUSTOM CONTRACTS",
+		text = _v("custom_header", "SIGNED CUSTOM CONTRACTS"),
 		size = 14,
 		color = theme.Gold,
 		font = Enum.Font.GothamBlack,
@@ -605,7 +609,7 @@ local function makeCustomTab()
 		local card = mc.mobileCard({ parent = scroll, order = 51 })
 		mc.mobileLabel({
 			parent = card,
-			text = "No custom vows signed yet. Draft a contract above to create one.",
+			text = _v("no_custom", "No custom vows signed yet. Draft a contract above to create one."),
 			size = 13,
 			color = theme.Muted,
 		})
@@ -630,7 +634,7 @@ local function makeCustomTab()
 
 		mc.mobileLabel({
 			parent = card,
-			text = if owned then "ACTIVE" elseif broken then "BROKEN" else "SIGNED",
+			text = if owned then _v("state_active", "ACTIVE") elseif broken then _v("state_broken", "BROKEN") else _v("state_signed", "SIGNED"),
 			size = 11,
 			color = if owned then theme.Green elseif broken then theme.Bad else theme.Muted,
 			font = Enum.Font.GothamBold,
@@ -647,7 +651,7 @@ local function makeCustomTab()
 
 		mc.mobileLabel({
 			parent = card,
-			text = "Cost: " .. tostring(vow.CostText or "Unknown"),
+			text = _v("cost_label", "Cost: ") .. tostring(vow.CostText or "Unknown"),
 			size = 12,
 			color = theme.Bad,
 			order = 4,
@@ -655,7 +659,7 @@ local function makeCustomTab()
 
 		mc.mobileLabel({
 			parent = card,
-			text = "Gain: " .. tostring(vow.BonusText or "Unknown"),
+			text = _v("gain_label", "Gain: ") .. tostring(vow.BonusText or "Unknown"),
 			size = 12,
 			color = theme.Green,
 			order = 5,
@@ -665,7 +669,7 @@ local function makeCustomTab()
 			local isPending = pendingBreakCustomId == vow.Id
 			mc.mobileButton({
 				parent = card,
-				text = if isPending then "CONFIRM BREAK" else "BREAK VOW",
+				text = if isPending then _v("break_confirm", "CONFIRM BREAK") else _v("break_btn", "BREAK VOW"),
 				size = UDim2.new(1, 0, 0, 44),
 				color = theme.Red,
 				textSize = 14,
@@ -697,7 +701,7 @@ local function makeCustomTab()
 		elseif broken then
 			mc.mobileLabel({
 				parent = card,
-				text = "Broken for this life.",
+				text = _v("broken_line", "Broken for this life."),
 				size = 12,
 				color = theme.Bad,
 				font = Enum.Font.GothamBold,
@@ -717,7 +721,7 @@ local function makePresetTab()
 	sectionHeader.Parent = scroll
 	mc.mobileLabel({
 		parent = sectionHeader,
-		text = "PRESET BINDING VOWS",
+		text = _v("preset_header", "PRESET BINDING VOWS"),
 		size = 14,
 		color = theme.Gold,
 		font = Enum.Font.GothamBlack,
@@ -728,7 +732,7 @@ local function makePresetTab()
 		local card = mc.mobileCard({ parent = scroll, order = 11 })
 		mc.mobileLabel({
 			parent = card,
-			text = "No preset Binding Vows are available yet.",
+			text = _v("no_presets", "No preset Binding Vows are available yet."),
 			size = 13,
 			color = theme.Muted,
 		})
@@ -752,7 +756,7 @@ local function makePresetTab()
 			order = 1,
 		})
 
-		local stateText = if owned then "ACTIVE" elseif broken then "BROKEN" elseif canMake then "AVAILABLE" else "LOCKED"
+		local stateText = if owned then _v("state_active", "ACTIVE") elseif broken then _v("state_broken", "BROKEN") elseif canMake then _v("state_available", "AVAILABLE") else _v("state_locked", "LOCKED")
 		local stateColor = if owned then theme.Green elseif broken then theme.Bad elseif canMake then theme.Purple else theme.Muted
 
 		mc.mobileLabel({
@@ -783,7 +787,7 @@ local function makePresetTab()
 
 		mc.mobileLabel({
 			parent = card,
-			text = "Cost: " .. tostring(vow.CostText or "Unknown"),
+			text = _v("cost_label", "Cost: ") .. tostring(vow.CostText or "Unknown"),
 			size = 12,
 			color = theme.Bad,
 			order = 5,
@@ -791,7 +795,7 @@ local function makePresetTab()
 
 		mc.mobileLabel({
 			parent = card,
-			text = "Gain: " .. tostring(vow.BonusText or "Unknown"),
+			text = _v("gain_label", "Gain: ") .. tostring(vow.BonusText or "Unknown"),
 			size = 12,
 			color = theme.Green,
 			order = 6,
@@ -801,7 +805,7 @@ local function makePresetTab()
 			local isPending = pendingBreakPresetId == vow.Id
 			mc.mobileButton({
 				parent = card,
-				text = if isPending then "CONFIRM BREAK" else "BREAK VOW",
+				text = if isPending then _v("break_confirm", "CONFIRM BREAK") else _v("break_btn", "BREAK VOW"),
 				size = UDim2.new(1, 0, 0, 44),
 				color = theme.Red,
 				textSize = 14,
@@ -832,7 +836,7 @@ local function makePresetTab()
 			else
 				mc.mobileLabel({
 					parent = card,
-					text = "Active. Breaking this vow causes backlash.",
+					text = _v("active_warning", "Active. Breaking this vow causes backlash."),
 					size = 11,
 					color = theme.Gold,
 					font = Enum.Font.GothamBold,
@@ -842,7 +846,7 @@ local function makePresetTab()
 		elseif broken then
 			mc.mobileLabel({
 				parent = card,
-				text = "Broken for this life.",
+				text = _v("broken_line", "Broken for this life."),
 				size = 12,
 				color = theme.Bad,
 				font = Enum.Font.GothamBold,
@@ -852,7 +856,7 @@ local function makePresetTab()
 			local isPending = pendingMakePresetId == vow.Id
 			mc.mobileButton({
 				parent = card,
-				text = if isPending then "CONFIRM VOW" else "MAKE VOW",
+				text = if isPending then _v("make_confirm", "CONFIRM VOW") else _v("make_btn", "MAKE VOW"),
 				size = UDim2.new(1, 0, 0, 44),
 				color = if isPending then theme.Red else theme.Purple,
 				textSize = 14,
@@ -874,7 +878,7 @@ local function makePresetTab()
 			if isPending then
 				mc.mobileLabel({
 					parent = card,
-					text = "Tap again to sign. This is permanent unless broken.",
+					text = _v("confirm_hint", "Tap again to sign. This is permanent unless broken."),
 					size = 11,
 					color = theme.Gold,
 					font = Enum.Font.GothamBold,

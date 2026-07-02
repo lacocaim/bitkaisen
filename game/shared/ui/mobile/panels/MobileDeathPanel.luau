@@ -6,6 +6,9 @@ local MarketplaceService = game:GetService("MarketplaceService")
 local mc = require("@ui/mobile/mobileComponents")
 local theme = mc.theme
 local bindTap = mc.bindTap
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _dt(key, fallback) return BitKaisenLocale.tOrFallback(_L, "death." .. key, nil, fallback) end
 
 local player = Players.LocalPlayer
 
@@ -51,27 +54,33 @@ local function buildBiography(stats)
 
 	local clanLine = ""
 	if stats.ClanFounded then
-		clanLine = "\n\nThey founded the <b>" .. tostring(stats.PlayerClanName or "Unnamed Clan") .. "</b>, leaving behind a name that other sorcerers would remember."
+		local clanName = tostring(stats.PlayerClanName or "Unnamed Clan")
+		clanLine = BitKaisenLocale.tOrFallback(_L, "death.bio_clan_founded", nil,
+			"\n\nThey founded the <b>{clan}</b>, leaving behind a name that other sorcerers would remember.")
+			:gsub("{clan}", clanName)
 	end
 
 	local techniqueLine = ""
 	if technique ~= "None" then
-		techniqueLine = " They awakened <b>" .. technique .. "</b>."
+		techniqueLine = BitKaisenLocale.tOrFallback(_L, "death.bio_technique", nil, " They awakened <b>{technique}</b>.")
+			:gsub("{technique}", technique)
 	else
-		techniqueLine = " No recognized cursed technique was awakened."
+		techniqueLine = _dt("bio_no_technique", " No recognized cursed technique was awakened.")
 	end
 
 	local generationLine = ""
 	if stats.Generation and stats.Generation > 1 then
-		generationLine = "\n\n<b>" .. generation .. getOrdinalSuffix(stats.Generation) .. " generation</b> of the bloodline."
+		local genStr = generation .. getOrdinalSuffix(stats.Generation)
+		generationLine = BitKaisenLocale.tOrFallback(_L, "death.bio_generation", nil, "\n\n<b>{gen} generation</b> of the bloodline.")
+			:gsub("{gen}", genStr)
 	end
 
-	return "<b>" .. name .. "</b> of the <b>" .. family .. " Family</b> lived for <b>" .. age .. " years</b>.\n\n"
-		.. "Born from <b>" .. origin .. "</b>, reached <b>" .. grade .. "</b>."
-		.. techniqueLine
-		.. "\n\nMissions: <b>" .. missionsCompleted .. "</b>  •  Reputation: <b>" .. reputation .. "</b>"
-		.. clanLine
-		.. generationLine
+	local mainText = BitKaisenLocale.tOrFallback(_L, "death.bio_main", nil,
+		"<b>{name}</b> of the <b>Family {family}</b> lived <b>{age} years</b>.\n\nBorn from <b>{origin}</b>, reached <b>{grade}</b>.{technique}\n\nMissions: <b>{missions}</b>  •  Reputation: <b>{rep}</b>")
+		:gsub("{name}", name):gsub("{family}", family):gsub("{age}", age):gsub("{origin}", origin)
+		:gsub("{grade}", grade):gsub("{technique}", techniqueLine):gsub("{missions}", missionsCompleted):gsub("{rep}", reputation)
+
+	return mainText .. clanLine .. generationLine
 end
 
 local function getRibbon(stats)
@@ -88,39 +97,39 @@ local function getRibbon(stats)
 	local founded = stats.ClanFounded == true
 
 	if hasSpecialGrade and hasDomain and age >= 50 then
-		return "🏆 LEGEND OF THE CURSED WORLD", Color3.fromRGB(255, 200, 50)
+		return _dt("ribbon_legend", "🏆 LEGEND OF THE CURSED WORLD"), Color3.fromRGB(255, 200, 50)
 	elseif hasSpecialGrade and hasDomain then
-		return "👑 SPECIAL GRADE SORCERER", Color3.fromRGB(220, 160, 255)
+		return _dt("ribbon_special", "👑 SPECIAL GRADE SORCERER"), Color3.fromRGB(220, 160, 255)
 	elseif isCurseUser and grade == "Special Grade" then
-		return "☠️ CURSE USER KING", Color3.fromRGB(200, 60, 80)
+		return _dt("ribbon_curse_king", "☠️ CURSE USER KING"), Color3.fromRGB(200, 60, 80)
 	elseif isCurseUser and rep < -50 then
-		return "💀 FEARED CURSE USER", Color3.fromRGB(180, 40, 60)
+		return _dt("ribbon_feared", "💀 FEARED CURSE USER"), Color3.fromRGB(180, 40, 60)
 	elseif isCurseUser then
-		return "🩸 CURSE USER", Color3.fromRGB(200, 80, 90)
+		return _dt("ribbon_curse_user", "🩸 CURSE USER"), Color3.fromRGB(200, 80, 90)
 	elseif isCurseLife then
-		return "👁 CURSED SPIRIT", Color3.fromRGB(140, 80, 200)
+		return _dt("ribbon_spirit", "👁 CURSED SPIRIT"), Color3.fromRGB(140, 80, 200)
 	elseif hasRCT and hasDomain then
-		return "⚡ ELITE JUJUTSU SORCERER", Color3.fromRGB(120, 200, 255)
+		return _dt("ribbon_elite", "⚡ ELITE JUJUTSU SORCERER"), Color3.fromRGB(120, 200, 255)
 	elseif hasDomain then
-		return "🌀 DOMAIN USER", Color3.fromRGB(140, 120, 255)
+		return _dt("ribbon_domain", "🌀 DOMAIN USER"), Color3.fromRGB(140, 120, 255)
 	elseif hasRCT then
-		return "✨ RCT PRACTITIONER", Color3.fromRGB(100, 220, 180)
+		return _dt("ribbon_rct", "✨ RCT PRACTITIONER"), Color3.fromRGB(100, 220, 180)
 	elseif founded then
-		return "🏯 CLAN FOUNDER", Color3.fromRGB(255, 180, 60)
+		return _dt("ribbon_founder", "🏯 CLAN FOUNDER"), Color3.fromRGB(255, 180, 60)
 	elseif generation >= 5 then
-		return "🔱 DEEP BLOODLINE", Color3.fromRGB(180, 140, 255)
+		return _dt("ribbon_bloodline", "🔱 DEEP BLOODLINE"), Color3.fromRGB(180, 140, 255)
 	elseif missions >= 100 then
-		return "⚔️ VETERAN SORCERER", Color3.fromRGB(120, 200, 140)
+		return _dt("ribbon_veteran", "⚔️ VETERAN SORCERER"), Color3.fromRGB(120, 200, 140)
 	elseif grade == "Grade 1" or grade == "Semi-Grade 1" then
-		return "🎖 GRADE 1 SORCERER", Color3.fromRGB(100, 180, 255)
+		return _dt("ribbon_grade1", "🎖 GRADE 1 SORCERER"), Color3.fromRGB(100, 180, 255)
 	elseif age >= 80 then
-		return "🕰 LONG LIFE", Color3.fromRGB(160, 160, 180)
+		return _dt("ribbon_long_life", "🕰 LONG LIFE"), Color3.fromRGB(160, 160, 180)
 	elseif age <= 18 then
-		return "🌱 LIFE CUT SHORT", Color3.fromRGB(180, 180, 200)
+		return _dt("ribbon_short_life", "🌱 LIFE CUT SHORT"), Color3.fromRGB(180, 180, 200)
 	elseif rep >= 100 then
-		return "🌟 CELEBRATED SORCERER", Color3.fromRGB(255, 220, 80)
+		return _dt("ribbon_celebrated", "🌟 CELEBRATED SORCERER"), Color3.fromRGB(255, 220, 80)
 	else
-		return "📜 ORDINARY LIFE", Color3.fromRGB(140, 140, 160)
+		return _dt("ribbon_ordinary", "📜 ORDINARY LIFE"), Color3.fromRGB(140, 140, 160)
 	end
 end
 
@@ -220,7 +229,7 @@ local function init(playerGui: Instance)
 	titleLabel.Name = "Title"
 	titleLabel.Size = UDim2.new(1, 0, 0, 36)
 	titleLabel.BackgroundTransparency = 1
-	titleLabel.Text = "LIFE ENDED"
+	titleLabel.Text = _dt("title", "LIFE ENDED")
 	titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 	titleLabel.TextSize = 26
 	titleLabel.Font = Enum.Font.GothamBlack
@@ -234,7 +243,7 @@ local function init(playerGui: Instance)
 	subtitleLabel.Name = "Subtitle"
 	subtitleLabel.Size = UDim2.new(1, 0, 0, 20)
 	subtitleLabel.BackgroundTransparency = 1
-	subtitleLabel.Text = "Your story has reached its end."
+	subtitleLabel.Text = _dt("subtitle", "Your story has reached its end.")
 	subtitleLabel.TextColor3 = theme.SubText
 	subtitleLabel.TextSize = 12
 	subtitleLabel.Font = Enum.Font.GothamBold
@@ -332,7 +341,7 @@ local function init(playerGui: Instance)
 	-- New Life button
 	local newLifeBtn = mc.mobileButton({
 		parent = actionsFrame,
-		text = "START NEW LIFE",
+		text = _dt("start_new_life", "START NEW LIFE"),
 		size = UDim2.new(1, 0, 0, 48),
 		position = UDim2.new(0, 0, 0, 0),
 		color = Color3.fromRGB(120, 35, 35),
@@ -344,7 +353,7 @@ local function init(playerGui: Instance)
 	-- Successor button
 	local successorBtn = mc.mobileButton({
 		parent = actionsFrame,
-		text = "PLAY AS CHILD",
+		text = _dt("play_as_child", "PLAY AS CHILD"),
 		size = UDim2.new(1, 0, 0, 48),
 		position = UDim2.new(0, 0, 0, 0),
 		color = Color3.fromRGB(95, 55, 150),
@@ -359,7 +368,7 @@ local function init(playerGui: Instance)
 	successorHint.TextColor3 = Color3.fromRGB(180, 150, 220)
 	successorHint.TextSize = 10
 	successorHint.Font = Enum.Font.GothamMedium
-	successorHint.Text = "Inherit assets, clan, technique, money."
+	successorHint.Text = _dt("successor_hint", "Inherit assets, clan, technique, money.")
 	successorHint.TextWrapped = true
 	successorHint.TextXAlignment = Enum.TextXAlignment.Center
 	successorHint.LayoutOrder = 3
@@ -368,7 +377,7 @@ local function init(playerGui: Instance)
 	-- RCT Revive button
 	local rctBtn = mc.mobileButton({
 		parent = actionsFrame,
-		text = "RCT REVIVE — R$50",
+		text = _dt("rct_revive", "RCT REVIVE — R$50"),
 		size = UDim2.new(1, 0, 0, 44),
 		position = UDim2.new(0, 0, 0, 0),
 		color = Color3.fromRGB(55, 35, 120),
@@ -383,7 +392,7 @@ local function init(playerGui: Instance)
 	rctHint.TextColor3 = Color3.fromRGB(190, 175, 255)
 	rctHint.TextSize = 10
 	rctHint.Font = Enum.Font.GothamMedium
-	rctHint.Text = "Reverse cursed energy pulls you back. Can be used twice per life."
+	rctHint.Text = _dt("rct_hint", "Reverse cursed energy pulls you back. Can be used twice per life.")
 	rctHint.TextWrapped = true
 	rctHint.TextXAlignment = Enum.TextXAlignment.Center
 	rctHint.LayoutOrder = 5
@@ -392,7 +401,7 @@ local function init(playerGui: Instance)
 	-- Curse Rebirth button (conditionally visible)
 	local curseBtn = mc.mobileButton({
 		parent = actionsFrame,
-		text = "BECOME VENGEFUL SPIRIT",
+		text = _dt("become_spirit", "BECOME VENGEFUL SPIRIT"),
 		size = UDim2.new(1, 0, 0, 44),
 		position = UDim2.new(0, 0, 0, 0),
 		color = Color3.fromRGB(110, 45, 160),
@@ -408,7 +417,7 @@ local function init(playerGui: Instance)
 	curseHint.TextColor3 = Color3.fromRGB(205, 170, 245)
 	curseHint.TextSize = 10
 	curseHint.Font = Enum.Font.GothamMedium
-	curseHint.Text = "Your cursed energy refused to disappear. Return as a reborn cursed spirit."
+	curseHint.Text = _dt("spirit_hint", "Your cursed energy refused to disappear. Return as a reborn cursed spirit.")
 	curseHint.TextWrapped = true
 	curseHint.TextXAlignment = Enum.TextXAlignment.Center
 	curseHint.LayoutOrder = 7
@@ -418,7 +427,7 @@ local function init(playerGui: Instance)
 	-- Reincarnate button (conditionally visible)
 	local reincarnateBtn = mc.mobileButton({
 		parent = actionsFrame,
-		text = "REINCARNATE",
+		text = _dt("reincarnate", "REINCARNATE"),
 		size = UDim2.new(1, 0, 0, 44),
 		position = UDim2.new(0, 0, 0, 0),
 		color = Color3.fromRGB(75, 70, 170),
@@ -434,7 +443,7 @@ local function init(playerGui: Instance)
 	reincarnateHint.TextColor3 = Color3.fromRGB(190, 190, 255)
 	reincarnateHint.TextSize = 10
 	reincarnateHint.Font = Enum.Font.GothamMedium
-	reincarnateHint.Text = "A cursed-object anchor pulls your soul into a new life keeping CE, clan, and technique."
+	reincarnateHint.Text = _dt("reincarnate_hint", "A cursed-object anchor pulls your soul into a new life keeping CE, clan, and technique.")
 	reincarnateHint.TextWrapped = true
 	reincarnateHint.TextXAlignment = Enum.TextXAlignment.Center
 	reincarnateHint.LayoutOrder = 9
@@ -452,7 +461,7 @@ local function init(playerGui: Instance)
 	pickerSheet.ZIndex = 950
 	pickerSheet.Parent = gui
 
-	local pickerHeader = mc.mobileHeader(pickerSheet, "CHOOSE SUCCESSOR", function() end)
+	local pickerHeader = mc.mobileHeader(pickerSheet, _dt("choose_successor", "CHOOSE SUCCESSOR"), function() end)
 	pickerHeader.ZIndex = 952
 
 	local pickerScroll = Instance.new("ScrollingFrame")
@@ -491,16 +500,17 @@ local function init(playerGui: Instance)
 		local remaining = math.max(0, RCT_REVIVE_MAX_PER_LIFE - uses)
 
 		if remaining <= 0 then
-			rctBtn.Text = "RCT REVIVE LIMIT REACHED"
+			rctBtn.Text = _dt("rct_limit_reached", "RCT REVIVE LIMIT REACHED")
 			rctBtn.Active = false
 			rctBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 58)
-			rctHint.Text = "Your body has already survived through RCT twice in this life."
+			rctHint.Text = _dt("rct_hint_used", "Your body has already survived through RCT twice in this life.")
 			rctHint.TextColor3 = Color3.fromRGB(155, 155, 170)
 		else
-			rctBtn.Text = "RCT REVIVE — R$50  (" .. tostring(remaining) .. "/" .. tostring(RCT_REVIVE_MAX_PER_LIFE) .. " LEFT)"
+			rctBtn.Text = _dt("rct_left", "RCT REVIVE — R$50  ({remaining}/{max} LEFT)")
+				:gsub("{remaining}", tostring(remaining)):gsub("{max}", tostring(RCT_REVIVE_MAX_PER_LIFE))
 			rctBtn.Active = true
 			rctBtn.BackgroundColor3 = Color3.fromRGB(55, 35, 120)
-			rctHint.Text = "Reverse cursed energy pulls you back. Can be used twice per life."
+			rctHint.Text = _dt("rct_hint", "Reverse cursed energy pulls you back. Can be used twice per life.")
 			rctHint.TextColor3 = Color3.fromRGB(190, 175, 255)
 		end
 	end
@@ -531,7 +541,7 @@ local function init(playerGui: Instance)
 
 		mc.mobileLabel({
 			parent = card,
-			text = "Age: " .. tostring(successor.Age or 0) .. "  •  CE: " .. tostring(successor.CursedEnergy or 0),
+			text = _dt("age_ce", "Age: {age}  •  CE: {ce}"):gsub("{age}", tostring(successor.Age or 0)):gsub("{ce}", tostring(successor.CursedEnergy or 0)),
 			size = 12,
 			color = Color3.fromRGB(160, 160, 180),
 			order = 2,
@@ -539,10 +549,10 @@ local function init(playerGui: Instance)
 
 		local techText, techColor
 		if successor.HasInheritedTechnique then
-			techText = "Inherited: <b>" .. tostring(successor.CursedTechnique) .. "</b> — starts as sorcerer"
+			techText = _dt("tech_inherited", "Inherited: <b>{tech}</b> — starts as sorcerer"):gsub("{tech}", tostring(successor.CursedTechnique))
 			techColor = Color3.fromRGB(255, 200, 90)
 		else
-			techText = "No technique inherited yet. May still awaken."
+			techText = _dt("tech_none", "No technique inherited yet. May still awaken.")
 			techColor = Color3.fromRGB(150, 150, 165)
 		end
 
@@ -556,7 +566,7 @@ local function init(playerGui: Instance)
 
 		mc.mobileButton({
 			parent = card,
-			text = "CONTINUE AS",
+			text = _dt("continue_as", "CONTINUE AS"),
 			size = UDim2.new(1, 0, 0, 40),
 			color = Color3.fromRGB(95, 55, 150),
 			textSize = 12,
@@ -591,7 +601,7 @@ local function init(playerGui: Instance)
 			})
 			mc.mobileLabel({
 				parent = emptyCard,
-				text = if not ok then "Could not load successor options." else "No eligible children to continue your bloodline.",
+				text = if not ok then _dt("successor_error", "Could not load successor options.") else _dt("no_successor", "No eligible children to continue your bloodline."),
 				size = 14,
 				font = Enum.Font.GothamBold,
 				color = Color3.fromRGB(190, 180, 220),
@@ -630,29 +640,28 @@ local function init(playerGui: Instance)
 		biographyLabel.Text = buildBiography(stats)
 
 		local cause = tostring(stats.CauseOfDeath or stats.DeathReason or "")
-		causeLabel.Text = cause ~= "" and ("Cause of death: " .. cause) or ""
+		causeLabel.Text = cause ~= "" and (_dt("cause_of_death", "Cause of death: ") .. cause) or ""
 		causeLabel.Visible = cause ~= ""
 
 		local ribbonText, ribbonColor = getRibbon(stats)
 		local karma = tonumber(stats.HiddenKarma) or 0
 		local karmaLabel = ""
 		if karma >= 60 then
-			karmaLabel = "\n✦ The cursed world remembers your light."
+			karmaLabel = _dt("karma_high", "\n✦ The cursed world remembers your light.")
 		elseif karma >= 20 then
-			karmaLabel = "\n✦ You left the world a little better."
+			karmaLabel = _dt("karma_ok", "\n✦ You left the world a little better.")
 		elseif karma <= -60 then
-			karmaLabel = "\n✦ Darkness followed you everywhere."
+			karmaLabel = _dt("karma_bad", "\n✦ Darkness followed you everywhere.")
 		elseif karma <= -20 then
-			karmaLabel = "\n✦ The weight of your choices lingered."
+			karmaLabel = _dt("karma_low", "\n✦ The weight of your choices lingered.")
 		end
 		ribbonLabel.Text = ribbonText .. karmaLabel
 		ribbonLabel.TextColor3 = ribbonColor
 
-		statsLabel.Text = "Age " .. tostring(stats.Age or 0)
-			.. "  •  Grade: " .. tostring(stats.Grade or "?")
-			.. "  •  CE: " .. tostring(stats.CursedEnergy or 0)
-			.. "\nResentment: " .. tostring(stats.CursedResentment or 0)
-			.. "  •  Money: $" .. formatMoneyAmount(stats.Money or 0)
+		statsLabel.Text = _dt("stats_line", "Age {age}  •  Grade: {grade}  •  CE: {ce}\nResentment: {resentment}  •  Money: ${money}")
+			:gsub("{age}", tostring(stats.Age or 0)):gsub("{grade}", tostring(stats.Grade or "?"))
+			:gsub("{ce}", tostring(stats.CursedEnergy or 0)):gsub("{resentment}", tostring(stats.CursedResentment or 0))
+			:gsub("{money}", formatMoneyAmount(stats.Money or 0))
 
 		updateRCTButton(stats)
 
@@ -698,11 +707,11 @@ local function init(playerGui: Instance)
 
 	-- Button actions
 	bindTap(newLifeBtn, function()
-		newLifeBtn.Text = "STARTING..."
+		newLifeBtn.Text = _dt("starting", "STARTING...")
 		updateLifeEvent:FireServer("StartNewLife")
 		task.delay(0.25, function()
 			hideDeathScreen()
-			newLifeBtn.Text = "START NEW LIFE"
+			newLifeBtn.Text = _dt("start_new_life", "START NEW LIFE")
 		end)
 	end)
 
@@ -716,7 +725,7 @@ local function init(playerGui: Instance)
 			return
 		end
 
-		rctBtn.Text = "OPENING PURCHASE..."
+		rctBtn.Text = _dt("opening_purchase", "OPENING PURCHASE...")
 		rctBtn.Active = false
 
 		if game.PlaceId == TEST_PURCHASE_PLACE_ID then
@@ -733,18 +742,18 @@ local function init(playerGui: Instance)
 	end)
 
 	bindTap(curseBtn, function()
-		curseBtn.Text = "REBIRTHING..."
+		curseBtn.Text = _dt("rebirthing", "REBIRTHING...")
 		updateLifeEvent:FireServer("BecomeVengefulSpirit")
 		task.delay(0.45, function()
-			curseBtn.Text = "BECOME VENGEFUL SPIRIT"
+			curseBtn.Text = _dt("become_spirit", "BECOME VENGEFUL SPIRIT")
 		end)
 	end)
 
 	bindTap(reincarnateBtn, function()
-		reincarnateBtn.Text = "REINCARNATING..."
+		reincarnateBtn.Text = _dt("reincarnating", "REINCARNATING...")
 		updateLifeEvent:FireServer("Reincarnate")
 		task.delay(0.45, function()
-			reincarnateBtn.Text = "REINCARNATE"
+			reincarnateBtn.Text = _dt("reincarnate", "REINCARNATE")
 		end)
 	end)
 

@@ -4,6 +4,9 @@ local TweenService = game:GetService("TweenService")
 
 local mc = require("@ui/mobile/mobileComponents")
 local overlayManager = require("@ui-state/overlayManager")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _dl(key, fallback) return BitKaisenLocale.tOrFallback(_L, "daily." .. key, nil, fallback) end
 
 local theme = mc.theme
 local player = Players.LocalPlayer
@@ -58,19 +61,19 @@ end
 local function setClaimButton(canClaim: boolean)
 	if not claimBtn then return end
 	if state.Busy then
-		claimBtn.Text = "CLAIMING..."
+		claimBtn.Text = _dl("btn_claiming", "CLAIMING...")
 		claimBtn.Active = false
 		claimBtn.BackgroundColor3 = theme.Stroke
 		claimBtn.TextColor3 = theme.Muted
 		return
 	end
 	if canClaim then
-		claimBtn.Text = "CLAIM DAILY REWARD"
+		claimBtn.Text = _dl("btn_claim", "CLAIM DAILY REWARD")
 		claimBtn.Active = true
 		claimBtn.BackgroundColor3 = theme.Purple
 		claimBtn.TextColor3 = theme.Text
 	else
-		claimBtn.Text = "ALREADY CLAIMED"
+		claimBtn.Text = _dl("btn_already", "ALREADY CLAIMED")
 		claimBtn.Active = false
 		claimBtn.BackgroundColor3 = theme.Stroke
 		claimBtn.TextColor3 = theme.Muted
@@ -90,19 +93,21 @@ local function render(data)
 	local nextReward = data.NextReward
 
 	if streakLabel then
-		streakLabel.Text = "Streak: " .. tostring(streak)
+		streakLabel.Text = _dl("streak", "Streak: {n}"):gsub("{n}", tostring(streak))
 	end
 	if bestLabel then
-		bestLabel.Text = "Best: " .. tostring(bestStreak) .. "  •  Claims: " .. tostring(totalClaims)
+		bestLabel.Text = _dl("best", "Best: {best}  •  Claims: {claims}")
+			:gsub("{best}", tostring(bestStreak)):gsub("{claims}", tostring(totalClaims))
 	end
 	if todayLabel then
-		todayLabel.Text = "Today's reward: " .. formatRewardShort(nextReward)
+		todayLabel.Text = _dl("today", "Today's reward: {reward}"):gsub("{reward}", formatRewardShort(nextReward))
 	end
 	if statusLabel then
 		if canClaim then
-			statusLabel.Text = "Ready to claim Day " .. tostring(((nextStreak - 1) % 7) + 1) .. "."
+			local day = tostring(((nextStreak - 1) % 7) + 1)
+			statusLabel.Text = _dl("ready", "Ready to claim Day {day}."):gsub("{day}", day)
 		else
-			statusLabel.Text = "Already claimed today. Come back tomorrow."
+			statusLabel.Text = _dl("claimed", "Already claimed today. Come back tomorrow.")
 		end
 	end
 
@@ -113,7 +118,7 @@ local function render(data)
 		local refs = rewardCards[i]
 		if refs then
 			local reward = rewards[i]
-			refs.day.Text = "DAY " .. tostring(i)
+			refs.day.Text = _dl("day", "DAY {n}"):gsub("{n}", tostring(i))
 			refs.name.Text = reward and tostring(reward.Name or "Reward") or "Reward"
 			refs.short.Text = reward and tostring(reward.Short or "+???") or "+???"
 
@@ -179,7 +184,7 @@ local function makeRewardCard(parent: GuiObject, index: number)
 	dayLabel.Size = UDim2.new(0, 60, 1, 0)
 	dayLabel.Position = UDim2.fromOffset(12, 0)
 	dayLabel.BackgroundTransparency = 1
-	dayLabel.Text = "DAY " .. tostring(index)
+	dayLabel.Text = _dl("day", "DAY {n}"):gsub("{n}", tostring(index))
 	dayLabel.TextColor3 = theme.Gold
 	dayLabel.TextSize = 14
 	dayLabel.Font = Enum.Font.GothamBlack
@@ -235,7 +240,7 @@ local function buildUI()
 	sheet = mc.mobileSheet({
 		name = "MobileDailyLoginSheet",
 		parent = gui,
-		title = "DAILY LOGIN",
+		title = _dl("title", "DAILY LOGIN"),
 		onClose = closePanel,
 	})
 
@@ -246,7 +251,7 @@ local function buildUI()
 
 	streakLabel = mc.mobileLabel({
 		parent = statusCard,
-		text = "Streak: 0",
+		text = _dl("streak", "Streak: {n}"):gsub("{n}", "0"),
 		size = 16,
 		color = theme.Gold,
 		font = Enum.Font.GothamBlack,
@@ -255,7 +260,7 @@ local function buildUI()
 
 	bestLabel = mc.mobileLabel({
 		parent = statusCard,
-		text = "Best: 0  •  Claims: 0",
+		text = _dl("best", "Best: {best}  •  Claims: {claims}"):gsub("{best}", "0"):gsub("{claims}", "0"),
 		size = 13,
 		color = theme.SubText,
 		font = Enum.Font.GothamBold,
@@ -264,7 +269,7 @@ local function buildUI()
 
 	todayLabel = mc.mobileLabel({
 		parent = statusCard,
-		text = "Today's reward: loading...",
+		text = _dl("loading", "Loading reward..."),
 		size = 14,
 		color = theme.Text,
 		font = Enum.Font.GothamBold,
@@ -287,7 +292,7 @@ local function buildUI()
 	-- Claim button at bottom of scroll
 	claimBtn = mc.mobileButton({
 		parent = scroll,
-		text = "CLAIM DAILY REWARD",
+		text = _dl("btn_claim", "CLAIM DAILY REWARD"),
 		size = UDim2.new(1, 0, 0, 50),
 		color = theme.Purple,
 		textSize = 16,

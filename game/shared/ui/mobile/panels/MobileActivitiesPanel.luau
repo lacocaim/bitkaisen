@@ -1,6 +1,27 @@
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local L = BitKaisenLocale.getClientLocale()
+local function _act(key, fallback) return BitKaisenLocale.tOrFallback(L, "activities_panel." .. key, nil, fallback) end
+
+local CAT_LOCALE_KEYS = {
+	["All"] = "cat_all",
+	["Life"] = "cat_life",
+	["School"] = "cat_school",
+	["Training"] = "cat_training",
+	["Jujutsu High"] = "cat_jjk",
+	["Mentor"] = "cat_mentor",
+	["Missions"] = "cat_missions",
+	["Dojo/Clan"] = "cat_dojo",
+	["Social"] = "cat_social",
+	["Minigames"] = "cat_minigames",
+	["Curse Spirit"] = "cat_spirit",
+	["Curse User"] = "cat_user",
+	["Era"] = "cat_era",
+	["Premium"] = "cat_premium",
+}
+local function catLabel(cat) local k = CAT_LOCALE_KEYS[cat] return k and _act(k, cat) or cat end
 
 local uiState = require("@ui-state/uiState")
 local mc = require("@ui/mobile/mobileComponents")
@@ -65,7 +86,7 @@ sheet.Parent = gui
 
 -- Header
 
-mobileHeader(sheet, "ACTIVITIES", function()
+mobileHeader(sheet, BitKaisenLocale.tOrFallback(L, "ui.activities", nil, "ACTIVITIES"), function()
 	uiState.closeRoute()
 end)
 
@@ -174,7 +195,7 @@ local function createCategoryHeader(cat: string, order: number)
 	label.TextSize = 13
 	label.TextColor3 = catColor
 	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.Text = string.upper(cat)
+	label.Text = string.upper(catLabel(cat))
 	label.Parent = header
 end
 
@@ -202,7 +223,7 @@ local function createActivityCard(activityData: any, order: number)
 	-- Status tag
 	mobileLabel({
 		parent = card,
-		text = canDo and "AVAILABLE" or "LOCKED",
+		text = canDo and _act("available", "AVAILABLE") or _act("locked", "LOCKED"),
 		size = 11,
 		color = canDo and catColor or theme.Bad,
 		font = Enum.Font.GothamBlack,
@@ -223,7 +244,7 @@ local function createActivityCard(activityData: any, order: number)
 	-- DO / LOCKED button
 	mobileButton({
 		parent = card,
-		text = canDo and "DO ACTIVITY" or "LOCKED",
+		text = canDo and _act("btn_do", "DO ACTIVITY") or _act("locked", "LOCKED"),
 		size = UDim2.new(1, 0, 0, 46),
 		position = UDim2.new(0, 0, 0, 0),
 		color = canDo and theme.Red or Color3.fromRGB(32, 32, 40),
@@ -262,7 +283,7 @@ local function renderActivities(activities: { any })
 	clearScroll()
 
 	if not activities or #activities == 0 then
-		createMessageCard("No activities available.", theme.SubText)
+		createMessageCard(_act("none_avail", "No activities available."), theme.SubText)
 		return
 	end
 
@@ -297,7 +318,7 @@ local function renderActivities(activities: { any })
 	end
 
 	if #orderedCats == 0 then
-		createMessageCard("No activities in this category.", theme.SubText)
+		createMessageCard(_act("none_cat", "No activities in this category."), theme.SubText)
 		return
 	end
 
@@ -330,7 +351,7 @@ local function buildPills(categories: { string })
 		pill.BackgroundColor3 = active and catColor or theme.Card
 		pill.BackgroundTransparency = if active then 0.15 else 0
 		pill.BorderSizePixel = 0
-		pill.Text = cat
+		pill.Text = catLabel(cat)
 		pill.TextColor3 = active and theme.Text or theme.SubText
 		pill.TextSize = 13
 		pill.Font = Enum.Font.GothamBold
@@ -360,7 +381,7 @@ end
 local function refresh()
 	clearScroll()
 	selectedCategory = "All"
-	createMessageCard("Loading activities...", theme.SubText)
+	createMessageCard(_act("loading", "Loading activities..."), theme.SubText)
 
 	local success, activities = pcall(function()
 		return getActivityList:InvokeServer()
@@ -370,12 +391,12 @@ local function refresh()
 
 	if not success then
 		warn("[MobileActivitiesPanel] Failed to get activities:", activities)
-		createMessageCard("Could not load activities.\nCheck server output.", theme.Bad)
+		createMessageCard(_act("error_load", "Could not load activities.\nCheck server output."), theme.Bad)
 		return
 	end
 
 	if not activities or #activities == 0 then
-		createMessageCard("No activities available.", theme.SubText)
+		createMessageCard(_act("none_avail", "No activities available."), theme.SubText)
 		return
 	end
 

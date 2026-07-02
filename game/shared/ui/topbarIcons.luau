@@ -54,6 +54,17 @@ function topbarIcons.init(panelRefs)
 		warIcon:deselect()
 	end)
 
+	local cultWarIcon = Icon.new()
+	cultWarIcon:setLabel(utf8.char(0x1F480))
+	cultWarIcon:setRight()
+	cultWarIcon:setOrder(104)
+	cultWarIcon:bindEvent("selected", function()
+		if panelRefs.cultWar then
+			overlayManager.show("cultWar", panelRefs.cultWar.open, panelRefs.cultWar.close)
+		end
+		cultWarIcon:deselect()
+	end)
+
 	local afkIcon = Icon.new()
 	afkIcon:setLabel(utf8.char(0x1F4A4))
 	afkIcon:setRight()

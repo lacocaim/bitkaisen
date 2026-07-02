@@ -37,6 +37,8 @@ return {
 	blackMarketAction = function() return get("BlackMarketAction") end,
 	getCult = function() return get("GetCult") end,
 	cultAction = function() return get("CultAction") end,
+	getCultWar = function() return get("GetCultWar") end,
+	cultWarAction = function() return get("CultWarAction") end,
 	getClanWar = function() return get("GetClanWar") end,
 	clanWarAction = function() return get("ClanWarAction") end,
 	getDomain = function() return get("GetDomain") end,

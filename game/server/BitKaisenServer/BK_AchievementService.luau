@@ -4,6 +4,10 @@
 --   Owns achievement definitions, achievement payloads, and claim rewards.
 --   Split out of GameManager to reduce the main script size safely.
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local BitKaisenCultData = require(ReplicatedStorage:WaitForChild("BitKaisenCultData"))
+
 local BK_AchievementService = {}
 local context = {}
 local initialized = false
@@ -164,6 +168,76 @@ local ACHIEVEMENT_DEFINITIONS = {
 			stats.ClanReputation = (stats.ClanReputation or 0) + 10
 			stats.ClanMembers = math.max(1, stats.ClanMembers or 1)
 			return "+$10,000 Money and +10 Clan Reputation"
+		end
+	},
+	{
+		Id = "cult_founder",
+		Name = "Cult Founder",
+		Description = "Found your own cursed cult.",
+		RewardText = "+$5,000 | +10 Cult Infamy",
+		IsUnlocked = function(stats)
+			return stats.CultFounded == true
+		end,
+		Grant = function(stats)
+			stats.Money = (stats.Money or 0) + 5000
+			stats.CultInfamy = (stats.CultInfamy or 0) + 10
+			return "+$5,000 Money and +10 Cult Infamy"
+		end
+	},
+	{
+		Id = "cult_ten_members",
+		Name = "Growing Congregation",
+		Description = "Recruit 10 living cult members in one life.",
+		RewardText = "+$3,000 | +5 Cult Infamy",
+		IsUnlocked = function(stats)
+			return (stats.CultMembers or 0) >= 10
+		end,
+		Grant = function(stats)
+			stats.Money = (stats.Money or 0) + 3000
+			stats.CultInfamy = (stats.CultInfamy or 0) + 5
+			return "+$3,000 Money and +5 Cult Infamy"
+		end
+	},
+	{
+		Id = "cult_black_rope_sect",
+		Name = "Black Rope Sect",
+		Description = "Reach the Black Rope Sect cult rank.",
+		RewardText = "+$8,000 | +10 Cult Loyalty",
+		IsUnlocked = function(stats)
+			local rank = BitKaisenCultData.GetRankForInfamy(stats.CultInfamy or 0)
+			return rank == "Black Rope Sect" or rank == "Vengeful Order" or rank == "Disaster Cult"
+		end,
+		Grant = function(stats)
+			stats.Money = (stats.Money or 0) + 8000
+			stats.CultLoyalty = math.clamp((stats.CultLoyalty or 100) + 10, 0, 100)
+			return "+$8,000 Money and +10 Cult Loyalty"
+		end
+	},
+	{
+		Id = "cult_disaster_cult",
+		Name = "Disaster Cult",
+		Description = "Reach the highest cult rank: Disaster Cult.",
+		RewardText = "+$20,000 | +50 CE",
+		IsUnlocked = function(stats)
+			return BitKaisenCultData.GetRankForInfamy(stats.CultInfamy or 0) == "Disaster Cult"
+		end,
+		Grant = function(stats)
+			stats.Money = (stats.Money or 0) + 20000
+			stats.CursedEnergy = (stats.CursedEnergy or 0) + 50
+			return "+$20,000 Money and +50 Cursed Energy"
+		end
+	},
+	{
+		Id = "cult_territory_full",
+		Name = "Undisputed Ground",
+		Description = "Reach 100% territory control with your cult.",
+		RewardText = "+$6,000",
+		IsUnlocked = function(stats)
+			return (stats.CultTerritoryControl or 0) >= 100
+		end,
+		Grant = function(stats)
+			stats.Money = (stats.Money or 0) + 6000
+			return "+$6,000 Money"
 		end
 	},
 	{

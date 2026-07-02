@@ -90,16 +90,19 @@ local function processBlackMarketAction(player, actionId, targetId)
 			return
 		end
 
-		if (stats.Money or 0) < def.BlackMarketPrice then
+		local discount = math.clamp(tonumber(stats.CultSupplyDiscount) or 0, 0, 60)
+		local finalPrice = math.floor(def.BlackMarketPrice * (100 - discount) / 100)
+
+		if (stats.Money or 0) < finalPrice then
 			fireLifeUpdate(player, stats, "You do not have enough money for <b>" .. tostring(def.Name) .. "</b>.")
 			return
 		end
 
-		stats.Money -= def.BlackMarketPrice
+		stats.Money -= finalPrice
 		local currentYear = context.GetCurrentYear and context.GetCurrentYear(stats) or (2000 + (tonumber(stats.Age) or 0))
 		BitKaisenCursedTools.AddTool(stats, def.Id, "Black Market", currentYear)
 		raiseWantedLevel(stats, "buy_tool")
-		fireLifeUpdate(player, stats, "<font color='#f0b955'><b>[ BLACK MARKET ]</b></font> Bought <b>" .. tostring(def.Name) .. "</b> for <b>$" .. tostring(def.BlackMarketPrice) .. "</b>. Wanted Level rose.")
+		fireLifeUpdate(player, stats, "<font color='#f0b955'><b>[ BLACK MARKET ]</b></font> Bought <b>" .. tostring(def.Name) .. "</b> for <b>$" .. tostring(finalPrice) .. "</b>. Wanted Level rose.")
 		saveStats(player, "black market buy tool")
 
 	elseif actionId == "SellTool" then
@@ -121,12 +124,15 @@ local function processBlackMarketAction(player, actionId, targetId)
 			return
 		end
 
-		if (stats.Money or 0) < item.Price then
+		local discount = math.clamp(tonumber(stats.CultSupplyDiscount) or 0, 0, 60)
+		local finalPrice = math.floor(item.Price * (100 - discount) / 100)
+
+		if (stats.Money or 0) < finalPrice then
 			fireLifeUpdate(player, stats, "You do not have enough money for <b>" .. tostring(item.Name) .. "</b>.")
 			return
 		end
 
-		stats.Money -= item.Price
+		stats.Money -= finalPrice
 
 		local effects = item.UseEffects or {}
 		if effects.Health then

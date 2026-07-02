@@ -1,6 +1,10 @@
 -- ModuleScript: BitKaisenActivities
 -- Location: ReplicatedStorage
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local BitKaisenCultData = require(ReplicatedStorage:WaitForChild("BitKaisenCultData"))
+
 local BitKaisenActivities = {}
 
 BitKaisenActivities.Database = {
@@ -1466,6 +1470,55 @@ BitKaisenActivities.Database = {
 	},
 
 	{
+		Id = "cult_supply_run",
+		Title = "Cult Supply Run",
+		Description = "Funnel cult treasury into black market contacts. Discounts black market prices for a while, but raises your Wanted Level.",
+		MinAge = 16,
+		MaxAge = 120,
+		RequiresTechnique = false,
+		RequiresSorcerer = false,
+		RequiresCurseUser = false,
+		RequiresJujutsuHigh = false,
+		RequiresCultFounded = true,
+		ButtonColor = Color3.fromRGB(90, 20, 30),
+		LockedText = "You need to found a cult before running cult supply operations.",
+		HideWhenLocked = true
+	},
+
+	{
+		Id = "cult_review_members",
+		Title = "Review Members",
+		Description = "Promote initiates and disciples who have proven their devotion, trust, and fear.",
+		MinAge = 16,
+		MaxAge = 120,
+		RequiresTechnique = false,
+		RequiresSorcerer = false,
+		RequiresCurseUser = false,
+		RequiresJujutsuHigh = false,
+		RequiresCultFounded = true,
+		ButtonColor = Color3.fromRGB(90, 20, 30),
+		LockedText = "You need to found a cult before reviewing members.",
+		HideWhenLocked = true
+	},
+
+	{
+		Id = "cult_shop",
+		Title = "Cult Sanctum",
+		Description = "Open your cult's command sanctum: recruits, ranks, rituals, and the cult's dark history.",
+		MinAge = 16,
+		MaxAge = 120,
+		RequiresTechnique = false,
+		RequiresSorcerer = false,
+		RequiresCurseUser = false,
+		RequiresJujutsuHigh = false,
+		RequiresCultFounded = true,
+		OpensPanel = "cult",
+		ButtonColor = Color3.fromRGB(90, 20, 30),
+		LockedText = "You need to found a cult before opening the sanctum.",
+		HideWhenLocked = true
+	},
+
+	{
 		Id = "dojo_send_students_patrol",
 		Title = "Send Students on Patrol",
 		Description = "Send dojo students to handle minor curse traces. Their grade, CE, CT, and potential affect the result.",
@@ -1714,6 +1767,14 @@ function BitKaisenActivities.CanDoActivity(stats, activity)
 
 	if activity.RequiresCultFounded and stats.CultFounded ~= true then
 		return false, activity.LockedText ~= "" and activity.LockedText or "You need to found a cult first."
+	end
+
+	if activity.Id == "cult_curse_fusion" then
+		local currentRankIndex = BitKaisenCultData.GetRankIndex(stats.CultRank)
+		local minRankIndex = BitKaisenCultData.GetRankIndex("Black Rope Sect")
+		if currentRankIndex < minRankIndex then
+			return false, "Your cult needs to reach Black Rope Sect standing first."
+		end
 	end
 
 	if activity.RequiresGrandDojo then
@@ -2008,6 +2069,9 @@ local CATEGORY_MAP = {
 	cult_collect_tribute = "Cult",
 	cult_expand_territory = "Cult",
 	cult_curse_fusion = "Cult",
+	cult_supply_run = "Cult",
+	cult_review_members = "Cult",
+	cult_shop = "Cult",
 
 	heian_blood_moon = "Era",
 	edo_lightning_duel = "Era",

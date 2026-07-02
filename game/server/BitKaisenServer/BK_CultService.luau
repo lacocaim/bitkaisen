@@ -28,6 +28,7 @@ local WANTED_GAIN = {
 	tribute = { 2, 5 },
 	territory = { 3, 7 },
 	fusion = { 6, 12 },
+	supply = { 2, 5 },
 }
 
 local function getYear(stats)
@@ -116,6 +117,7 @@ function BK_CultService.EnsureCultState(stats)
 	stats.CultActions = math.max(0, tonumber(stats.CultActions) or 0)
 	stats.CultCooldown = math.max(0, tonumber(stats.CultCooldown) or 0)
 	if typeof(stats.CultHistory) ~= "table" then stats.CultHistory = {} end
+	stats.CultSupplyDiscount = math.clamp(tonumber(stats.CultSupplyDiscount) or 0, 0, 60)
 end
 
 function BK_CultService.IsEligibleToFound(stats)
@@ -174,6 +176,9 @@ function BK_CultService.RecruitInitiate(stats)
 	end
 
 	local candidate = BitKaisenCultData.GenerateInitiateCandidate()
+	if stats.CultFocus == "Conversion" then
+		candidate.Devotion = math.clamp(math.floor(candidate.Devotion * 1.5), 0, 100)
+	end
 	local relationship = BitKaisenRelationships.CreateRelationship(
 		"CultInitiate",
 		candidate.Name,
@@ -195,6 +200,9 @@ function BK_CultService.RecruitInitiate(stats)
 	stats.CultInfamy = math.max(0, (tonumber(stats.CultInfamy) or 0) + math.random(1, 3))
 	stats.CultRank = BitKaisenCultData.GetRankForInfamy(stats.CultInfamy)
 	raiseWantedLevel(stats, "recruit")
+	if stats.CultFocus == "Conversion" then
+		stats.WantedLevel = math.clamp((tonumber(stats.WantedLevel) or 0) - 1, 0, 100)
+	end
 
 	local message = "<b>" .. tostring(candidate.Name) .. "</b> joined your cult as an Initiate. " .. tostring(candidate.Background)
 	addCultHistory(stats, message)
@@ -219,7 +227,8 @@ function BK_CultService.BindingRitual(stats)
 
 	local message = "You performed a binding ritual on <b>" .. tostring(target.Name) .. "</b>. Devotion +" .. tostring(devotionGain) .. "."
 
-	if math.random(1, 100) <= 20 then
+	local backlashChance = stats.CultFocus == "Ritual" and 10 or 20
+	if math.random(1, 100) <= backlashChance then
 		local ceCost = math.random(4, 12)
 		stats.CursedEnergy = math.max(0, (tonumber(stats.CursedEnergy) or 0) - ceCost)
 		stats.Health = math.clamp((tonumber(stats.Health) or 100) - math.random(2, 8), 0, 100)
@@ -245,6 +254,9 @@ function BK_CultService.CollectTribute(stats)
 	end
 
 	local income = math.random(40, 120) * memberCount
+	if stats.CultFocus == "Fear" then
+		income = math.floor(income * 1.2)
+	end
 	stats.CultTreasury = (tonumber(stats.CultTreasury) or 0) + income
 	local loyaltyLoss = math.random(3, 9)
 	stats.CultLoyalty = math.clamp((tonumber(stats.CultLoyalty) or 100) - loyaltyLoss, 0, 100)
@@ -262,6 +274,9 @@ function BK_CultService.ExpandTerritory(stats)
 	end
 
 	local controlGain = math.random(6, 16)
+	if stats.CultFocus == "Fear" then
+		controlGain = math.floor(controlGain * 1.25)
+	end
 	stats.CultTerritoryControl = math.clamp((tonumber(stats.CultTerritoryControl) or 0) + controlGain, 0, 100)
 
 	local message
@@ -286,6 +301,12 @@ function BK_CultService.CurseFusion(stats)
 	BK_CultService.EnsureCultState(stats)
 	if stats.CultFounded ~= true then
 		return false, "You need to found a cult first."
+	end
+
+	local currentRankIndex = BitKaisenCultData.GetRankIndex(stats.CultRank)
+	local minRankIndex = BitKaisenCultData.GetRankIndex("Black Rope Sect")
+	if currentRankIndex < minRankIndex then
+		return false, "Your cult needs to reach Black Rope Sect standing before it can perform a curse fusion."
 	end
 
 	local candidates = {}
@@ -316,6 +337,108 @@ function BK_CultService.CurseFusion(stats)
 	return true, message
 end
 
+function BK_CultService.SupplyRun(stats)
+	BK_CultService.EnsureCultState(stats)
+	if stats.CultFounded ~= true then
+		return false, "You need to found a cult first."
+	end
+
+	local treasury = tonumber(stats.CultTreasury) or 0
+	if treasury < 200 then
+		return false, "Your cult treasury is too empty for a supply run."
+	end
+
+	local spendPercent = math.random(40, 70)
+	local spent = math.floor(treasury * spendPercent / 100)
+	stats.CultTreasury = math.max(0, treasury - spent)
+	stats.CultSupplyDiscount = math.clamp((tonumber(stats.CultSupplyDiscount) or 0) + math.random(15, 30), 0, 60)
+
+	raiseWantedLevel(stats, "supply")
+	local message = "Your cult funneled <b>$" .. tostring(spent) .. "</b> from the treasury into black market contacts. Black market prices are discounted for a while."
+	addCultHistory(stats, message)
+	return true, message
+end
+
+local VALID_FOCUS = { Fear = true, Ritual = true, Conversion = true }
+
+function BK_CultService.SetFocus(stats, focus)
+	BK_CultService.EnsureCultState(stats)
+	if stats.CultFounded ~= true then
+		return false, "You need to found a cult first."
+	end
+	focus = tostring(focus or "")
+	if not VALID_FOCUS[focus] then
+		return false, "Unknown cult focus."
+	end
+
+	stats.CultFocus = focus
+	local message = "Your cult's focus shifted to <b>" .. focus .. "</b>."
+	addCultHistory(stats, message)
+	return true, message
+end
+
+local LIEUTENANT_CAP_BY_RANK = {
+	["No Cult"] = 0,
+	["Whispering Circle"] = 0,
+	["Hollow Congregation"] = 1,
+	["Black Rope Sect"] = 2,
+	["Vengeful Order"] = 3,
+	["Disaster Cult"] = 5,
+}
+
+local function countLieutenants(stats)
+	local count = 0
+	for _, relationship in ipairs(getCultMembers(stats)) do
+		if relationship.Role == "CultLieutenant" then
+			count += 1
+		end
+	end
+	return count
+end
+
+function BK_CultService.ReviewMembers(stats)
+	BK_CultService.EnsureCultState(stats)
+	if stats.CultFounded ~= true then
+		return false, "You need to found a cult first."
+	end
+
+	local ritualFocus = stats.CultFocus == "Ritual"
+	local devotionThreshold = ritualFocus and 47 or 55
+	local trustThreshold = ritualFocus and 34 or 40
+	local lieutenantDevotionThreshold = ritualFocus and 68 or 80
+	local lieutenantTrustThreshold = ritualFocus and 51 or 60
+	local lieutenantFearThreshold = ritualFocus and 26 or 30
+
+	local promotions = {}
+	local lieutenantCap = LIEUTENANT_CAP_BY_RANK[stats.CultRank] or 0
+	local currentLieutenants = countLieutenants(stats)
+
+	for _, relationship in ipairs(getCultMembers(stats)) do
+		if relationship.Role == "CultInitiate"
+			and (tonumber(relationship.Devotion) or 0) >= devotionThreshold
+			and (tonumber(relationship.Trust) or 0) >= trustThreshold then
+			relationship.Role = "CultDisciple"
+			table.insert(promotions, tostring(relationship.Name) .. " rose to Disciple.")
+		elseif relationship.Role == "CultDisciple"
+			and (tonumber(relationship.Devotion) or 0) >= lieutenantDevotionThreshold
+			and (tonumber(relationship.Trust) or 0) >= lieutenantTrustThreshold
+			and (tonumber(relationship.Fear) or 0) >= lieutenantFearThreshold
+			and currentLieutenants < lieutenantCap then
+			relationship.Role = "CultLieutenant"
+			currentLieutenants += 1
+			table.insert(promotions, tostring(relationship.Name) .. " was named Lieutenant.")
+		end
+	end
+
+	if #promotions <= 0 then
+		return false, "No members qualified for promotion this review."
+	end
+
+	local message = "<b>[ CULT REVIEW ]</b> " .. table.concat(promotions, " ")
+	addCultHistory(stats, message)
+	return true, message
+end
+
 function BK_CultService.ProcessActivity(player, stats, activityId)
 	BK_CultService.EnsureCultState(stats)
 	stats.CultActions = (tonumber(stats.CultActions) or 0) + 1
@@ -332,6 +455,10 @@ function BK_CultService.ProcessActivity(player, stats, activityId)
 		return BK_CultService.ExpandTerritory(stats)
 	elseif activityId == "cult_curse_fusion" then
 		return BK_CultService.CurseFusion(stats)
+	elseif activityId == "cult_supply_run" then
+		return BK_CultService.SupplyRun(stats)
+	elseif activityId == "cult_review_members" then
+		return BK_CultService.ReviewMembers(stats)
 	end
 
 	return false, "Unknown cult activity."
@@ -343,6 +470,10 @@ function BK_CultService.AdvanceYear(player, stats)
 
 	if stats.CultCooldown and stats.CultCooldown > 0 then
 		stats.CultCooldown = math.max(0, stats.CultCooldown - 1)
+	end
+
+	if stats.CultSupplyDiscount and stats.CultSupplyDiscount > 0 then
+		stats.CultSupplyDiscount = math.max(0, stats.CultSupplyDiscount - 10)
 	end
 
 	if stats.CultFounded ~= true then
@@ -381,6 +512,23 @@ function BK_CultService.AdvanceYear(player, stats)
 	return ""
 end
 
+local function buildCultRoster(stats)
+	local roster = {}
+	for index, relationship in ipairs(getCultMembers(stats)) do
+		table.insert(roster, {
+			Id = relationship.Id or ("cult_member_" .. tostring(index)),
+			Name = relationship.Name,
+			Role = relationship.Role,
+			Devotion = relationship.Devotion,
+			Trust = relationship.Trust,
+			Fear = relationship.Fear,
+			Personality = relationship.Personality,
+			Background = relationship.Background,
+		})
+	end
+	return roster
+end
+
 function BK_CultService.GetCultPayload(player)
 	local stats = context.GetStats and context.GetStats(player)
 	if not stats then
@@ -403,6 +551,7 @@ function BK_CultService.GetCultPayload(player)
 		Focus = stats.CultFocus,
 		Actions = BitKaisenCultData.ACTION_DEFINITIONS,
 		History = stats.CultHistory,
+		Roster = buildCultRoster(stats),
 	}
 end
 
@@ -413,14 +562,27 @@ local ACTIVITY_BY_ACTION_ID = {
 	Cult_CollectTribute = "cult_collect_tribute",
 	Cult_ExpandTerritory = "cult_expand_territory",
 	Cult_CurseFusion = "cult_curse_fusion",
+	Cult_SupplyRun = "cult_supply_run",
+	Cult_ReviewMembers = "cult_review_members",
 }
 
-function BK_CultService.ProcessCultAction(player, actionId)
+function BK_CultService.ProcessCultAction(player, actionId, targetId)
 	local stats = context.GetStats and context.GetStats(player)
 	if not stats or not stats.Alive then
 		return
 	end
 	if context.EnsureExtraStats then context.EnsureExtraStats(stats) end
+
+	if actionId == "Cult_SetFocus" then
+		local ok, message = BK_CultService.SetFocus(stats, targetId)
+		if context.FireLifeUpdate then
+			context.FireLifeUpdate(player, stats, "<font color='#8a1f1f'><b>[ CULT ]</b></font> " .. tostring(message or "Cult updated."))
+		end
+		if ok and context.SaveStats then
+			context.SaveStats(player, "Cult")
+		end
+		return
+	end
 
 	local activityId = ACTIVITY_BY_ACTION_ID[actionId]
 	if not activityId then

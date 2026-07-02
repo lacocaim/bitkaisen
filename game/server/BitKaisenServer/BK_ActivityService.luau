@@ -3807,7 +3807,8 @@ local function processActivity(player, activityId)
 		end
 
 	elseif activityId == "cult_found" or activityId == "cult_recruit_initiate" or activityId == "cult_binding_ritual"
-		or activityId == "cult_collect_tribute" or activityId == "cult_expand_territory" or activityId == "cult_curse_fusion" then
+		or activityId == "cult_collect_tribute" or activityId == "cult_expand_territory" or activityId == "cult_curse_fusion"
+		or activityId == "cult_supply_run" or activityId == "cult_review_members" then
 		local ok, message = BK_CultService.ProcessActivity(player, stats, activityId)
 		if not ok then
 			stats.ActivitiesDoneThisAge = math.max(0, (stats.ActivitiesDoneThisAge or 1) - 1)

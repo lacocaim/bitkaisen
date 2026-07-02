@@ -50,6 +50,15 @@ function BitKaisenCultData.GetRankForInfamy(infamy)
 	return rank
 end
 
+function BitKaisenCultData.GetRankIndex(rankName)
+	for index, tier in ipairs(BitKaisenCultData.RANKS) do
+		if tier.Name == rankName then
+			return index
+		end
+	end
+	return 1
+end
+
 BitKaisenCultData.ACTION_DEFINITIONS = {
 	Cult_Found = {
 		Name = "Found the Cult",
@@ -74,6 +83,15 @@ BitKaisenCultData.ACTION_DEFINITIONS = {
 	Cult_CurseFusion = {
 		Name = "Curse Fusion",
 		Description = "Consume a low-ranking member for power. Dark, permanent, irreversible.",
+		MinRank = "Black Rope Sect",
+	},
+	Cult_SupplyRun = {
+		Name = "Cult Supply Run",
+		Description = "Funnel cult treasury into black market contacts for a temporary price discount.",
+	},
+	Cult_ReviewMembers = {
+		Name = "Review Members",
+		Description = "Promote initiates and disciples who have proven their devotion, trust, and fear.",
 	},
 }
 

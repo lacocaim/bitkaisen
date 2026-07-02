@@ -39,6 +39,7 @@ local BK_JobService = require(ServerScriptService:WaitForChild("BitKaisenServer"
 local BK_CombatService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_CombatService"))
 local BK_AFKService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_AFKService"))
 local BK_ClanWarService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_ClanWarService"))
+local BK_CultWarService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_CultWarService"))
 local BK_DomainService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_DomainService"))
 local BK_GodModeService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_GodModeService"))
 local BK_RivalService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_RivalService"))
@@ -79,6 +80,8 @@ getCult = BK_Remotes.Get("GetCult")
 cultAction = BK_Remotes.Get("CultAction")
 local getClanWar = BK_Remotes.Get("GetClanWar")
 local clanWarAction = BK_Remotes.Get("ClanWarAction")
+local getCultWar = BK_Remotes.Get("GetCultWar")
+local cultWarAction = BK_Remotes.Get("CultWarAction")
 local getDomain = BK_Remotes.Get("GetDomain")
 local domainAction = BK_Remotes.Get("DomainAction")
 local getGodMode = BK_Remotes.Get("GetGodMode")
@@ -9398,6 +9401,7 @@ function ageUp(player)
 			logMessage = logMessage .. BK_WorldHistoryService.AdvanceYear(player, stats)
 			logMessage = logMessage .. BK_ClanWarService.AdvanceYear(player, stats)
 			logMessage = logMessage .. BK_CultService.AdvanceYear(player, stats)
+			logMessage = logMessage .. BK_CultWarService.AdvanceYear(player, stats)
 			logMessage = addRandomLifeEvent(player, stats, logMessage)
 			logMessage = addRelationshipAgeEvent(player, stats, logMessage)
 			logMessage = maybeTeacherRecommendation(player, stats, logMessage)
@@ -9494,6 +9498,7 @@ function ageUp(player)
 	logMessage = logMessage .. BK_WorldHistoryService.AdvanceYear(player, stats)
 	logMessage = logMessage .. BK_ClanWarService.AdvanceYear(player, stats)
 	logMessage = logMessage .. BK_CultService.AdvanceYear(player, stats)
+	logMessage = logMessage .. BK_CultWarService.AdvanceYear(player, stats)
 	logMessage = logMessage .. applyYearlyWorldReputation(stats)
 
 	local schoolText = BK_SchoolService.AdvanceSchoolYear(stats)
@@ -10320,6 +10325,10 @@ getClanWar.OnServerInvoke = function(player)
 	return BK_ClanWarService.GetClanWarPayload(player)
 end
 
+getCultWar.OnServerInvoke = function(player)
+	return BK_CultWarService.GetCultWarPayload(player)
+end
+
 getSuccessorOptions.OnServerInvoke = function(player)
 	local stats = playerLives[player.UserId]
 
@@ -10630,6 +10639,15 @@ clanWarAction.OnServerEvent:Connect(function(player, actionId)
 
 	BK_ClanWarService.ProcessAction(player, actionId)
 	clanWarAction:FireClient(player)
+end)
+
+cultWarAction.OnServerEvent:Connect(function(player, actionId)
+	if not checkRateLimit(player, "CultWarAction") then
+		return
+	end
+
+	BK_CultWarService.ProcessAction(player, actionId)
+	cultWarAction:FireClient(player)
 end)
 
 testPurchase.OnServerEvent:Connect(function(player, purchaseKind, purchaseId)
@@ -11009,6 +11027,7 @@ BK_AssetService.Init(BitKaisenServiceContext)
 BK_BlackMarketService.Init(BitKaisenServiceContext)
 BK_CultService.Init(BitKaisenServiceContext)
 BK_ClanWarService.Init(BitKaisenServiceContext)
+BK_CultWarService.Init(BitKaisenServiceContext)
 BK_DomainService.Init(BitKaisenServiceContext)
 BK_GodModeService.Init(BitKaisenServiceContext)
 BK_RivalService.Init(BitKaisenServiceContext)

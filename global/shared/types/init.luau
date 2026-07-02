@@ -293,6 +293,15 @@ export type LifeStats = {
 	CultActions: number,
 	CultCooldown: number,
 	CultHistory: { any },
+	CultSupplyDiscount: number,
+
+	-- Cult war
+	CultWarState: { [string]: any },
+	CultWarHistory: { any },
+	CultWarWins: number,
+	CultWarLosses: number,
+	CultWarActions: number,
+	CultWarCooldown: number,
 
 	-- Legacy
 	LegacyHistory: { any },
@@ -545,6 +554,11 @@ local lifeStatsSchema = gt.build(gt.struct({
 	CultFocus = gt.string(),
 	CultActions = gt.number(),
 	CultCooldown = gt.number(),
+	CultSupplyDiscount = gt.number(),
+	CultWarWins = gt.number(),
+	CultWarLosses = gt.number(),
+	CultWarActions = gt.number(),
+	CultWarCooldown = gt.number(),
 	Generation = gt.number(),
 	Settings = settingsSchema:type(),
 }))

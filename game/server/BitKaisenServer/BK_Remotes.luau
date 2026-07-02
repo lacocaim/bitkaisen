@@ -44,6 +44,10 @@ local REMOTE_DEFINITIONS = {
 	GetBlackMarket = "RemoteFunction",
 	BlackMarketAction = "RemoteEvent",
 
+	-- Cursed Cult System
+	GetCult = "RemoteFunction",
+	CultAction = "RemoteEvent",
+
 	-- Update 13: Clan War System
 	GetClanWar = "RemoteFunction",
 	ClanWarAction = "RemoteEvent",

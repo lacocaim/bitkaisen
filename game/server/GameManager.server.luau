@@ -30,6 +30,7 @@ local BK_DevCommands = require(ServerScriptService:WaitForChild("BitKaisenServer
 local BK_DojoService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_DojoService"))
 local BK_AssetService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_AssetService"))
 BK_BlackMarketService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_BlackMarketService"))
+BK_CultService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_CultService"))
 local BK_RelationshipService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_RelationshipService"))
 local BK_ActivityService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_ActivityService"))
 local BK_MissionService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_MissionService"))
@@ -74,6 +75,8 @@ local getAssets = BK_Remotes.Get("GetAssets")
 local assetAction = BK_Remotes.Get("AssetAction")
 getBlackMarket = BK_Remotes.Get("GetBlackMarket")
 blackMarketAction = BK_Remotes.Get("BlackMarketAction")
+getCult = BK_Remotes.Get("GetCult")
+cultAction = BK_Remotes.Get("CultAction")
 local getClanWar = BK_Remotes.Get("GetClanWar")
 local clanWarAction = BK_Remotes.Get("ClanWarAction")
 local getDomain = BK_Remotes.Get("GetDomain")
@@ -9394,6 +9397,7 @@ function ageUp(player)
 
 			logMessage = logMessage .. BK_WorldHistoryService.AdvanceYear(player, stats)
 			logMessage = logMessage .. BK_ClanWarService.AdvanceYear(player, stats)
+			logMessage = logMessage .. BK_CultService.AdvanceYear(player, stats)
 			logMessage = addRandomLifeEvent(player, stats, logMessage)
 			logMessage = addRelationshipAgeEvent(player, stats, logMessage)
 			logMessage = maybeTeacherRecommendation(player, stats, logMessage)
@@ -9489,6 +9493,7 @@ function ageUp(player)
 	logMessage = logMessage .. BK_JobService.AdvanceYear(player, stats)
 	logMessage = logMessage .. BK_WorldHistoryService.AdvanceYear(player, stats)
 	logMessage = logMessage .. BK_ClanWarService.AdvanceYear(player, stats)
+	logMessage = logMessage .. BK_CultService.AdvanceYear(player, stats)
 	logMessage = logMessage .. applyYearlyWorldReputation(stats)
 
 	local schoolText = BK_SchoolService.AdvanceSchoolYear(stats)
@@ -10307,6 +10312,10 @@ getBlackMarket.OnServerInvoke = function(player)
 	return BK_BlackMarketService.GetBlackMarketPayload(player)
 end
 
+getCult.OnServerInvoke = function(player)
+	return BK_CultService.GetCultPayload(player)
+end
+
 getClanWar.OnServerInvoke = function(player)
 	return BK_ClanWarService.GetClanWarPayload(player)
 end
@@ -10601,6 +10610,17 @@ blackMarketAction.OnServerEvent:Connect(function(player, actionId, targetId)
 
 	-- Tell black market UI listeners to refresh after the server finishes the action.
 	blackMarketAction:FireClient(player)
+end)
+
+cultAction.OnServerEvent:Connect(function(player, actionId, targetId)
+	if not checkRateLimit(player, "CultAction") then
+		return
+	end
+
+	BK_CultService.ProcessCultAction(player, actionId, targetId)
+
+	-- Tell cult UI listeners to refresh after the server finishes the action.
+	cultAction:FireClient(player)
 end)
 
 clanWarAction.OnServerEvent:Connect(function(player, actionId)
@@ -10987,6 +11007,7 @@ BK_AchievementService.Init(BitKaisenServiceContext)
 BK_DojoService.Init(BitKaisenServiceContext)
 BK_AssetService.Init(BitKaisenServiceContext)
 BK_BlackMarketService.Init(BitKaisenServiceContext)
+BK_CultService.Init(BitKaisenServiceContext)
 BK_ClanWarService.Init(BitKaisenServiceContext)
 BK_DomainService.Init(BitKaisenServiceContext)
 BK_GodModeService.Init(BitKaisenServiceContext)

@@ -1370,6 +1370,102 @@ BitKaisenActivities.Database = {
 	},
 
 	{
+		Id = "cult_found",
+		Title = "Found a Cursed Cult",
+		Description = "Gather your first followers and declare a cursed organization of your own. There is no going back once word spreads.",
+		MinAge = 16,
+		MaxAge = 120,
+		RequiresTechnique = false,
+		RequiresSorcerer = false,
+		RequiresCurseUser = false,
+		RequiresJujutsuHigh = false,
+		RequiresCultEligible = true,
+		ButtonColor = Color3.fromRGB(90, 20, 30),
+		LockedText = "Only Curse Users or rogue sorcerers with a big enough Wanted Level can found a cult.",
+		HideWhenLocked = true
+	},
+
+	{
+		Id = "cult_recruit_initiate",
+		Title = "Recruit Initiate",
+		Description = "Draw a vulnerable or curious soul into your cult's lowest rank.",
+		MinAge = 16,
+		MaxAge = 120,
+		RequiresTechnique = false,
+		RequiresSorcerer = false,
+		RequiresCurseUser = false,
+		RequiresJujutsuHigh = false,
+		RequiresCultFounded = true,
+		ButtonColor = Color3.fromRGB(90, 20, 30),
+		LockedText = "You need to found a cult before recruiting initiates.",
+		HideWhenLocked = true
+	},
+
+	{
+		Id = "cult_binding_ritual",
+		Title = "Binding Ritual",
+		Description = "Bind a member closer through fear and devotion. Small backlash risk.",
+		MinAge = 16,
+		MaxAge = 120,
+		RequiresTechnique = false,
+		RequiresSorcerer = false,
+		RequiresCurseUser = false,
+		RequiresJujutsuHigh = false,
+		RequiresCultFounded = true,
+		ButtonColor = Color3.fromRGB(90, 20, 30),
+		LockedText = "You need to found a cult before performing rituals.",
+		HideWhenLocked = true
+	},
+
+	{
+		Id = "cult_collect_tribute",
+		Title = "Collect Tribute",
+		Description = "Tax the membership for the treasury. Loyalty suffers.",
+		MinAge = 16,
+		MaxAge = 120,
+		RequiresTechnique = false,
+		RequiresSorcerer = false,
+		RequiresCurseUser = false,
+		RequiresJujutsuHigh = false,
+		RequiresCultFounded = true,
+		ButtonColor = Color3.fromRGB(90, 20, 30),
+		LockedText = "You need to found a cult before collecting tribute.",
+		HideWhenLocked = true
+	},
+
+	{
+		Id = "cult_expand_territory",
+		Title = "Expand Territory",
+		Description = "Push the cult's claim into new ground. Wanted Level rises.",
+		MinAge = 16,
+		MaxAge = 120,
+		RequiresTechnique = false,
+		RequiresSorcerer = false,
+		RequiresCurseUser = false,
+		RequiresJujutsuHigh = false,
+		RequiresCultFounded = true,
+		ButtonColor = Color3.fromRGB(90, 20, 30),
+		LockedText = "You need to found a cult before expanding territory.",
+		HideWhenLocked = true
+	},
+
+	{
+		Id = "cult_curse_fusion",
+		Title = "Curse Fusion",
+		Description = "Consume a low-ranking member for power. Dark, permanent, irreversible.",
+		MinAge = 16,
+		MaxAge = 120,
+		RequiresTechnique = false,
+		RequiresSorcerer = false,
+		RequiresCurseUser = false,
+		RequiresJujutsuHigh = false,
+		RequiresCultFounded = true,
+		ButtonColor = Color3.fromRGB(60, 10, 15),
+		LockedText = "You need cult initiates before you can perform a curse fusion.",
+		HideWhenLocked = true
+	},
+
+	{
 		Id = "dojo_send_students_patrol",
 		Title = "Send Students on Patrol",
 		Description = "Send dojo students to handle minor curse traces. Their grade, CE, CT, and potential affect the result.",
@@ -1597,6 +1693,27 @@ function BitKaisenActivities.CanDoActivity(stats, activity)
 
 	if activity.RequiresCurseUser and not isCurseUser(stats) then
 		return false, activity.LockedText ~= "" and activity.LockedText or "Only Curse Users can do this."
+	end
+
+	if activity.RequiresCultEligible then
+		if stats.CultFounded == true then
+			return false, "You already lead a cursed organization."
+		end
+		if stats.ClanFounded == true then
+			return false, "You cannot found a cult while leading a legitimate clan."
+		end
+		local societyStatus = tostring(stats.SocietyStatus or "")
+		local eligible = isCurseUser(stats) or societyStatus == "Rogue Sorcerer" or societyStatus == "Unregistered Sorcerer"
+		if not eligible then
+			return false, activity.LockedText ~= "" and activity.LockedText or "Only Curse Users or rogue sorcerers can found a cult."
+		end
+		if (tonumber(stats.WantedLevel) or 0) < 3 then
+			return false, "You need a bigger criminal reputation before anyone will follow you into a cult."
+		end
+	end
+
+	if activity.RequiresCultFounded and stats.CultFounded ~= true then
+		return false, activity.LockedText ~= "" and activity.LockedText or "You need to found a cult first."
 	end
 
 	if activity.RequiresGrandDojo then
@@ -1885,6 +2002,13 @@ local CATEGORY_MAP = {
 	curse_user_secret_training = "Curse User",
 	curse_user_threaten_informant = "Curse User",
 
+	cult_found = "Cult",
+	cult_recruit_initiate = "Cult",
+	cult_binding_ritual = "Cult",
+	cult_collect_tribute = "Cult",
+	cult_expand_territory = "Cult",
+	cult_curse_fusion = "Cult",
+
 	heian_blood_moon = "Era",
 	edo_lightning_duel = "Era",
 	era_lore_encounter = "Era",
@@ -1899,7 +2023,7 @@ local CATEGORY_MAP = {
 local CATEGORY_ORDER = {
 	"Life", "School", "Training", "Jujutsu High", "Mentor",
 	"Missions", "Dojo/Clan", "Social", "Minigames",
-	"Curse Spirit", "Underworld", "Curse User", "Era", "Premium",
+	"Curse Spirit", "Underworld", "Curse User", "Cult", "Era", "Premium",
 }
 
 function BitKaisenActivities.GetActivityCategory(activityId)

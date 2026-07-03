@@ -167,6 +167,9 @@ local function isInsideMenuContent(instance)
 			or name == "AssetsOverlay" or name == "AssetsWindow" or name == "MenuContent"
 			or name == "AFKPanel" or name == "OwnedTab" or name == "ShopTab"
 			or name == "DojoTab" or name == "SettingsTab"
+			or name == "NavPanel" -- main category row; its buttons must never get
+			-- scavenged into the top bar just because a category name (e.g.
+			-- "binding_vowsButton") happens to match a NameMatches keyword.
 		then
 			return true
 		end

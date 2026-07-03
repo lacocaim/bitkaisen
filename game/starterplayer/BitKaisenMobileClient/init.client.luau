@@ -80,19 +80,21 @@ end
 
 loadingScreen.bump("Registering navigation...")
 
-navRegistry.register({ id = "weekly",            label = navT("nav_weekly",        "WEEKLY"),        order = 0,  color = theme.Blue })
-navRegistry.register({ id = "missions",          label = navT("nav_missions",       "MISSIONS"),       order = 1,  color = theme.Bad })
-navRegistry.register({ id = "activities",        label = navT("nav_activities",     "ACTIVITIES"),     order = 2,  color = theme.Orange })
-navRegistry.register({ id = "relationships",     label = navT("nav_relationships",  "RELATIONSHIPS"),  order = 3,  color = Color3.fromRGB(255, 120, 190) })
-navRegistry.register({ id = "assets",            label = navT("nav_assets",         "ASSETS"),         order = 4,  color = theme.Gold })
-navRegistry.register({ id = "jobs",              label = navT("nav_jobs",           "JOBS"),           order = 5,  color = theme.Green })
-navRegistry.register({ id = "affiliations",      label = navT("nav_affiliations",   "AFFILIATIONS"),   order = 6,  color = theme.Purple })
-navRegistry.register({ id = "domain",            label = navT("nav_domain",         "DOMAIN"),         order = 7,  color = Color3.fromRGB(190, 130, 255) })
-navRegistry.register({ id = "rivals",            label = navT("nav_rivals",         "RIVALS"),         order = 8,  color = theme.Red })
-navRegistry.register({ id = "history",           label = navT("nav_history",        "HISTORY"),        order = 9,  color = theme.Blue })
-navRegistry.register({ id = "mentor",            label = navT("nav_mentor",         "MENTOR"),         order = 10, color = Color3.fromRGB(55, 200, 230) })
-navRegistry.register({ id = "binding_vows",      label = navT("nav_vows",           "VOWS"),           order = 11, color = Color3.fromRGB(220, 180, 255) })
-navRegistry.register({ id = "technique_mastery", label = navT("nav_mastery",        "MASTERY"),        order = 12, color = theme.Purple })
+navRegistry.registerBatch({
+	{ id = "weekly",            label = navT("nav_weekly",        "WEEKLY"),        order = 0,  color = theme.Blue },
+	{ id = "missions",          label = navT("nav_missions",       "MISSIONS"),       order = 1,  color = theme.Bad },
+	{ id = "activities",        label = navT("nav_activities",     "ACTIVITIES"),     order = 2,  color = theme.Orange },
+	{ id = "relationships",     label = navT("nav_relationships",  "RELATIONSHIPS"),  order = 3,  color = Color3.fromRGB(255, 120, 190) },
+	{ id = "assets",            label = navT("nav_assets",         "ASSETS"),         order = 4,  color = theme.Gold },
+	{ id = "jobs",              label = navT("nav_jobs",           "JOBS"),           order = 5,  color = theme.Green },
+	{ id = "affiliations",      label = navT("nav_affiliations",   "AFFILIATIONS"),   order = 6,  color = theme.Purple },
+	{ id = "domain",            label = navT("nav_domain",         "DOMAIN"),         order = 7,  color = Color3.fromRGB(190, 130, 255) },
+	{ id = "rivals",            label = navT("nav_rivals",         "RIVALS"),         order = 8,  color = theme.Red },
+	{ id = "history",           label = navT("nav_history",        "HISTORY"),        order = 9,  color = theme.Blue },
+	{ id = "mentor",            label = navT("nav_mentor",         "MENTOR"),         order = 10, color = Color3.fromRGB(55, 200, 230) },
+	{ id = "binding_vows",      label = navT("nav_vows",           "VOWS"),           order = 11, color = Color3.fromRGB(220, 180, 255) },
+	{ id = "technique_mastery", label = navT("nav_mastery",        "MASTERY"),        order = 12, color = theme.Purple },
+})
 
 loadingScreen.bump("Preparing panels...")
 

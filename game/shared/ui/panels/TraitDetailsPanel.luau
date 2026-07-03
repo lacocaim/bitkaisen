@@ -547,6 +547,14 @@ end
 local function findTraitLabel(profileScroll: Instance?): TextLabel?
 	if not profileScroll then return nil end
 
+	-- Dossier layout names the value label "Traits" directly (see
+	-- ProfileCard.luau's DInfoRow calls) instead of a single combined
+	-- "Traits: X" string, so look it up by name first.
+	local byName = profileScroll:FindFirstChild("Traits", true)
+	if byName and byName:IsA("TextLabel") then
+		return byName
+	end
+
 	for _, descendant in ipairs(profileScroll:GetDescendants()) do
 		if descendant:IsA("TextLabel") then
 			local text = stripRichText(descendant.Text or "")

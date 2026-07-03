@@ -16,14 +16,46 @@ local function AgeUpButton()
 
 	return container {
 		name = "ActionRow",
-		ws = 0.61, hs = 0.08,
-		xs = 0.025, ys = 0.86,
+		ws = 1, hs = 1,
+		color = Color3.fromRGB(10, 9, 15),
+		corner = 10,
+		stroke { color = Color3.fromRGB(90, 25, 25), thickness = 1 },
+
+		container {
+			name = "Bracket_Left",
+			w = 20, h = 26,
+			x = 14, xs = 0, ys = 0.5, y = 0, anchor = { 0, 0.5 },
+			transparency = 1,
+			text {
+				text = "[",
+				color = Color3.fromRGB(130, 40, 40),
+				size = 22,
+				font = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Heavy),
+				xalign = "left",
+				ws = 1, hs = 1,
+			},
+		},
+		container {
+			name = "Bracket_Right",
+			w = 20, h = 26,
+			x = -14, xs = 1, ys = 0.5, y = 0, anchor = { 1, 0.5 },
+			transparency = 1,
+			text {
+				text = "]",
+				color = Color3.fromRGB(130, 40, 40),
+				size = 22,
+				font = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Heavy),
+				xalign = "right",
+				ws = 1, hs = 1,
+			},
+		},
 
 		container {
 			name = "AgeUpButton",
-			ws = 1, hs = 1,
-			color = theme.RedDark,
-			corner = 10,
+			ws = 1, w = -60, hs = 1, h = -12,
+			xs = 0.5, ys = 0.5, anchor = { 0.5, 0.5 },
+			color = Color3.fromRGB(90, 12, 12),
+			corner = 8,
 			clicked = function()
 				if busy() then return end
 				busy(true)
@@ -34,12 +66,12 @@ local function AgeUpButton()
 				end
 				task.delay(0.35, function() busy(false) end)
 			end,
-			stroke { color = theme.Red },
+			stroke { color = Color3.fromRGB(180, 50, 50), thickness = 2 },
 			text {
 				text = _ui("btn_age_up", "+ AGE"),
-				color = theme.Text,
+				color = Color3.fromRGB(240, 220, 220),
 				size = 22,
-				font = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.ExtraBold),
+				font = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Heavy),
 				ws = 1, hs = 1,
 			},
 		},

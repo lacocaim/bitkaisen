@@ -45,6 +45,18 @@ local CATEGORY_COLORS = {
 	Premium = Color3.fromRGB(255, 204, 102),
 }
 
+local CAT_LOCALE_KEYS = {
+	["Life"] = "cat_life", ["School"] = "cat_school", ["Training"] = "cat_training",
+	["Jujutsu High"] = "cat_jjk", ["Mentor"] = "cat_mentor", ["Missions"] = "cat_missions",
+	["Dojo/Clan"] = "cat_dojo", ["Social"] = "cat_social", ["Minigames"] = "cat_minigames",
+	["Curse Spirit"] = "cat_spirit", ["Curse User"] = "cat_user",
+	["Era"] = "cat_era", ["Premium"] = "cat_premium",
+}
+local function catLabel(cat)
+	local k = CAT_LOCALE_KEYS[cat]
+	return k and _act(k, cat) or cat
+end
+
 local CATEGORY_ORDER_CLIENT = {
 	"Life", "School", "Training", "Jujutsu High", "Mentor",
 	"Missions", "Dojo/Clan", "Social", "Minigames",
@@ -402,7 +414,7 @@ local function refresh()
 		headerLabel.TextSize = 13
 		headerLabel.TextColor3 = catColor
 		headerLabel.TextXAlignment = Enum.TextXAlignment.Left
-		headerLabel.Text = string.upper(cat)
+		headerLabel.Text = string.upper(catLabel(cat))
 		headerLabel.ZIndex = 624
 		headerLabel.Parent = header
 
@@ -429,7 +441,7 @@ local function refresh()
 		btn.Font = Enum.Font.GothamBold
 		btn.TextSize = 11
 		btn.TextColor3 = Color3.fromRGB(230, 230, 240)
-		btn.Text = cat
+		btn.Text = catLabel(cat)
 		btn.LayoutOrder = railOrder
 		btn.ZIndex = 623
 		btn.AutoButtonColor = true

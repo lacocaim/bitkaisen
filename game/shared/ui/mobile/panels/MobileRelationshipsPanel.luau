@@ -594,12 +594,12 @@ local function createRelationshipCard(parent: GuiObject, relationship, order: nu
 					local prevActions = prev:FindFirstChild("ActionsGrid")
 					if prevActions then prevActions:Destroy() end
 					local prevBtn = prev:FindFirstChild("ExpandBtn")
-					if prevBtn then (prevBtn :: TextButton).Text = "▼  Actions" end
+					if prevBtn then (prevBtn :: TextButton).Text = _relStr("show_actions", "▼  Actions") end
 				end
 			end
 			expandedCardId = relationship.Id
 			actionsHolder = createActionsGrid(card, relationship, 5)
-			expandBtn.Text = "▲  Hide Actions"
+			expandBtn.Text = _relStr("hide_actions", "▲  Hide Actions")
 		end
 	end)
 end

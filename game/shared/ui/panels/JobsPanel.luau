@@ -65,7 +65,7 @@ stroke.Parent = window
 
 local title = Instance.new("TextLabel")
 title.BackgroundTransparency = 1
-title.Text = "JOBS"
+title.Text = _j("title", "JOBS")
 title.TextColor3 = THEME.Text
 title.Font = Enum.Font.GothamBlack
 title.TextXAlignment = Enum.TextXAlignment.Left
@@ -282,8 +282,8 @@ local function makeCard(job, canApply, playerAge)
 	cardStroke.Parent = card
 
 	addText(card, tostring(job.Title or "Job"), isMobile and 13 or 15, THEME.Text, UDim2.new(0, 14, 0, 12), UDim2.new(1, -136, 0, 22), true)
-	addText(card, "$" .. tostring(job.Pay or 0) .. " / year | " .. tostring(job.Acceptance or 0) .. "% acceptance", isMobile and 10 or 12, THEME.Gold, UDim2.new(0, 14, 0, 38), UDim2.new(1, -136, 0, 20), true)
-	addText(card, "Best with " .. tostring(job.Stat or "stats") .. " | Age " .. tostring(job.MinAge or 0) .. "+", isMobile and 9 or 11, THEME.SubText, UDim2.new(0, 14, 0, 62), UDim2.new(1, -136, 0, 34), false)
+	addText(card, _j("job_pay", "${pay}/year  •  {acceptance}% acceptance"):gsub("{pay}", tostring(job.Pay or 0)):gsub("{acceptance}", tostring(job.Acceptance or 0)), isMobile and 10 or 12, THEME.Gold, UDim2.new(0, 14, 0, 38), UDim2.new(1, -136, 0, 20), true)
+	addText(card, _j("job_req", "Best with {stat}  •  Age {minAge}+"):gsub("{stat}", tostring(job.Stat or "stats")):gsub("{minAge}", tostring(job.MinAge or 0)), isMobile and 9 or 11, THEME.SubText, UDim2.new(0, 14, 0, 62), UDim2.new(1, -136, 0, 34), false)
 
 	local buttonLabel
 	if not canApply then
@@ -340,7 +340,7 @@ function refresh()
 		return getJobs:InvokeServer()
 	end)
 	if not ok or typeof(payload) ~= "table" then
-		subtitle.Text = "Civilian route jobs are unavailable."
+		subtitle.Text = _j("unavailable", "Civilian route jobs are unavailable.")
 		return
 	end
 
@@ -348,7 +348,7 @@ function refresh()
 	local jobLevel = tonumber(payload.JobLevel) or 0
 	local salary = tonumber(payload.JobSalary) or 0
 	local careerText = jobLevel > 0 and (" | Lv " .. tostring(jobLevel) .. " | $" .. tostring(salary) .. "/yr") or ""
-	subtitle.Text = "Age " .. tostring(playerAge) .. " | Current: " .. tostring(payload.CurrentJob or "Unemployed") .. careerText .. " | Year " .. tostring(payload.Year or "?") .. " | Applications " .. tostring(payload.ApplicationsThisYear or 0) .. "/1"
+	subtitle.Text = _j("age", "Age") .. " " .. tostring(playerAge) .. " · " .. tostring(payload.CurrentJob or _j("unemployed", "Unemployed")) .. careerText .. " · " .. _j("year", "Year") .. " " .. tostring(payload.Year or "?") .. " · " .. _j("apps", "Apps") .. " " .. tostring(payload.ApplicationsThisYear or 0) .. "/1"
 
 	local hasAgeLocked = false
 	for _, job in ipairs(payload.Jobs or {}) do
@@ -363,7 +363,7 @@ function refresh()
 		note.Size = UDim2.new(1, -8, 0, 28)
 		note.BackgroundColor3 = Color3.fromRGB(40, 32, 20)
 		note.BorderSizePixel = 0
-		note.Text = "  Some roles need you to be older — locked jobs show their minimum age."
+		note.Text = "  " .. _j("age_hint", "Some roles need you to be older — locked jobs show their minimum age.")
 		note.TextColor3 = THEME.Gold
 		note.TextSize = 11
 		note.Font = Enum.Font.GothamMedium

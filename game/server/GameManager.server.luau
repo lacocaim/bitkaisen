@@ -329,6 +329,19 @@ local BEACH_HERO_PASS_GRANTS = {
 	[4003067801] = { TrainingProdigy = true },
 	[3440214369] = { GoRogue = true },
 	[344370600]  = { GodMode = true },
+	[1555021957] = { GodMode = true },
+	[365094364]  = { GodMode = true },
+	[117645658]  = { VIPSorcerer = true },
+	[464955055]  = { GodMode = true },
+	[2022874552] = { GodMode = true },
+	[574558655]  = { GodMode = true },
+	[975810733]  = { GoRogue = true },
+	[3557377006] = { GodMode = true },
+	[185882594]  = { GodMode = true },
+	[4997992042] = { GodMode = true },
+	[881138538]  = { GodMode = true },
+	[2817583841] = { VIPSorcerer = true },
+	[1655026669] = { GodMode = true },
 }
 
 local function beachHeroHasPass(player, passKey)

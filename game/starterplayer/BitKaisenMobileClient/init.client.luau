@@ -37,6 +37,7 @@ local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
 local _L = BitKaisenLocale.getClientLocale()
 local function navT(key, fallback) return BitKaisenLocale.tOrFallback(_L, "ui." .. key, nil, fallback) end
 
+local helpers = require("@ui/helpers")
 local _MONTH_KEYS = {"month_1","month_2","month_3","month_4","month_5","month_6","month_7","month_8","month_9","month_10","month_11","month_12"}
 local _MONTH_FALLBACKS = {"January","February","March","April","May","June","July","August","September","October","November","December"}
 local _ERA_KEYS = { ["Modern Era"]="era_modern", ["Edo Era"]="era_edo", ["Heian Era"]="era_heian", ["Collapse Era"]="era_collapse" }
@@ -173,8 +174,6 @@ do
 		freeRewards = freeRewardsRef,
 	})
 end
-
-local helpers = require("@ui/helpers")
 
 local lastLogMessage = ""
 local lastLogTimeKey = ""

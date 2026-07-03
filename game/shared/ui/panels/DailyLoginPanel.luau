@@ -381,10 +381,10 @@ local function render(data)
 	if canClaim then
 		local dayNum = tostring(((nextStreak - 1) % 7) + 1)
 		statusLabel.Text = _dl("ready", "Ready to claim Day {day}."):gsub("{day}", dayNum)
-		footerText.Text = "Claim now to continue your daily streak. Missing a day resets the streak."
+		footerText.Text = _dl("footer_claim", "Claim now to continue your daily streak. Missing a day resets the streak.")
 	else
 		statusLabel.Text = _dl("claimed", "Already claimed today. Come back tomorrow.")
-		footerText.Text = "Daily reward claimed. Your next reward will be available tomorrow."
+		footerText.Text = _dl("footer_claimed", "Daily reward claimed. Your next reward will be available tomorrow.")
 	end
 
 	local rewards = typeof(data.Rewards) == "table" and data.Rewards or {}

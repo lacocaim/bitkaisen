@@ -927,9 +927,9 @@ function refreshPage()
 	if currentPage == 1 then
 		titleLabel.Text = _cc("create_title", "CREATE CHARACTER")
 		pageLabel.Text = _cc("page1_sub", "Page 1/2  •  Identity")
-		subtitleLabel.Text = "Choose your identity for this life. Clan, cursed technique, and birth origin are still rolled by the game."
-		leftTitleLabel.Text = "Birth Profile"
-		leftHintLabel.Text = "First Name"
+		subtitleLabel.Text = _cc("sub_page1", "Choose your identity for this life. Clan, cursed technique, and birth origin are still rolled by the game.")
+		leftTitleLabel.Text = _cc("left_birth", "Birth Profile")
+		leftHintLabel.Text = _cc("left_name", "First Name")
 		randomizeButton.Text = _cc("btn_randomize", "RANDOMIZE")
 		backButton.Visible = false
 		continueButton.Text = _cc("btn_continue", "CONTINUE")
@@ -941,9 +941,9 @@ function refreshPage()
 	else
 		titleLabel.Text = _cc("birth_title", "BIRTH PATH")
 		pageLabel.Text = _cc("page2_sub", "Page 2/2  •  Circumstances")
-		subtitleLabel.Text = "Era and upbringing are free. God Mode unlocks advanced birth options."
-		leftTitleLabel.Text = "Life Foundation"
-		leftHintLabel.Text = "Profile Summary"
+		subtitleLabel.Text = _cc("sub_page2", "Era and upbringing are free. God Mode unlocks advanced birth options.")
+		leftTitleLabel.Text = _cc("left_life", "Life Foundation")
+		leftHintLabel.Text = _cc("left_summary", "Profile Summary")
 		randomizeButton.Text = _cc("btn_random", "RANDOMIZE PATH")
 		backButton.Visible = true
 		continueButton.Text = _cc("btn_finish", "FINISH")

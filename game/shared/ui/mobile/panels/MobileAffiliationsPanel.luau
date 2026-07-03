@@ -152,12 +152,12 @@ local function addExpandButton(card: Frame, rel: any, layoutOrder: number)
 		if expandedAffId == id then
 			expandedAffId = nil
 			if actionsHolder then actionsHolder:Destroy(); actionsHolder = nil end
-			expandBtn.Text = "\226\150\188  Actions"
+			expandBtn.Text = _a("show_actions", "▼  Actions")
 		else
 			expandedAffId = id
 			if actionsHolder then actionsHolder:Destroy() end
 			actionsHolder = createAffActionsGrid(card, rel, layoutOrder - 1)
-			expandBtn.Text = "\226\150\178  Hide Actions"
+			expandBtn.Text = _a("hide_actions", "▲  Hide Actions")
 		end
 	end)
 end

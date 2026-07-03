@@ -4,6 +4,10 @@ local text = require("@ui-components/core/text")
 local stroke = require("@ui-components/core/stroke")
 local theme = require("@ui/theme")
 local remotes = require("@ui-state/remotes")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _ui(key, fallback) return BitKaisenLocale.tOrFallback(_L, "ui." .. key, nil, fallback) end
 
 local source = vide.source
 
@@ -32,7 +36,7 @@ local function AgeUpButton()
 			end,
 			stroke { color = theme.Red },
 			text {
-				text = "+ AGE",
+				text = _ui("btn_age_up", "+ AGE"),
 				color = theme.Text,
 				size = 22,
 				font = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.ExtraBold),

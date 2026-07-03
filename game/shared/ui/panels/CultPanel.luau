@@ -5,6 +5,9 @@ local TweenService = game:GetService("TweenService")
 local uiState = require("@ui-state/uiState")
 local responsiveScale = require("@ui/responsiveScale")
 local BitKaisenCultData = require(ReplicatedStorage:WaitForChild("BitKaisenCultData"))
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _ct(key, fallback) return BitKaisenLocale.tOrFallback(_L, "cult." .. key, nil, fallback) end
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -144,7 +147,7 @@ title.TextColor3 = COLORS.Text
 title.TextSize = 24
 title.Font = Enum.Font.GothamBlack
 title.TextXAlignment = Enum.TextXAlignment.Left
-title.Text = "CULT SANCTUM"
+title.Text = _ct("title", "CULT SANCTUM")
 title.ZIndex = 622
 title.Parent = window
 
@@ -157,7 +160,7 @@ subtitle.TextColor3 = COLORS.SubText
 subtitle.TextSize = 12
 subtitle.Font = Enum.Font.GothamBold
 subtitle.TextXAlignment = Enum.TextXAlignment.Left
-subtitle.Text = "Manage your cursed organization."
+subtitle.Text = _ct("subtitle", "Manage your cursed organization.")
 subtitle.ZIndex = 622
 subtitle.Parent = window
 
@@ -186,7 +189,7 @@ cultNameLabel.TextColor3 = COLORS.Gold
 cultNameLabel.TextSize = 13
 cultNameLabel.Font = Enum.Font.GothamBlack
 cultNameLabel.TextXAlignment = Enum.TextXAlignment.Left
-cultNameLabel.Text = "Unnamed Cult"
+cultNameLabel.Text = _ct("unnamed", "Unnamed Cult")
 cultNameLabel.ZIndex = 622
 cultNameLabel.Parent = window
 
@@ -198,7 +201,7 @@ rankLabel.TextColor3 = COLORS.Bad
 rankLabel.TextSize = 13
 rankLabel.Font = Enum.Font.GothamBlack
 rankLabel.TextXAlignment = Enum.TextXAlignment.Right
-rankLabel.Text = "No Cult"
+rankLabel.Text = _ct("no_cult", "No Cult")
 rankLabel.ZIndex = 622
 rankLabel.Parent = window
 
@@ -239,7 +242,7 @@ tabLayout.Parent = tabHolder
 
 local tabs = {}
 local TAB_NAMES = { "Overview", "Members", "Actions", "History" }
-local TAB_LABELS = { Overview = "Overview", Members = "Members", Actions = "Actions", History = "History" }
+local TAB_LABELS = { Overview = _ct("tab_overview","OVERVIEW"), Members = _ct("tab_members","MEMBERS"), Actions = _ct("tab_actions","ACTIONS"), History = _ct("tab_history","HISTORY") }
 
 local function makeTab(name, order)
 	local b = Instance.new("TextButton")
@@ -446,7 +449,7 @@ local function buildOverviewTab(data)
 	rankText.TextSize = 16
 	rankText.Font = Enum.Font.GothamBlack
 	rankText.TextXAlignment = Enum.TextXAlignment.Left
-	rankText.Text = tostring(data.Rank or "No Cult") .. "  •  Infamy " .. tostring(data.Infamy or 0)
+	rankText.Text = tostring(data.Rank or _ct("no_cult","No Cult")) .. "  •  " .. _ct("infamy_label","Infamy") .. " " .. tostring(data.Infamy or 0)
 	rankText.ZIndex = 625
 	rankText.Parent = card
 
@@ -458,17 +461,17 @@ local function buildOverviewTab(data)
 	statsText.TextSize = 12
 	statsText.Font = Enum.Font.GothamBold
 	statsText.TextXAlignment = Enum.TextXAlignment.Left
-	statsText.Text = "Members "
+	statsText.Text = _ct("members_label","Members") .. " "
 		.. tostring(data.Members or 0)
-		.. "  •  Treasury $"
+		.. "  •  " .. _ct("treasury_label","Treasury $")
 		.. tostring(data.Treasury or 0)
-		.. "  •  Territory "
-		.. tostring(data.Territory or "None")
+		.. "  •  " .. _ct("territory_label","Territory") .. " "
+		.. tostring(data.Territory or _ct("territory_none","None"))
 	statsText.ZIndex = 625
 	statsText.Parent = card
 
-	makeStatBar(card, "Loyalty", data.Loyalty, COLORS.Green, 66)
-	makeStatBar(card, "Territory", data.TerritoryControl, COLORS.Gold, 92)
+	makeStatBar(card, _ct("loyalty_label","Loyalty"), data.Loyalty, COLORS.Green, 66)
+	makeStatBar(card, _ct("territory_label","Territory"), data.TerritoryControl, COLORS.Gold, 92)
 
 	local focusLabel = Instance.new("TextLabel")
 	focusLabel.Size = UDim2.new(0, 100, 0, 18)
@@ -478,7 +481,7 @@ local function buildOverviewTab(data)
 	focusLabel.TextSize = 11
 	focusLabel.Font = Enum.Font.GothamBold
 	focusLabel.TextXAlignment = Enum.TextXAlignment.Left
-	focusLabel.Text = "FOCUS:"
+	focusLabel.Text = _ct("focus_label","FOCUS:")
 	focusLabel.ZIndex = 625
 	focusLabel.Parent = card
 
@@ -627,7 +630,7 @@ local function buildActionsTab(data)
 			btn.TextColor3 = enabled and COLORS.Text or COLORS.Muted
 			btn.TextSize = 12
 			btn.Font = Enum.Font.GothamBlack
-			btn.Text = enabled and "DO IT" or "LOCKED"
+			btn.Text = enabled and _ct("btn_do_it","DO IT") or _ct("btn_locked","LOCKED")
 			btn.AutoButtonColor = false
 			btn.ZIndex = 626
 			btn.Parent = card
@@ -649,7 +652,7 @@ end
 local function buildHistoryTab(data)
 	local history = data.History or {}
 	if #history <= 0 then
-		makeEmptyCard("Your cult has no recorded history yet.")
+		makeEmptyCard(_ct("no_history","Your cult has no recorded history yet."))
 		return
 	end
 
@@ -676,7 +679,7 @@ local function buildHistoryTab(data)
 		label.TextWrapped = true
 		label.TextXAlignment = Enum.TextXAlignment.Left
 		label.RichText = true
-		label.Text = "<b>Year " .. tostring(entry.Year or 0) .. ":</b> " .. tostring(entry.Text or "")
+		label.Text = "<b>" .. _ct("history_year","Year") .. " " .. tostring(entry.Year or 0) .. ":</b> " .. tostring(entry.Text or "")
 		label.ZIndex = 625
 		label.Parent = card
 
@@ -704,8 +707,8 @@ refresh = function()
 
 	currentData = data or {}
 
-	cultNameLabel.Text = tostring(currentData.CultName or "Unnamed Cult")
-	rankLabel.Text = tostring(currentData.Rank or "No Cult")
+	cultNameLabel.Text = tostring(currentData.CultName or _ct("unnamed","Unnamed Cult"))
+	rankLabel.Text = tostring(currentData.Rank or _ct("no_cult","No Cult"))
 
 	if currentTab == "Overview" then
 		buildOverviewTab(currentData)

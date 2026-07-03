@@ -4,6 +4,9 @@ local TweenService = game:GetService("TweenService")
 
 local uiState = require("@ui-state/uiState")
 local responsiveScale = require("@ui/responsiveScale")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _bm(key, fallback) return BitKaisenLocale.tOrFallback(_L, "black_market." .. key, nil, fallback) end
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -135,7 +138,7 @@ title.TextColor3 = COLORS.Text
 title.TextSize = 24
 title.Font = Enum.Font.GothamBlack
 title.TextXAlignment = Enum.TextXAlignment.Left
-title.Text = "BLACK MARKET"
+title.Text = _bm("title", "BLACK MARKET")
 title.ZIndex = 622
 title.Parent = window
 
@@ -148,7 +151,7 @@ subtitle.TextColor3 = COLORS.SubText
 subtitle.TextSize = 12
 subtitle.Font = Enum.Font.GothamBold
 subtitle.TextXAlignment = Enum.TextXAlignment.Left
-subtitle.Text = "Buy and sell illegal cursed tools and contraband curse items."
+subtitle.Text = _bm("subtitle", "Buy and sell illegal cursed tools and contraband curse items.")
 subtitle.ZIndex = 622
 subtitle.Parent = window
 
@@ -177,7 +180,7 @@ moneyLabel.TextColor3 = COLORS.Green
 moneyLabel.TextSize = 13
 moneyLabel.Font = Enum.Font.GothamBlack
 moneyLabel.TextXAlignment = Enum.TextXAlignment.Left
-moneyLabel.Text = "Money: $0"
+moneyLabel.Text = _bm("money_label", "Money: $") .. "0"
 moneyLabel.ZIndex = 622
 moneyLabel.Parent = window
 
@@ -189,7 +192,7 @@ wantedLabel.TextColor3 = COLORS.Bad
 wantedLabel.TextSize = 13
 wantedLabel.Font = Enum.Font.GothamBlack
 wantedLabel.TextXAlignment = Enum.TextXAlignment.Right
-wantedLabel.Text = "Wanted Level: 0"
+wantedLabel.Text = _bm("wanted_label", "Wanted Level: ") .. "0"
 wantedLabel.ZIndex = 622
 wantedLabel.Parent = window
 
@@ -230,7 +233,7 @@ tabLayout.Parent = tabHolder
 
 local tabs = {}
 local TAB_NAMES = { "BuyTools", "BuyItems", "SellTools" }
-local TAB_LABELS = { BuyTools = "Buy Tools", BuyItems = "Buy Items", SellTools = "Sell Tools" }
+local TAB_LABELS = { BuyTools = _bm("tab_buy_tools","BUY TOOLS"), BuyItems = _bm("tab_buy_items","BUY ITEMS"), SellTools = _bm("tab_sell_tools","SELL TOOLS") }
 
 local function makeTab(name, order)
 	local b = Instance.new("TextButton")
@@ -493,9 +496,9 @@ local function buildBuyItemsTab(data)
 			item.Name or "Unknown Item",
 			"$" .. tostring(item.Price or 0),
 			COLORS.Green,
-			"Illegal Item • Single Use",
+			_bm("tag_illegal", "Illegal Item • Single Use"),
 			tostring(item.Description or ""),
-			"BUY & USE",
+			_bm("btn_buy_use", "BUY & USE"),
 			COLORS.Accent,
 			true,
 			function()
@@ -519,7 +522,7 @@ local function buildSellToolsTab(data)
 			COLORS.Gold,
 			tostring(tool.Rarity or "Common") .. " • " .. tostring(tool.Type or "Tool"),
 			tostring(tool.EffectText or tool.Description or ""),
-			"SELL",
+			_bm("btn_sell", "SELL"),
 			COLORS.Bad,
 			true,
 			function()
@@ -547,8 +550,8 @@ refresh = function()
 
 	currentData = data or {}
 
-	moneyLabel.Text = "Money: $" .. formatMoneyAmount(currentData.Money or 0)
-	wantedLabel.Text = "Wanted Level: " .. tostring(currentData.WantedLevel or 0)
+	moneyLabel.Text = _bm("money_label", "Money: $") .. formatMoneyAmount(currentData.Money or 0)
+	wantedLabel.Text = _bm("wanted_label", "Wanted Level: ") .. tostring(currentData.WantedLevel or 0)
 
 	if currentTab == "BuyTools" then
 		buildBuyToolsTab(currentData)

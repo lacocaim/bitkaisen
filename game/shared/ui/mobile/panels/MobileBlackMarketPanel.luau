@@ -3,6 +3,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local uiState = require("@ui-state/uiState")
 local mc = require("@ui/mobile/mobileComponents")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _bm(key, fallback) return BitKaisenLocale.tOrFallback(_L, "black_market." .. key, nil, fallback) end
 
 local theme = mc.theme
 local corner = mc.corner
@@ -33,7 +36,7 @@ local currentData: { [string]: any }? = nil
 
 local tabs: { [string]: TextButton } = {}
 local TAB_NAMES = { "BuyTools", "BuyItems", "SellTools" }
-local TAB_LABELS = { BuyTools = "Buy Tools", BuyItems = "Buy Items", SellTools = "Sell Tools" }
+local TAB_LABELS = { BuyTools = _bm("tab_buy_tools","BUY TOOLS"), BuyItems = _bm("tab_buy_items","BUY ITEMS"), SellTools = _bm("tab_sell_tools","SELL TOOLS") }
 
 local refresh: () -> ()
 
@@ -232,9 +235,9 @@ local function buildBuyItemsTab(data)
 			name = item.Name or "Unknown Item",
 			priceText = "$" .. tostring(item.Price or 0),
 			priceColor = theme.Green,
-			tagText = "Illegal Item • Single Use",
+			tagText = _bm("tag_illegal","Illegal Item • Single Use"),
 			desc = item.Description,
-			buttonText = "BUY & USE",
+			buttonText = _bm("btn_buy_use","BUY & USE"),
 			buttonColor = theme.Purple,
 			buttonEnabled = true,
 			callback = function() fireBlackMarketAction("BuyItem", item.Id) end,
@@ -260,7 +263,7 @@ local function buildSellToolsTab(data)
 			priceColor = theme.Gold,
 			tagText = tostring(tool.Rarity or "Common") .. " • " .. tostring(tool.Type or "Tool"),
 			desc = tool.EffectText or tool.Description,
-			buttonText = "SELL",
+			buttonText = _bm("btn_sell","SELL"),
 			buttonColor = theme.Bad,
 			buttonEnabled = true,
 			callback = function() fireBlackMarketAction("SellTool", tool.Id) end,
@@ -284,10 +287,10 @@ refresh = function()
 	currentData = data or {}
 
 	if moneyLabel then
-		moneyLabel.Text = "Money: $" .. formatMoney(currentData.Money or 0)
+		moneyLabel.Text = _bm("money_label","Money: $") .. formatMoney(currentData.Money or 0)
 	end
 	if wantedLabel then
-		wantedLabel.Text = "Wanted: " .. tostring(currentData.WantedLevel or 0)
+		wantedLabel.Text = _bm("wanted_label","Wanted Level: ") .. tostring(currentData.WantedLevel or 0)
 	end
 
 	if currentTab == "BuyTools" then
@@ -347,7 +350,7 @@ local function init()
 	moneyLabel.TextSize = 13
 	moneyLabel.Font = Enum.Font.GothamBlack
 	moneyLabel.TextXAlignment = Enum.TextXAlignment.Left
-	moneyLabel.Text = "Money: $0"
+	moneyLabel.Text = _bm("money_label","Money: $") .. "0"
 	moneyLabel.Parent = sheet
 
 	wantedLabel = Instance.new("TextLabel")
@@ -358,7 +361,7 @@ local function init()
 	wantedLabel.TextSize = 13
 	wantedLabel.Font = Enum.Font.GothamBlack
 	wantedLabel.TextXAlignment = Enum.TextXAlignment.Right
-	wantedLabel.Text = "Wanted: 0"
+	wantedLabel.Text = _bm("wanted_label","Wanted Level: ") .. "0"
 	wantedLabel.Parent = sheet
 
 	statusLabel = Instance.new("TextLabel")

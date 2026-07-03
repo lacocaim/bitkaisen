@@ -59,35 +59,47 @@ end
 local BitKaisenSaveSystem = {}
 
 local CODE_ORDER = {
-	"SUMMERPT2",
-	"VEILOFCURSES",
+	"OPCODE",
+	"BLACKMARKET",
+	"HIDDENVEIL",
 }
 
 local CODE_DEFINITIONS = {
 
-	SUMMERPT2 = {
-		Name = "SummerPT2",
-		Description = "The second wave hits. The cursed world evolves.",
-		RewardText = "+$20,000 | +100 CE | +10 Mastery | +10 Rep",
+	OPCODE = {
+		Name = "OPCode",
+		Description = "Summer PT3 drops. The cursed world shifts again.",
+		RewardText = "+$15,000 | +80 CE | +10 Mastery | +5 Rep",
 		Grant = function(stats)
-			stats.Money = (stats.Money or 0) + 20000
-			stats.CursedEnergy = (stats.CursedEnergy or 0) + 100
+			stats.Money = (stats.Money or 0) + 15000
+			stats.CursedEnergy = (stats.CursedEnergy or 0) + 80
 			stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + 10, 0, 100)
-			stats.Reputation = (stats.Reputation or 0) + 10
-			return "+$20,000 Money, +100 Cursed Energy, +10 Technique Mastery, and +10 Reputation"
+			stats.Reputation = (stats.Reputation or 0) + 5
+			return "+$15,000 Money, +80 Cursed Energy, +10 Technique Mastery, and +5 Reputation"
 		end
 	},
 
-	VEILOFCURSES = {
-		Name = "VeilOfCurses",
-		Description = "Beyond the veil, something stirs.",
-		RewardText = "+$10,000 | +60 CE | +8 Strength | Max Health",
+	BLACKMARKET = {
+		Name = "BlackMarket",
+		Description = "The underground stirs. Not everything is sold in the open.",
+		RewardText = "+$25,000 | +5 Strength | +5 Smarts",
 		Grant = function(stats)
-			stats.Money = (stats.Money or 0) + 10000
+			stats.Money = (stats.Money or 0) + 25000
+			stats.Strength = math.clamp((stats.Strength or 0) + 5, 0, 100)
+			stats.Smarts = math.clamp((stats.Smarts or 0) + 5, 0, 100)
+			return "+$25,000 Money, +5 Strength, and +5 Smarts"
+		end
+	},
+
+	HIDDENVEIL = {
+		Name = "HiddenVeil",
+		Description = "Some techniques were never meant to be found.",
+		RewardText = "+60 CE | +8 Mastery | +10 Fear",
+		Grant = function(stats)
 			stats.CursedEnergy = (stats.CursedEnergy or 0) + 60
-			stats.Strength = math.clamp((stats.Strength or 0) + 8, 0, 100)
-			stats.Health = 100
-			return "+$10,000 Money, +60 Cursed Energy, +8 Strength, and Health restored to 100"
+			stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + 8, 0, 100)
+			stats.Fear = math.clamp((stats.Fear or 0) + 10, 0, 100)
+			return "+60 Cursed Energy, +8 Technique Mastery, and +10 Fear"
 		end
 	},
 }

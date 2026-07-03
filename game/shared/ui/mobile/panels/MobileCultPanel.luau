@@ -4,6 +4,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local uiState = require("@ui-state/uiState")
 local mc = require("@ui/mobile/mobileComponents")
 local BitKaisenCultData = require(ReplicatedStorage:WaitForChild("BitKaisenCultData"))
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _ct(key, fallback) return BitKaisenLocale.tOrFallback(_L, "cult." .. key, nil, fallback) end
 
 local theme = mc.theme
 local corner = mc.corner
@@ -32,7 +35,7 @@ local currentData: { [string]: any }? = nil
 
 local tabs: { [string]: TextButton } = {}
 local TAB_NAMES = { "Overview", "Members", "Actions", "History" }
-local TAB_LABELS = { Overview = "Overview", Members = "Members", Actions = "Actions", History = "History" }
+local TAB_LABELS = { Overview = _ct("tab_overview","OVERVIEW"), Members = _ct("tab_members","MEMBERS"), Actions = _ct("tab_actions","ACTIONS"), History = _ct("tab_history","HISTORY") }
 
 local ROLE_COLORS = {
 	CultInitiate = Color3.fromRGB(190, 190, 205),
@@ -218,17 +221,17 @@ local function buildOverviewTab(data)
 	local card = mobileCard({ parent = scroll, order = 0 })
 	mobileLabel({
 		parent = card,
-		text = tostring(data.Rank or "No Cult") .. "  •  Infamy " .. tostring(data.Infamy or 0),
+		text = tostring(data.Rank or _ct("no_cult","No Cult")) .. "  •  " .. _ct("infamy_label","Infamy") .. " " .. tostring(data.Infamy or 0),
 		size = 16, color = theme.Text, font = Enum.Font.GothamBlack, order = 1,
 	})
 	mobileLabel({
 		parent = card,
-		text = "Members " .. tostring(data.Members or 0) .. "  •  Treasury $" .. tostring(data.Treasury or 0),
+		text = _ct("members_label","Members") .. " " .. tostring(data.Members or 0) .. "  •  " .. _ct("treasury_label","Treasury $") .. tostring(data.Treasury or 0),
 		size = 12, color = theme.SubText, order = 2,
 	})
 	mobileLabel({
 		parent = card,
-		text = "Territory: " .. tostring(data.Territory or "None"),
+		text = _ct("territory_label","Territory") .. ": " .. tostring(data.Territory or _ct("territory_none","None")),
 		size = 12, color = theme.SubText, order = 3,
 	})
 
@@ -241,8 +244,8 @@ local function buildOverviewTab(data)
 	barsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	barsLayout.Padding = UDim.new(0, 6)
 	barsLayout.Parent = barsHolder
-	makeStatBar(barsHolder, "Loyalty", data.Loyalty, theme.Green, 1)
-	makeStatBar(barsHolder, "Territory", data.TerritoryControl, theme.Gold, 2)
+	makeStatBar(barsHolder, _ct("loyalty_label","Loyalty"), data.Loyalty, theme.Green, 1)
+	makeStatBar(barsHolder, _ct("territory_label","Territory"), data.TerritoryControl, theme.Gold, 2)
 
 	local focusRow = Instance.new("Frame")
 	focusRow.Size = UDim2.new(1, 0, 0, 36)
@@ -338,13 +341,13 @@ local function buildActionsTab(data)
 
 			if enabled then
 				mobileButton({
-					parent = card, text = "DO IT", order = 3,
+					parent = card, text = _ct("btn_do_it","DO IT"), order = 3,
 					size = UDim2.new(1, 0, 0, 44), color = Color3.fromRGB(140, 20, 30),
 					textSize = 14, callback = function() fireCultAction(actionId) end,
 				})
 			else
 				local btn = mobileButton({
-					parent = card, text = "LOCKED", order = 3,
+					parent = card, text = _ct("btn_locked","LOCKED"), order = 3,
 					size = UDim2.new(1, 0, 0, 44), color = theme.Button,
 					textColor = theme.SubText, textSize = 14, callback = function() end,
 				})
@@ -360,7 +363,7 @@ end
 local function buildHistoryTab(data)
 	local history = data.History or {}
 	if #history <= 0 then
-		addEmptyCard("Your cult has no recorded history yet.", 0)
+		addEmptyCard(_ct("no_history","Your cult has no recorded history yet."), 0)
 		return
 	end
 
@@ -371,7 +374,7 @@ local function buildHistoryTab(data)
 		local card = mobileCard({ parent = scroll, order = order })
 		mobileLabel({
 			parent = card,
-			text = "<b>Year " .. tostring(entry.Year or 0) .. ":</b> " .. tostring(entry.Text or ""),
+			text = "<b>" .. _ct("history_year","Year") .. " " .. tostring(entry.Year or 0) .. ":</b> " .. tostring(entry.Text or ""),
 			size = 13, color = theme.SubText, order = 1,
 		})
 	end

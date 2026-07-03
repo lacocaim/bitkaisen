@@ -6,8 +6,10 @@
 --   Server protocol is unchanged: GetActivityList still returns the same list and DoActivity still calls the same action path.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 
 local BitKaisenActivities = require(ReplicatedStorage:WaitForChild("BitKaisenActivities"))
+local BK_CultService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_CultService"))
 local BitKaisenRelationships = require(ReplicatedStorage:WaitForChild("BitKaisenRelationships"))
 local BitKaisenAssets = require(ReplicatedStorage:WaitForChild("BitKaisenAssets"))
 local BitKaisenTraits = require(ReplicatedStorage:WaitForChild("BitKaisenTraits"))
@@ -3803,6 +3805,17 @@ local function processActivity(player, activityId)
 			stats.Reputation += math.random(0, 3)
 			logMessage = "You researched binding vows and learned how sorcerers trade freedom for power."
 		end
+
+	elseif activityId == "cult_found" or activityId == "cult_recruit_initiate" or activityId == "cult_binding_ritual"
+		or activityId == "cult_collect_tribute" or activityId == "cult_expand_territory" or activityId == "cult_curse_fusion"
+		or activityId == "cult_supply_run" or activityId == "cult_review_members" then
+		local ok, message = BK_CultService.ProcessActivity(player, stats, activityId)
+		if not ok then
+			stats.ActivitiesDoneThisAge = math.max(0, (stats.ActivitiesDoneThisAge or 1) - 1)
+			fireLifeUpdate(player, stats, message)
+			return
+		end
+		logMessage = message
 
 	end
 

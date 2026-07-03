@@ -54,10 +54,19 @@ local refreshInProgress = false
 local canBrainTransplant = false
 local canNameChildren = false
 local expandedCardId = nil
+local detailOpen = false
 
 local gui: ScreenGui
 local scrollFrame: ScrollingFrame
 local refreshRelationships: (preservePosition: boolean) -> ()
+local openDetailCard: (relationship: any) -> ()
+local detailOverlay: TextButton
+local detailWindow: Frame
+local detailScroll: ScrollingFrame
+local detailName: TextLabel
+local detailRole: TextLabel
+local detailInfo: TextLabel
+local detailBody: TextLabel
 
 local function roleColor(role: string): Color3
 	if role == "Mother" or role == "Father" or role == "Sibling" or role == "Caretaker" or role == "Child" or role == "Ward" or role == "Spouse" or role == "Late Mother" or role == "Late Father" then
@@ -112,6 +121,66 @@ end
 
 local function getRelationshipCE(relationship): number
 	return tonumber(relationship.CursedEnergy) or 0
+end
+
+local function getRelationshipTraits(relationship): string
+	if not relationship then
+		return "None"
+	end
+	if relationship.TraitSummary and relationship.TraitSummary ~= "" then
+		return tostring(relationship.TraitSummary)
+	end
+	if type(relationship.Traits) == "table" and #relationship.Traits > 0 then
+		local names = {}
+		for _, trait in ipairs(relationship.Traits) do
+			if type(trait) == "table" then
+				table.insert(names, tostring(trait.Name or trait.Id or "Unknown"))
+			else
+				local text = tostring(trait)
+				text = text:gsub("_", " ")
+				text = text:gsub("(%a)([%w_']*)", function(first, rest)
+					return string.upper(first) .. string.lower(rest)
+				end)
+				table.insert(names, text)
+			end
+		end
+		return table.concat(names, ", ")
+	end
+	return "None"
+end
+
+local function getPersonality(relationship): string
+	return tostring(relationship.Personality or relationship.Trait or "No clear personality read yet.")
+end
+
+local function getBackground(relationship): string
+	if relationship.Background and relationship.Background ~= "" then
+		return tostring(relationship.Background)
+	end
+	local role = tostring(relationship.Role or "Unknown")
+	local name = tostring(relationship.Name or "This person")
+	if role == "Mother" or role == "Father" or role == "Caretaker" then
+		return name .. " helped shape your early life and family history."
+	elseif role == "Sibling" then
+		return name .. " grew up connected to the same family pressure as you."
+	elseif role == "Child" then
+		return name .. " is part of your legacy and may inherit pieces of your world. Custody: " .. tostring(relationship.Custody or "With You") .. "."
+	elseif role == "Ward" then
+		return name .. " was rescued from a curse incident and is growing under your protection."
+	elseif role == "Student" then
+		return name .. " trains under your dojo and represents your clan's future."
+	elseif role == "Teacher" then
+		return name .. " watches your growth as a sorcerer and can influence your future."
+	elseif role == "Rival" then
+		return name .. " measures their growth against yours and may become a problem later."
+	elseif role == "Partner" or role == "Spouse" then
+		return name .. " is tied closely to your personal life beyond missions and curses."
+	elseif role == "Mission Partner" then
+		return name .. " has worked beside you during dangerous assignments."
+	elseif role == "Late Mother" or role == "Late Father" then
+		return name .. " is part of the bloodline memory you inherited."
+	end
+	return name .. " is one of the people connected to your current life."
 end
 
 local function getStatusLine(relationship): string
@@ -461,14 +530,46 @@ local function createRelationshipCard(parent: GuiObject, relationship, order: nu
 	card.Name = "RelCard_" .. tostring(relationship.Id)
 	card:SetAttribute("RelId", relationship.Id)
 
-	mobileLabel({
-		parent = card,
-		text = tostring(relationship.Name or "Unknown"),
-		size = 16,
-		color = alive and theme.Text or theme.Muted,
-		font = Enum.Font.GothamBlack,
-		order = 1,
-	})
+	local nameRow = Instance.new("Frame")
+	nameRow.Name = "NameRow"
+	nameRow.Size = UDim2.new(1, 0, 0, 20)
+	nameRow.BackgroundTransparency = 1
+	nameRow.LayoutOrder = 1
+	nameRow.Parent = card
+
+	local nameLabel = Instance.new("TextLabel")
+	nameLabel.Name = "NameLabel"
+	nameLabel.Size = UDim2.new(1, -34, 1, 0)
+	nameLabel.BackgroundTransparency = 1
+	nameLabel.TextColor3 = alive and theme.Text or theme.Muted
+	nameLabel.TextSize = 16
+	nameLabel.Font = Enum.Font.GothamBlack
+	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+	nameLabel.TextWrapped = false
+	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+	nameLabel.Text = tostring(relationship.Name or "Unknown")
+	nameLabel.Parent = nameRow
+
+	local profileButton = Instance.new("TextButton")
+	profileButton.Name = "ProfileButton"
+	profileButton.Size = UDim2.fromOffset(26, 26)
+	profileButton.AnchorPoint = Vector2.new(1, 0.5)
+	profileButton.Position = UDim2.new(1, 0, 0.5, 0)
+	profileButton.BackgroundColor3 = Color3.fromRGB(38, 28, 60)
+	profileButton.BorderSizePixel = 0
+	profileButton.TextColor3 = Color3.fromRGB(205, 170, 255)
+	profileButton.TextSize = 14
+	profileButton.Font = Enum.Font.GothamBlack
+	profileButton.Text = "?"
+	profileButton.AutoButtonColor = false
+	profileButton.ZIndex = 6
+	profileButton.Parent = nameRow
+	corner(profileButton, 999)
+	stroke(profileButton, Color3.fromRGB(85, 55, 135), 1)
+
+	bindTap(profileButton, function()
+		openDetailCard(relationship)
+	end)
 
 	mobileLabel({
 		parent = card,
@@ -513,32 +614,6 @@ local function createRelationshipCard(parent: GuiObject, relationship, order: nu
 
 	local actionsHolder: Frame? = nil
 	if isExpanded then
-		if role == "Notable Sorcerer" then
-			local personality = tostring(relationship.Personality or relationship.Trait or "")
-			local background = tostring(relationship.Background or relationship.PublicNote or "")
-			if personality ~= "" then
-				mobileLabel({
-					parent = card,
-					text = personality,
-					size = 11,
-					color = Color3.fromRGB(200, 180, 255),
-					font = Enum.Font.GothamMedium,
-					order = 5,
-					wrap = true,
-				})
-			end
-			if background ~= "" then
-				mobileLabel({
-					parent = card,
-					text = background,
-					size = 11,
-					color = Color3.fromRGB(165, 165, 185),
-					font = Enum.Font.GothamMedium,
-					order = 6,
-					wrap = true,
-				})
-			end
-		end
 		actionsHolder = createActionsGrid(card, relationship, 7)
 	end
 
@@ -692,6 +767,64 @@ refreshRelationships = function(preservePosition: boolean)
 	end)
 end
 
+local function closeDetailCard()
+	if not detailOpen then return end
+	detailOpen = false
+	detailOverlay.Visible = false
+end
+
+openDetailCard = function(relationship)
+	detailOpen = true
+
+	local name = tostring(relationship.Name or "Unknown")
+	local role = tostring(relationship.Role or "Unknown")
+	local status = tostring(relationship.Status or "Neutral")
+	local age = getRelationshipAge(relationship)
+	local gender = getRelationshipGender(relationship)
+	local grade = getRelationshipGrade(relationship)
+	local technique = getRelationshipTechnique(relationship)
+	local ce = getRelationshipCE(relationship)
+	local traits = getRelationshipTraits(relationship)
+	local personality = getPersonality(relationship)
+	local background = getBackground(relationship)
+	local alive = relationship.Alive ~= false
+
+	detailName.Text = name
+	detailName.TextColor3 = alive and theme.Text or theme.Muted
+	detailRole.Text = alive and (role .. "  ·  " .. status) or (role .. "  ·  Deceased")
+	detailRole.TextColor3 = alive and roleColor(role) or theme.Muted
+
+	detailInfo.Text = string.format(
+		"<b>Age:</b> %s%s\n<b>Grade:</b> %s\n<b>Cursed Energy:</b> %s\n<b>Technique:</b> %s\n<b>Traits:</b> %s",
+		(age > 0 and tostring(age) or "Unknown"),
+		(gender ~= "" and gender ~= "Unknown") and ("  ·  " .. gender) or "",
+		grade,
+		tostring(ce),
+		technique,
+		traits
+	)
+
+	local body = "<b>Personality</b>\n" .. personality .. "\n\n<b>Background</b>\n" .. background
+
+	if relationship.YearsKnown and relationship.YearsKnown > 0 then
+		body = body .. "\n\nKnown for " .. tostring(relationship.YearsKnown) .. " years."
+	end
+
+	if role == "Partner" then
+		body = body .. "\nDating for " .. tostring(relationship.YearsDating or 0) .. " years."
+	elseif role == "Spouse" then
+		body = body .. "\nMarried for " .. tostring(relationship.YearsMarried or 0) .. " years."
+	end
+
+	if relationship.Alive == false then
+		body = body .. "\n\n<b>Memory</b>\n" .. tostring(relationship.DeathText or (name .. " died."))
+	end
+
+	detailBody.Text = body
+	detailScroll.CanvasPosition = Vector2.new(0, 0)
+	detailOverlay.Visible = true
+end
+
 local function openPanel()
 	if isOpen then return end
 	isOpen = true
@@ -706,6 +839,8 @@ local function closePanel()
 	pendingRefresh = false
 	refreshInProgress = false
 	expandedCardId = nil
+	detailOpen = false
+	if detailOverlay then detailOverlay.Visible = false end
 	gui.Enabled = false
 end
 
@@ -755,6 +890,99 @@ local function init()
 	pad.PaddingLeft = UDim.new(0, 10)
 	pad.PaddingRight = UDim.new(0, 10)
 	pad.Parent = scrollFrame
+
+	detailOverlay = Instance.new("TextButton")
+	detailOverlay.Name = "RelationshipDetailOverlay"
+	detailOverlay.Size = UDim2.fromScale(1, 1)
+	detailOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	detailOverlay.BackgroundTransparency = 0.45
+	detailOverlay.BorderSizePixel = 0
+	detailOverlay.Text = ""
+	detailOverlay.AutoButtonColor = false
+	detailOverlay.Visible = false
+	detailOverlay.ZIndex = 50
+	detailOverlay.Parent = gui
+
+	bindTap(detailOverlay, function() end)
+
+	detailWindow = Instance.new("Frame")
+	detailWindow.Name = "RelationshipDetailWindow"
+	detailWindow.Size = UDim2.new(1, -24, 1, -100)
+	detailWindow.Position = UDim2.new(0, 12, 0, 50)
+	detailWindow.BackgroundColor3 = theme.Panel
+	detailWindow.BorderSizePixel = 0
+	detailWindow.ZIndex = 51
+	detailWindow.Parent = detailOverlay
+	corner(detailWindow, 12)
+	stroke(detailWindow, theme.Purple, 1)
+
+	mobileHeader(detailWindow, "PROFILE", function()
+		closeDetailCard()
+	end)
+
+	detailScroll = Instance.new("ScrollingFrame")
+	detailScroll.Name = "DetailScroll"
+	detailScroll.Size = UDim2.new(1, 0, 1, -50)
+	detailScroll.Position = UDim2.new(0, 0, 0, 50)
+	detailScroll.BackgroundTransparency = 1
+	detailScroll.BorderSizePixel = 0
+	detailScroll.ScrollBarThickness = 4
+	detailScroll.ScrollBarImageColor3 = theme.Stroke
+	detailScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+	detailScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	detailScroll.ZIndex = 51
+	detailScroll.Parent = detailWindow
+
+	local detailLayout = Instance.new("UIListLayout")
+	detailLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	detailLayout.Padding = UDim.new(0, 6)
+	detailLayout.Parent = detailScroll
+
+	local detailPad = Instance.new("UIPadding")
+	detailPad.PaddingTop = UDim.new(0, 6)
+	detailPad.PaddingBottom = UDim.new(0, 20)
+	detailPad.PaddingLeft = UDim.new(0, 12)
+	detailPad.PaddingRight = UDim.new(0, 12)
+	detailPad.Parent = detailScroll
+
+	detailName = mobileLabel({
+		parent = detailScroll,
+		text = "Unknown",
+		size = 22,
+		color = theme.Text,
+		font = Enum.Font.GothamBlack,
+		order = 1,
+	})
+
+	detailRole = mobileLabel({
+		parent = detailScroll,
+		text = "Role",
+		size = 14,
+		color = theme.SubText,
+		font = Enum.Font.GothamBold,
+		order = 2,
+	})
+
+	local detailInfoCard = mobileCard({ parent = detailScroll, order = 3 })
+	detailInfo = mobileLabel({
+		parent = detailInfoCard,
+		text = "",
+		size = 13,
+		color = Color3.fromRGB(210, 210, 225),
+		font = Enum.Font.GothamMedium,
+		order = 1,
+		wrap = true,
+	})
+
+	detailBody = mobileLabel({
+		parent = detailScroll,
+		text = "",
+		size = 13,
+		color = Color3.fromRGB(200, 200, 215),
+		font = Enum.Font.GothamMedium,
+		order = 4,
+		wrap = true,
+	})
 
 	relationshipAction.OnClientEvent:Connect(function()
 		busyAction = false

@@ -33,6 +33,8 @@ local CATEGORY_COLORS = {
 	Minigames = Color3.fromRGB(200, 160, 60),
 	["Curse Spirit"] = Color3.fromRGB(178, 120, 255),
 	["Curse User"] = Color3.fromRGB(220, 60, 75),
+	Underworld = Color3.fromRGB(120, 45, 130),
+	Cult = Color3.fromRGB(140, 20, 30),
 	Era = Color3.fromRGB(100, 140, 90),
 	Premium = Color3.fromRGB(255, 204, 102),
 }
@@ -40,7 +42,7 @@ local CATEGORY_COLORS = {
 local CATEGORY_ORDER = {
 	"All", "Life", "School", "Training", "Jujutsu High", "Mentor",
 	"Missions", "Dojo/Clan", "Social", "Minigames",
-	"Curse Spirit", "Curse User", "Era", "Premium",
+	"Curse Spirit", "Underworld", "Curse User", "Cult", "Era", "Premium",
 }
 
 -- ScreenGui
@@ -233,6 +235,10 @@ local function createActivityCard(activityData: any, order: number)
 		callback = function()
 			if not canDo then return end
 			if not activityData.Id then return end
+			if activityData.OpensPanel then
+				uiState.navigate(activityData.OpensPanel)
+				return
+			end
 			updateLifeEvent:FireServer("DoActivity", activityData.Id)
 			uiState.closeRoute()
 		end,

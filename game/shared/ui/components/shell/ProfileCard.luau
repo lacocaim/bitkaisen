@@ -223,7 +223,7 @@ local function ProfileCard()
 			text { text = evolutionText, size = 12, font = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold), color = theme.Purple, xalign = "left", ws = 1, auto = "y", order = 9 },
 			text { text = clanText, size = 14, font = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Medium), color = theme.Text, xalign = "left", ws = 1, auto = "y", order = 10 },
 			text { text = techText, size = 14, font = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold), color = theme.Purple, xalign = "left", ws = 1, auto = "y", order = 11 },
-			text { text = traitText, size = 12, font = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold), color = theme.Gold, xalign = "left", ws = 1, auto = "y", order = 12 },
+			text { text = traitText, size = 12, font = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold), color = theme.Gold, xalign = "left", ws = 1, auto = "y", wraps = true, order = 12 },
 			text { text = ceText, size = 14, font = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold), color = theme.Purple, xalign = "left", ws = 1, auto = "y", order = 13 },
 			text { text = moneyText, size = 14, font = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold), color = theme.Green, xalign = "left", ws = 1, auto = "y", order = 14 },
 			text { text = repText, size = 14, font = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold), color = repColor, xalign = "left", ws = 1, auto = "y", order = 15 },

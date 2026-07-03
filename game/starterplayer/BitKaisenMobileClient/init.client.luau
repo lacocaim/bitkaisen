@@ -77,6 +77,8 @@ loadingScreen.bump("Preparing panels...")
 tryInit("MobileWeeklyChallengesPanel", function() return require("@ui/mobile/panels/MobileWeeklyChallengesPanel") end)
 tryInit("MobileMissionsPanel", function() return require("@ui/mobile/panels/MobileMissionsPanel") end)
 tryInit("MobileActivitiesPanel", function() return require("@ui/mobile/panels/MobileActivitiesPanel") end)
+tryInit("MobileBlackMarketPanel", function() return require("@ui/mobile/panels/MobileBlackMarketPanel") end)
+tryInit("MobileCultPanel", function() return require("@ui/mobile/panels/MobileCultPanel") end)
 tryInit("MobileRelationshipsPanel", function() return require("@ui/mobile/panels/MobileRelationshipsPanel") end)
 tryInit("MobileAssetsPanel", function() return require("@ui/mobile/panels/MobileAssetsPanel") end)
 tryInit("MobileJobsPanel", function() return require("@ui/mobile/panels/MobileJobsPanel") end)
@@ -139,15 +141,18 @@ do
 	local topbarIcons = require("@ui/topbarIcons")
 	local godModeRef = nil
 	local clanWarRef = nil
+	local cultWarRef = nil
 	local afkRef = nil
 	local freeRewardsRef = nil
 	pcall(function() godModeRef = require("@ui/mobile/panels/MobileGodModePanel") end)
 	pcall(function() clanWarRef = require("@ui/mobile/panels/MobileClanWarPanel") end)
+	pcall(function() cultWarRef = require("@ui/mobile/panels/MobileCultWarPanel") end)
 	pcall(function() afkRef = require("@ui/mobile/panels/MobileAFKPanel") end)
 	pcall(function() freeRewardsRef = require("@ui/mobile/panels/MobileFreeRewardsPanel") end)
 	topbarIcons.init({
 		godMode = godModeRef,
 		clanWar = clanWarRef,
+		cultWar = cultWarRef,
 		afk = afkRef,
 		freeRewards = freeRewardsRef,
 	})

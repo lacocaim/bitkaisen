@@ -274,6 +274,18 @@ local function makeNotableBirth(stats, forced)
 	return npc, text
 end
 
+function BK_WorldHistoryService.RepairNotable(npc)
+	if typeof(npc) ~= "table" then
+		return
+	end
+	if npc.Gender ~= "Male" and npc.Gender ~= "Female" then
+		npc.Gender = math.random(2) == 1 and "Male" or "Female"
+	end
+	if not npc.Personality or npc.Personality == "" then
+		npc.Personality = pick(NOTABLE_PERSONALITIES)
+	end
+end
+
 local function ageNotables(stats)
 	local changed = false
 	for _, npc in ipairs(stats.NotableSorcerers or {}) do
@@ -328,6 +340,7 @@ function BK_WorldHistoryService.GetAffiliationNotables(stats)
 	BK_WorldHistoryService.EnsureWorldState(stats)
 	local list = {}
 	for _, npc in ipairs(stats.NotableSorcerers or {}) do
+		BK_WorldHistoryService.RepairNotable(npc)
 		table.insert(list, {
 			Id = npc.Id,
 			Name = npc.Name,
@@ -346,6 +359,8 @@ function BK_WorldHistoryService.GetAffiliationNotables(stats)
 			Trust = tonumber(npc.Trust) or 0,
 			Respect = math.clamp(tonumber(npc.Respect) or tonumber(npc.Progress) or 0, 0, 100),
 			Fear = tonumber(npc.Fear) or 0,
+			Romance = tonumber(npc.Romance) or 0,
+			Personality = npc.Personality,
 			PublicNote = npc.PublicNote,
 		})
 	end

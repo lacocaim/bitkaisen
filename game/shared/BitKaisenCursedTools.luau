@@ -93,6 +93,72 @@ BitKaisenCursedTools.Definitions = {
 		Effects = { CombatPower = 12 },
 		DropWeight = 0,
 	},
+	{
+		Id = "contraband_curse_wire",
+		Name = "Contraband Curse Wire",
+		Rarity = "Common",
+		Type = "Binding Tool",
+		Description = "A curse-touched wire smuggled out of a sealed evidence locker. Jujutsu Society never logged its recovery.",
+		EffectText = "+5 defense power while equipped.",
+		Effects = { DefensePower = 5 },
+		DropWeight = 0,
+		BlackMarketPrice = 1200,
+	},
+	{
+		Id = "stolen_grade3_talisman",
+		Name = "Stolen Grade 3 Talisman",
+		Rarity = "Uncommon",
+		Type = "Charm",
+		Description = "A registered exorcist's talisman, lifted before it could be filed with the Society archives.",
+		EffectText = "Lowers mission danger while equipped.",
+		Effects = { MissionRiskReduction = 6 },
+		DropWeight = 0,
+		BlackMarketPrice = 3000,
+	},
+	{
+		Id = "black_market_switchblade",
+		Name = "Black Market Switchblade",
+		Rarity = "Rare",
+		Type = "Weapon",
+		Description = "A compact blade etched with unlicensed binding script. Popular among brokers who cannot risk a bulky weapon.",
+		EffectText = "+9 combat power while equipped.",
+		Effects = { CombatPower = 9 },
+		DropWeight = 0,
+		BlackMarketPrice = 7500,
+	},
+	{
+		Id = "smuggled_binding_cuffs",
+		Name = "Smuggled Binding Cuffs",
+		Rarity = "Epic",
+		Type = "Binding Tool",
+		Description = "Restraint cuffs pulled from a raided smuggling ring, still humming with unstable cursed energy.",
+		EffectText = "+6 combat power and +7 defense power while equipped.",
+		Effects = { CombatPower = 6, DefensePower = 7 },
+		DropWeight = 0,
+		BlackMarketPrice = 16000,
+	},
+	{
+		Id = "forgers_cursed_signet",
+		Name = "Forger's Cursed Signet",
+		Rarity = "Epic",
+		Type = "CE Amplifier",
+		Description = "A forger's signet ring used to counterfeit sorcerer credentials, now repurposed to stabilize cursed output.",
+		EffectText = "+5 combat power and +6% CE gain while equipped.",
+		Effects = { CombatPower = 5, CEGainMult = 1.06 },
+		DropWeight = 0,
+		BlackMarketPrice = 19000,
+	},
+	{
+		Id = "underworld_grade1_fang",
+		Name = "Underworld Grade 1 Fang",
+		Rarity = "Legendary",
+		Type = "Weapon",
+		Description = "A Grade 1 sorcerer's tool that vanished from evidence storage and resurfaced on the black market years later.",
+		EffectText = "+15 combat power and +3 defense power while equipped.",
+		Effects = { CombatPower = 15, DefensePower = 3 },
+		DropWeight = 0,
+		BlackMarketPrice = 42000,
+	},
 }
 
 local byId = {}
@@ -136,6 +202,7 @@ function BitKaisenCursedTools.GetOwnedPayload(stats)
 				Equipped = equippedId == def.Id,
 				AcquiredFrom = item.AcquiredFrom or "Unknown",
 				AcquiredYear = item.AcquiredYear,
+				SellValue = BitKaisenCursedTools.GetSellValue(def),
 			})
 		end
 	end
@@ -166,6 +233,26 @@ function BitKaisenCursedTools.GetCatalogPayload(stats)
 	return payload
 end
 
+function BitKaisenCursedTools.GetBlackMarketCatalog(stats)
+	local owned = BitKaisenCursedTools.EnsureInventory(stats)
+	local payload = {}
+	for _, def in ipairs(BitKaisenCursedTools.Definitions) do
+		if tonumber(def.BlackMarketPrice) then
+			table.insert(payload, {
+				Id = def.Id,
+				Name = def.Name,
+				Rarity = def.Rarity,
+				Type = def.Type,
+				Description = def.Description,
+				EffectText = def.EffectText,
+				BlackMarketPrice = def.BlackMarketPrice,
+				Owned = owned[def.Id] ~= nil,
+			})
+		end
+	end
+	return payload
+end
+
 function BitKaisenCursedTools.AddTool(stats, toolId, source, year)
 	local def = BitKaisenCursedTools.GetTool(toolId)
 	if not def then return nil, false end
@@ -189,6 +276,28 @@ function BitKaisenCursedTools.GetDuplicateReward(tool)
 		Money = 120 * rank,
 		CursedEnergy = math.max(1, 2 * rank),
 	}
+end
+
+function BitKaisenCursedTools.GetSellValue(tool)
+	if tonumber(tool and tool.BlackMarketPrice) then
+		return math.floor(tool.BlackMarketPrice * 0.35)
+	end
+	return BitKaisenCursedTools.GetDuplicateReward(tool).Money
+end
+
+function BitKaisenCursedTools.SellTool(stats, toolId)
+	local def = BitKaisenCursedTools.GetTool(toolId)
+	local owned = BitKaisenCursedTools.EnsureInventory(stats)
+	if not def or not owned[def.Id] then
+		return false, 0, nil
+	end
+
+	local payout = BitKaisenCursedTools.GetSellValue(def)
+	owned[def.Id] = nil
+	if stats.EquippedCursedToolId == def.Id then
+		stats.EquippedCursedToolId = nil
+	end
+	return true, payout, def
 end
 
 function BitKaisenCursedTools.EquipTool(stats, toolId)

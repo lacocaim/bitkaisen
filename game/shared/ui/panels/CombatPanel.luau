@@ -915,9 +915,7 @@ local function init(playerGui: Instance)
 		if state.PendingAttack then
 			if state.PendingAttack.Token ~= lastAttackToken then
 				lastAttackToken = state.PendingAttack.Token
-				if not state.PendingAttack.IsBlackFlash then
-					openAttackMinigame(state.PendingAttack)
-				end
+				openAttackMinigame(state.PendingAttack)
 			end
 		else
 			lastAttackToken = nil

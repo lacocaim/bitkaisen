@@ -4,6 +4,9 @@ local UserInputService = game:GetService("UserInputService")
 
 local uiState = require("@ui-state/uiState")
 local responsiveScale = require("@ui/responsiveScale")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _wh(key, fallback) return BitKaisenLocale.tOrFallback(_L, "world_history." .. key, nil, fallback) end
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -71,7 +74,7 @@ local titleLabel = Instance.new("TextLabel")
 titleLabel.BackgroundTransparency = 1
 titleLabel.Position = UDim2.new(0, 24, 0, 18)
 titleLabel.Size = UDim2.new(1, -86, 0, 30)
-titleLabel.Text = "WORLD HISTORY"
+titleLabel.Text = _wh("title", "WORLD HISTORY")
 titleLabel.TextColor3 = COLORS.Text
 titleLabel.TextSize = 22
 titleLabel.Font = Enum.Font.GothamBlack
@@ -95,7 +98,7 @@ makeCorner(closeButton, 8)
 local historyTab = Instance.new("TextButton")
 historyTab.Position = UDim2.new(0, 24, 0, 54)
 historyTab.Size = UDim2.new(0, 100, 0, 28)
-historyTab.Text = "HISTORY"
+historyTab.Text = _wh("tab_history", "HISTORY")
 historyTab.TextColor3 = COLORS.Gold
 historyTab.TextSize = 12
 historyTab.Font = Enum.Font.GothamBlack
@@ -108,7 +111,7 @@ makeCorner(historyTab, 7)
 local titlesTab = Instance.new("TextButton")
 titlesTab.Position = UDim2.new(0, 132, 0, 54)
 titlesTab.Size = UDim2.new(0, 80, 0, 28)
-titlesTab.Text = "TITLES"
+titlesTab.Text = _wh("tab_titles", "TITLES")
 titlesTab.TextColor3 = COLORS.SubText
 titlesTab.TextSize = 12
 titlesTab.Font = Enum.Font.GothamBlack
@@ -121,7 +124,7 @@ makeCorner(titlesTab, 7)
 local livesTab = Instance.new("TextButton")
 livesTab.Position = UDim2.new(0, 220, 0, 54)
 livesTab.Size = UDim2.new(0, 100, 0, 28)
-livesTab.Text = "CEMETERY"
+livesTab.Text = _wh("tab_cemetery", "CEMETERY")
 livesTab.TextColor3 = COLORS.SubText
 livesTab.TextSize = 12
 livesTab.Font = Enum.Font.GothamBlack
@@ -134,7 +137,7 @@ makeCorner(livesTab, 7)
 local influenceTab = Instance.new("TextButton")
 influenceTab.Position = UDim2.new(0, 328, 0, 54)
 influenceTab.Size = UDim2.new(0, 100, 0, 28)
-influenceTab.Text = "INFLUENCE"
+influenceTab.Text = _wh("tab_influence", "INFLUENCE")
 influenceTab.TextColor3 = COLORS.SubText
 influenceTab.TextSize = 12
 influenceTab.Font = Enum.Font.GothamBlack
@@ -238,10 +241,10 @@ local function updateTabStyles()
 	livesTab.BackgroundColor3 = (activeTab == "lives" and active or inactive).bg
 	influenceTab.TextColor3 = (activeTab == "influence" and active or inactive).color
 	influenceTab.BackgroundColor3 = (activeTab == "influence" and active or inactive).bg
-	if activeTab == "history" then titleLabel.Text = "WORLD HISTORY"
-	elseif activeTab == "titles" then titleLabel.Text = "TITLES"
-	elseif activeTab == "lives" then titleLabel.Text = "CEMETERY OF LIVES"
-	else titleLabel.Text = "INFLUENCE" end
+	if activeTab == "history" then titleLabel.Text = _wh("title", "WORLD HISTORY")
+	elseif activeTab == "titles" then titleLabel.Text = _wh("tab_titles", "TITLES")
+	elseif activeTab == "lives" then titleLabel.Text = _wh("title_lives", "CEMETERY OF LIVES")
+	else titleLabel.Text = _wh("tab_influence", "INFLUENCE") end
 end
 
 local function renderHistory()

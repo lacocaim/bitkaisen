@@ -4,6 +4,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local uiState = require("@ui-state/uiState")
 local overlayManager = require("@ui-state/overlayManager")
 local mc = require("@ui/mobile/mobileComponents")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _cw(key, fallback) return BitKaisenLocale.tOrFallback(_L, "clan_war." .. key, nil, fallback) end
 
 local theme = mc.theme
 local mobileButton = mc.mobileButton
@@ -121,7 +124,7 @@ local function makeTensionBar(parent: GuiObject, tension: number, order: number)
 	local barLabel = Instance.new("TextLabel")
 	barLabel.Size = UDim2.new(1, 0, 0, 14)
 	barLabel.BackgroundTransparency = 1
-	barLabel.Text = "Tension: " .. tostring(tension) .. "%"
+	barLabel.Text = _cw("tension", "Tension: {pct}%"):gsub("{pct}", tostring(tension))
 	barLabel.TextColor3 = theme.SubText
 	barLabel.TextSize = 11
 	barLabel.Font = Enum.Font.GothamBold
@@ -154,7 +157,7 @@ refresh = function()
 		local emptyCard = mobileCard({ parent = scroll, order = 1 })
 		mobileLabel({
 			parent = emptyCard,
-			text = "Your clan is not involved in any war and no rivals are pressing for conflict.",
+			text = _cw("no_war", "Your clan is not involved in any war and no rivals are pressing for conflict."),
 			size = 14,
 			color = theme.SubText,
 			order = 1,
@@ -179,7 +182,7 @@ refresh = function()
 		})
 		mobileLabel({
 			parent = statusCard,
-			text = "Phase: " .. tostring(data.Phase or "Unknown") .. "  |  Battles: " .. tostring(data.BattlesWon or 0) .. "W / " .. tostring(data.BattlesLost or 0) .. "L",
+			text = _cw("phase", "Phase: {phase}  |  Battles: {wins}W / {losses}L"):gsub("{phase}", tostring(data.Phase or "Unknown")):gsub("{wins}", tostring(data.BattlesWon or 0)):gsub("{losses}", tostring(data.BattlesLost or 0)),
 			size = 13,
 			color = theme.Purple,
 			font = Enum.Font.GothamBold,
@@ -188,7 +191,7 @@ refresh = function()
 		makeTensionBar(statusCard, tension, 3)
 		mobileLabel({
 			parent = statusCard,
-			text = tostring(data.Description or "The clan war continues."),
+			text = tostring(data.Description or _cw("description_def", "The clan war continues.")),
 			size = 13,
 			color = theme.SubText,
 			order = 4,
@@ -196,7 +199,7 @@ refresh = function()
 		if cooldown > 0 then
 			mobileLabel({
 				parent = statusCard,
-				text = "Recovery: " .. tostring(cooldown) .. " year(s) before the next clan move.",
+				text = _cw("recovery", "Recovery: {cooldown} year(s) before the next clan move."):gsub("{cooldown}", tostring(cooldown)),
 				size = 12,
 				color = theme.Orange,
 				order = 5,
@@ -205,18 +208,18 @@ refresh = function()
 
 		-- Action buttons
 		local actionsCard = mobileCard({ parent = scroll, order = 2 })
-		mobileLabel({ parent = actionsCard, text = "Actions", size = 15, color = theme.Text, font = Enum.Font.GothamBold, order = 1 })
+		mobileLabel({ parent = actionsCard, text = _cw("actions", "Actions"), size = 15, color = theme.Text, font = Enum.Font.GothamBold, order = 1 })
 		if canAct then
 			makeActionRow(actionsCard, {
-				{ text = "DEFEND", color = theme.Blue, action = function() fire("ClanWar_Defend") end },
-				{ text = "STRIKE", color = theme.Bad, action = function() fire("ClanWar_Strike") end },
+				{ text = _cw("defend", "DEFEND"), color = theme.Blue, action = function() fire("ClanWar_Defend") end },
+				{ text = _cw("strike", "STRIKE"), color = theme.Bad, action = function() fire("ClanWar_Strike") end },
 			}, 2)
 			makeActionRow(actionsCard, {
-				{ text = "NEGOTIATE", color = theme.Green, action = function() fire("ClanWar_Negotiate") end },
-				{ text = "BETRAY", color = theme.Purple, action = function() fire("ClanWar_Betray") end },
+				{ text = _cw("negotiate", "NEGOTIATE"), color = theme.Green, action = function() fire("ClanWar_Negotiate") end },
+				{ text = _cw("betray", "BETRAY"), color = theme.Purple, action = function() fire("ClanWar_Betray") end },
 			}, 3)
 		else
-			mobileLabel({ parent = actionsCard, text = "Recovering — no actions available.", size = 13, color = theme.Muted, order = 2 })
+			mobileLabel({ parent = actionsCard, text = _cw("recovering", "Recovering — no actions available."), size = 13, color = theme.Muted, order = 2 })
 		end
 	else
 		-- Peacetime / eligible card
@@ -231,14 +234,14 @@ refresh = function()
 		})
 		mobileLabel({
 			parent = peaceCard,
-			text = "Power: " .. tostring(data.Power or 0) .. "  |  Record: " .. tostring(data.Wins or 0) .. "W / " .. tostring(data.Losses or 0) .. "L",
+			text = _cw("power_record", "Power: {power}  |  Record: {wins}W / {losses}L"):gsub("{power}", tostring(data.Power or 0)):gsub("{wins}", tostring(data.Wins or 0)):gsub("{losses}", tostring(data.Losses or 0)),
 			size = 13,
 			color = theme.SubText,
 			order = 2,
 		})
 		mobileLabel({
 			parent = peaceCard,
-			text = "A rival clan can pressure you through yearly events, or you can provoke a conflict.",
+			text = _cw("peace_desc", "A rival clan can pressure you through yearly events, or you can provoke a conflict."),
 			size = 13,
 			color = theme.SubText,
 			order = 3,
@@ -246,7 +249,7 @@ refresh = function()
 		if cooldown > 0 then
 			mobileLabel({
 				parent = peaceCard,
-				text = "Recovery: " .. tostring(cooldown) .. " year(s) before the next clan move.",
+				text = _cw("recovery", "Recovery: {cooldown} year(s) before the next clan move."):gsub("{cooldown}", tostring(cooldown)),
 				size = 12,
 				color = theme.Orange,
 				order = 4,
@@ -258,29 +261,29 @@ refresh = function()
 		if cooldown <= 0 then
 			mobileButton({
 				parent = actionsCard,
-				text = "PROVOKE RIVAL",
+				text = _cw("provoke", "PROVOKE RIVAL"),
 				color = theme.Bad,
 				textSize = 14,
 				order = 1,
 				callback = function() fire("ClanWar_Start") end,
 			})
 		else
-			mobileLabel({ parent = actionsCard, text = "Recovering — cannot provoke yet.", size = 13, color = theme.Muted, order = 1 })
+			mobileLabel({ parent = actionsCard, text = _cw("cannot_provoke", "Recovering — cannot provoke yet."), size = 13, color = theme.Muted, order = 1 })
 		end
 	end
 
 	-- History card
 	local historyCard = mobileCard({ parent = scroll, order = 999 })
-	mobileLabel({ parent = historyCard, text = "War History", size = 15, color = theme.Text, font = Enum.Font.GothamBold, order = 1 })
+	mobileLabel({ parent = historyCard, text = _cw("war_history", "War History"), size = 15, color = theme.Text, font = Enum.Font.GothamBold, order = 1 })
 	local history = data.History or {}
 	if #history == 0 then
-		mobileLabel({ parent = historyCard, text = "No clan war history yet.", size = 13, color = theme.SubText, order = 2 })
+		mobileLabel({ parent = historyCard, text = _cw("no_history", "No clan war history yet."), size = 13, color = theme.SubText, order = 2 })
 	else
 		local lines = {}
 		for i = #history, math.max(1, #history - 8), -1 do
 			local entry = history[i]
-			local prefix = entry.Year and ("Year " .. tostring(entry.Year) .. ": ") or ""
-			table.insert(lines, prefix .. tostring(entry.Text or "Clan war event."))
+			local prefix = entry.Year and (_cw("year_prefix", "Year {year}: "):gsub("{year}", tostring(entry.Year))) or ""
+			table.insert(lines, prefix .. tostring(entry.Text or _cw("default_event", "Clan war event.")))
 		end
 		mobileLabel({ parent = historyCard, text = table.concat(lines, "\n"), size = 13, color = theme.SubText, order = 2 })
 	end

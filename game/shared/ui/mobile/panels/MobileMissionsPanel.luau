@@ -4,6 +4,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local uiState = require("@ui-state/uiState")
 local playerState = require("@ui-state/playerState")
 local mc = require("@ui/mobile/mobileComponents")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _ms(key, fallback) return BitKaisenLocale.tOrFallback(_L, "missions." .. key, nil, fallback) end
 
 local theme = mc.theme
 local player = Players.LocalPlayer
@@ -18,7 +21,7 @@ local scroll: ScrollingFrame
 
 local function getMissionEmptyMessage(): string
 	local stats = playerState.stats()
-	if not stats then return "No missions available.\nLoading your sorcerer profile..." end
+	if not stats then return _ms("loading", "No missions available.\nLoading your sorcerer profile...") end
 
 	local age = tonumber(stats.Age) or 0
 	local grade = tostring(stats.Grade or "Non-Sorcerer")
@@ -31,18 +34,18 @@ local function getMissionEmptyMessage(): string
 	local isOfficialSorcerer = (stats.InJujutsuHigh == true or stats.RegisteredSorcerer == true)
 		and not isUnregistered
 
-	if age < 16 then return "No official missions available.\nYou need to be at least 16." end
-	if not hasTechnique then return "No missions available.\nAwaken a cursed technique first." end
+	if age < 16 then return _ms("need_age", "No official missions available.\nYou need to be at least 16.") end
+	if not hasTechnique then return _ms("need_technique", "No missions available.\nAwaken a cursed technique first.") end
 	if not isOfficialSorcerer then
 		if isUnregistered then
-			return "No official missions available.\nApply to Jujutsu High to register your " .. grade .. "."
+			return _ms("apply_register", "No official missions available.\nApply to Jujutsu High to register your ") .. grade .. "."
 		end
-		return "No official missions available.\nApply to Jujutsu High and become a registered sorcerer first."
+		return _ms("apply_jjh", "No official missions available.\nApply to Jujutsu High and become a registered sorcerer first.")
 	end
 	if stats.TechniqueUsable == false then
-		return "No missions available.\nYour technique exists, but it is not usable in missions yet."
+		return _ms("technique_unusable", "No missions available.\nYour technique exists, but it is not usable in missions yet.")
 	end
-	return "No missions available.\nCheck your official grade or try again later."
+	return _ms("check_grade", "No missions available.\nCheck your official grade or try again later.")
 end
 
 local function clearList()
@@ -82,7 +85,7 @@ local function createMissionCard(missionData, order: number)
 
 	mc.mobileLabel({
 		parent = card,
-		text = "RISK \u{2022} " .. tostring(missionData.Grade or "Unknown"),
+		text = _ms("risk", "RISK") .. " \u{2022} " .. tostring(missionData.Grade or "Unknown"),
 		size = 13,
 		color = riskColor,
 		font = Enum.Font.GothamBlack,
@@ -92,8 +95,9 @@ local function createMissionCard(missionData, order: number)
 	local rewardText = missionData.RewardText
 	if not rewardText or rewardText == "" then
 		local rewardRep = tonumber(missionData.RewardRep) or 0
-		local repText = "Rep +" .. tostring(rewardRep)
-		if rewardRep < 0 then repText = "Rep " .. tostring(rewardRep) end
+		local repLabel = _ms("rep", "Rep")
+		local repText = repLabel .. " +" .. tostring(rewardRep)
+		if rewardRep < 0 then repText = repLabel .. " " .. tostring(rewardRep) end
 		rewardText = "CE +" .. tostring(missionData.RewardCE or 0)
 			.. " \u{2022} $" .. tostring(missionData.RewardMoney or 0)
 			.. " \u{2022} " .. repText
@@ -109,7 +113,7 @@ local function createMissionCard(missionData, order: number)
 
 	mc.mobileButton({
 		parent = card,
-		text = "ACCEPT MISSION",
+		text = _ms("accept", "ACCEPT MISSION"),
 		size = UDim2.new(1, 0, 0, 46),
 		color = theme.Red,
 		textColor = theme.Text,
@@ -131,7 +135,7 @@ local function refresh()
 	end)
 
 	if not ok then
-		createMessageCard("Could not load missions.\nCheck server output.", theme.Bad)
+		createMessageCard(_ms("load_error", "Could not load missions.\nCheck server output."), theme.Bad)
 		return
 	end
 
@@ -166,7 +170,7 @@ local function init()
 	sheet = mc.mobileSheet({
 		name = "MobileMissionsSheet",
 		parent = gui,
-		title = "MISSIONS",
+		title = _ms("title", "MISSIONS"),
 		onClose = function()
 			uiState.closeRoute()
 		end,

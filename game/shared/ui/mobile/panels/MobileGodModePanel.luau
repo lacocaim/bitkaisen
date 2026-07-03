@@ -4,6 +4,14 @@ local MarketplaceService = game:GetService("MarketplaceService")
 
 local mc = require("@ui/mobile/mobileComponents")
 local overlayManager = require("@ui-state/overlayManager")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _gm(key, fallback) return BitKaisenLocale.tOrFallback(_L, "god_mode." .. key, nil, fallback) end
+local function _gmp(key, params, fallback)
+	local s = _gm(key, fallback)
+	if params then for k, v in pairs(params) do s = s:gsub("{" .. k .. "}", tostring(v)) end end
+	return s
+end
 
 local theme = mc.theme
 local player = Players.LocalPlayer
@@ -56,7 +64,7 @@ render = function()
 	local summaryCard = mc.mobileCard({ parent = scroll, order = 1 })
 	mc.mobileLabel({
 		parent = summaryCard,
-		text = "PERMANENT LIFE CONTROLS",
+		text = _gm("section_controls", "PERMANENT LIFE CONTROLS"),
 		size = 15,
 		color = theme.Gold,
 		font = Enum.Font.GothamBlack,
@@ -66,14 +74,14 @@ render = function()
 	if not data.Owned then
 		mc.mobileLabel({
 			parent = summaryCard,
-			text = "Unlock God Mode to use trait edits, clan rerolls, start boosts, legacy inheritance, and reset life controls.",
+			text = _gm("locked_desc", "Unlock God Mode to use trait edits, clan rerolls, start boosts, legacy inheritance, and reset life controls."),
 			size = 13,
 			color = theme.SubText,
 			order = 2,
 		})
 		mc.mobileButton({
 			parent = summaryCard,
-			text = "UNLOCK",
+			text = _gm("btn_unlock", "UNLOCK"),
 			color = theme.Purple,
 			order = 3,
 			callback = function()
@@ -87,7 +95,7 @@ render = function()
 
 	mc.mobileLabel({
 		parent = summaryCard,
-		text = "Tune traits, clan rerolls, start boosts, legacy inheritance, and reset the current life while keeping God Mode settings.",
+		text = _gm("owned_desc", "Tune traits, clan rerolls, start boosts, legacy inheritance, and reset the current life while keeping God Mode settings."),
 		size = 13,
 		color = theme.SubText,
 		order = 2,
@@ -98,7 +106,7 @@ render = function()
 	local boostCard = mc.mobileCard({ parent = scroll, order = 2 })
 	mc.mobileLabel({
 		parent = boostCard,
-		text = "START BOOST",
+		text = _gm("section_boost", "START BOOST"),
 		size = 15,
 		color = theme.Gold,
 		font = Enum.Font.GothamBlack,
@@ -106,13 +114,13 @@ render = function()
 	})
 	mc.mobileLabel({
 		parent = boostCard,
-		text = "Pick one boost for the start of each fresh life. Current: " .. tostring(settings.StartBoost or "None"),
+		text = _gmp("boost_desc", {current = tostring(settings.StartBoost or "None")}, "Pick one boost for the start of each fresh life. Current: " .. tostring(settings.StartBoost or "None")),
 		size = 13,
 		color = theme.SubText,
 		order = 2,
 	})
 
-	local boosts = { { "NONE", "None" }, { "CE", "CE" }, { "STATS", "Stats" }, { "LUCK", "Luck" } }
+	local boosts = { { _gm("boost_none","NONE"), "None" }, { "CE", "CE" }, { _gm("boost_stats","STATS"), "Stats" }, { _gm("boost_luck","LUCK"), "Luck" } }
 	for idx, option in ipairs(boosts) do
 		mc.mobileButton({
 			parent = boostCard,
@@ -129,7 +137,7 @@ render = function()
 	local legacyCard = mc.mobileCard({ parent = scroll, order = 3 })
 	mc.mobileLabel({
 		parent = legacyCard,
-		text = "CHILD TRAITS",
+		text = _gm("section_legacy", "CHILD TRAITS"),
 		size = 15,
 		color = theme.Gold,
 		font = Enum.Font.GothamBlack,
@@ -137,14 +145,14 @@ render = function()
 	})
 	mc.mobileLabel({
 		parent = legacyCard,
-		text = "Guaranteed Legacy Traits: " .. (settings.GuaranteedLegacyTraits and "ON" or "OFF"),
+		text = _gmp("legacy_desc", {status = settings.GuaranteedLegacyTraits and _gm("legacy_on","ON") or _gm("legacy_off","OFF")}, "Guaranteed Legacy Traits: " .. (settings.GuaranteedLegacyTraits and "ON" or "OFF")),
 		size = 13,
 		color = theme.SubText,
 		order = 2,
 	})
 	mc.mobileButton({
 		parent = legacyCard,
-		text = settings.GuaranteedLegacyTraits and "TURN OFF" or "TURN ON",
+		text = settings.GuaranteedLegacyTraits and _gm("btn_turn_off","TURN OFF") or _gm("btn_turn_on","TURN ON"),
 		color = settings.GuaranteedLegacyTraits and theme.Bad or theme.Green,
 		textColor = settings.GuaranteedLegacyTraits and theme.Text or theme.Bg,
 		order = 3,
@@ -157,7 +165,7 @@ render = function()
 	local clanCard = mc.mobileCard({ parent = scroll, order = 4 })
 	mc.mobileLabel({
 		parent = clanCard,
-		text = "CLAN CONTROL",
+		text = _gm("section_clan", "CLAN CONTROL"),
 		size = 15,
 		color = theme.Gold,
 		font = Enum.Font.GothamBlack,
@@ -165,7 +173,7 @@ render = function()
 	})
 	mc.mobileLabel({
 		parent = clanCard,
-		text = tostring(data.CurrentClan or "Unknown") .. " • " .. tostring(data.ClanRerollsUsed or 0) .. "/" .. tostring(data.ClanRerollsMax or 3) .. " rerolls used.",
+		text = _gmp("clan_rerolls", {clan = tostring(data.CurrentClan or "Unknown"), used = tostring(data.ClanRerollsUsed or 0), max = tostring(data.ClanRerollsMax or 3)}, tostring(data.CurrentClan or "Unknown") .. " • " .. tostring(data.ClanRerollsUsed or 0) .. "/" .. tostring(data.ClanRerollsMax or 3) .. " rerolls used."),
 		size = 13,
 		color = theme.SubText,
 		order = 2,
@@ -173,7 +181,7 @@ render = function()
 
 	mc.mobileButton({
 		parent = clanCard,
-		text = "REROLL CLAN",
+		text = _gm("btn_reroll_clan", "REROLL CLAN"),
 		color = theme.Purple,
 		order = 3,
 		callback = function()
@@ -198,7 +206,7 @@ render = function()
 
 	mc.mobileButton({
 		parent = clanCard,
-		text = "PICK CLAN",
+		text = _gm("btn_pick_clan", "PICK CLAN"),
 		color = theme.Green,
 		textColor = theme.Bg,
 		order = 5,
@@ -225,7 +233,7 @@ render = function()
 	local traitCard = mc.mobileCard({ parent = scroll, order = 5 })
 	mc.mobileLabel({
 		parent = traitCard,
-		text = "TRAIT EDITOR",
+		text = _gm("section_trait_ed", "TRAIT EDITOR"),
 		size = 15,
 		color = theme.Gold,
 		font = Enum.Font.GothamBlack,
@@ -233,7 +241,7 @@ render = function()
 	})
 	mc.mobileLabel({
 		parent = traitCard,
-		text = "Add " .. tostring(data.TraitAddsUsed or 0) .. "/" .. tostring(data.TraitAddsMax or 2) .. " • Remove " .. tostring(data.TraitRemovesUsed or 0) .. "/" .. tostring(data.TraitRemovesMax or 2),
+		text = _gmp("trait_usage", {adds = tostring(data.TraitAddsUsed or 0), maxAdds = tostring(data.TraitAddsMax or 2), removes = tostring(data.TraitRemovesUsed or 0), maxRemoves = tostring(data.TraitRemovesMax or 2)}, "Add " .. tostring(data.TraitAddsUsed or 0) .. "/" .. tostring(data.TraitAddsMax or 2) .. " • Remove " .. tostring(data.TraitRemovesUsed or 0) .. "/" .. tostring(data.TraitRemovesMax or 2)),
 		size = 13,
 		color = theme.SubText,
 		order = 2,
@@ -243,7 +251,7 @@ render = function()
 	traitBox.Size = UDim2.new(1, 0, 0, 44)
 	traitBox.BackgroundColor3 = theme.Card
 	traitBox.BorderSizePixel = 0
-	traitBox.PlaceholderText = "Type trait name or id"
+	traitBox.PlaceholderText = _gm("trait_placeholder", "Type trait name or id")
 	traitBox.Text = ""
 	traitBox.TextColor3 = theme.Text
 	traitBox.PlaceholderColor3 = theme.Muted
@@ -256,7 +264,7 @@ render = function()
 
 	mc.mobileButton({
 		parent = traitCard,
-		text = "ADD TRAIT",
+		text = _gm("btn_add_trait", "ADD TRAIT"),
 		color = theme.Green,
 		textColor = theme.Bg,
 		order = 4,
@@ -266,7 +274,7 @@ render = function()
 	})
 	mc.mobileButton({
 		parent = traitCard,
-		text = "REMOVE TRAIT",
+		text = _gm("btn_remove_trait", "REMOVE TRAIT"),
 		color = theme.Bad,
 		order = 5,
 		callback = function()
@@ -280,7 +288,7 @@ render = function()
 	end
 	mc.mobileLabel({
 		parent = traitCard,
-		text = "Current: " .. (#ownedNames > 0 and table.concat(ownedNames, ", ") or "None"),
+		text = _gmp("trait_current", {list = #ownedNames > 0 and table.concat(ownedNames, ", ") or _gm("trait_none","None")}, "Current: " .. (#ownedNames > 0 and table.concat(ownedNames, ", ") or "None")),
 		size = 12,
 		color = theme.Muted,
 		order = 6,
@@ -289,7 +297,7 @@ render = function()
 	local resetCard = mc.mobileCard({ parent = scroll, order = 6 })
 	mc.mobileLabel({
 		parent = resetCard,
-		text = "RESET LIFE",
+		text = _gm("section_reset", "RESET LIFE"),
 		size = 15,
 		color = theme.Gold,
 		font = Enum.Font.GothamBlack,
@@ -297,14 +305,14 @@ render = function()
 	})
 	mc.mobileLabel({
 		parent = resetCard,
-		text = "Restart current life instantly. God Mode settings stay, but current-life uses reset.",
+		text = _gm("reset_desc", "Restart current life instantly. God Mode settings stay, but current-life uses reset."),
 		size = 13,
 		color = theme.SubText,
 		order = 2,
 	})
 	mc.mobileButton({
 		parent = resetCard,
-		text = "RESET LIFE",
+		text = _gm("btn_reset_life", "RESET LIFE"),
 		color = theme.Orange,
 		order = 3,
 		callback = function()
@@ -333,7 +341,7 @@ local function init()
 	sheet = mc.mobileSheet({
 		name = "MobileGodModeSheet",
 		parent = gui,
-		title = "GOD MODE",
+		title = _gm("title", "GOD MODE"),
 		onClose = function()
 			close()
 			overlayManager.closeAll()

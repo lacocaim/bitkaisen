@@ -7,6 +7,11 @@ local theme = require("@ui/theme")
 local helpers = require("@ui/helpers")
 local playerState = require("@ui-state/playerState")
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _pcL = BitKaisenLocale.getClientLocale()
+local function _pc(key, fallback) return BitKaisenLocale.tOrFallback(_pcL, "ui." .. key, nil, fallback) end
+
 local create = vide.create
 local derive = vide.derive
 
@@ -58,22 +63,22 @@ local function ProfileCard()
 
 	local ageText = derive(function()
 		local s = stats()
-		if not s then return "Age: 0" end
-		return "Age: " .. helpers.getAgeDisplay(s) .. "  \u{2022}  Year: " .. tostring(helpers.getCurrentYear(s)) .. "  \u{2022}  Era: " .. helpers.getCurrentEraDisplay(s)
+		if not s then return _pc("pc_age", "Age: ") .. "0" end
+		return _pc("pc_age", "Age: ") .. helpers.getAgeDisplay(s) .. "  \u{2022}  " .. _pc("pc_year", "Year: ") .. tostring(helpers.getCurrentYear(s)) .. "  \u{2022}  " .. _pc("pc_era", "Era: ") .. helpers.getCurrentEraDisplay(s)
 	end)
 
 	local gradeText = derive(function()
 		local s = stats()
-		if not s then return "Rank: Unknown" end
+		if not s then return _pc("pc_rank", "Rank: ") .. "Unknown" end
 		if helpers.isProfileCurseLife(s) then
-			return (s.CurseClassified == true and "Classification: " or "Estimated: ") .. tostring(s.CurseGrade or "Unregistered Grade 3 Cursed Spirit")
+			return (s.CurseClassified == true and _pc("pc_classification", "Classification: ") or _pc("pc_estimated", "Estimated: ")) .. tostring(s.CurseGrade or "Unregistered Grade 3 Cursed Spirit")
 		end
-		return "Rank: " .. tostring(s.Grade or "Unknown")
+		return _pc("pc_rank", "Rank: ") .. tostring(s.Grade or "Unknown")
 	end)
 
 	local worldRepText = derive(function()
 		local s = stats()
-		if not s then return "World: Fame 0 | Fear 0" end
+		if not s then return _pc("pc_world", "World: ") .. "Fame 0 | Fear 0" end
 		local lifePath = tostring(s.LifePath or helpers.getRoutePathText(s) or "Undecided")
 		local fame = math.clamp(tonumber(s.Fame) or 0, 0, 100)
 		local fear = math.clamp(tonumber(s.Fear) or 0, 0, 100)
@@ -82,43 +87,43 @@ local function ProfileCard()
 		local copycats = math.max(0, tonumber(s.CopycatIncidents) or 0)
 		local tier = tostring(s.WorldReputationTier or "Unknown")
 		local extras = ""
-		if support > 0 then extras ..= " | Support " .. tostring(support) end
-		if hunters > 0 then extras ..= " | Hunters " .. tostring(hunters) end
-		if copycats > 0 then extras ..= " | Copycats " .. tostring(copycats) end
-		return "World: " .. lifePath .. " | " .. tier .. " | Fame " .. tostring(fame) .. " | Fear " .. tostring(fear) .. extras
+		if support > 0 then extras ..= _pc("pc_support", "| Support ") .. tostring(support) end
+		if hunters > 0 then extras ..= _pc("pc_hunters", "| Hunters ") .. tostring(hunters) end
+		if copycats > 0 then extras ..= _pc("pc_copycats", "| Copycats ") .. tostring(copycats) end
+		return _pc("pc_world", "World: ") .. lifePath .. " | " .. tier .. " " .. _pc("pc_fame", "| Fame ") .. tostring(fame) .. " " .. _pc("pc_fear", "| Fear ") .. tostring(fear) .. extras
 	end)
 
 	local affiliationText = derive(function()
 		local s = stats()
-		if not s then return "Affiliation: Unaffiliated" end
+		if not s then return _pc("pc_affiliation", "Affiliation: ") .. "Unaffiliated" end
 		local aff = tostring(s.Affiliation or (s.InJujutsuHigh and "Jujutsu High" or "Unaffiliated"))
 		local rank = tostring(s.AffiliationRank or "None")
 		local rep = math.clamp(tonumber(s.AffiliationReputation) or 0, 0, 100)
-		return "Affiliation: " .. aff .. " | " .. rank .. " | Rep " .. tostring(rep)
+		return _pc("pc_affiliation", "Affiliation: ") .. aff .. " | " .. rank .. " " .. _pc("pc_rep", "| Rep ") .. tostring(rep)
 	end)
 
 	local popularityText = derive(function()
 		local s = stats()
-		if not s then return "Jujutsu High: Popularity 0" end
+		if not s then return _pc("pc_jjh_pop", "Jujutsu High: Popularity ") .. "0" end
 		local pop = math.clamp(tonumber(s.JujutsuHighPopularity) or 0, 0, 100)
 		local wins = math.max(0, tonumber(s.GoodwillWins) or 0)
-		return "Jujutsu High: Popularity " .. tostring(pop) .. " | Goodwill Wins " .. tostring(wins)
+		return _pc("pc_jjh_pop", "Jujutsu High: Popularity ") .. tostring(pop) .. _pc("pc_goodwill", "| Goodwill Wins ") .. tostring(wins)
 	end)
 
 	local assistantText = derive(function()
 		local s = stats()
-		if not s then return "Assistant: None" end
+		if not s then return _pc("pc_assistant", "Assistant: ") .. "None" end
 		local name = s.AssistantName and tostring(s.AssistantName) or "None"
 		local trust = math.clamp(tonumber(s.AssistantTrust) or 0, 0, 100)
 		local skill = math.clamp(tonumber(s.AssistantSkill) or 0, 0, 100)
-		return "Assistant: " .. name .. " | Trust " .. tostring(trust) .. " | Skill " .. tostring(skill)
+		return _pc("pc_assistant", "Assistant: ") .. name .. " " .. _pc("pc_trust", "| Trust ") .. tostring(trust) .. " " .. _pc("pc_skill", "| Skill ") .. tostring(skill)
 	end)
 
 	local evolutionText = derive(function()
 		local s = stats()
-		if not s then return "Technique Stage: Dormant" end
+		if not s then return _pc("pc_tech_stage", "Technique Stage: ") .. "Dormant" end
 		local branch = tostring(s.TechniqueBranch or "None")
-		return "Technique Stage: " .. tostring(s.TechniqueEvolutionStage or "Dormant") .. " | " .. branch
+		return _pc("pc_tech_stage", "Technique Stage: ") .. tostring(s.TechniqueEvolutionStage or "Dormant") .. " | " .. branch
 	end)
 
 	local clanText = derive(function() return helpers.getLineageText(stats()) end)
@@ -127,25 +132,25 @@ local function ProfileCard()
 		local technique = tostring(s and s.CursedTechnique or "None")
 		if technique == "Miracle" then
 			local charges = tonumber(s and s.MiracleCharges) or 0
-			return "Technique: Miracle | Marks: " .. tostring(charges) .. "/6"
+			return _pc("pc_technique", "Technique: ") .. "Miracle " .. _pc("pc_marks", "| Marks: ") .. tostring(charges) .. "/6"
 		end
-		return "Technique: " .. technique
+		return _pc("pc_technique", "Technique: ") .. technique
 	end)
 	local traitText = derive(function()
 		local s = stats()
-		return "Traits: " .. tostring(s and s.TraitSummary or "None")
+		return _pc("pc_traits", "Traits: ") .. tostring(s and s.TraitSummary or "None")
 	end)
 	local ceText = derive(function()
 		local s = stats()
-		return "CE Reserves: " .. tostring(s and s.CursedEnergy or 0)
+		return _pc("pc_ce", "CE Reserves: ") .. tostring(s and s.CursedEnergy or 0)
 	end)
 	local moneyText = derive(function()
 		local s = stats()
-		return "Money: $" .. helpers.formatMoneyAmount(s and s.Money or 0)
+		return _pc("pc_money", "Money: $") .. helpers.formatMoneyAmount(s and s.Money or 0)
 	end)
 	local repText = derive(function()
 		local s = stats()
-		return "Reputation: " .. tostring(s and s.Reputation or 0)
+		return _pc("pc_reputation", "Reputation: ") .. tostring(s and s.Reputation or 0)
 	end)
 	local repColor = derive(function()
 		local s = stats()
@@ -153,22 +158,22 @@ local function ProfileCard()
 	end)
 	local recText = derive(function()
 		local s = stats()
-		return "Recommendations: " .. tostring(s and s.TeacherRecommendations or 0)
+		return _pc("pc_recs", "Recommendations: ") .. tostring(s and s.TeacherRecommendations or 0)
 	end)
 	local schoolText = derive(function()
-		return "School: " .. helpers.getSchoolDisplay(stats())
+		return _pc("pc_school", "School: ") .. helpers.getSchoolDisplay(stats())
 	end)
 	local pathText = derive(function()
-		return "Path: " .. helpers.getRoutePathText(stats())
+		return _pc("pc_path", "Path: ") .. helpers.getRoutePathText(stats())
 	end)
 	local pathColor = derive(function() return helpers.getRouteColor(stats()) end)
 
 	local alignText = derive(function()
 		local s = stats()
 		if helpers.isProfileCurseLife(s) then
-			return "Threat Class: " .. tostring(s and (s.CurseThreatClass or s.SocietyStatus) or "Local")
+			return _pc("pc_threat", "Threat Class: ") .. tostring(s and (s.CurseThreatClass or s.SocietyStatus) or "Local")
 		end
-		return "Alignment: " .. helpers.getDisplayedAlignment(s)
+		return _pc("pc_alignment", "Alignment: ") .. helpers.getDisplayedAlignment(s)
 	end)
 	local alignColor = derive(function()
 		local s = stats()
@@ -235,31 +240,31 @@ local function ProfileCard()
 
 			container { name = "Divider2", ws = 1, h = 1, color = theme.StrokeSoft, order = 21 },
 
-			StatBar("Health", theme.Bad, function()
+			StatBar(_pc("pc_stat_health", "Health"), theme.Bad, function()
 				local s = playerState.stats()
 				return s and s.Health or 100
 			end),
-			StatBar("Happiness", theme.Green, function()
+			StatBar(_pc("pc_stat_happy", "Happiness"), theme.Green, function()
 				local s = playerState.stats()
 				return s and s.Happiness or 100
 			end),
-			StatBar("Smarts", theme.Gold, function()
+			StatBar(_pc("pc_stat_smarts", "Smarts"), theme.Gold, function()
 				local s = playerState.stats()
 				return s and s.Smarts or 50
 			end),
-			StatBar("Looks", Color3.fromRGB(96, 170, 255), function()
+			StatBar(_pc("pc_stat_looks", "Looks"), Color3.fromRGB(96, 170, 255), function()
 				local s = playerState.stats()
 				return s and s.Looks or 50
 			end),
-			StatBar("Strength", Color3.fromRGB(236, 116, 76), function()
+			StatBar(_pc("pc_stat_strength", "Strength"), Color3.fromRGB(236, 116, 76), function()
 				local s = playerState.stats()
 				return s and s.Strength or 0
 			end),
-			StatBar("Speed", Color3.fromRGB(96, 220, 200), function()
+			StatBar(_pc("pc_stat_speed", "Speed"), Color3.fromRGB(96, 220, 200), function()
 				local s = playerState.stats()
 				return s and s.Speed or 0
 			end),
-			StatBar("Durability", Color3.fromRGB(150, 150, 160), function()
+			StatBar(_pc("pc_stat_dur", "Durability"), Color3.fromRGB(150, 150, 160), function()
 				local s = playerState.stats()
 				return s and s.Durability or 0
 			end),

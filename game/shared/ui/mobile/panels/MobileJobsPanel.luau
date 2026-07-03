@@ -4,6 +4,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local uiState = require("@ui-state/uiState")
 local mc = require("@ui/mobile/mobileComponents")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _j(key, fallback) return BitKaisenLocale.tOrFallback(_L, "panels.jobs." .. key, nil, fallback) end
 
 local theme = mc.theme
 local corner = mc.corner
@@ -52,7 +55,7 @@ local function buildRouteCard(payload: { [string]: any }, order: number)
 
 	mobileLabel({
 		parent = card,
-		text = isRogue and "Rogue Sorcerer Route" or "Route Choice",
+		text = isRogue and _j("route_rogue", "Rogue Sorcerer Route") or _j("route_choice", "Route Choice"),
 		size = 15,
 		color = theme.Text,
 		font = Enum.Font.GothamBlack,
@@ -61,15 +64,15 @@ local function buildRouteCard(payload: { [string]: any }, order: number)
 
 	mobileLabel({
 		parent = card,
-		text = isRogue and "You are outside official Jujutsu society."
-			or "Cut ties with Jujutsu High and move independently.",
+		text = isRogue and _j("route_rogue_desc", "You are outside official Jujutsu society.")
+			or _j("route_desc", "Cut ties with Jujutsu High and move independently."),
 		size = 13,
 		color = theme.SubText,
 		order = 2,
 	})
 
-	local btnLabel = isRogue and "ROGUE"
-		or (canPurchaseRogue and "GO ROGUE" or (canGo and "SET ID" or "LOCKED"))
+	local btnLabel = isRogue and _j("btn_rogue", "ROGUE")
+		or (canPurchaseRogue and _j("btn_go_rogue", "GO ROGUE") or (canGo and _j("btn_set_id", "SET ID") or _j("btn_locked", "LOCKED")))
 	local btnColor = canPurchaseRogue and Color3.fromRGB(78, 46, 105) or theme.Button
 
 	mobileButton({
@@ -107,14 +110,14 @@ local function buildRouteCard(payload: { [string]: any }, order: number)
 
 	if isRogue then
 		local actions = {
-			{ Id = "rogue_black_market", Text = "MARKET" },
-			{ Id = "rogue_hide_trail", Text = "HIDE" },
-			{ Id = "rogue_contract", Text = "CONTRACT" },
+			{ Id = "rogue_black_market", Text = _j("rogue_market", "MARKET") },
+			{ Id = "rogue_hide_trail",   Text = _j("rogue_hide",   "HIDE") },
+			{ Id = "rogue_contract",     Text = _j("rogue_contract","CONTRACT") },
 		}
 		for i, action in ipairs(actions) do
 			mobileButton({
 				parent = card,
-				text = rogueUsed and "USED" or action.Text,
+				text = rogueUsed and _j("rogue_used", "USED") or action.Text,
 				size = UDim2.new(1, 0, 0, 46),
 				position = UDim2.new(0, 0, 0, 0),
 				color = rogueUsed and theme.Button or Color3.fromRGB(64, 42, 82),
@@ -159,7 +162,9 @@ local function buildJobCard(job: { [string]: any }, canApply: boolean, playerAge
 
 	mobileLabel({
 		parent = card,
-		text = "$" .. tostring(job.Pay or 0) .. " / year  ·  " .. tostring(job.Acceptance or 0) .. "% acceptance",
+		text = _j("job_pay", "${pay}/year  •  {acceptance}% acceptance")
+			:gsub("{pay}", tostring(job.Pay or 0))
+			:gsub("{acceptance}", tostring(job.Acceptance or 0)),
 		size = 14,
 		color = theme.Gold,
 		font = Enum.Font.GothamBold,
@@ -168,7 +173,9 @@ local function buildJobCard(job: { [string]: any }, canApply: boolean, playerAge
 
 	mobileLabel({
 		parent = card,
-		text = "Best with " .. tostring(job.Stat or "stats") .. "  ·  Age " .. tostring(job.MinAge or 0) .. "+",
+		text = _j("job_req", "Best with {stat}  •  Age {minAge}+")
+			:gsub("{stat}", tostring(job.Stat or "stats"))
+			:gsub("{minAge}", tostring(job.MinAge or 0)),
 		size = 13,
 		color = theme.SubText,
 		order = 3,
@@ -176,11 +183,11 @@ local function buildJobCard(job: { [string]: any }, canApply: boolean, playerAge
 
 	local btnLabel: string
 	if not canApply then
-		btnLabel = "USED"
+		btnLabel = _j("btn_used", "USED")
 	elseif tooYoung then
-		btnLabel = "AGE " .. tostring(job.MinAge) .. "+"
+		btnLabel = _j("btn_age", "AGE {min}+"):gsub("{min}", tostring(job.MinAge))
 	else
-		btnLabel = "APPLY"
+		btnLabel = _j("btn_apply", "APPLY")
 	end
 
 	local btnColor: Color3
@@ -223,7 +230,7 @@ function refresh()
 		return getJobs:InvokeServer()
 	end)
 	if not ok or typeof(payload) ~= "table" then
-		subtitleLabel.Text = "Civilian route jobs are unavailable."
+		subtitleLabel.Text = _j("unavailable", "Civilian route jobs are unavailable.")
 		return
 	end
 
@@ -231,14 +238,14 @@ function refresh()
 	local jobLevel = tonumber(payload.JobLevel) or 0
 	local salary = tonumber(payload.JobSalary) or 0
 	local careerText = jobLevel > 0 and (" · Lv " .. tostring(jobLevel) .. " · $" .. tostring(salary) .. "/yr") or ""
-	subtitleLabel.Text = "Age "
-		.. tostring(playerAge)
+	subtitleLabel.Text = _j("age", "Age")
+		.. " " .. tostring(playerAge)
 		.. " · "
-		.. tostring(payload.CurrentJob or "Unemployed")
+		.. tostring(payload.CurrentJob or _j("unemployed", "Unemployed"))
 		.. careerText
-		.. " · Year "
+		.. " · " .. _j("year", "Year") .. " "
 		.. tostring(payload.Year or "?")
-		.. " · Apps "
+		.. " · " .. _j("apps", "Apps") .. " "
 		.. tostring(payload.ApplicationsThisYear or 0)
 		.. "/1"
 
@@ -260,7 +267,7 @@ function refresh()
 		})
 		mobileLabel({
 			parent = note,
-			text = "Some roles need you to be older — locked jobs show their minimum age.",
+			text = _j("age_hint", "Some roles need you to be older — locked jobs show their minimum age."),
 			size = 13,
 			color = theme.Gold,
 			order = 1,
@@ -300,7 +307,7 @@ local function init()
 	sheet = mobileSheet({
 		name = "MobileJobsSheet",
 		parent = gui,
-		title = "JOBS",
+		title = _j("title", "JOBS"),
 		onClose = function()
 			uiState.closeRoute()
 		end,

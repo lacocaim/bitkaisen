@@ -3,6 +3,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local uiState = require("@ui-state/uiState")
 local mc = require("@ui/mobile/mobileComponents")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _d(key, fallback) return BitKaisenLocale.tOrFallback(_L, "panels.domain." .. key, nil, fallback) end
 
 local theme = mc.theme
 local mobileButton = mc.mobileButton
@@ -117,7 +120,7 @@ local function refresh()
 
 	mobileLabel({
 		parent = overviewCard,
-		text = "Technique: " .. tostring(data.Technique or "None") .. "\nStability: " .. tostring(domain.Stability or 0) .. "%  |  Cost: " .. tostring(domain.Cost or 0) .. " CE",
+		text = _d("technique", "Technique") .. ": " .. tostring(data.Technique or "None") .. "\n" .. _d("stability", "Stability") .. ": " .. tostring(domain.Stability or 0) .. "%  |  " .. _d("cost", "Cost") .. ": " .. tostring(domain.Cost or 0) .. " CE",
 		size = 13,
 		color = theme.SubText,
 		order = 3,
@@ -127,7 +130,7 @@ local function refresh()
 
 	mobileLabel({
 		parent = overviewCard,
-		text = tostring(progress) .. "/100 Domain Progress",
+		text = tostring(progress) .. "/100 " .. _d("domain_progress", "Domain Progress"),
 		size = 13,
 		color = theme.Text,
 		font = Enum.Font.GothamBold,
@@ -151,7 +154,7 @@ local function refresh()
 	mobileLabel({
 		parent = trainCard,
 		text = tostring(data.TrainReason or "Shape your innate territory and raise Domain progress.")
-			.. " (" .. tostring(domainTrainingUsed) .. "/" .. tostring(domainTrainingMax) .. " this age)",
+			.. " (" .. tostring(domainTrainingUsed) .. "/" .. tostring(domainTrainingMax) .. " " .. _d("train_suffix", "this age") .. ")",
 		size = 13,
 		color = if data.CanTrain then theme.SubText else theme.Bad,
 		order = 2,
@@ -209,7 +212,7 @@ local function refresh()
 
 	mobileLabel({
 		parent = combatCard,
-		text = "Clashes: " .. tostring(data.ClashesWon or 0) .. "W / " .. tostring(data.ClashesLost or 0) .. "L  |  Simple Domain: " .. tostring(data.SimpleDomainProgress or 0) .. "%",
+		text = _d("clashes", "Clashes") .. ": " .. tostring(data.ClashesWon or 0) .. _d("wins", "W") .. " / " .. tostring(data.ClashesLost or 0) .. _d("losses", "L") .. "  |  " .. _d("simple_domain", "Simple Domain") .. ": " .. tostring(data.SimpleDomainProgress or 0) .. "%",
 		size = 13,
 		color = theme.Green,
 		font = Enum.Font.GothamBold,
@@ -231,7 +234,7 @@ local function refresh()
 
 	mobileLabel({
 		parent = milestonesCard,
-		text = "Seed: " .. tostring(req.Seed or 20) .. "  |  Incomplete: " .. tostring(req.Incomplete or 55) .. "  |  Full Expansion: " .. tostring(req.Complete or 100),
+		text = _d("seed", "Seed") .. ": " .. tostring(req.Seed or 20) .. "  |  " .. _d("incomplete_label", "Incomplete") .. ": " .. tostring(req.Incomplete or 55) .. "  |  " .. _d("full_expansion", "Full Expansion") .. ": " .. tostring(req.Complete or 100),
 		size = 13,
 		color = theme.Gold,
 		font = Enum.Font.GothamBold,

@@ -3,8 +3,11 @@ local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 
 local mc = require("@ui/mobile/mobileComponents")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
 
 local theme = mc.theme
+local L = BitKaisenLocale.getClientLocale()
+local function _mg(key, fallback) return BitKaisenLocale.tOrFallback(L, "minigames." .. key, nil, fallback) end
 local corner = mc.corner
 local stroke = mc.stroke
 local bindTap = mc.bindTap
@@ -53,13 +56,13 @@ local function submitActive(cancelled)
 	if session.ResultLabel and session.ResultLabel.Parent then
 		local label = session.ResultLabel
 		if accuracy >= 0.94 then
-			label.Text = "BLACK FLASH"
+			label.Text = _mg("result_bflash", "BLACK FLASH")
 		elseif accuracy >= 0.78 then
-			label.Text = "PERFECT IMPACT"
+			label.Text = _mg("result_perfect", "PERFECT IMPACT")
 		elseif accuracy >= 0.52 then
-			label.Text = "CLEAN HIT"
+			label.Text = _mg("result_clean", "CLEAN HIT")
 		else
-			label.Text = "MISTIMED"
+			label.Text = _mg("result_mistimed", "MISTIMED")
 		end
 		label.TextTransparency = 0
 	end
@@ -320,7 +323,7 @@ local function openBlackjack(payload)
 
 	local hit = makeActionButton(panel, "HIT", UDim2.new(0, 16, 0, btnY), UDim2.new(1, -32, 0, btnH), Color3.fromRGB(44, 112, 82))
 	local stand = makeActionButton(panel, "STAND", UDim2.new(0, 16, 0, btnY + btnH + btnGap), UDim2.new(1, -32, 0, btnH), Color3.fromRGB(64, 89, 134))
-	local leave = makeActionButton(panel, payload.Done and "CLOSE" or "LEAVE", UDim2.new(0, 16, 0, btnY + (btnH + btnGap) * 2), UDim2.new(1, -32, 0, btnH), Color3.fromRGB(124, 54, 60))
+	local leave = makeActionButton(panel, payload.Done and BitKaisenLocale.tOrFallback(L, "ui.close", nil, "Close") or BitKaisenLocale.tOrFallback(L, "ui.leave", nil, "Leave"), UDim2.new(0, 16, 0, btnY + (btnH + btnGap) * 2), UDim2.new(1, -32, 0, btnH), Color3.fromRGB(124, 54, 60))
 
 	active = { Kind = "Blackjack", Token = token, Root = root }
 
@@ -543,7 +546,7 @@ local function openHeirloom(payload)
 		button.TextColor3 = Color3.fromRGB(248, 232, 202)
 		button.TextSize = 13
 		button.Font = Enum.Font.GothamBlack
-		button.Text = "BOX " .. tostring(i)
+		button.Text = _mg("box_label", "BOX {i}"):gsub("{i}", tostring(i))
 		button.AutoButtonColor = true
 		button.ZIndex = 763
 		button.Parent = grid
@@ -556,15 +559,15 @@ local function openHeirloom(payload)
 			end
 			button:SetAttribute("Opened", true)
 			if i == target then
-				button.Text = "FOUND"
+				button.Text = _mg("box_found", "FOUND")
 				button.BackgroundColor3 = Color3.fromRGB(92, 116, 67)
 				sendHeirloomResult("success")
 				return
 			end
 			guessesLeft -= 1
-			button.Text = "EMPTY"
+			button.Text = _mg("box_empty", "EMPTY")
 			button.BackgroundColor3 = Color3.fromRGB(58, 52, 48)
-			statusLabel.Text = "Dust and old receipts. Guesses left: " .. tostring(guessesLeft)
+			statusLabel.Text = _mg("box_status", "Dust and old receipts. Guesses left: {n}"):gsub("{n}", tostring(guessesLeft))
 			if guessesLeft <= 0 then
 				sendHeirloomResult("miss")
 			end
@@ -642,7 +645,7 @@ local function openCursedFingerHunt(payload)
 				cell.Text = ""
 				cell.BackgroundColor3 = Color3.fromRGB(39, 27, 32)
 				if playerPos.X == x and playerPos.Y == y then
-					cell.Text = "YOU"
+					cell.Text = _mg("cell_you", "YOU")
 					cell.BackgroundColor3 = Color3.fromRGB(91, 55, 72)
 				elseif cursePos.X == x and cursePos.Y == y then
 					cell.Text = "C"
@@ -653,7 +656,7 @@ local function openCursedFingerHunt(payload)
 				end
 			end
 		end
-		statusLabel.Text = "Collect fingers: " .. tostring(collected) .. "/" .. tostring(goal)
+		statusLabel.Text = _mg("fingers_status", "Collect fingers: {n}/{m}"):gsub("{n}", tostring(collected)):gsub("{m}", tostring(goal))
 	end
 
 	for y = 1, size do
@@ -689,7 +692,7 @@ local function openCursedFingerHunt(payload)
 			moveCurse()
 		end
 		if playerPos.X == cursePos.X and playerPos.Y == cursePos.Y then
-			statusLabel.Text = "A curse caught you. Prepare to fight."
+			statusLabel.Text = _mg("curse_caught", "A curse caught you. Prepare to fight.")
 			redraw()
 			task.delay(0.25, function()
 				sendFingerResult("caught:" .. tostring(collected))
@@ -782,7 +785,7 @@ local function openRCTMemory(payload)
 				return
 			end
 			table.insert(input, i)
-			inputLabel.Text = "Input: " .. tostring(#input) .. "/" .. tostring(#sequence)
+			inputLabel.Text = _mg("input_label", "Input: {n}/{m}"):gsub("{n}", tostring(#input)):gsub("{m}", tostring(#sequence))
 			if #input >= #sequence then
 				sendRCTResult(input)
 			end

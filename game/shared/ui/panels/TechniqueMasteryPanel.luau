@@ -7,6 +7,9 @@ local uiState = require("@ui-state/uiState")
 local remotes = require("@ui-state/remotes")
 local playerState = require("@ui-state/playerState")
 local responsiveScale = require("@ui/responsiveScale")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _mas(key, fallback) return BitKaisenLocale.tOrFallback(_L, "mastery." .. key, nil, fallback) end
 
 local BitKaisenTechniqueEffects = require(ReplicatedStorage:WaitForChild("BitKaisenTechniqueEffects"))
 
@@ -690,12 +693,12 @@ local function refresh()
 		nextStageMiniLabel.Text = tostring(needed) .. " needed"
 		nextStageLabel.Text = "Next: " .. nextData.Name .. " at " .. tostring(nextData.Min) .. " mastery"
 	else
-		nextStageMiniLabel.Text = "Complete"
-		nextStageLabel.Text = "Complete: you have reached the current mastery cap."
+		nextStageMiniLabel.Text = _mas("complete", "Complete")
+		nextStageLabel.Text = _mas("complete_cap", "Complete: you have reached the current mastery cap.")
 	end
 
 	if technique == "None" then
-		flavorText.Text = "You have not awakened an innate cursed technique yet. Age up, train cursed energy, and survive long enough for your cursed energy to take shape."
+		flavorText.Text = _mas("no_technique", "You have not awakened an innate cursed technique yet. Age up, train cursed energy, and survive long enough for your cursed energy to take shape.")
 	else
 		local effectNote = BitKaisenTechniqueEffects.GetTechniqueNote(stats)
 		flavorText.Text = getTechniqueFlavor(technique) .. (effectNote ~= "" and ("\n\nCombat effect: " .. effectNote) or "")

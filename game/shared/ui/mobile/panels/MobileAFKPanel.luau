@@ -5,6 +5,9 @@ local UserInputService = game:GetService("UserInputService")
 
 local mc = require("@ui/mobile/mobileComponents")
 local overlayManager = require("@ui-state/overlayManager")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _afk(key, fallback) return BitKaisenLocale.tOrFallback(_L, "afk." .. key, nil, fallback) end
 
 local theme = mc.theme
 local player = Players.LocalPlayer
@@ -31,7 +34,7 @@ local function refresh()
 	if not openButton then return end
 
 	local active = state.Active == true
-	openButton.Text = active and "AFK ON" or "AFK"
+	openButton.Text = active and _afk("btn_open_on", "AFK ON") or _afk("btn_open_off", "AFK")
 	openButton.TextColor3 = active and theme.Green or theme.Gold
 	openButton.BackgroundColor3 = active and Color3.fromRGB(28, 72, 45) or theme.Panel
 
@@ -42,16 +45,22 @@ local function refresh()
 
 	if actionButton then
 		actionButton.Visible = true
-		local passNote = state.HasAFKPass and " (2x ACTIVE)" or ""
-		bodyLabel.Text = state.Active and ("Stabilizing. Avoid normal play actions while AFK mode is active." .. passNote) or ("Start AFK mode to earn while idle." .. passNote)
-		actionButton.Text = state.Active and "STOP AFK" or "START AFK"
+		local passNote = state.HasAFKPass and _afk("pass_note", " (2x ACTIVE)") or ""
+		bodyLabel.Text = state.Active
+			and (_afk("body_active", "Stabilizing. Avoid normal play actions while AFK mode is active.") .. passNote)
+			or  (_afk("body_idle",   "Start AFK mode to earn while idle.") .. passNote)
+		actionButton.Text = state.Active and _afk("btn_stop", "STOP AFK") or _afk("btn_start", "START AFK")
 		actionButton.BackgroundColor3 = state.Active and theme.Bad or theme.Green
 		actionButton.TextColor3 = state.Active and theme.Text or theme.Bg
 	end
 
 	if statsLabel then
 		local displayRate = (state.RatePerSecond or 0) * (state.HasAFKPass and 2 or 1)
-		statsLabel.Text = "Rate: " .. formatMoney(displayRate) .. "/sec" .. (state.HasAFKPass and " (2x)" or "") .. "\nThis session: " .. formatMoney(state.SessionEarned or 0) .. "\nLifetime AFK: " .. formatMoney(state.EarnedTotal or 0)
+		local rateKey = state.HasAFKPass and "stats_rate_2x" or "stats_rate"
+		local rateLine = _afk(rateKey, "Rate: {rate}/sec"):gsub("{rate}", formatMoney(displayRate))
+		local sessionLine = _afk("stats_session", "This session: {earned}"):gsub("{earned}", formatMoney(state.SessionEarned or 0))
+		local lifetimeLine = _afk("stats_lifetime", "Lifetime AFK: {earned}"):gsub("{earned}", formatMoney(state.EarnedTotal or 0))
+		statsLabel.Text = rateLine .. "\n" .. sessionLine .. "\n" .. lifetimeLine
 	end
 end
 
@@ -96,7 +105,7 @@ local function init()
 	sheet = mc.mobileSheet({
 		name = "MobileAFKSheet",
 		parent = gui,
-		title = "AFK STABILIZATION",
+		title = _afk("title", "AFK STABILIZATION"),
 		onClose = function()
 			close()
 			overlayManager.closeAll()
@@ -109,7 +118,7 @@ local function init()
 
 	bodyLabel = mc.mobileLabel({
 		parent = infoCard,
-		text = "Start AFK mode to earn while idle.",
+		text = _afk("body_idle", "Start AFK mode to earn while idle."),
 		size = 14,
 		color = theme.SubText,
 		order = 1,
@@ -126,7 +135,7 @@ local function init()
 
 	actionButton = mc.mobileButton({
 		parent = infoCard,
-		text = "START AFK",
+		text = _afk("btn_start", "START AFK"),
 		color = theme.Green,
 		textColor = theme.Bg,
 		textSize = 15,
@@ -149,7 +158,7 @@ local function init()
 
 	openButton = mc.mobileButton({
 		parent = gui,
-		text = "AFK",
+		text = _afk("btn_open_off", "AFK"),
 		size = UDim2.fromOffset(92, 44),
 		position = UDim2.new(1, -104, 0, 82),
 		color = theme.Panel,

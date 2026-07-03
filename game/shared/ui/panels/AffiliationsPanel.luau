@@ -6,6 +6,10 @@ local UserInputService = game:GetService("UserInputService")
 local uiState = require("@ui-state/uiState")
 local responsiveScale = require("@ui/responsiveScale")
 
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _aff(key, fallback) return BitKaisenLocale.tOrFallback(_L, "affiliations." .. key, nil, fallback) end
+
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local getRelationships = ReplicatedStorage:WaitForChild("GetRelationships")
@@ -105,8 +109,8 @@ window.Parent = overlay
 addCorner(window, 14)
 addStroke(window, Color3.fromRGB(120, 70, 150), 2)
 
-local title = makeText(window, "AFFILIATIONS", 24, COLORS.Text, UDim2.new(0, 26, 0, 20), UDim2.new(1, -96, 0, 32), true)
-local subtitle = makeText(window, "Clan, dojo, teachers, students, and rivals grouped from your current relationships.", 13, COLORS.SubText, UDim2.new(0, 26, 0, 54), UDim2.new(1, -96, 0, 38), false)
+local title = makeText(window, _aff("title", "AFFILIATIONS"), 24, COLORS.Text, UDim2.new(0, 26, 0, 20), UDim2.new(1, -96, 0, 32), true)
+local subtitle = makeText(window, _aff("subtitle", "Clan, dojo, teachers, students, and rivals grouped from your current relationships."), 13, COLORS.SubText, UDim2.new(0, 26, 0, 54), UDim2.new(1, -96, 0, 38), false)
 
 local close = Instance.new("TextButton")
 close.Size = UDim2.new(0, 44, 0, 44)
@@ -273,15 +277,15 @@ local function createPageControls(groupKey, totalCount, currentPage, pageSize, l
 		end
 	end
 
-	navButton("PREV", -150, currentPage > 1, -1)
-	navButton("NEXT", -76, currentPage < totalPages, 1)
+	navButton(_aff("btn_prev", "PREV"), -150, currentPage > 1, -1)
+	navButton(_aff("btn_next", "NEXT"), -76, currentPage < totalPages, 1)
 end
 
 function refresh()
 	refreshStamp += 1
 	local thisRefresh = refreshStamp
 	refreshInProgress = true
-	createStatusCard("Loading affiliations...", COLORS.SubText)
+	createStatusCard(_aff("loading", "Loading affiliations..."), COLORS.SubText)
 
 	task.spawn(function()
 		local ok, data = pcall(function()
@@ -294,7 +298,7 @@ function refresh()
 
 		local list = ok and (typeof(data) == "table" and (data.Relationships or data) or {}) or {}
 		if not ok then
-			createStatusCard("Could not load affiliations.", COLORS.Red)
+			createStatusCard(_aff("error_load", "Could not load affiliations."), COLORS.Red)
 			refreshInProgress = false
 			return
 		end
@@ -318,7 +322,7 @@ function refresh()
 			header.LayoutOrder = order * 100
 			header.ZIndex = 603
 			header.Parent = scroll
-			makeText(header, string.upper(group.Title) .. "  (" .. tostring(#entries) .. ")", 14, COLORS.Gold, UDim2.new(0, 0, 0, 8), UDim2.new(1, 0, 0, 24), true)
+			makeText(header, _aff("group_" .. string.lower(group.Key), group.Title) .. "  (" .. tostring(#entries) .. ")", 14, COLORS.Gold, UDim2.new(0, 0, 0, 8), UDim2.new(1, 0, 0, 24), true)
 
 			if refreshStamp ~= thisRefresh or not isOpen then
 				refreshInProgress = false
@@ -335,7 +339,7 @@ function refresh()
 				empty.Parent = scroll
 				addCorner(empty, 8)
 				addStroke(empty, Color3.fromRGB(36, 36, 50), 1)
-				makeText(empty, "No entries yet.", 12, COLORS.Muted, UDim2.new(0, 18, 0, 18), UDim2.new(1, -36, 0, 22), false)
+				makeText(empty, _aff("none", "No entries yet."), 12, COLORS.Muted, UDim2.new(0, 18, 0, 18), UDim2.new(1, -36, 0, 22), false)
 				yieldIfNeeded()
 			else
 				local pageSize = getAffiliationPageSize()

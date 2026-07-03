@@ -8,6 +8,9 @@ local playerState = require("@ui-state/playerState")
 local mc = require("@ui/mobile/mobileComponents")
 
 local BitKaisenTechniqueEffects = require(ReplicatedStorage:WaitForChild("BitKaisenTechniqueEffects"))
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local L = BitKaisenLocale.getClientLocale()
+local function _tm(key, fallback) return BitKaisenLocale.tOrFallback(L, "mastery." .. key, nil, fallback) end
 
 local theme = mc.theme
 local player = Players.LocalPlayer
@@ -257,9 +260,10 @@ local function refresh()
 	local nextText
 	if nextData then
 		local needed = math.max(0, nextData.Min - mastery)
-		nextText = "Next: " .. nextData.Name .. " at " .. tostring(nextData.Min) .. " (" .. tostring(needed) .. " needed)"
+		nextText = _tm("next_prefix", "Next: {name} at {min}"):gsub("{name}", nextData.Name):gsub("{min}", tostring(nextData.Min))
+			.. " (" .. _tm("needed", "{n} needed"):gsub("{n}", tostring(needed)) .. ")"
 	else
-		nextText = "Complete: you have reached the current mastery cap."
+		nextText = _tm("complete_cap", "Complete: you have reached the current mastery cap.")
 	end
 
 	mc.mobileLabel({
@@ -276,7 +280,7 @@ local function refresh()
 
 	mc.mobileLabel({
 		parent = statsCard,
-		text = "STATS",
+		text = BitKaisenLocale.tOrFallback(L, "ui.stats", nil, "Stats"),
 		size = 14,
 		color = theme.Text,
 		font = Enum.Font.GothamBlack,

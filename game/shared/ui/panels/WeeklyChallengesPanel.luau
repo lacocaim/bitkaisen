@@ -5,6 +5,9 @@ local RunService = game:GetService("RunService")
 
 local uiState = require("@ui-state/uiState")
 local responsiveScale = require("@ui/responsiveScale")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _wc(key, fallback) return BitKaisenLocale.tOrFallback(_L, "ui." .. key, nil, fallback) end
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -86,7 +89,7 @@ local titleLabel = Instance.new("TextLabel")
 titleLabel.BackgroundTransparency = 1
 titleLabel.Position = UDim2.new(0, 24, 0, 18)
 titleLabel.Size = UDim2.new(1, -200, 0, 30)
-titleLabel.Text = "WEEKLY CHALLENGES"
+titleLabel.Text = _wc("challenge_title", "WEEKLY CHALLENGES")
 titleLabel.TextColor3 = COLORS.Text
 titleLabel.TextSize = 22
 titleLabel.Font = Enum.Font.GothamBlack
@@ -153,7 +156,7 @@ padding.Parent = scroll
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Name = "StatusLabel"
 statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "Loading challenges..."
+statusLabel.Text = _wc("challenge_loading", "Loading challenges...")
 statusLabel.TextColor3 = COLORS.SubText
 statusLabel.Font = Enum.Font.GothamMedium
 statusLabel.TextSize = 15
@@ -189,7 +192,7 @@ local function applyCompletedOverlay(card)
 	local badge = Instance.new("TextLabel")
 	badge.BackgroundTransparency = 1
 	badge.Size = UDim2.new(1, 0, 1, 0)
-	badge.Text = "✓  COMPLETED"
+	badge.Text = _wc("challenge_completed", "✓  COMPLETED")
 	badge.TextColor3 = Color3.fromRGB(122, 236, 165)
 	badge.Font = Enum.Font.GothamBlack
 	badge.TextSize = 20
@@ -275,7 +278,7 @@ local function buildCard(challenge, order, isCompleted)
 	-- Right side: Goal
 	local goalLabel = Instance.new("TextLabel")
 	goalLabel.BackgroundTransparency = 1
-	goalLabel.Text = "GOAL"
+	goalLabel.Text = _wc("challenge_goal_label", "GOAL")
 	goalLabel.TextColor3 = COLORS.Muted
 	goalLabel.Font = Enum.Font.GothamBold
 	goalLabel.TextXAlignment = Enum.TextXAlignment.Right
@@ -300,7 +303,7 @@ local function buildCard(challenge, order, isCompleted)
 	-- Right side: Reward
 	local rewardLabel = Instance.new("TextLabel")
 	rewardLabel.BackgroundTransparency = 1
-	rewardLabel.Text = "REWARD"
+	rewardLabel.Text = _wc("challenge_reward_label", "REWARD")
 	rewardLabel.TextColor3 = COLORS.Muted
 	rewardLabel.Font = Enum.Font.GothamBold
 	rewardLabel.TextXAlignment = Enum.TextXAlignment.Right
@@ -339,11 +342,11 @@ local function formatTime(secs)
 	local h = math.floor((secs % 86400) / 3600)
 	local m = math.floor((secs % 3600) / 60)
 	if d > 0 then
-		return string.format("Resets in %dd %dh", d, h)
+		return _wc("resets_days", "Resets in {d}d {h}h"):gsub("{d}", tostring(d)):gsub("{h}", tostring(h))
 	elseif h > 0 then
-		return string.format("Resets in %dh %dm", h, m)
+		return _wc("resets_hours", "Resets in {h}h {m}m"):gsub("{h}", tostring(h)):gsub("{m}", tostring(m))
 	else
-		return string.format("Resets in %dm", m)
+		return _wc("resets_mins", "Resets in {m}m"):gsub("{m}", tostring(m))
 	end
 end
 
@@ -364,7 +367,7 @@ local function loadChallenges()
 	if loaded then return end
 	loaded = true
 	statusLabel.Visible = true
-	statusLabel.Text = "Loading challenges..."
+	statusLabel.Text = _wc("challenge_loading", "Loading challenges...")
 	clearCards()
 
 	task.spawn(function()
@@ -372,7 +375,7 @@ local function loadChallenges()
 			return getChallenges:InvokeServer()
 		end)
 		if not ok or not result or not result.Challenges then
-			statusLabel.Text = "Could not load challenges. Try again later."
+			statusLabel.Text = _wc("challenge_error", "Could not load challenges.\nTry again later.")
 			return
 		end
 		statusLabel.Visible = false
@@ -386,7 +389,7 @@ local function loadChallenges()
 
 		if #result.Challenges == 0 then
 			statusLabel.Visible = true
-			statusLabel.Text = "No challenges this week."
+			statusLabel.Text = _wc("challenge_none", "No challenges this week.")
 		end
 	end)
 end

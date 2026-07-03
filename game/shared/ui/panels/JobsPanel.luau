@@ -6,6 +6,9 @@ local RunService = game:GetService("RunService")
 
 local uiState = require("@ui-state/uiState")
 local responsiveScale = require("@ui/responsiveScale")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _j(key, fallback) return BitKaisenLocale.tOrFallback(_L, "panels.jobs." .. key, nil, fallback) end
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -62,7 +65,7 @@ stroke.Parent = window
 
 local title = Instance.new("TextLabel")
 title.BackgroundTransparency = 1
-title.Text = "JOBS"
+title.Text = _j("title", "JOBS")
 title.TextColor3 = THEME.Text
 title.Font = Enum.Font.GothamBlack
 title.TextXAlignment = Enum.TextXAlignment.Left
@@ -181,15 +184,15 @@ local function makeRouteCard(payload)
 	cardStroke.Transparency = 0.25
 	cardStroke.Parent = card
 
-	addText(card, isRogue and "Rogue Sorcerer Route" or "Route Choice", isMobile and 13 or 15, THEME.Text, UDim2.new(0, 14, 0, 12), UDim2.new(1, -136, 0, 22), true)
-	addText(card, isRogue and "You are outside official Jujutsu society." or "Cut ties with Jujutsu High and move independently.", isMobile and 9 or 11, THEME.SubText, UDim2.new(0, 14, 0, 38), UDim2.new(1, -136, 0, 42), false)
+	addText(card, isRogue and _j("route_rogue", "Rogue Sorcerer Route") or _j("route_choice", "Route Choice"), isMobile and 13 or 15, THEME.Text, UDim2.new(0, 14, 0, 12), UDim2.new(1, -136, 0, 22), true)
+	addText(card, isRogue and _j("route_rogue_desc", "You are outside official Jujutsu society.") or _j("route_desc", "Cut ties with Jujutsu High and move independently."), isMobile and 9 or 11, THEME.SubText, UDim2.new(0, 14, 0, 38), UDim2.new(1, -136, 0, 42), false)
 
 	local button = Instance.new("TextButton")
 	button.Size = UDim2.new(0, isMobile and 92 or 106, 0, 34)
 	button.Position = UDim2.new(1, isMobile and -104 or -120, 0.5, -17)
 	button.BackgroundColor3 = canPurchaseRogue and Color3.fromRGB(78, 46, 105) or Color3.fromRGB(34, 35, 45)
 	button.BorderSizePixel = 0
-	button.Text = isRogue and "ROGUE" or (canPurchaseRogue and "GO ROGUE" or (canGo and "SET ID" or "LOCKED"))
+	button.Text = isRogue and _j("btn_rogue", "ROGUE") or (canPurchaseRogue and _j("btn_go_rogue", "GO ROGUE") or (canGo and _j("btn_set_id", "SET ID") or _j("btn_locked", "LOCKED")))
 	button.TextColor3 = (canPurchaseRogue or isRogue) and THEME.Text or THEME.SubText
 	button.TextSize = isMobile and 9 or 11
 	button.Font = Enum.Font.GothamBlack
@@ -223,9 +226,9 @@ local function makeRouteCard(payload)
 
 	if isRogue then
 		local actions = {
-			{ Id = "rogue_black_market", Text = "MARKET" },
-			{ Id = "rogue_hide_trail", Text = "HIDE" },
-			{ Id = "rogue_contract", Text = "CONTRACT" },
+			{ Id = "rogue_black_market", Text = _j("rogue_market", "MARKET") },
+			{ Id = "rogue_hide_trail", Text = _j("rogue_hide", "HIDE") },
+			{ Id = "rogue_contract", Text = _j("rogue_contract", "CONTRACT") },
 		}
 		local actionY = isMobile and 98 or 84
 		local actionWidth = isMobile and 80 or 104
@@ -236,7 +239,7 @@ local function makeRouteCard(payload)
 			actionButton.Position = UDim2.new(0, 14 + ((index - 1) * (actionWidth + gap)), 0, actionY)
 			actionButton.BackgroundColor3 = rogueUsed and Color3.fromRGB(34, 35, 45) or Color3.fromRGB(64, 42, 82)
 			actionButton.BorderSizePixel = 0
-			actionButton.Text = rogueUsed and "USED" or action.Text
+			actionButton.Text = rogueUsed and _j("rogue_used", "USED") or action.Text
 			actionButton.TextColor3 = rogueUsed and THEME.SubText or THEME.Text
 			actionButton.TextSize = isMobile and 8 or 10
 			actionButton.Font = Enum.Font.GothamBlack
@@ -279,16 +282,16 @@ local function makeCard(job, canApply, playerAge)
 	cardStroke.Parent = card
 
 	addText(card, tostring(job.Title or "Job"), isMobile and 13 or 15, THEME.Text, UDim2.new(0, 14, 0, 12), UDim2.new(1, -136, 0, 22), true)
-	addText(card, "$" .. tostring(job.Pay or 0) .. " / year | " .. tostring(job.Acceptance or 0) .. "% acceptance", isMobile and 10 or 12, THEME.Gold, UDim2.new(0, 14, 0, 38), UDim2.new(1, -136, 0, 20), true)
-	addText(card, "Best with " .. tostring(job.Stat or "stats") .. " | Age " .. tostring(job.MinAge or 0) .. "+", isMobile and 9 or 11, THEME.SubText, UDim2.new(0, 14, 0, 62), UDim2.new(1, -136, 0, 34), false)
+	addText(card, _j("job_pay", "${pay}/year  •  {acceptance}% acceptance"):gsub("{pay}", tostring(job.Pay or 0)):gsub("{acceptance}", tostring(job.Acceptance or 0)), isMobile and 10 or 12, THEME.Gold, UDim2.new(0, 14, 0, 38), UDim2.new(1, -136, 0, 20), true)
+	addText(card, _j("job_req", "Best with {stat}  •  Age {minAge}+"):gsub("{stat}", tostring(job.Stat or "stats")):gsub("{minAge}", tostring(job.MinAge or 0)), isMobile and 9 or 11, THEME.SubText, UDim2.new(0, 14, 0, 62), UDim2.new(1, -136, 0, 34), false)
 
 	local buttonLabel
 	if not canApply then
-		buttonLabel = "USED"
+		buttonLabel = _j("btn_used", "USED")
 	elseif tooYoung then
-		buttonLabel = "AGE " .. tostring(job.MinAge) .. "+"
+		buttonLabel = _j("btn_age", "AGE") .. " " .. tostring(job.MinAge) .. "+"
 	else
-		buttonLabel = "APPLY"
+		buttonLabel = _j("btn_apply", "APPLY")
 	end
 
 	local buttonColor
@@ -337,7 +340,7 @@ function refresh()
 		return getJobs:InvokeServer()
 	end)
 	if not ok or typeof(payload) ~= "table" then
-		subtitle.Text = "Civilian route jobs are unavailable."
+		subtitle.Text = _j("unavailable", "Civilian route jobs are unavailable.")
 		return
 	end
 
@@ -345,7 +348,7 @@ function refresh()
 	local jobLevel = tonumber(payload.JobLevel) or 0
 	local salary = tonumber(payload.JobSalary) or 0
 	local careerText = jobLevel > 0 and (" | Lv " .. tostring(jobLevel) .. " | $" .. tostring(salary) .. "/yr") or ""
-	subtitle.Text = "Age " .. tostring(playerAge) .. " | Current: " .. tostring(payload.CurrentJob or "Unemployed") .. careerText .. " | Year " .. tostring(payload.Year or "?") .. " | Applications " .. tostring(payload.ApplicationsThisYear or 0) .. "/1"
+	subtitle.Text = _j("age", "Age") .. " " .. tostring(playerAge) .. " · " .. tostring(payload.CurrentJob or _j("unemployed", "Unemployed")) .. careerText .. " · " .. _j("year", "Year") .. " " .. tostring(payload.Year or "?") .. " · " .. _j("apps", "Apps") .. " " .. tostring(payload.ApplicationsThisYear or 0) .. "/1"
 
 	local hasAgeLocked = false
 	for _, job in ipairs(payload.Jobs or {}) do
@@ -360,7 +363,7 @@ function refresh()
 		note.Size = UDim2.new(1, -8, 0, 28)
 		note.BackgroundColor3 = Color3.fromRGB(40, 32, 20)
 		note.BorderSizePixel = 0
-		note.Text = "  Some roles need you to be older — locked jobs show their minimum age."
+		note.Text = "  " .. _j("age_hint", "Some roles need you to be older — locked jobs show their minimum age.")
 		note.TextColor3 = THEME.Gold
 		note.TextSize = 11
 		note.Font = Enum.Font.GothamMedium

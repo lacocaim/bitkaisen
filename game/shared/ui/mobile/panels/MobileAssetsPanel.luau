@@ -4,6 +4,9 @@ local TweenService = game:GetService("TweenService")
 
 local uiState = require("@ui-state/uiState")
 local mc = require("@ui/mobile/mobileComponents")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _as(key, fallback) return BitKaisenLocale.tOrFallback(_L, "assets." .. key, nil, fallback) end
 
 local theme = mc.theme
 local corner = mc.corner
@@ -95,18 +98,19 @@ end
 ----------------------------------------------------------------
 local function fireAssetAction(actionId, assetId)
 	if busy then
-		setStatus("Please wait...", theme.Gold)
+		setStatus(_as("status_wait", "Please wait..."), theme.Gold)
 		return
 	end
 	busy = true
-	setStatus("Processing...", theme.Gold)
+	setStatus(_as("status_processing", "Processing..."), theme.Gold)
 	assetAction:FireServer(actionId, assetId)
 	task.delay(0.35, function()
 		busy = false
 		if isOpen then
-			setStatus("Updated.", theme.Green)
+			local updatedText = _as("status_updated", "Updated.")
+			setStatus(updatedText, theme.Green)
 			task.delay(1.2, function()
-				if isOpen and statusLabel and statusLabel.Text == "Updated." then
+				if isOpen and statusLabel and statusLabel.Text == updatedText then
 					setStatus("")
 				end
 			end)
@@ -144,6 +148,7 @@ local function buildTabs()
 	layout.Padding = UDim.new(0, 6)
 	layout.Parent = tabHolder
 
+	local TAB_LABELS = { Owned = _as("tab_owned", "OWNED"), Shop = _as("tab_shop", "SHOP"), Dojo = _as("tab_dojo", "DOJO") }
 	for i, tabName in ipairs({ "Owned", "Shop", "Dojo" }) do
 		local btn = Instance.new("TextButton")
 		btn.Name = tabName .. "Tab"
@@ -153,7 +158,7 @@ local function buildTabs()
 		btn.TextColor3 = theme.SubText
 		btn.TextSize = 13
 		btn.Font = Enum.Font.GothamBlack
-		btn.Text = string.upper(tabName)
+		btn.Text = TAB_LABELS[tabName] or string.upper(tabName)
 		btn.AutoButtonColor = false
 		btn.LayoutOrder = i
 		btn.Parent = tabHolder
@@ -195,12 +200,12 @@ end
 local function buildOwnedTab(data)
 	local orderIndex = 0
 
-	addSectionHeader("Owned Assets", orderIndex)
+	addSectionHeader(_as("sec_owned", "Owned Assets"), orderIndex)
 	orderIndex += 1
 
 	local owned = data.Owned or {}
 	if #owned <= 0 then
-		addEmptyCard("You do not own any assets yet.", orderIndex)
+		addEmptyCard(_as("no_assets", "You do not own any assets yet."), orderIndex)
 		orderIndex += 1
 	else
 		for _, asset in ipairs(owned) do
@@ -229,7 +234,7 @@ local function buildOwnedTab(data)
 
 			if asset.Id == "grand_dojo" and not data.ClanFounded then
 				mobileButton({
-					parent = card, text = "OPEN DOJO", order = 5,
+					parent = card, text = _as("btn_open_dojo", "OPEN DOJO"), order = 5,
 					size = UDim2.new(1, 0, 0, 48), color = Color3.fromRGB(150, 100, 35),
 					textSize = 14,
 					callback = function()
@@ -239,14 +244,14 @@ local function buildOwnedTab(data)
 				})
 			elseif asset.CanUse and (asset.Uses == nil or asset.Uses > 0) then
 				mobileButton({
-					parent = card, text = "USE", order = 5,
+					parent = card, text = _as("btn_use", "USE"), order = 5,
 					size = UDim2.new(1, 0, 0, 48), color = Color3.fromRGB(85, 45, 130),
 					textSize = 14,
 					callback = function() fireAssetAction("Use", asset.Id) end,
 				})
 			else
 				local passiveBtn = mobileButton({
-					parent = card, text = asset.CanUse and "USED" or "PASSIVE", order = 5,
+					parent = card, text = asset.CanUse and _as("btn_used", "USED") or _as("btn_passive", "PASSIVE"), order = 5,
 					size = UDim2.new(1, 0, 0, 48), color = theme.Button,
 					textColor = theme.SubText, textSize = 14,
 					callback = function() end,
@@ -258,12 +263,12 @@ local function buildOwnedTab(data)
 		end
 	end
 
-	addSectionHeader("Cursed Tools", orderIndex)
+	addSectionHeader(_as("sec_tools", "Cursed Tools"), orderIndex)
 	orderIndex += 1
 
 	local cursedTools = data.CursedTools or {}
 	if #cursedTools <= 0 then
-		addEmptyCard("No cursed tools owned yet. Defeat stronger enemies to find cursed tools.", orderIndex)
+		addEmptyCard(_as("no_tools", "No cursed tools owned yet. Defeat stronger enemies to find cursed tools."), orderIndex)
 		orderIndex += 1
 	else
 		for _, tool in ipairs(cursedTools) do
@@ -294,7 +299,7 @@ local function buildOwnedTab(data)
 			end
 			mobileButton({
 				parent = card,
-				text = tool.Equipped and "UNEQUIP" or "EQUIP",
+				text = tool.Equipped and _as("btn_unequip", "UNEQUIP") or _as("btn_equip", "EQUIP"),
 				order = 5,
 				size = UDim2.new(1, 0, 0, 48),
 				color = tool.Equipped and theme.Bad or theme.Purple,
@@ -307,12 +312,12 @@ local function buildOwnedTab(data)
 		end
 	end
 
-	addSectionHeader("Cursed Tool Catalog", orderIndex)
+	addSectionHeader(_as("sec_catalog", "Cursed Tool Catalog"), orderIndex)
 	orderIndex += 1
 
 	local catalog = data.CursedToolCatalog or {}
 	if #catalog <= 0 then
-		addEmptyCard("Cursed tool catalog data is not available yet.", orderIndex)
+		addEmptyCard(_as("no_catalog", "Cursed tool catalog data is not available yet."), orderIndex)
 	else
 		for _, tool in ipairs(catalog) do
 			local color = rarityColor(tool.Rarity)
@@ -327,7 +332,7 @@ local function buildOwnedTab(data)
 				font = Enum.Font.GothamBlack, order = 1,
 			})
 			mobileLabel({
-				parent = card, text = (tool.Owned and "OWNED" or "LOCKED") .. "  •  " .. tostring(tool.Rarity or "Common"),
+				parent = card, text = (tool.Owned and _as("owned_label", "OWNED") or _as("locked_label", "LOCKED")) .. "  •  " .. tostring(tool.Rarity or "Common"),
 				size = 12, color = tool.Owned and theme.Green or theme.Muted,
 				font = Enum.Font.GothamBlack, order = 2,
 			})
@@ -351,12 +356,12 @@ end
 local function buildShopTab(data)
 	local orderIndex = 0
 
-	addSectionHeader("Shop", orderIndex)
+	addSectionHeader(_as("sec_shop", "Shop"), orderIndex)
 	orderIndex += 1
 
 	local shop = data.Shop or {}
 	if #shop <= 0 then
-		addEmptyCard("The shop has no available assets.", orderIndex)
+		addEmptyCard(_as("no_shop", "The shop has no available assets."), orderIndex)
 		return
 	end
 
@@ -364,17 +369,17 @@ local function buildShopTab(data)
 
 	local bulkCard = mobileCard({ parent = scroll, accentColor = theme.Green, order = orderIndex })
 	mobileLabel({
-		parent = bulkCard, text = "Bulk Asset Purchase",
+		parent = bulkCard, text = _as("bulk_title", "Bulk Asset Purchase"),
 		size = 15, color = theme.Text, font = Enum.Font.GothamBlack, order = 1,
 	})
 	mobileLabel({
 		parent = bulkCard,
-		text = "Buy up to 5 cheapest affordable unowned assets at once.",
+		text = _as("bulk_desc", "Buy up to 5 cheapest affordable unowned assets at once."),
 		size = 13, color = theme.SubText, order = 2,
 	})
 	mobileButton({
 		parent = bulkCard,
-		text = playerAge < 16 and "AGE 16+" or "BULK BUY",
+		text = playerAge < 16 and _as("btn_age_16", "AGE 16+") or _as("btn_bulk_buy", "BULK BUY"),
 		size = UDim2.new(1, 0, 0, 48),
 		color = playerAge < 16 and theme.Button or theme.Green,
 		textColor = playerAge < 16 and theme.SubText or theme.Bg,
@@ -406,7 +411,7 @@ local function buildShopTab(data)
 			size = 13, color = theme.SubText, order = 3,
 		})
 
-		local buyText = playerAge < 16 and "ASK PARENT" or "BUY"
+		local buyText = playerAge < 16 and _as("btn_ask_parent", "ASK PARENT") or _as("btn_buy", "BUY")
 		local actionId = playerAge < 16 and "AskParent" or "Buy"
 		mobileButton({
 			parent = card, text = buyText, order = 4,
@@ -552,15 +557,15 @@ local function buildDojoOverview(data)
 		text = rankName .. "  •  Founder: " .. tostring(data.DojoFounderName or data.Name or "Unknown"),
 		size = 12, color = theme.Gold, font = Enum.Font.GothamBold, order = 2,
 	})
-	buildProgressBar(summaryCard, "Clan Reputation", rankProgress, rankNeed, theme.Gold, 3)
+	buildProgressBar(summaryCard, _as("sec_clan_settings", "Clan Reputation"), rankProgress, rankNeed, theme.Gold, 3)
 	buildStatRow(summaryCard, {
-		{ "Students", tostring(data.ClanStudentCount or 0) .. "/" .. tostring(data.DojoCapacity or 3), theme.Blue },
+		{ _as("sec_students", "Students"), tostring(data.ClanStudentCount or 0) .. "/" .. tostring(data.DojoCapacity or 3), theme.Blue },
 		{ "Level", tostring(data.DojoLevel or 1), theme.Purple },
 		{ "Cond.", formatPercent(data.DojoCondition or 100), theme.Green },
 	}, 4)
 	mobileLabel({
 		parent = summaryCard,
-		text = "Focus: " .. tostring(data.DojoFocus or "Balanced") .. "  •  Rerolls: " .. tostring(data.RecruitRerollTokens or 0),
+		text = _as("focus_label", "Focus: {focus}  •  Rerolls: {rerolls}"):gsub("{focus}", tostring(data.DojoFocus or "Balanced")):gsub("{rerolls}", tostring(data.RecruitRerollTokens or 0)),
 		size = 11, color = theme.Muted, order = 5,
 	})
 	orderIndex += 1
@@ -568,17 +573,17 @@ local function buildDojoOverview(data)
 	local upgradeCost = tonumber(data.DojoUpgradeCost)
 	local upgradeCard = mobileCard({ parent = scroll, order = orderIndex })
 	mobileLabel({
-		parent = upgradeCard, text = "Upgrade Grand Dojo",
+		parent = upgradeCard, text = _as("upgrade_dojo", "Upgrade Grand Dojo"),
 		size = 15, color = theme.Text, font = Enum.Font.GothamBlack, order = 1,
 	})
 	mobileLabel({
 		parent = upgradeCard,
-		text = upgradeCost and ("$" .. tostring(upgradeCost) .. " to raise dojo level, condition, prestige, and student capacity.") or "Already at maximum level.",
+		text = upgradeCost and _as("upgrade_dojo_cost", "${cost} to raise dojo level, condition, prestige, and student capacity."):gsub("{cost}", tostring(upgradeCost)) or _as("upgrade_dojo_max", "Already at maximum level."),
 		size = 13, color = theme.SubText, order = 2,
 	})
 	mobileButton({
 		parent = upgradeCard,
-		text = upgradeCost and "UPGRADE" or "MAX",
+		text = upgradeCost and _as("btn_upgrade", "UPGRADE") or _as("btn_max", "MAX"),
 		size = UDim2.new(1, 0, 0, 48),
 		color = upgradeCost and theme.Gold or theme.Button,
 		textColor = upgradeCost and theme.Bg or theme.SubText,
@@ -589,14 +594,14 @@ local function buildDojoOverview(data)
 	})
 	orderIndex += 1
 
-	addSectionHeader("Dojo Actions", orderIndex)
+	addSectionHeader(_as("sec_dojo_actions", "Dojo Actions"), orderIndex)
 	orderIndex += 1
 
 	local actions = {
-		{ "Students",  "View and manage your clan students.",                theme.Blue },
-		{ "Recruit",   "Recruit new students from the candidate board.",    theme.Green },
-		{ "Training",  "Set focus and run training sessions.",              theme.Purple },
-		{ "Settings",  "View clan identity and configuration.",             theme.Gold },
+		{ "Students",  _as("students_action", "View and manage your clan students."),             theme.Blue },
+		{ "Recruit",   _as("recruit_action", "Recruit new students from the candidate board."),   theme.Green },
+		{ "Training",  _as("training_action", "Set focus and run training sessions."),            theme.Purple },
+		{ "Settings",  _as("settings_action", "View clan identity and configuration."),           theme.Gold },
 	}
 	for _, action in ipairs(actions) do
 		local card = mobileCard({ parent = scroll, order = orderIndex })
@@ -625,7 +630,7 @@ local function buildDojoStudents(data)
 	local orderIndex = 0
 
 	mobileButton({
-		parent = scroll, text = "← BACK TO DOJO",
+		parent = scroll, text = _as("btn_back_dojo", "← BACK TO DOJO"),
 		size = UDim2.new(1, -20, 0, 44),
 		position = UDim2.new(0, 10, 0, 0),
 		color = theme.Button, textSize = 14, order = orderIndex,
@@ -633,22 +638,22 @@ local function buildDojoStudents(data)
 	})
 	orderIndex += 1
 
-	addSectionHeader("Students", orderIndex)
+	addSectionHeader(_as("sec_students", "Students"), orderIndex)
 	orderIndex += 1
 
 	local students = data.DojoStudents or {}
 	if #students <= 0 then
 		local card = mobileCard({ parent = scroll, order = orderIndex })
 		mobileLabel({
-			parent = card, text = "No students yet.",
+			parent = card, text = _as("no_students", "No students yet."),
 			size = 15, color = theme.Text, font = Enum.Font.GothamBlack, order = 1,
 		})
 		mobileLabel({
-			parent = card, text = "Recruit students from the recruit board first.",
+			parent = card, text = _as("no_students_hint", "Recruit students from the recruit board first."),
 			size = 13, color = theme.SubText, order = 2,
 		})
 		mobileButton({
-			parent = card, text = "RECRUIT",
+			parent = card, text = _as("btn_recruit", "RECRUIT"),
 			size = UDim2.new(1, 0, 0, 48), color = theme.Green,
 			textColor = theme.Bg, textSize = 14, order = 3,
 			callback = function() dojoSubPage = "Recruit"; refresh() end,
@@ -687,7 +692,7 @@ local function buildDojoRecruit(data)
 	local orderIndex = 0
 
 	mobileButton({
-		parent = scroll, text = "← BACK TO DOJO",
+		parent = scroll, text = _as("btn_back_dojo", "← BACK TO DOJO"),
 		size = UDim2.new(1, -20, 0, 44),
 		position = UDim2.new(0, 10, 0, 0),
 		color = theme.Button, textSize = 14, order = orderIndex,
@@ -695,7 +700,7 @@ local function buildDojoRecruit(data)
 	})
 	orderIndex += 1
 
-	addSectionHeader("Recruit Students", orderIndex)
+	addSectionHeader(_as("sec_recruit", "Recruit Students"), orderIndex)
 	orderIndex += 1
 
 	local used  = tonumber(data.DojoStarterRecruitsUsed) or 0
@@ -705,12 +710,12 @@ local function buildDojoRecruit(data)
 	local introCard = mobileCard({ parent = scroll, order = orderIndex })
 	mobileLabel({
 		parent = introCard,
-		text = "Choose " .. tostring(limit) .. " out of 10 candidates",
+		text = _as("choose_candidates", "Choose {limit} out of 10 candidates"):gsub("{limit}", tostring(limit)),
 		size = 15, color = theme.Text, font = Enum.Font.GothamBlack, order = 1,
 	})
 	mobileLabel({
 		parent = introCard,
-		text = "Slots used: " .. tostring(used) .. " / " .. tostring(limit),
+		text = _as("slots_used", "Slots used: {used} / {limit}"):gsub("{used}", tostring(used)):gsub("{limit}", tostring(limit)),
 		size = 13, color = theme.Gold, font = Enum.Font.GothamBold, order = 2,
 	})
 	orderIndex += 1
@@ -718,11 +723,11 @@ local function buildDojoRecruit(data)
 	if used >= limit then
 		local doneCard = mobileCard({ parent = scroll, accentColor = theme.Gold, order = orderIndex })
 		mobileLabel({
-			parent = doneCard, text = "Starting recruitment complete.",
+			parent = doneCard, text = _as("recruit_done", "Starting recruitment complete."),
 			size = 15, color = theme.Gold, font = Enum.Font.GothamBlack, order = 1,
 		})
 		mobileLabel({
-			parent = doneCard, text = "All starter slots used. Future upgrades can unlock more.",
+			parent = doneCard, text = _as("recruit_done_hint", "All starter slots used. Future upgrades can unlock more."),
 			size = 13, color = theme.SubText, order = 2,
 		})
 		return
@@ -731,15 +736,15 @@ local function buildDojoRecruit(data)
 	if #candidates <= 0 then
 		local genCard = mobileCard({ parent = scroll, order = orderIndex })
 		mobileLabel({
-			parent = genCard, text = "No recruit list yet.",
+			parent = genCard, text = _as("no_recruit", "No recruit list yet."),
 			size = 15, color = theme.Text, font = Enum.Font.GothamBlack, order = 1,
 		})
 		mobileLabel({
-			parent = genCard, text = "Generate 10 possible students for your Grand Dojo.",
+			parent = genCard, text = _as("no_recruit_hint", "Generate 10 possible students for your Grand Dojo."),
 			size = 13, color = theme.SubText, order = 2,
 		})
 		mobileButton({
-			parent = genCard, text = "GENERATE",
+			parent = genCard, text = _as("btn_generate", "GENERATE"),
 			size = UDim2.new(1, 0, 0, 48), color = theme.Gold,
 			textColor = theme.Bg, textSize = 14, order = 3,
 			callback = function() fireAssetAction("GenerateRecruitPool", "grand_dojo") end,
@@ -771,7 +776,7 @@ local function buildDojoRecruit(data)
 			})
 		end
 		mobileButton({
-			parent = card, text = "RECRUIT",
+			parent = card, text = _as("btn_recruit", "RECRUIT"),
 			size = UDim2.new(1, 0, 0, 48), color = theme.Green,
 			textColor = theme.Bg, textSize = 14, order = 5,
 			callback = function()
@@ -786,7 +791,7 @@ local function buildDojoTraining(data)
 	local orderIndex = 0
 
 	mobileButton({
-		parent = scroll, text = "← BACK TO DOJO",
+		parent = scroll, text = _as("btn_back_dojo", "← BACK TO DOJO"),
 		size = UDim2.new(1, -20, 0, 44),
 		position = UDim2.new(0, 10, 0, 0),
 		color = theme.Button, textSize = 14, order = orderIndex,
@@ -794,15 +799,15 @@ local function buildDojoTraining(data)
 	})
 	orderIndex += 1
 
-	addSectionHeader("Training Focus", orderIndex)
+	addSectionHeader(_as("sec_train_focus", "Training Focus"), orderIndex)
 	orderIndex += 1
 
 	local focusOptions = {
-		{ "Balanced",   "Even growth across bond, trust, respect, and cursed energy.", theme.Button },
-		{ "Combat",     "More cursed energy and grade growth, with harder sessions.",  theme.Bad },
-		{ "Discipline", "More respect and trust through strict structure.",            theme.Gold },
-		{ "Theory",     "Better cursed energy control and technique growth.",          theme.Purple },
-		{ "Loyalty",    "More bond, trust, and clan reputation.",                      theme.Green },
+		{ "Balanced",   _as("focus_bal_desc", "Even growth across bond, trust, respect, and cursed energy."), theme.Button },
+		{ "Combat",     _as("focus_com_desc", "More cursed energy and grade growth, with harder sessions."),  theme.Bad },
+		{ "Discipline", _as("focus_dis_desc", "More respect and trust through strict structure."),            theme.Gold },
+		{ "Theory",     _as("focus_the_desc", "Better cursed energy control and technique growth."),          theme.Purple },
+		{ "Loyalty",    _as("focus_loy_desc", "More bond, trust, and clan reputation."),                      theme.Green },
 	}
 
 	for _, opt in ipairs(focusOptions) do
@@ -822,7 +827,7 @@ local function buildDojoTraining(data)
 		})
 		mobileButton({
 			parent = card,
-			text = selected and "ACTIVE" or "SELECT",
+			text = selected and _as("btn_active", "ACTIVE") or _as("btn_select", "SELECT"),
 			size = UDim2.new(1, 0, 0, 48),
 			color = selected and theme.Gold or opt[3],
 			textColor = selected and theme.Bg or theme.Text,
@@ -836,21 +841,21 @@ local function buildDojoTraining(data)
 		orderIndex += 1
 	end
 
-	addSectionHeader("Run Training", orderIndex)
+	addSectionHeader(_as("sec_run_training", "Run Training"), orderIndex)
 	orderIndex += 1
 
 	local trainCard = mobileCard({ parent = scroll, order = orderIndex })
 	mobileLabel({
-		parent = trainCard, text = "Run Training Session",
+		parent = trainCard, text = _as("run_training", "Run Training Session"),
 		size = 15, color = theme.Text, font = Enum.Font.GothamBlack, order = 1,
 	})
 	mobileLabel({
 		parent = trainCard,
-		text = "Student growth, clan reputation, possible CE/mastery gains. Cost: dojo condition and time.",
+		text = _as("run_training_desc", "Student growth, clan reputation, possible CE/mastery gains. Cost: dojo condition and time."),
 		size = 13, color = theme.SubText, order = 2,
 	})
 	mobileButton({
-		parent = trainCard, text = "TRAIN",
+		parent = trainCard, text = _as("btn_train", "TRAIN"),
 		size = UDim2.new(1, 0, 0, 48), color = theme.Purple,
 		textSize = 14, order = 3,
 		callback = function() fireAssetAction("TrainStudents", "grand_dojo") end,
@@ -861,7 +866,7 @@ local function buildDojoSettings(data)
 	local orderIndex = 0
 
 	mobileButton({
-		parent = scroll, text = "← BACK TO DOJO",
+		parent = scroll, text = _as("btn_back_dojo", "← BACK TO DOJO"),
 		size = UDim2.new(1, -20, 0, 44),
 		position = UDim2.new(0, 10, 0, 0),
 		color = theme.Button, textSize = 14, order = orderIndex,
@@ -869,12 +874,12 @@ local function buildDojoSettings(data)
 	})
 	orderIndex += 1
 
-	addSectionHeader("Clan Settings", orderIndex)
+	addSectionHeader(_as("sec_clan_settings", "Clan Settings"), orderIndex)
 	orderIndex += 1
 
 	local card = mobileCard({ parent = scroll, order = orderIndex })
 	mobileLabel({
-		parent = card, text = "Clan Identity",
+		parent = card, text = _as("clan_identity", "Clan Identity"),
 		size = 15, color = theme.Text, font = Enum.Font.GothamBlack, order = 1,
 	})
 	mobileLabel({
@@ -892,16 +897,16 @@ local function buildDojoNoGrandDojo(data)
 
 	local card = mobileCard({ parent = scroll, accentColor = theme.Gold, order = orderIndex })
 	mobileLabel({
-		parent = card, text = "No Grand Dojo Owned",
+		parent = card, text = _as("no_grand_dojo_owned", "No Grand Dojo Owned"),
 		size = 16, color = theme.Text, font = Enum.Font.GothamBlack, order = 1,
 	})
 	mobileLabel({
 		parent = card,
-		text = "Buy the Grand Dojo from the shop for $25,000 to found a clan, recruit students, and build your sorcerer school.",
+		text = _as("no_dojo_desc", "Buy the Grand Dojo from the shop for $25,000 to found a clan, recruit students, and build your sorcerer school."),
 		size = 13, color = theme.SubText, order = 2,
 	})
 	mobileButton({
-		parent = card, text = "GO SHOP",
+		parent = card, text = _as("btn_go_shop", "GO SHOP"),
 		size = UDim2.new(1, 0, 0, 48), color = theme.Gold,
 		textColor = theme.Bg, textSize = 14, order = 3,
 		callback = function() setTab("Shop"); refresh() end,
@@ -912,11 +917,11 @@ local function buildDojoNoGrandDojo(data)
 	if joinedName ~= "" then
 		local joinedCard = mobileCard({ parent = scroll, accentColor = theme.Gold, order = orderIndex })
 		mobileLabel({
-			parent = joinedCard, text = "Joined Dojo",
+			parent = joinedCard, text = _as("joined_dojo", "Joined Dojo"),
 			size = 15, color = theme.Gold, font = Enum.Font.GothamBlack, order = 1,
 		})
 		mobileLabel({
-			parent = joinedCard, text = "You are a student at: " .. joinedName,
+			parent = joinedCard, text = _as("joined_dojo_at", "You are a student at: {name}"):gsub("{name}", joinedName),
 			size = 13, color = theme.Text, order = 2,
 		})
 	end
@@ -925,12 +930,12 @@ end
 local function buildDojoClanNameSetup(data)
 	local card = mobileCard({ parent = scroll, accentColor = theme.Gold, order = 0 })
 	mobileLabel({
-		parent = card, text = "Clan Name Setup",
+		parent = card, text = _as("clan_name_setup", "Clan Name Setup"),
 		size = 16, color = theme.Text, font = Enum.Font.GothamBlack, order = 1,
 	})
 	mobileLabel({
 		parent = card,
-		text = "Current: " .. tostring(data.FamilyName or "Unnamed") .. " Clan",
+		text = _as("current_clan", "Current: Clan {name}"):gsub("{name}", tostring(data.FamilyName or "Unnamed")),
 		size = 13, color = theme.Gold, font = Enum.Font.GothamBold, order = 2,
 	})
 
@@ -956,11 +961,11 @@ local function buildDojoClanNameSetup(data)
 
 	mobileLabel({
 		parent = card,
-		text = "Confirm the clan name. The game will ask if you want your last name to match.",
+		text = _as("confirm_clan_hint", "Confirm the clan name. The game will ask if you want your last name to match."),
 		size = 12, color = theme.SubText, order = 4,
 	})
 	mobileButton({
-		parent = card, text = "CONFIRM CLAN",
+		parent = card, text = _as("btn_confirm_clan", "CONFIRM CLAN"),
 		size = UDim2.new(1, 0, 0, 48), color = theme.Gold,
 		textColor = theme.Bg, textSize = 14, order = 5,
 		callback = function()
@@ -977,22 +982,22 @@ end
 local function buildDojoLastNameChoice(data)
 	local card = mobileCard({ parent = scroll, accentColor = theme.Gold, order = 0 })
 	mobileLabel({
-		parent = card, text = "Change Last Name?",
+		parent = card, text = _as("change_last_name", "Change Last Name?"),
 		size = 16, color = theme.Text, font = Enum.Font.GothamBlack, order = 1,
 	})
 	mobileLabel({
 		parent = card,
-		text = "Your clan is <b>" .. tostring(data.PlayerClanName or "Unnamed Clan") .. "</b>. Match your family name?",
+		text = _as("change_last_name_desc", "Your clan is <b>{clan}</b>. Match your family name?"):gsub("{clan}", tostring(data.PlayerClanName or "Unnamed Clan")),
 		size = 13, color = theme.SubText, order = 2,
 	})
 	mobileButton({
-		parent = card, text = "YES, CHANGE IT",
+		parent = card, text = _as("btn_yes_change", "YES, CHANGE IT"),
 		size = UDim2.new(1, 0, 0, 48), color = theme.Green,
 		textColor = theme.Bg, textSize = 14, order = 3,
 		callback = function() fireAssetAction("ChangePlayerLastName", "grand_dojo") end,
 	})
 	mobileButton({
-		parent = card, text = "NO, KEEP MINE",
+		parent = card, text = _as("btn_no_keep", "NO, KEEP MINE"),
 		size = UDim2.new(1, 0, 0, 48), color = theme.Bad,
 		textSize = 14, order = 4,
 		callback = function() fireAssetAction("KeepPlayerLastName", "grand_dojo") end,
@@ -1032,21 +1037,21 @@ refresh = function()
 
 	if not ok then
 		warn("[MobileAssetsPanel] Failed to load assets:", data)
-		addEmptyCard("Could not load assets. Try again later.", 0)
+		addEmptyCard(_as("no_shop", "Could not load assets. Try again later."), 0)
 		return
 	end
 
 	currentData = data or {}
 
 	if moneyLabel then
-		moneyLabel.Text = "Money: $" .. formatMoney(currentData.Money or 0)
+		moneyLabel.Text = _as("money", "Money: ${v}"):gsub("{v}", formatMoney(currentData.Money or 0))
 	end
 
 	local playerAge = tonumber(currentData.Age) or 0
 	if playerAge < 16 and currentData.ParentAssetRequestLimit then
 		local reqLeft = math.max(0, (tonumber(currentData.ParentAssetRequestLimit) or 0) - (tonumber(currentData.ParentAssetRequestsUsed) or 0))
 		local giftLeft = math.max(0, (tonumber(currentData.ParentAssetGiftLimit) or 0) - (tonumber(currentData.ParentAssetGiftsReceived) or 0))
-		setStatus("Parent asks: " .. tostring(reqLeft) .. " | Gifts: " .. tostring(giftLeft), theme.Gold)
+		setStatus(_as("parent_status", "Parent asks: {req} | Gifts: {gift}"):gsub("{req}", tostring(reqLeft)):gsub("{gift}", tostring(giftLeft)), theme.Gold)
 	elseif statusLabel and statusLabel.Text ~= "Processing..." then
 		setStatus("")
 	end
@@ -1108,7 +1113,7 @@ local function init()
 	moneyLabel.TextSize = 13
 	moneyLabel.Font = Enum.Font.GothamBlack
 	moneyLabel.TextXAlignment = Enum.TextXAlignment.Left
-	moneyLabel.Text = "Money: $0"
+	moneyLabel.Text = _as("money", "Money: ${v}"):gsub("{v}", "0")
 	moneyLabel.Parent = sheet
 
 	statusLabel = Instance.new("TextLabel")

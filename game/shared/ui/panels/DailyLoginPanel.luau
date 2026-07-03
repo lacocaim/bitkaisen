@@ -3,6 +3,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _dl(key, fallback) return BitKaisenLocale.tOrFallback(_L, "daily." .. key, nil, fallback) end
+
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
@@ -201,7 +206,7 @@ windowScale.Name = "ResponsiveScale"
 windowScale.Scale = 1
 windowScale.Parent = window
 
-local title = makeText(window, "Title", "DAILY LOGIN", 22, THEME.Text, true)
+local title = makeText(window, "Title", _dl("title", "DAILY LOGIN"), 22, THEME.Text, true)
 title.Size = UDim2.new(1, -90, 0, 30)
 title.Position = UDim2.new(0, 22, 0, 18)
 
@@ -336,19 +341,19 @@ end
 
 local function setClaimButton(canClaim)
 	if state.Busy then
-		claimButton.Text = "CLAIMING..."
+		claimButton.Text = _dl("btn_claiming", "CLAIMING...")
 		claimButton.Active = false
 		claimButton.BackgroundColor3 = THEME.ButtonDisabled
 		claimButton.TextColor3 = THEME.Muted
 		return
 	end
 	if canClaim then
-		claimButton.Text = "CLAIM"
+		claimButton.Text = _dl("btn_claim", "CLAIM")
 		claimButton.Active = true
 		claimButton.BackgroundColor3 = THEME.Purple
 		claimButton.TextColor3 = THEME.Text
 	else
-		claimButton.Text = "CLAIMED"
+		claimButton.Text = _dl("btn_already", "CLAIMED")
 		claimButton.Active = false
 		claimButton.BackgroundColor3 = THEME.ButtonDisabled
 		claimButton.TextColor3 = THEME.Muted
@@ -369,16 +374,17 @@ local function render(data)
 	local nextStreak = tonumber(data.NextStreak) or math.max(1, streak)
 	local nextReward = data.NextReward
 
-	streakLabel.Text = "Streak: " .. tostring(streak)
-	bestLabel.Text = "Best: " .. tostring(bestStreak) .. "  •  Claims: " .. tostring(totalClaims)
-	todayLabel.Text = "Today's reward: " .. formatRewardShort(nextReward)
+	streakLabel.Text = _dl("streak", "Streak: {n}"):gsub("{n}", tostring(streak))
+	bestLabel.Text = _dl("best", "Best: {best}  •  Claims: {claims}"):gsub("{best}", tostring(bestStreak)):gsub("{claims}", tostring(totalClaims))
+	todayLabel.Text = _dl("today", "Today's reward: {reward}"):gsub("{reward}", formatRewardShort(nextReward))
 
 	if canClaim then
-		statusLabel.Text = "Ready to claim Day " .. tostring(((nextStreak - 1) % 7) + 1) .. "."
-		footerText.Text = "Claim now to continue your daily streak. Missing a day resets the streak."
+		local dayNum = tostring(((nextStreak - 1) % 7) + 1)
+		statusLabel.Text = _dl("ready", "Ready to claim Day {day}."):gsub("{day}", dayNum)
+		footerText.Text = _dl("footer_claim", "Claim now to continue your daily streak. Missing a day resets the streak.")
 	else
-		statusLabel.Text = "Already claimed today. Come back tomorrow."
-		footerText.Text = "Daily reward claimed. Your next reward will be available tomorrow."
+		statusLabel.Text = _dl("claimed", "Already claimed today. Come back tomorrow.")
+		footerText.Text = _dl("footer_claimed", "Daily reward claimed. Your next reward will be available tomorrow.")
 	end
 
 	local rewards = typeof(data.Rewards) == "table" and data.Rewards or {}
@@ -388,7 +394,7 @@ local function render(data)
 		local reward = rewards[i]
 		local refs = rewardCards[i]
 		if refs then
-			refs.Day.Text = "DAY " .. tostring(i)
+			refs.Day.Text = _dl("day", "DAY {n}"):gsub("{n}", tostring(i))
 			refs.Name.Text = reward and tostring(reward.Name or "Reward") or "Reward"
 			refs.Short.Text = reward and tostring(reward.Short or "+???") or "+???"
 

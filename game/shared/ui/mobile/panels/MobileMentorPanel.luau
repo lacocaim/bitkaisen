@@ -3,6 +3,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local uiState = require("@ui-state/uiState")
 local mc = require("@ui/mobile/mobileComponents")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _m(key, fallback) return BitKaisenLocale.tOrFallback(_L, "mentor." .. key, nil, fallback) end
 
 local theme = mc.theme
 
@@ -47,7 +50,7 @@ local function addStatusCard(payload)
 
 	mc.mobileLabel({
 		parent = card,
-		text = "Status",
+		text = _m("status_label", "Status"),
 		size = 13,
 		color = theme.SubText,
 		font = Enum.Font.GothamMedium,
@@ -56,7 +59,7 @@ local function addStatusCard(payload)
 
 	mc.mobileLabel({
 		parent = card,
-		text = "<b>Active Jujutsu Mentor</b>",
+		text = _m("status_active", "<b>Active Jujutsu Mentor</b>"),
 		size = 16,
 		color = theme.Blue,
 		font = Enum.Font.GothamBold,
@@ -69,7 +72,7 @@ local function addRankCard(payload)
 
 	mc.mobileLabel({
 		parent = card,
-		text = "Mentor Rank",
+		text = _m("rank_label", "Mentor Rank"),
 		size = 13,
 		color = theme.SubText,
 		font = Enum.Font.GothamMedium,
@@ -91,7 +94,7 @@ local function addXPCard(payload)
 
 	mc.mobileLabel({
 		parent = card,
-		text = "Mentor XP",
+		text = _m("xp_label", "Mentor XP"),
 		size = 13,
 		color = theme.SubText,
 		font = Enum.Font.GothamMedium,
@@ -102,7 +105,7 @@ local function addXPCard(payload)
 	if payload.NextRank then
 		xpText ..= " / " .. tostring(payload.NextRank.MinXP) .. " for " .. payload.NextRank.Id
 	else
-		xpText ..= " (Max Rank)"
+		xpText ..= " " .. _m("max_rank", "(Max Rank)")
 	end
 
 	mc.mobileLabel({
@@ -120,7 +123,7 @@ local function addStatsCard(payload)
 
 	mc.mobileLabel({
 		parent = card,
-		text = "Yearly Income",
+		text = _m("income_label", "Yearly Income"),
 		size = 13,
 		color = theme.SubText,
 		font = Enum.Font.GothamMedium,
@@ -138,7 +141,7 @@ local function addStatsCard(payload)
 
 	mc.mobileLabel({
 		parent = card,
-		text = "Students Mentored",
+		text = _m("students_label", "Students Mentored"),
 		size = 13,
 		color = theme.SubText,
 		font = Enum.Font.GothamMedium,
@@ -160,7 +163,7 @@ local function addTipCard()
 
 	mc.mobileLabel({
 		parent = card,
-		text = "Use <b>Mentor activities</b> in the Activities menu to earn XP and rank up.",
+		text = _m("tip", "Use <b>Mentor activities</b> in the Activities menu to earn XP and rank up."),
 		size = 14,
 		color = theme.SubText,
 		font = Enum.Font.GothamMedium,
@@ -173,7 +176,7 @@ local function addNotMentorContent(payload)
 
 	mc.mobileLabel({
 		parent = card,
-		text = "You are not a Jujutsu Mentor yet.",
+		text = _m("not_mentor", "You are not a Jujutsu Mentor yet."),
 		size = 15,
 		color = theme.SubText,
 		font = Enum.Font.GothamBold,
@@ -183,7 +186,7 @@ local function addNotMentorContent(payload)
 	if payload.CanApply then
 		mc.mobileLabel({
 			parent = card,
-			text = "Requirements met! You can apply to become a Jujutsu Mentor.",
+			text = _m("reqs_met", "Requirements met! You can apply to become a Jujutsu Mentor."),
 			size = 14,
 			color = theme.Green,
 			font = Enum.Font.GothamMedium,
@@ -192,7 +195,7 @@ local function addNotMentorContent(payload)
 	else
 		mc.mobileLabel({
 			parent = card,
-			text = "Cannot apply: " .. tostring(payload.ApplyReason or "Unknown reason."),
+			text = _m("cannot_apply", "Cannot apply: ") .. tostring(payload.ApplyReason or "Unknown reason."),
 			size = 14,
 			color = theme.SubText,
 			font = Enum.Font.GothamMedium,
@@ -201,7 +204,7 @@ local function addNotMentorContent(payload)
 
 		mc.mobileLabel({
 			parent = card,
-			text = "Requirements: Graduate JJH, Age 20+, Grade 2+, recommendations.",
+			text = _m("requirements", "Requirements: Graduate JJH, Age 20+, Grade 2+, recommendations."),
 			size = 13,
 			color = theme.Muted,
 			font = Enum.Font.GothamMedium,
@@ -212,7 +215,7 @@ local function addNotMentorContent(payload)
 	if payload.CanApply then
 		mc.mobileButton({
 			parent = scroll,
-			text = "Apply to Become a Mentor",
+			text = _m("apply_btn", "Apply to Become a Mentor"),
 			color = theme.Blue,
 			textColor = theme.Text,
 			textSize = 15,
@@ -234,7 +237,7 @@ local function refresh()
 		local card = mc.mobileCard({ parent = scroll, order = 1 })
 		mc.mobileLabel({
 			parent = card,
-			text = "Mentor data unavailable. Please try again later.",
+			text = _m("unavailable", "Mentor data unavailable. Please try again later."),
 			size = 14,
 			color = theme.SubText,
 			font = Enum.Font.GothamBold,

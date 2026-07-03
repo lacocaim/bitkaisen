@@ -3,6 +3,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local uiState = require("@ui-state/uiState")
 local mc = require("@ui/mobile/mobileComponents")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _h(key, fallback) return BitKaisenLocale.tOrFallback(_L, "history_ui." .. key, nil, fallback) end
 
 local theme = mc.theme
 local player = Players.LocalPlayer
@@ -78,7 +81,7 @@ local function renderHistory()
 		local errCard = mc.mobileCard({ parent = scroll, order = 1 })
 		mc.mobileLabel({
 			parent = errCard,
-			text = "Could not load world history.",
+			text = _h("load_error", "Could not load world history."),
 			size = 14,
 			color = theme.Bad,
 			font = Enum.Font.GothamBold,
@@ -91,7 +94,7 @@ local function renderHistory()
 	local sumCard = mc.mobileCard({ parent = scroll, order = 1, accentColor = theme.Gold })
 	mc.mobileLabel({
 		parent = sumCard,
-		text = "Era: " .. tostring(summary.Era or "Unknown"),
+		text = _h("era_label", "Era: ") .. tostring(summary.Era or "Unknown"),
 		size = 15,
 		color = theme.Gold,
 		font = Enum.Font.GothamBlack,
@@ -99,14 +102,14 @@ local function renderHistory()
 	})
 	mc.mobileLabel({
 		parent = sumCard,
-		text = "World Events: " .. tostring(summary.WorldEvents or 0) .. "  •  Notable Births: " .. tostring(summary.NotableBirths or 0),
+		text = _h("world_events", "World Events") .. ": " .. tostring(summary.WorldEvents or 0) .. "  •  " .. _h("notable_births", "Notable Births") .. ": " .. tostring(summary.NotableBirths or 0),
 		size = 13,
 		color = theme.SubText,
 		order = 2,
 	})
 	mc.mobileLabel({
 		parent = sumCard,
-		text = "Strongest Sorcerer: " .. tostring(summary.StrongestSorcerer or "Unknown"),
+		text = _h("strongest", "Strongest Sorcerer") .. ": " .. tostring(summary.StrongestSorcerer or "Unknown"),
 		size = 13,
 		color = theme.Blue,
 		order = 3,
@@ -115,15 +118,15 @@ local function renderHistory()
 	local equippedTool = summary.EquippedCursedToolName or summary.EquippedCursedToolId or "None"
 	mc.mobileLabel({
 		parent = sumCard,
-		text = "Cursed Tools: " .. tostring(summary.CursedToolsOwned or 0) .. "  •  Equipped: " .. tostring(equippedTool),
+		text = _h("cursed_tools", "Cursed Tools") .. ": " .. tostring(summary.CursedToolsOwned or 0) .. "  •  " .. _h("equipped", "Equipped") .. ": " .. tostring(equippedTool),
 		size = 13,
 		color = theme.SubText,
 		order = 4,
 	})
 
-	local clanWarText = "Clan Wars: " .. tostring(summary.ClanWarWins or 0) .. "W / " .. tostring(summary.ClanWarLosses or 0) .. "L"
+	local clanWarText = _h("clan_wars", "Clan Wars") .. ": " .. tostring(summary.ClanWarWins or 0) .. "W / " .. tostring(summary.ClanWarLosses or 0) .. "L"
 	if summary.ClanWarActive == true then
-		clanWarText ..= "\nActive vs " .. tostring(summary.ClanWarRival or "Rival Clan") .. " (" .. tostring(summary.ClanWarTension or 0) .. "% tension)"
+		clanWarText ..= "\n" .. _h("active_vs", "Active vs") .. " " .. tostring(summary.ClanWarRival or "Rival Clan") .. " (" .. tostring(summary.ClanWarTension or 0) .. "% " .. _h("tension", "tension") .. ")"
 	end
 	mc.mobileLabel({
 		parent = sumCard,
@@ -170,7 +173,7 @@ local function renderTitles()
 		local errCard = mc.mobileCard({ parent = scroll, order = 1 })
 		mc.mobileLabel({
 			parent = errCard,
-			text = "Could not load titles.",
+			text = _h("titles_error", "Could not load titles."),
 			size = 14,
 			color = theme.Bad,
 			font = Enum.Font.GothamBold,
@@ -194,7 +197,7 @@ local function renderTitles()
 		})
 		mc.mobileLabel({
 			parent = card,
-			text = if unlocked then "Unlocked" else "Locked",
+			text = if unlocked then _h("unlocked", "Unlocked") else _h("locked", "Locked"),
 			size = 13,
 			color = if unlocked then theme.Green else theme.Bad,
 			font = Enum.Font.GothamBold,
@@ -219,7 +222,7 @@ local function renderLives()
 	if not getPastLives then
 		rendering = false
 		local errCard = mc.mobileCard({ parent = scroll, order = 1 })
-		mc.mobileLabel({ parent = errCard, text = "Cemetery unavailable — rejoin to enable it.", size = 13, color = theme.SubText, order = 1 })
+		mc.mobileLabel({ parent = errCard, text = _h("cemetery_unavail", "Cemetery unavailable — rejoin to enable it."), size = 13, color = theme.SubText, order = 1 })
 		return
 	end
 
@@ -227,15 +230,15 @@ local function renderLives()
 	rendering = false
 	if not ok or typeof(data) ~= "table" then
 		local errCard = mc.mobileCard({ parent = scroll, order = 1 })
-		mc.mobileLabel({ parent = errCard, text = "Could not load past lives.", size = 14, color = theme.Bad, font = Enum.Font.GothamBold, order = 1 })
+		mc.mobileLabel({ parent = errCard, text = _h("past_lives_error", "Could not load past lives."), size = 14, color = theme.Bad, font = Enum.Font.GothamBold, order = 1 })
 		return
 	end
 
 	local lives = data.PastLives or {}
 	if #lives == 0 then
 		local c = mc.mobileCard({ parent = scroll, order = 1 })
-		mc.mobileLabel({ parent = c, text = "⚰  No past lives recorded yet.", size = 14, color = theme.SubText, font = Enum.Font.GothamBold, order = 1 })
-		mc.mobileLabel({ parent = c, text = "Start a new life to begin your cemetery.", size = 13, color = theme.SubText, order = 2 })
+		mc.mobileLabel({ parent = c, text = _h("cemetery_none", "⚰  No past lives recorded yet."), size = 14, color = theme.SubText, font = Enum.Font.GothamBold, order = 1 })
+		mc.mobileLabel({ parent = c, text = _h("cemetery_start", "Start a new life to begin your cemetery."), size = 13, color = theme.SubText, order = 2 })
 		return
 	end
 
@@ -244,8 +247,8 @@ local function renderLives()
 		local c = mc.mobileCard({ parent = scroll, order = i, accentColor = ribColor })
 		mc.mobileLabel({ parent = c, text = "⚰  " .. tostring(life.Name or "Unknown"), size = 16, color = theme.Text, font = Enum.Font.GothamBlack, order = 1 })
 		mc.mobileLabel({ parent = c, text = tostring(life.Ribbon or "ORDINARY LIFE"), size = 13, color = ribColor, font = Enum.Font.GothamBlack, order = 2 })
-		mc.mobileLabel({ parent = c, text = "Age " .. tostring(life.Age or 0) .. "  ·  " .. tostring(life.Grade or "Unranked") .. "  ·  " .. tostring(life.Clan or ""), size = 13, color = theme.SubText, order = 3 })
-		mc.mobileLabel({ parent = c, text = "Technique: " .. tostring(life.Technique or "None") .. "  ·  Missions: " .. tostring(life.Missions or 0), size = 12, color = theme.Muted, order = 4 })
+		mc.mobileLabel({ parent = c, text = _h("cemetery_age", "Age") .. " " .. tostring(life.Age or 0) .. "  ·  " .. tostring(life.Grade or "Unranked") .. "  ·  " .. tostring(life.Clan or ""), size = 13, color = theme.SubText, order = 3 })
+		mc.mobileLabel({ parent = c, text = _h("cemetery_tech", "Technique") .. ": " .. tostring(life.Technique or "None") .. "  ·  " .. _h("cemetery_miss", "Missions") .. ": " .. tostring(life.Missions or 0), size = 12, color = theme.Muted, order = 4 })
 		mc.mobileLabel({ parent = c, text = "— #" .. tostring(i) .. " —", size = 11, color = theme.SubText, order = 5 })
 	end
 end
@@ -284,7 +287,7 @@ local function renderInfluence()
 	rendering = false
 	if not ok or typeof(data) ~= "table" then
 		local errCard = mc.mobileCard({ parent = scroll, order = 1 })
-		mc.mobileLabel({ parent = errCard, text = "Could not load influence data.", size = 14, color = theme.Bad, font = Enum.Font.GothamBold, order = 1 })
+		mc.mobileLabel({ parent = errCard, text = _h("influence_error", "Could not load influence data."), size = 14, color = theme.Bad, font = Enum.Font.GothamBold, order = 1 })
 		return
 	end
 
@@ -297,12 +300,12 @@ local function renderInfluence()
 	local wanted = tonumber(s.WantedLevel) or 0
 
 	local descCard = mc.mobileCard({ parent = scroll, order = 1 })
-	mc.mobileLabel({ parent = descCard, text = "How the world perceives you.", size = 14, color = theme.Gold, font = Enum.Font.GothamBlack, order = 1 })
-	mc.mobileLabel({ parent = descCard, text = "Built from your actions, missions, and reputation.", size = 13, color = theme.SubText, order = 2 })
+	mc.mobileLabel({ parent = descCard, text = _h("influence_title", "How the world perceives you."), size = 14, color = theme.Gold, font = Enum.Font.GothamBlack, order = 1 })
+	mc.mobileLabel({ parent = descCard, text = _h("influence_sub", "Built from your actions, missions, and reputation."), size = 13, color = theme.SubText, order = 2 })
 
 	local fameCard = mc.mobileCard({ parent = scroll, order = 2, accentColor = theme.Gold })
-	mc.mobileLabel({ parent = fameCard, text = "⭐  FAME — " .. tostring(math.floor(fame)) .. " / 100", size = 15, color = theme.Gold, font = Enum.Font.GothamBlack, order = 1 })
-	mc.mobileLabel({ parent = fameCard, text = fame >= 75 and "Celebrated across the jujutsu world." or fame >= 40 and "Your name is known in sorcerer circles." or "Still unknown to most.", size = 13, color = theme.SubText, order = 2 })
+	mc.mobileLabel({ parent = fameCard, text = _h("fame_header", "⭐  FAME") .. " — " .. tostring(math.floor(fame)) .. " / 100", size = 15, color = theme.Gold, font = Enum.Font.GothamBlack, order = 1 })
+	mc.mobileLabel({ parent = fameCard, text = fame >= 75 and _h("fame_high", "Celebrated across the jujutsu world.") or fame >= 40 and _h("fame_mid", "Your name is known in sorcerer circles.") or _h("fame_low", "Still unknown to most."), size = 13, color = theme.SubText, order = 2 })
 	local fameTrack = Instance.new("Frame")
 	fameTrack.Size = UDim2.new(1, -24, 0, 10)
 	fameTrack.Position = UDim2.new(0, 12, 0, 0)
@@ -321,8 +324,8 @@ local function renderInfluence()
 
 	local fearColor = Color3.fromRGB(220, 84, 90)
 	local fearCard = mc.mobileCard({ parent = scroll, order = 3, accentColor = fearColor })
-	mc.mobileLabel({ parent = fearCard, text = "💀  FEAR — " .. tostring(math.floor(fear)) .. " / 100", size = 15, color = fearColor, font = Enum.Font.GothamBlack, order = 1 })
-	mc.mobileLabel({ parent = fearCard, text = fear >= 75 and "Enemies flee when they hear your name." or fear >= 40 and "Your presence unsettles those who know you." or "You haven't yet made them afraid.", size = 13, color = theme.SubText, order = 2 })
+	mc.mobileLabel({ parent = fearCard, text = _h("fear_header", "💀  FEAR") .. " — " .. tostring(math.floor(fear)) .. " / 100", size = 15, color = fearColor, font = Enum.Font.GothamBlack, order = 1 })
+	mc.mobileLabel({ parent = fearCard, text = fear >= 75 and _h("fear_high", "Enemies flee when they hear your name.") or fear >= 40 and _h("fear_mid", "Your presence unsettles those who know you.") or _h("fear_low", "You haven't yet made them afraid."), size = 13, color = theme.SubText, order = 2 })
 	local fearTrack = Instance.new("Frame")
 	fearTrack.Size = UDim2.new(1, -24, 0, 10)
 	fearTrack.Position = UDim2.new(0, 12, 0, 0)
@@ -344,11 +347,11 @@ local function renderInfluence()
 	local purpleColor = Color3.fromRGB(180, 130, 255)
 
 	local presCard = mc.mobileCard({ parent = scroll, order = 4 })
-	mc.mobileLabel({ parent = presCard, text = "WORLD PRESENCE", size = 14, color = theme.Text, font = Enum.Font.GothamBlack, order = 1 })
-	mc.mobileLabel({ parent = presCard, text = "World Attention: " .. tostring(math.floor(attn)), size = 13, color = blueColor, order = 2 })
-	mc.mobileLabel({ parent = presCard, text = "World Pressure: " .. tostring(math.floor(press)), size = 13, color = orangeColor, order = 3 })
-	mc.mobileLabel({ parent = presCard, text = "Society Influence: " .. tostring(math.floor(soc)), size = 13, color = purpleColor, order = 4 })
-	mc.mobileLabel({ parent = presCard, text = "Wanted Level: " .. tostring(math.floor(wanted)), size = 13, color = wanted >= 50 and fearColor or theme.SubText, order = 5 })
+	mc.mobileLabel({ parent = presCard, text = _h("world_presence", "WORLD PRESENCE"), size = 14, color = theme.Text, font = Enum.Font.GothamBlack, order = 1 })
+	mc.mobileLabel({ parent = presCard, text = _h("world_attention", "World Attention") .. ": " .. tostring(math.floor(attn)), size = 13, color = blueColor, order = 2 })
+	mc.mobileLabel({ parent = presCard, text = _h("world_pressure", "World Pressure") .. ": " .. tostring(math.floor(press)), size = 13, color = orangeColor, order = 3 })
+	mc.mobileLabel({ parent = presCard, text = _h("society_inf", "Society Influence") .. ": " .. tostring(math.floor(soc)), size = 13, color = purpleColor, order = 4 })
+	mc.mobileLabel({ parent = presCard, text = _h("wanted_level", "Wanted Level") .. ": " .. tostring(math.floor(wanted)), size = 13, color = wanted >= 50 and fearColor or theme.SubText, order = 5 })
 end
 
 local function buildTabBar()
@@ -368,7 +371,7 @@ local function buildTabBar()
 
 	historyTabBtn = mc.mobileButton({
 		parent = tabBar,
-		text = "HISTORY",
+		text = _h("tab_history", "HISTORY"),
 		size = UDim2.new(0, 0, 0, 0),
 		position = UDim2.new(0, 0, 0, 0),
 		color = theme.Button,
@@ -382,7 +385,7 @@ local function buildTabBar()
 
 	titlesTabBtn = mc.mobileButton({
 		parent = tabBar,
-		text = "TITLES",
+		text = _h("tab_titles", "TITLES"),
 		size = UDim2.new(0, 0, 0, 0),
 		position = UDim2.new(0, 0, 0, 0),
 		color = theme.Panel,
@@ -396,7 +399,7 @@ local function buildTabBar()
 
 	livesTabBtn = mc.mobileButton({
 		parent = tabBar,
-		text = "CEMETERY",
+		text = _h("tab_cemetery", "CEMETERY"),
 		size = UDim2.new(0, 0, 0, 0),
 		position = UDim2.new(0, 0, 0, 0),
 		color = theme.Panel,
@@ -410,7 +413,7 @@ local function buildTabBar()
 
 	influenceTabBtn = mc.mobileButton({
 		parent = tabBar,
-		text = "INFLUENCE",
+		text = _h("tab_influence", "INFLUENCE"),
 		size = UDim2.new(0, 0, 0, 0),
 		position = UDim2.new(0, 0, 0, 0),
 		color = theme.Panel,

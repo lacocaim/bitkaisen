@@ -4,6 +4,8 @@ local TweenService = game:GetService("TweenService")
 
 local uiState = require("@ui-state/uiState")
 local responsiveScale = require("@ui/responsiveScale")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local L = BitKaisenLocale.getClientLocale()
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -1232,7 +1234,7 @@ local function buildDojoBackCard(labelText)
 	addStroke(card, COLORS.StrokeSoft, 1)
 	makeLabel(card, labelText or "Return to the main dojo action board.", 13, COLORS.SubText,
 		UDim2.new(0, 20, 0, 20), UDim2.new(1, -190, 0, 28), false)
-	makeRightButton(card, "BACK", COLORS.Button, 18, function()
+	makeRightButton(card, BitKaisenLocale.t(L, "ui.back"), COLORS.Button, 18, function()
 		setDojoPage("Overview")
 	end)
 end

@@ -1,5 +1,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local L = BitKaisenLocale.getClientLocale()
 
 local uiState = require("@ui-state/uiState")
 local mc = require("@ui/mobile/mobileComponents")
@@ -30,17 +32,19 @@ local loaded = false
 local resetsInSeconds = 0
 local timerConn = nil
 
+local function _wc(key, fallback) return BitKaisenLocale.tOrFallback(L, "ui." .. key, nil, fallback) end
+
 local function formatTime(secs)
 	secs = math.max(0, math.floor(secs))
 	local d = math.floor(secs / 86400)
 	local h = math.floor((secs % 86400) / 3600)
 	local m = math.floor((secs % 3600) / 60)
 	if d > 0 then
-		return string.format("Resets in %dd %dh", d, h)
+		return _wc("resets_days", "Resets in {d}d {h}h"):gsub("{d}", d):gsub("{h}", h)
 	elseif h > 0 then
-		return string.format("Resets in %dh %dm", h, m)
+		return _wc("resets_hours", "Resets in {h}h {m}m"):gsub("{h}", h):gsub("{m}", m)
 	else
-		return string.format("Resets in %dm", m)
+		return _wc("resets_mins", "Resets in {m}m"):gsub("{m}", m)
 	end
 end
 
@@ -62,7 +66,7 @@ local function createChallengeCard(challenge, order: number, isCompleted: boolea
 	if isCompleted then
 		mc.mobileLabel({
 			parent = card,
-			text = "✓  COMPLETED",
+			text = _wc("challenge_completed", "✓  COMPLETED"),
 			size = 13,
 			color = Color3.fromRGB(122, 236, 165),
 			font = Enum.Font.GothamBlack,
@@ -98,7 +102,7 @@ local function createChallengeCard(challenge, order: number, isCompleted: boolea
 
 	mc.mobileLabel({
 		parent = card,
-		text = "Goal: " .. challenge.Goal .. "   •   Reward: " .. challenge.Reward,
+		text = _wc("challenge_goal", "Goal: {goal}   •   Reward: {reward}"):gsub("{goal}", tostring(challenge.Goal)):gsub("{reward}", tostring(challenge.Reward)),
 		size = 12,
 		color = isCompleted and Color3.fromRGB(120, 120, 140) or (theme.Gold or Color3.fromRGB(255, 205, 92)),
 		font = Enum.Font.GothamBold,
@@ -116,7 +120,7 @@ local function refresh()
 	local card = mc.mobileCard({ parent = scroll, order = 1 })
 	mc.mobileLabel({
 		parent = card,
-		text = "Loading challenges...",
+		text = _wc("challenge_loading", "Loading challenges..."),
 		size = 13,
 		color = theme.SubText,
 		font = Enum.Font.GothamMedium,
@@ -133,7 +137,7 @@ local function refresh()
 			local errCard = mc.mobileCard({ parent = scroll, order = 1 })
 			mc.mobileLabel({
 				parent = errCard,
-				text = "Could not load challenges.\nTry again later.",
+				text = _wc("challenge_error", "Could not load challenges.\nTry again later."),
 				size = 13,
 				color = theme.SubText,
 			})
@@ -148,7 +152,7 @@ local function refresh()
 			local emptyCard = mc.mobileCard({ parent = scroll, order = 1 })
 			mc.mobileLabel({
 				parent = emptyCard,
-				text = "No challenges this week.",
+				text = _wc("challenge_none", "No challenges this week."),
 				size = 13,
 				color = theme.SubText,
 			})
@@ -188,7 +192,7 @@ local function init()
 	sheet = mc.mobileSheet({
 		name = "MobileWeeklySheet",
 		parent = gui,
-		title = "WEEKLY",
+		title = BitKaisenLocale.tOrFallback(L, "ui.weekly", nil, "WEEKLY"),
 		onClose = function()
 			uiState.closeRoute()
 		end,

@@ -4,6 +4,10 @@ local MarketplaceService = game:GetService("MarketplaceService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local responsiveScale = require("@ui/responsiveScale")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _afk(key, fallback) return BitKaisenLocale.tOrFallback(_L, "afk." .. key, nil, fallback) end
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -58,7 +62,7 @@ button.Position = UDim2.new(1, -132, 0, 82)
 button.Size = UDim2.new(0, 92, 0, 34)
 button.BackgroundColor3 = Color3.fromRGB(33, 28, 48)
 button.BorderSizePixel = 0
-button.Text = "AFK"
+button.Text = _afk("btn_open_off", "AFK")
 button.TextColor3 = theme.Gold
 button.TextSize = 13
 button.Font = Enum.Font.GothamBlack
@@ -121,7 +125,7 @@ local title = Instance.new("TextLabel")
 title.BackgroundTransparency = 1
 title.Position = UDim2.new(0, 16, 0, 12)
 title.Size = UDim2.new(1, -52, 0, 26)
-title.Text = "AFK STABILIZATION"
+title.Text = _afk("title", "AFK STABILIZATION")
 title.TextColor3 = theme.Gold
 title.TextSize = 18
 title.Font = Enum.Font.GothamBlack
@@ -133,7 +137,7 @@ local body = Instance.new("TextLabel")
 body.BackgroundTransparency = 1
 body.Position = UDim2.new(0, 16, 0, 44)
 body.Size = UDim2.new(1, -32, 0, 50)
-body.Text = "Idle stabilization converts quiet time into money."
+body.Text = _afk("body_idle", "Start AFK mode to earn while idle.")
 body.TextColor3 = theme.Sub
 body.TextSize = 12
 body.Font = Enum.Font.GothamMedium
@@ -163,7 +167,7 @@ actionButton.Position = UDim2.new(0, 16, 0, 170)
 actionButton.Size = UDim2.new(1, -32, 0, 40)
 actionButton.BackgroundColor3 = theme.Purple
 actionButton.BorderSizePixel = 0
-actionButton.Text = "START"
+actionButton.Text = _afk("btn_start", "START AFK")
 actionButton.TextColor3 = theme.Text
 actionButton.TextSize = 14
 actionButton.Font = Enum.Font.GothamBlack
@@ -187,19 +191,20 @@ local function refresh()
 	local active = state.Active == true
 	button:SetAttribute("BKAFKActive", active)
 	button.BackgroundColor3 = active and Color3.fromRGB(28, 72, 45) or Color3.fromRGB(33, 28, 48)
-	button.Text = active and "AFK ON" or "AFK"
+	button.Text = active and _afk("btn_open_on", "AFK ON") or _afk("btn_open_off", "AFK")
 	button.TextColor3 = active and theme.Green or theme.Gold
 	local buttonStroke = button:FindFirstChildOfClass("UIStroke")
 	if buttonStroke then
 		buttonStroke.Color = active and theme.Green or theme.Purple
 		buttonStroke.Transparency = active and 0.25 or 0.12
 	end
-	local passNote = state.HasAFKPass and " (2x ACTIVE)" or ""
-	body.Text = state.Active and ("Stabilizing. Avoid normal play actions while AFK mode is active." .. passNote) or ("Start AFK mode to earn while idle." .. passNote)
-	actionButton.Text = state.Active and "STOP AFK" or "START AFK"
+	local passNote = state.HasAFKPass and _afk("pass_note", " (2x ACTIVE)") or ""
+	body.Text = state.Active and (_afk("body_active", "Stabilizing. Avoid normal play actions while AFK mode is active.") .. passNote) or (_afk("body_idle", "Start AFK mode to earn while idle.") .. passNote)
+	actionButton.Text = state.Active and _afk("btn_stop", "STOP AFK") or _afk("btn_start", "START AFK")
 	actionButton.BackgroundColor3 = state.Active and theme.Red or theme.Green
 	local displayRate = (state.RatePerSecond or 0) * (state.HasAFKPass and 2 or 1)
-	statsText.Text = "Rate: " .. formatMoney(displayRate) .. "/sec" .. (state.HasAFKPass and " (2x)" or "") .. "\nThis session: " .. formatMoney(state.SessionEarned or 0) .. "\nLifetime AFK: " .. formatMoney(state.EarnedTotal or 0)
+	local rateStr = state.HasAFKPass and _afk("stats_rate_2x", "Rate: {rate}/sec (2x)"):gsub("{rate}", formatMoney(displayRate)) or _afk("stats_rate", "Rate: {rate}/sec"):gsub("{rate}", formatMoney(displayRate))
+	statsText.Text = rateStr .. "\n" .. _afk("stats_session", "This session: {earned}"):gsub("{earned}", formatMoney(state.SessionEarned or 0)) .. "\n" .. _afk("stats_lifetime", "Lifetime AFK: {earned}"):gsub("{earned}", formatMoney(state.EarnedTotal or 0))
 end
 
 local function isPointInside(guiObject, position)

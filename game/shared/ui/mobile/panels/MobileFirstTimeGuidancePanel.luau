@@ -3,6 +3,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
 local mc = require("@ui/mobile/mobileComponents")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _g(key, fallback) return BitKaisenLocale.tOrFallback(_L, "guidance." .. key, nil, fallback) end
 
 local theme = mc.theme
 local bindTap = mc.bindTap
@@ -13,28 +16,31 @@ local TWEEN_FAST = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirecti
 
 local MAIN_GUI_NAME = "BitKaisenGui"
 
-local STEPS = {
-	{
-		Title = "Welcome to BitKaisen",
-		Body = "Age up, make choices, and build your cursed legacy.",
-		Button = "NEXT",
-	},
-	{
-		Title = "Use + AGE",
-		Body = "Aging moves your life forward. Some years are quiet, while others trigger events, missions, or relationships.",
-		Button = "NEXT",
-	},
-	{
-		Title = "Check Your Profile",
-		Body = "Your profile shows rank, technique, traits, cursed energy, money, reputation, and progress.",
-		Button = "NEXT",
-	},
-	{
-		Title = "Use The Menus",
-		Body = "Missions, activities, assets, and relationships are your main ways to progress.",
-		Button = "DONE",
-	},
-}
+local function getSteps()
+	return {
+		{
+			Title  = _g("step1_title", "Welcome to BitKaisen"),
+			Body   = _g("step1_body", "Age up, make choices, and build your cursed legacy."),
+			Button = _g("btn_next", "NEXT"),
+		},
+		{
+			Title  = _g("step2_title", "Use + AGE"),
+			Body   = _g("step2_body", "Aging moves your life forward. Some years are quiet, while others trigger events, missions, or relationships."),
+			Button = _g("btn_next", "NEXT"),
+		},
+		{
+			Title  = _g("step3_title", "Check Your Profile"),
+			Body   = _g("step3_body", "Your profile shows rank, technique, traits, cursed energy, money, reputation, and progress."),
+			Button = _g("btn_next", "NEXT"),
+		},
+		{
+			Title  = _g("step4_title", "Use The Menus"),
+			Body   = _g("step4_body", "Missions, activities, assets, and relationships are your main ways to progress."),
+			Button = _g("btn_done", "DONE"),
+		},
+	}
+end
+local STEPS = getSteps()
 
 local function tutorialAlreadySeen(stats)
 	if typeof(stats) ~= "table" then
@@ -161,7 +167,7 @@ local function init()
 	skipButton.BackgroundColor3 = theme.Red
 	skipButton.BackgroundTransparency = 1
 	skipButton.BorderSizePixel = 0
-	skipButton.Text = "SKIP"
+	skipButton.Text = _g("btn_skip", "SKIP")
 	skipButton.TextColor3 = theme.Text
 	skipButton.TextTransparency = 1
 	skipButton.TextSize = 14
@@ -177,7 +183,7 @@ local function init()
 	nextButton.BackgroundColor3 = theme.Purple
 	nextButton.BackgroundTransparency = 1
 	nextButton.BorderSizePixel = 0
-	nextButton.Text = "NEXT"
+	nextButton.Text = _g("btn_next", "NEXT")
 	nextButton.TextColor3 = theme.Text
 	nextButton.TextTransparency = 1
 	nextButton.TextSize = 14

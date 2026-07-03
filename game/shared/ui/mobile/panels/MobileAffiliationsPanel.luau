@@ -3,6 +3,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local uiState = require("@ui-state/uiState")
 local mc = require("@ui/mobile/mobileComponents")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _a(key, fallback) return BitKaisenLocale.tOrFallback(_L, "panels.aff." .. key, nil, fallback) end
 
 local theme = mc.theme
 local bindTap = mc.bindTap
@@ -149,12 +152,12 @@ local function addExpandButton(card: Frame, rel: any, layoutOrder: number)
 		if expandedAffId == id then
 			expandedAffId = nil
 			if actionsHolder then actionsHolder:Destroy(); actionsHolder = nil end
-			expandBtn.Text = "\226\150\188  Actions"
+			expandBtn.Text = _a("show_actions", "▼  Actions")
 		else
 			expandedAffId = id
 			if actionsHolder then actionsHolder:Destroy() end
 			actionsHolder = createAffActionsGrid(card, rel, layoutOrder - 1)
-			expandBtn.Text = "\226\150\178  Hide Actions"
+			expandBtn.Text = _a("hide_actions", "▲  Hide Actions")
 		end
 	end)
 end
@@ -183,7 +186,7 @@ local function createPageControls(groupKey: string, totalCount: number, currentP
 	local info = Instance.new("TextLabel")
 	info.Size = UDim2.new(1, -110, 1, 0)
 	info.BackgroundTransparency = 1
-	info.Text = "Page " .. currentPage .. "/" .. totalPages .. "  (" .. totalCount .. " total)"
+	info.Text = BitKaisenLocale.tOrFallback(_L, "panels.aff.page_info", { cur = currentPage, tot = totalPages, n = totalCount }, "Page " .. currentPage .. "/" .. totalPages .. "  (" .. totalCount .. " total)")
 	info.TextColor3 = theme.SubText
 	info.TextSize = 13
 	info.Font = Enum.Font.GothamMedium
@@ -241,7 +244,7 @@ end
 function refresh()
 	refreshStamp += 1
 	local thisRefresh = refreshStamp
-	createStatusCard("Loading affiliations...", theme.SubText)
+	createStatusCard(_a("loading", "Loading affiliations..."), theme.SubText)
 
 	task.spawn(function()
 		local ok, data = pcall(function()
@@ -252,7 +255,7 @@ function refresh()
 
 		local list = ok and (typeof(data) == "table" and (data.Relationships or data) or {}) or {}
 		if not ok then
-			createStatusCard("Could not load affiliations.", theme.Bad)
+			createStatusCard(_a("load_error", "Could not load affiliations."), theme.Bad)
 			return
 		end
 
@@ -283,7 +286,7 @@ function refresh()
 				local emptyCard = mc.mobileCard({ parent = scroll, order = order * 100 + 1 })
 				mc.mobileLabel({
 					parent = emptyCard,
-					text = "No entries yet.",
+					text = _a("no_entries", "No entries yet."),
 					size = 13,
 					color = theme.Muted,
 					order = 1,
@@ -309,11 +312,11 @@ function refresh()
 					local grade = tostring(rel.Grade or rel.UnregisteredGrade or "Non-Sorcerer")
 					local status = tostring(rel.Status or "Active")
 					local relation = tostring(rel.Relationship or role)
-					local progressing = rel.Progressing == false and "Not progressing" or "Progressing"
+					local progressing = rel.Progressing == false and _a("not_progressing", "Not progressing") or _a("progressing", "Progressing")
 
-					local summaryText = role .. " | Age " .. age .. " | " .. grade
+					local summaryText = role .. " | " .. _a("age_label", "Age") .. " " .. age .. " | " .. grade
 					if role == "Notable Sorcerer" then
-						summaryText ..= " | CE " .. tostring(rel.CursedEnergy or 0) .. " | Power " .. tostring(rel.Power or 0)
+						summaryText ..= " | " .. _a("ce_label", "CE") .. " " .. tostring(rel.CursedEnergy or 0) .. " | " .. _a("power_label", "Power") .. " " .. tostring(rel.Power or 0)
 					end
 
 					local detailText = status .. " | " .. relation .. " | " .. progressing

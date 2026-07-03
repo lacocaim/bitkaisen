@@ -6,6 +6,10 @@ local UserInputService = game:GetService("UserInputService")
 local uiState = require("@ui-state/uiState")
 local responsiveScale = require("@ui/responsiveScale")
 
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _rel(key, fallback) return BitKaisenLocale.tOrFallback(_L, "relationships." .. key, nil, fallback) end
+
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
@@ -534,7 +538,7 @@ title.TextColor3 = COLORS.Text
 title.TextSize = 24
 title.Font = Enum.Font.GothamBlack
 title.TextXAlignment = Enum.TextXAlignment.Left
-title.Text = "RELATIONSHIPS"
+title.Text = _rel("title", "RELATIONSHIPS")
 title.ZIndex = 302
 title.Parent = window
 
@@ -547,7 +551,7 @@ subtitle.TextColor3 = COLORS.SubText
 subtitle.TextSize = 12
 subtitle.Font = Enum.Font.GothamBold
 subtitle.TextXAlignment = Enum.TextXAlignment.Left
-subtitle.Text = "Click a card to interact. Click ? to inspect their profile or memory.  •  Family relationships cannot become romantic.  •  Both characters must be adults for romance, marriage, or family-starting actions."
+subtitle.Text = _rel("hint_click", "Click a card to interact. Click ? to inspect their profile or memory.  •  Family relationships cannot become romantic.  •  Both characters must be adults for romance actions.")
 subtitle.ZIndex = 302
 subtitle.Parent = window
 
@@ -980,7 +984,7 @@ local function collapseCard(card)
 		actionsHolder.Visible = false
 	end
 	if bottomHint then
-		bottomHint.Text = "Click to interact"
+		bottomHint.Text = _rel("hint_click_card", "Click to interact")
 	end
 	if chevron then
 		chevron.Text = "▼"
@@ -1010,7 +1014,7 @@ local function expandCard(card)
 
 	actionsHolder.Visible = true
 	if bottomHint then
-		bottomHint.Text = "Choose an action"
+		bottomHint.Text = _rel("hint_choose", "Choose an action")
 	end
 	if chevron then
 		chevron.Text = "▲"
@@ -1048,7 +1052,7 @@ createActionButtons = function(parent, relationship)
 	label.TextSize = 12
 	label.Font = Enum.Font.GothamBlack
 	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.Text = "ACTIONS"
+	label.Text = _rel("actions", "ACTIONS")
 	label.ZIndex = 307
 	label.Parent = holder
 
@@ -1089,7 +1093,7 @@ createActionButtons = function(parent, relationship)
 
 			if action.Confirm == true and button:GetAttribute("Confirmed") ~= true then
 				button:SetAttribute("Confirmed", true)
-				button.Text = "CONFIRM?"
+				button.Text = _rel("confirm", "CONFIRM?")
 				button.TextColor3 = COLORS.Bad
 
 				task.delay(2.5, function()
@@ -1168,7 +1172,7 @@ promptChildName = function(callback)
 	promptTitle.BackgroundTransparency = 1
 	promptTitle.Position = UDim2.fromOffset(14, 12)
 	promptTitle.Size = UDim2.new(1, -28, 0, 24)
-	promptTitle.Text = "CHILD NAME"
+	promptTitle.Text = _rel("child_name", "CHILD NAME")
 	promptTitle.TextColor3 = COLORS.Gold
 	promptTitle.Font = Enum.Font.GothamBlack
 	promptTitle.TextSize = 16
@@ -1201,7 +1205,7 @@ promptChildName = function(callback)
 	skip.Size = UDim2.new(0.48, -18, 0, 34)
 	skip.BackgroundColor3 = COLORS.Button
 	skip.BorderSizePixel = 0
-	skip.Text = "RANDOM"
+	skip.Text = _rel("btn_random", "RANDOM")
 	skip.TextColor3 = COLORS.Text
 	skip.Font = Enum.Font.GothamBlack
 	skip.TextSize = 11
@@ -1212,7 +1216,7 @@ promptChildName = function(callback)
 	submit.Position = UDim2.new(0.52, 4, 1, -50)
 	submit.Size = UDim2.new(0.48, -18, 0, 34)
 	submit.BackgroundColor3 = COLORS.Purple
-	submit.Text = "USE NAME"
+	submit.Text = _rel("btn_use_name", "USE NAME")
 	submit.Parent = box
 
 	skip.MouseButton1Click:Connect(function() close(nil) end)

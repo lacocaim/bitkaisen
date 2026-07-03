@@ -5,6 +5,9 @@ local UserInputService = game:GetService("UserInputService")
 
 local uiState = require("@ui-state/uiState")
 local responsiveScale = require("@ui/responsiveScale")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local L = BitKaisenLocale.getClientLocale()
+local function _act(key, fallback) return BitKaisenLocale.tOrFallback(L, "activities_panel." .. key, nil, fallback) end
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -43,6 +46,18 @@ local CATEGORY_COLORS = {
 	Era = Color3.fromRGB(100, 140, 90),
 	Premium = Color3.fromRGB(255, 204, 102),
 }
+
+local CAT_LOCALE_KEYS = {
+	["Life"] = "cat_life", ["School"] = "cat_school", ["Training"] = "cat_training",
+	["Jujutsu High"] = "cat_jjk", ["Mentor"] = "cat_mentor", ["Missions"] = "cat_missions",
+	["Dojo/Clan"] = "cat_dojo", ["Social"] = "cat_social", ["Minigames"] = "cat_minigames",
+	["Curse Spirit"] = "cat_spirit", ["Curse User"] = "cat_user",
+	["Era"] = "cat_era", ["Premium"] = "cat_premium",
+}
+local function catLabel(cat)
+	local k = CAT_LOCALE_KEYS[cat]
+	return k and _act(k, cat) or cat
+end
 
 local CATEGORY_ORDER_CLIENT = {
 	"Life", "School", "Training", "Jujutsu High", "Mentor",
@@ -87,7 +102,7 @@ windowStroke.Parent = window
 
 local title = Instance.new("TextLabel")
 title.BackgroundTransparency = 1
-title.Text = "ACTIVITIES"
+title.Text = BitKaisenLocale.t(L, "ui.activities")
 title.TextColor3 = THEME.Text
 title.Font = Enum.Font.GothamBlack
 title.TextSize = 23
@@ -273,7 +288,7 @@ local function createActivityCard(activityData)
 	tag.TextSize = 11
 	tag.Font = Enum.Font.GothamBlack
 	tag.TextXAlignment = Enum.TextXAlignment.Left
-	tag.Text = canDo and "AVAILABLE" or "LOCKED"
+	tag.Text = canDo and _act("available", "AVAILABLE") or _act("locked", "LOCKED")
 	tag.ZIndex = 624
 	tag.Parent = card
 
@@ -298,7 +313,7 @@ local function createActivityCard(activityData)
 	doBtn.TextColor3 = canDo and THEME.Text or THEME.Muted
 	doBtn.TextSize = 13
 	doBtn.Font = Enum.Font.GothamBlack
-	doBtn.Text = canDo and "DO" or "LOCKED"
+	doBtn.Text = canDo and _act("btn_do", "DO") or _act("locked", "LOCKED")
 	doBtn.AutoButtonColor = false
 	doBtn.BorderSizePixel = 0
 	doBtn.ZIndex = 624
@@ -335,7 +350,7 @@ end
 local function refresh()
 	clearCards()
 	clearRailButtons()
-	createMessageCard("Loading activities...", Color3.fromRGB(180, 180, 190))
+	createMessageCard(_act("loading", "Loading activities..."), Color3.fromRGB(180, 180, 190))
 
 	local success, activities = pcall(function()
 		return getActivityList:InvokeServer()
@@ -345,11 +360,11 @@ local function refresh()
 
 	if not success then
 		warn("[ActivitiesPanel] Failed to get activities:", activities)
-		createMessageCard("Could not load activities.\nCheck server output.", Color3.fromRGB(220, 90, 90))
+		createMessageCard(_act("error_load", "Could not load activities.\nCheck server output."), Color3.fromRGB(220, 90, 90))
 		return
 	end
 	if not activities or #activities <= 0 then
-		createMessageCard("No activities available.", Color3.fromRGB(180, 180, 190))
+		createMessageCard(_act("none_avail", "No activities available."), Color3.fromRGB(180, 180, 190))
 		return
 	end
 
@@ -405,7 +420,7 @@ local function refresh()
 		headerLabel.TextSize = 13
 		headerLabel.TextColor3 = catColor
 		headerLabel.TextXAlignment = Enum.TextXAlignment.Left
-		headerLabel.Text = string.upper(cat)
+		headerLabel.Text = string.upper(catLabel(cat))
 		headerLabel.ZIndex = 624
 		headerLabel.Parent = header
 
@@ -432,7 +447,7 @@ local function refresh()
 		btn.Font = Enum.Font.GothamBold
 		btn.TextSize = 11
 		btn.TextColor3 = Color3.fromRGB(230, 230, 240)
-		btn.Text = cat
+		btn.Text = catLabel(cat)
 		btn.LayoutOrder = railOrder
 		btn.ZIndex = 623
 		btn.AutoButtonColor = true

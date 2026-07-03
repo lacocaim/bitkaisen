@@ -4,8 +4,25 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local MarketplaceService = game:GetService("MarketplaceService")
 
 local mc = require("@ui/mobile/mobileComponents")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
 local theme = mc.theme
 local bindTap = mc.bindTap
+
+local L = BitKaisenLocale.getClientLocale()
+local function _cc(key, fallback) return BitKaisenLocale.tOrFallback(L, "customization." .. key, nil, fallback) end
+
+local FIELD_LABEL_KEYS = {
+	FirstName = "field_name", Gender = "field_gender", HairColor = "field_hair",
+	EyeColor = "field_eyes", SkinTone = "field_skin", Height = "field_height",
+	Build = "field_build", Feature = "field_feature", AuraColor = "field_ce_color",
+	OriginLocation = "field_origin", Era = "field_era", Upbringing = "field_upbringing",
+	EarlyCurseExposure = "field_curse_exp", Temperament = "field_temperament",
+	LifeGoal = "field_goal", BirthYear = "field_birth_year",
+}
+local function _fieldLabel(key, fallback)
+	local k = FIELD_LABEL_KEYS[key]
+	return k and _cc(k, fallback) or fallback
+end
 
 local player = Players.LocalPlayer
 
@@ -415,7 +432,7 @@ local function init(playerGui: Instance)
 	titleLabel.Size = UDim2.new(1, -80, 0, 24)
 	titleLabel.Position = UDim2.new(0, 16, 0, 6)
 	titleLabel.BackgroundTransparency = 1
-	titleLabel.Text = "CREATE CHARACTER"
+	titleLabel.Text = _cc("create_title", "CREATE CHARACTER")
 	titleLabel.TextColor3 = theme.Gold
 	titleLabel.TextSize = 17
 	titleLabel.Font = Enum.Font.GothamBlack
@@ -427,7 +444,7 @@ local function init(playerGui: Instance)
 	pageLabel.Size = UDim2.new(1, -80, 0, 16)
 	pageLabel.Position = UDim2.new(0, 16, 0, 32)
 	pageLabel.BackgroundTransparency = 1
-	pageLabel.Text = "Page 1/2 • Identity"
+	pageLabel.Text = _cc("page1_sub", "Page 1/2 • Identity")
 	pageLabel.TextColor3 = theme.Muted
 	pageLabel.TextSize = 10
 	pageLabel.Font = Enum.Font.GothamBold
@@ -494,7 +511,7 @@ local function init(playerGui: Instance)
 
 	local randomizeBtn = mc.mobileButton({
 		parent = bottomBar,
-		text = "RANDOMIZE",
+		text = _cc("btn_randomize", "RANDOMIZE"),
 		size = UDim2.new(0.42, -8, 0, 40),
 		position = UDim2.new(0, 10, 0, 22),
 		color = theme.Button,
@@ -504,7 +521,7 @@ local function init(playerGui: Instance)
 
 	local backBtn = mc.mobileButton({
 		parent = bottomBar,
-		text = "BACK",
+		text = BitKaisenLocale.tOrFallback(L, "ui.back", nil, "Back"),
 		size = UDim2.new(0.2, -4, 0, 40),
 		position = UDim2.new(0.42, 4, 0, 22),
 		color = theme.Button,
@@ -515,7 +532,7 @@ local function init(playerGui: Instance)
 
 	local continueBtn = mc.mobileButton({
 		parent = bottomBar,
-		text = "CONTINUE",
+		text = _cc("btn_continue", "CONTINUE"),
 		size = UDim2.new(0.38, -8, 0, 40),
 		position = UDim2.new(0.62, 4, 0, 22),
 		color = Color3.fromRGB(120, 30, 42),
@@ -582,7 +599,7 @@ local function init(playerGui: Instance)
 			local label = Instance.new("TextLabel")
 			label.Size = UDim2.new(0, 50, 1, 0)
 			label.BackgroundTransparency = 1
-			label.Text = "Name"
+			label.Text = _cc("field_name", "Name")
 			label.TextColor3 = theme.SubText
 			label.TextSize = 11
 			label.Font = Enum.Font.GothamBold
@@ -598,7 +615,7 @@ local function init(playerGui: Instance)
 			input.BorderSizePixel = 0
 			input.ClearTextOnFocus = false
 			input.Text = tostring(state.FirstName or DEFAULTS.FirstName)
-			input.PlaceholderText = "First name"
+			input.PlaceholderText = _cc("ph_name", "First name")
 			input.TextColor3 = theme.Text
 			input.PlaceholderColor3 = theme.Muted
 			input.TextSize = 14
@@ -649,7 +666,7 @@ local function init(playerGui: Instance)
 			label.Size = UDim2.new(0, 90, 0, 18)
 			label.Position = UDim2.new(0, 0, 0, 8)
 			label.BackgroundTransparency = 1
-			label.Text = field.Label
+			label.Text = _fieldLabel(field.Key, field.Label)
 			label.TextColor3 = locked and theme.Gold or theme.SubText
 			label.TextSize = 11
 			label.Font = Enum.Font.GothamBold
@@ -662,7 +679,7 @@ local function init(playerGui: Instance)
 				pill.Size = UDim2.new(0, 62, 0, 16)
 				pill.Position = UDim2.new(0, 0, 0, 28)
 				pill.BackgroundColor3 = Color3.fromRGB(54, 40, 28)
-				pill.Text = "GOD MODE"
+				pill.Text = _cc("god_mode_pill", "GOD MODE")
 				pill.TextColor3 = theme.Gold
 				pill.TextSize = 9
 				pill.Font = Enum.Font.GothamBlack
@@ -682,7 +699,7 @@ local function init(playerGui: Instance)
 			input.BorderSizePixel = 0
 			input.ClearTextOnFocus = false
 			input.Text = tostring(state.BirthYear or "")
-			input.PlaceholderText = locked and "God Mode" or "900-2200"
+			input.PlaceholderText = locked and _cc("ph_year_lock", "God Mode") or _cc("ph_year_open", "900-2200")
 			input.TextColor3 = locked and theme.Gold or theme.Text
 			input.PlaceholderColor3 = theme.Muted
 			input.TextSize = 13
@@ -753,7 +770,7 @@ local function init(playerGui: Instance)
 			pill.AnchorPoint = Vector2.new(0, 0.5)
 			pill.Position = UDim2.new(0, 0, 0.5, 12)
 			pill.BackgroundColor3 = Color3.fromRGB(54, 40, 28)
-			pill.Text = "GOD MODE"
+			pill.Text = _cc("god_mode_pill", "GOD MODE")
 			pill.TextColor3 = theme.Gold
 			pill.TextSize = 8
 			pill.Font = Enum.Font.GothamBlack
@@ -787,7 +804,7 @@ local function init(playerGui: Instance)
 		valueLabel.Size = UDim2.new(1, -150, 1, 0)
 		valueLabel.Position = UDim2.new(0, 110, 0, 0)
 		valueLabel.BackgroundTransparency = 1
-		valueLabel.Text = locked and "Locked" or tostring(state[field.Key] or firstAllowed(field.Key))
+		valueLabel.Text = locked and _cc("locked", "Locked") or tostring(state[field.Key] or firstAllowed(field.Key))
 		valueLabel.TextColor3 = locked and theme.Gold or theme.Text
 		valueLabel.TextSize = 12
 		valueLabel.Font = Enum.Font.GothamBold
@@ -856,25 +873,26 @@ local function init(playerGui: Instance)
 		if currentPage == 1 then
 			summaryText = "<b>" .. getDisplayFullName() .. "</b>"
 				.. "\n" .. tostring(state.Height) .. " • " .. tostring(state.Build)
-				.. "\n" .. tostring(state.HairColor) .. " hair • " .. tostring(state.EyeColor) .. " eyes"
-				.. "\nCE Color: <font color='#b27aff'><b>" .. tostring(state.AuraColor) .. "</b></font>"
-				.. "\nOrigin: " .. tostring(state.OriginLocation)
+				.. "\n" .. _cc("sum_hair", "{hair} hair • {eyes} eyes"):gsub("{hair}", tostring(state.HairColor)):gsub("{eyes}", tostring(state.EyeColor))
+				.. "\n" .. _cc("sum_ce", "CE Color: {color}"):gsub("{color}", "<font color='#b27aff'><b>" .. tostring(state.AuraColor) .. "</b></font>")
+				.. "\n" .. _cc("sum_origin", "Origin: {origin}"):gsub("{origin}", tostring(state.OriginLocation))
 		else
 			local advancedText
 			if checkGodMode() then
-				advancedText = "\nCurse Exposure: " .. tostring(state.EarlyCurseExposure)
-					.. "\nTemperament: " .. tostring(state.Temperament)
-					.. "\nGoal: " .. tostring(state.LifeGoal)
+				advancedText = "\n" .. _cc("sum_curse_exp", "Curse Exposure: {value}"):gsub("{value}", tostring(state.EarlyCurseExposure))
+					.. "\n" .. _cc("sum_temp", "Temperament: {value}"):gsub("{value}", tostring(state.Temperament))
+					.. "\n" .. _cc("sum_goal", "Goal: {value}"):gsub("{value}", tostring(state.LifeGoal))
 			else
-				advancedText = "\nCurse Exposure: Locked"
-					.. "\nTemperament: Locked"
-					.. "\nGoal: Locked"
+				local locked = _cc("sum_locked", "Locked")
+				advancedText = "\n" .. _cc("sum_curse_exp", "Curse Exposure: {value}"):gsub("{value}", locked)
+					.. "\n" .. _cc("sum_temp", "Temperament: {value}"):gsub("{value}", locked)
+					.. "\n" .. _cc("sum_goal", "Goal: {value}"):gsub("{value}", locked)
 			end
 
 			summaryText = "<b>" .. getDisplayFullName() .. "</b>"
-				.. "\nEra: <font color='#ffcd69'><b>" .. tostring(state.Era) .. "</b></font>"
-				.. "\nStart Year: " .. tostring(getSelectedEraStartYear())
-				.. "\nUpbringing: " .. tostring(state.Upbringing)
+				.. "\n" .. _cc("sum_era", "Era: {era}"):gsub("{era}", "<font color='#ffcd69'><b>" .. tostring(state.Era) .. "</b></font>")
+				.. "\n" .. _cc("sum_year", "Start Year: {year}"):gsub("{year}", tostring(getSelectedEraStartYear()))
+				.. "\n" .. _cc("sum_upbringing", "Upbringing: {value}"):gsub("{value}", tostring(state.Upbringing))
 				.. advancedText
 		end
 
@@ -893,23 +911,23 @@ local function init(playerGui: Instance)
 
 	local function refreshPage()
 		if currentPage == 1 then
-			titleLabel.Text = "CREATE CHARACTER"
-			pageLabel.Text = "Page 1/2 • Identity"
-			randomizeBtn.Text = "RANDOMIZE"
+			titleLabel.Text = _cc("create_title", "CREATE CHARACTER")
+			pageLabel.Text = _cc("page1_sub", "Page 1/2 • Identity")
+			randomizeBtn.Text = _cc("btn_randomize", "RANDOMIZE")
 			backBtn.Visible = false
-			continueBtn.Text = "CONTINUE"
+			continueBtn.Text = _cc("btn_continue", "CONTINUE")
 			continueBtn.Size = UDim2.new(0.55, -8, 0, 40)
 			continueBtn.Position = UDim2.new(0.45, 4, 0, 22)
 		else
-			titleLabel.Text = "BIRTH PATH"
-			pageLabel.Text = "Page 2/2 • Circumstances"
-			randomizeBtn.Text = "RANDOM"
+			titleLabel.Text = _cc("birth_title", "BIRTH PATH")
+			pageLabel.Text = _cc("page2_sub", "Page 2/2 • Circumstances")
+			randomizeBtn.Text = _cc("btn_random", "RANDOM")
 			randomizeBtn.Size = UDim2.new(0.3, -6, 0, 40)
 			randomizeBtn.Position = UDim2.new(0, 10, 0, 22)
 			backBtn.Visible = true
 			backBtn.Size = UDim2.new(0.22, -4, 0, 40)
 			backBtn.Position = UDim2.new(0.3, 6, 0, 22)
-			continueBtn.Text = "FINISH"
+			continueBtn.Text = _cc("btn_finish", "FINISH")
 			continueBtn.Size = UDim2.new(0.46, -8, 0, 40)
 			continueBtn.Position = UDim2.new(0.54, 4, 0, 22)
 		end
@@ -1024,7 +1042,7 @@ local function init(playerGui: Instance)
 			end
 
 			if tostring(state.FirstName or "") == "" then
-				setStatus("Enter a first name before continuing.", true)
+				setStatus(_cc("err_name", "Enter a first name before continuing."), true)
 				return
 			end
 
@@ -1050,7 +1068,7 @@ local function init(playerGui: Instance)
 		local identity = lockedIdentityState or state
 
 		submitting = true
-		continueBtn.Text = "SAVING..."
+		continueBtn.Text = _cc("btn_saving", "SAVING...")
 
 		local payload = {
 			FirstName = identity.FirstName,
@@ -1082,12 +1100,12 @@ local function init(playerGui: Instance)
 		submitting = false
 
 		if ok and typeof(result) == "table" and result.Success == true then
-			continueBtn.Text = "SAVED"
+			continueBtn.Text = _cc("btn_saved", "SAVED")
 			task.delay(0.2, function()
 				hidePanel()
 			end)
 		else
-			local message = "Could not save character."
+			local message = _cc("err_save", "Could not save character.")
 			if ok and typeof(result) == "table" and result.Message then
 				message = tostring(result.Message)
 			elseif not ok then
@@ -1099,7 +1117,7 @@ local function init(playerGui: Instance)
 				message = "Name rejected. Choose a different first name."
 			end
 
-			continueBtn.Text = "FINISH"
+			continueBtn.Text = _cc("btn_finish", "FINISH")
 			setStatus(message, true)
 		end
 	end)

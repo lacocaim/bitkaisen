@@ -5,6 +5,9 @@ local MarketplaceService = game:GetService("MarketplaceService")
 local UserInputService = game:GetService("UserInputService")
 
 local responsiveScale = require("@ui/responsiveScale")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _d(key, fallback) return BitKaisenLocale.tOrFallback(_L, "death." .. key, nil, fallback) end
 
 local player = Players.LocalPlayer
 
@@ -108,7 +111,7 @@ local function init(playerGui: Instance)
 	title.TextSize = 30
 	title.Font = Enum.Font.GothamBlack
 	title.TextXAlignment = Enum.TextXAlignment.Center
-	title.Text = "LIFE ENDED"
+	title.Text = _d("title", "LIFE ENDED")
 	title.ZIndex = 902
 	title.Parent = window
 
@@ -210,7 +213,7 @@ local function init(playerGui: Instance)
 	newLifeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 	newLifeButton.TextSize = 14
 	newLifeButton.Font = Enum.Font.GothamBlack
-	newLifeButton.Text = "START NEW LIFE"
+	newLifeButton.Text = _d("start_new_life", "START NEW LIFE")
 	newLifeButton.AutoButtonColor = false
 	newLifeButton.ZIndex = 903
 	newLifeButton.Parent = buttonsHolder
@@ -241,7 +244,7 @@ local function init(playerGui: Instance)
 	successorButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 	successorButton.TextSize = 14
 	successorButton.Font = Enum.Font.GothamBlack
-	successorButton.Text = "PLAY AS CHILD"
+	successorButton.Text = _d("play_as_child", "PLAY AS CHILD")
 	successorButton.AutoButtonColor = false
 	successorButton.ZIndex = 903
 	successorButton.Parent = buttonsHolder
@@ -303,7 +306,7 @@ local function init(playerGui: Instance)
 	curseRebirthButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 	curseRebirthButton.TextSize = 13
 	curseRebirthButton.Font = Enum.Font.GothamBlack
-	curseRebirthButton.Text = "BECOME VENGEFUL SPIRIT"
+	curseRebirthButton.Text = _d("become_spirit", "BECOME VENGEFUL SPIRIT")
 	curseRebirthButton.AutoButtonColor = false
 	curseRebirthButton.Visible = false
 	curseRebirthButton.ZIndex = 903
@@ -336,7 +339,7 @@ local function init(playerGui: Instance)
 	reincarnateButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 	reincarnateButton.TextSize = 13
 	reincarnateButton.Font = Enum.Font.GothamBlack
-	reincarnateButton.Text = "REINCARNATE"
+	reincarnateButton.Text = _d("reincarnate", "REINCARNATE")
 	reincarnateButton.AutoButtonColor = false
 	reincarnateButton.Visible = false
 	reincarnateButton.ZIndex = 903
@@ -393,7 +396,7 @@ local function init(playerGui: Instance)
 	pickerTitle.TextSize = 22
 	pickerTitle.Font = Enum.Font.GothamBlack
 	pickerTitle.TextXAlignment = Enum.TextXAlignment.Left
-	pickerTitle.Text = "CHOOSE YOUR SUCCESSOR"
+	pickerTitle.Text = _d("choose_successor", "CHOOSE YOUR SUCCESSOR")
 	pickerTitle.ZIndex = 952
 	pickerTitle.Parent = pickerWindow
 
@@ -660,7 +663,7 @@ local function init(playerGui: Instance)
 		chooseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 		chooseButton.TextSize = mobile and 12 or 13
 		chooseButton.Font = Enum.Font.GothamBlack
-		chooseButton.Text = "CONTINUE AS"
+		chooseButton.Text = _d("continue_as", "CONTINUE AS")
 		chooseButton.AutoButtonColor = false
 		chooseButton.ZIndex = 955
 		chooseButton.Parent = card
@@ -672,7 +675,7 @@ local function init(playerGui: Instance)
 				return
 			end
 			pickerBusy = true
-			chooseButton.Text = "STARTING..."
+			chooseButton.Text = _d("starting", "STARTING...")
 			chooseSuccessor:FireServer(successor.Id)
 		end)
 	end
@@ -689,13 +692,13 @@ local function init(playerGui: Instance)
 		local remaining = math.max(0, RCT_REVIVE_MAX_PER_LIFE - uses)
 
 		if remaining <= 0 then
-			rctReviveButton.Text = "RCT REVIVE LIMIT REACHED"
+			rctReviveButton.Text = _d("rct_limit_reached", "RCT REVIVE LIMIT REACHED")
 			rctReviveButton.Active = false
 			rctReviveButton.BackgroundColor3 = RCT_REVIVE_LOCKED_COLOR
 			rctReviveDesc.TextColor3 = Color3.fromRGB(155, 155, 170)
 			rctReviveDesc.Text = "Your body has already survived through RCT twice in this life."
 		else
-			rctReviveButton.Text = "RCT REVIVE — R$50  (" .. tostring(remaining) .. "/" .. tostring(RCT_REVIVE_MAX_PER_LIFE) .. " LEFT)"
+			rctReviveButton.Text = _d("rct_left", "RCT REVIVE — R$50  ({remaining}/{max} LEFT)"):gsub("{remaining}", tostring(remaining)):gsub("{max}", tostring(RCT_REVIVE_MAX_PER_LIFE))
 			rctReviveButton.Active = true
 			rctReviveButton.BackgroundColor3 = RCT_REVIVE_READY_COLOR
 			rctReviveDesc.TextColor3 = Color3.fromRGB(190, 175, 255)
@@ -872,12 +875,12 @@ local function init(playerGui: Instance)
 
 	-- Button connections
 	newLifeButton.MouseButton1Click:Connect(function()
-		newLifeButton.Text = "STARTING..."
+		newLifeButton.Text = _d("starting", "STARTING...")
 		updateLifeEvent:FireServer("StartNewLife")
 
 		task.delay(0.25, function()
 			hideDeathScreen()
-			newLifeButton.Text = "START NEW LIFE"
+			newLifeButton.Text = _d("start_new_life", "START NEW LIFE")
 		end)
 	end)
 
@@ -904,20 +907,20 @@ local function init(playerGui: Instance)
 	end)
 
 	curseRebirthButton.MouseButton1Click:Connect(function()
-		curseRebirthButton.Text = "REBIRTHING..."
+		curseRebirthButton.Text = _d("rebirthing", "REBIRTHING...")
 		updateLifeEvent:FireServer("BecomeVengefulSpirit")
 
 		task.delay(0.45, function()
-			curseRebirthButton.Text = "BECOME VENGEFUL SPIRIT"
+			curseRebirthButton.Text = _d("become_spirit", "BECOME VENGEFUL SPIRIT")
 		end)
 	end)
 
 	reincarnateButton.MouseButton1Click:Connect(function()
-		reincarnateButton.Text = "REINCARNATING..."
+		reincarnateButton.Text = _d("reincarnating", "REINCARNATING...")
 		updateLifeEvent:FireServer("Reincarnate")
 
 		task.delay(0.45, function()
-			reincarnateButton.Text = "REINCARNATE"
+			reincarnateButton.Text = _d("reincarnate", "REINCARNATE")
 		end)
 	end)
 

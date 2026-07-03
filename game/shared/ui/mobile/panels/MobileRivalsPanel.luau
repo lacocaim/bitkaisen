@@ -3,6 +3,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local uiState = require("@ui-state/uiState")
 local mc = require("@ui/mobile/mobileComponents")
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _r(key, fallback) return BitKaisenLocale.tOrFallback(_L, "rivals." .. key, nil, fallback) end
 
 local theme = mc.theme
 local mobileButton = mc.mobileButton
@@ -111,17 +114,17 @@ refresh = function()
 
 	-- Summary card
 	local summaryCard = mobileCard({ parent = scroll, order = 1, accentColor = theme.Gold })
-	mobileLabel({ parent = summaryCard, text = "Reputation: " .. tostring(data.ReputationPath or "Unknown"), size = 16, color = theme.Gold, font = Enum.Font.GothamBlack, order = 1 })
+	mobileLabel({ parent = summaryCard, text = _r("reputation", "Reputation") .. ": " .. tostring(data.ReputationPath or "Unknown"), size = 16, color = theme.Gold, font = Enum.Font.GothamBlack, order = 1 })
 	mobileLabel({
 		parent = summaryCard,
-		text = "Fame " .. tostring(data.Fame or 0) .. "  |  Fear " .. tostring(data.Fear or 0) .. "  |  Wanted " .. tostring(data.WantedLevel or 0),
+		text = _r("fame", "Fame") .. " " .. tostring(data.Fame or 0) .. "  |  " .. _r("fear", "Fear") .. " " .. tostring(data.Fear or 0) .. "  |  " .. _r("wanted", "Wanted") .. " " .. tostring(data.WantedLevel or 0),
 		size = 13,
 		color = theme.SubText,
 		order = 2,
 	})
 	mobileLabel({
 		parent = summaryCard,
-		text = "Hunter Pressure " .. tostring(data.HunterPressure or 0) .. "  |  Public Support " .. tostring(data.PublicSupport or 0),
+		text = _r("hunter_pressure", "Hunter Pressure") .. " " .. tostring(data.HunterPressure or 0) .. "  |  " .. _r("public_support", "Public Support") .. " " .. tostring(data.PublicSupport or 0),
 		size = 13,
 		color = theme.SubText,
 		order = 3,
@@ -129,7 +132,7 @@ refresh = function()
 	local stats = data.Stats or {}
 	mobileLabel({
 		parent = summaryCard,
-		text = "Encounters " .. tostring(stats.Encounters or 0) .. "  |  Defeated " .. tostring(stats.Defeated or 0) .. "  |  Losses " .. tostring(stats.Losses or 0) .. "  |  Escapes " .. tostring(stats.Escapes or 0),
+		text = _r("encounters", "Encounters") .. " " .. tostring(stats.Encounters or 0) .. "  |  " .. _r("defeated", "Defeated") .. " " .. tostring(stats.Defeated or 0) .. "  |  " .. _r("losses", "Losses") .. " " .. tostring(stats.Losses or 0) .. "  |  " .. _r("escapes", "Escapes") .. " " .. tostring(stats.Escapes or 0),
 		size = 13,
 		color = theme.Green,
 		font = Enum.Font.GothamBold,
@@ -159,10 +162,10 @@ refresh = function()
 	local pending = data.PendingEncounter
 	if pending then
 		local encounterCard = mobileCard({ parent = scroll, order = 2, color = Color3.fromRGB(35, 20, 25), accentColor = theme.Orange })
-		mobileLabel({ parent = encounterCard, text = "ACTIVE ENCOUNTER", size = 15, color = theme.Orange, font = Enum.Font.GothamBlack, order = 1 })
+		mobileLabel({ parent = encounterCard, text = _r("active_encounter", "ACTIVE ENCOUNTER"), size = 15, color = theme.Orange, font = Enum.Font.GothamBlack, order = 1 })
 		mobileLabel({
 			parent = encounterCard,
-			text = tostring(pending.Name) .. "  |  " .. tostring(pending.Grade) .. "  |  Threat " .. tostring(pending.Threat),
+			text = tostring(pending.Name) .. "  |  " .. tostring(pending.Grade) .. "  |  " .. _r("threat", "Threat") .. " " .. tostring(pending.Threat),
 			size = 14,
 			color = theme.Text,
 			font = Enum.Font.GothamBold,
@@ -170,9 +173,9 @@ refresh = function()
 		})
 		mobileLabel({ parent = encounterCard, text = tostring(pending.Reason or "A rival stepped into your path."), size = 13, color = theme.SubText, order = 3 })
 		makeActionRow(encounterCard, {
-			{ text = "FIGHT", color = theme.Bad, action = function() fire("fight", pending.RivalId) end },
-			{ text = "TALK", color = theme.Blue, action = function() fire("talk_down", pending.RivalId) end },
-			{ text = "ESCAPE", color = theme.Purple, action = function() fire("escape", pending.RivalId) end },
+			{ text = _r("fight", "FIGHT"), color = theme.Bad, action = function() fire("fight", pending.RivalId) end },
+			{ text = _r("talk", "TALK"), color = theme.Blue, action = function() fire("talk_down", pending.RivalId) end },
+			{ text = _r("escape", "ESCAPE"), color = theme.Purple, action = function() fire("escape", pending.RivalId) end },
 		}, 4)
 	end
 
@@ -182,7 +185,7 @@ refresh = function()
 		local emptyCard = mobileCard({ parent = scroll, order = 10 })
 		mobileLabel({
 			parent = emptyCard,
-			text = "No rivals yet. Fame, fear, clan wars, wanted level, and major combat can draw enemies into your era.",
+			text = _r("no_rivals", "No rivals yet. Fame, fear, clan wars, wanted level, and major combat can draw enemies into your era."),
 			size = 14,
 			color = theme.SubText,
 			order = 1,
@@ -193,7 +196,7 @@ refresh = function()
 			mobileLabel({ parent = rivalCard, text = tostring(rival.Name or "Unknown Rival"), size = 16, color = theme.Gold, font = Enum.Font.GothamBlack, order = 1 })
 			mobileLabel({
 				parent = rivalCard,
-				text = tostring(rival.Grade or "Unknown") .. "  |  Age " .. tostring(rival.Age or "?") .. "  |  " .. tostring(rival.Clan or "No Clan") .. "  |  " .. tostring(rival.Status or "Active"),
+				text = tostring(rival.Grade or "Unknown") .. "  |  " .. _r("age", "Age") .. " " .. tostring(rival.Age or "?") .. "  |  " .. tostring(rival.Clan or "No Clan") .. "  |  " .. tostring(rival.Status or "Active"),
 				size = 13,
 				color = theme.Purple,
 				font = Enum.Font.GothamBold,
@@ -201,7 +204,7 @@ refresh = function()
 			})
 			mobileLabel({
 				parent = rivalCard,
-				text = "Technique: " .. tostring(rival.Technique or "Unknown") .. "  |  Threat: " .. tostring(rival.Threat or 0) .. "  |  Record: " .. tostring(rival.Wins or 0) .. "W / " .. tostring(rival.Losses or 0) .. "L",
+				text = _r("technique", "Technique") .. ": " .. tostring(rival.Technique or "Unknown") .. "  |  " .. _r("threat", "Threat") .. ": " .. tostring(rival.Threat or 0) .. "  |  " .. _r("record", "Record") .. ": " .. tostring(rival.Wins or 0) .. "W / " .. tostring(rival.Losses or 0) .. "L",
 				size = 13,
 				color = theme.SubText,
 				order = 3,
@@ -214,17 +217,17 @@ refresh = function()
 				order = 4,
 			})
 			makeActionRow(rivalCard, {
-				{ text = "INTEL", color = theme.Blue, action = function() fire("intel", rival.Id) end },
-				{ text = "FIGHT", color = theme.Bad, action = function() fire("fight", rival.Id) end },
-				{ text = "SPARE", color = theme.Green, action = function() fire("spare", rival.Id) end },
-				{ text = "HUMILIATE", color = theme.Orange, action = function() fire("humiliate", rival.Id) end },
+				{ text = _r("intel", "INTEL"), color = theme.Blue, action = function() fire("intel", rival.Id) end },
+				{ text = _r("fight", "FIGHT"), color = theme.Bad, action = function() fire("fight", rival.Id) end },
+				{ text = _r("spare", "SPARE"), color = theme.Green, action = function() fire("spare", rival.Id) end },
+				{ text = _r("humiliate", "HUMILIATE"), color = theme.Orange, action = function() fire("humiliate", rival.Id) end },
 			}, 5)
 		end
 	end
 
 	-- History card
 	local historyCard = mobileCard({ parent = scroll, order = 999 })
-	mobileLabel({ parent = historyCard, text = "Rival History", size = 15, color = theme.Text, font = Enum.Font.GothamBold, order = 1 })
+	mobileLabel({ parent = historyCard, text = _r("rival_history", "Rival History"), size = 15, color = theme.Text, font = Enum.Font.GothamBold, order = 1 })
 	local history = data.History or {}
 	local lines = {}
 	for i = 1, math.min(3, #history) do
@@ -232,7 +235,7 @@ refresh = function()
 	end
 	mobileLabel({
 		parent = historyCard,
-		text = #lines > 0 and table.concat(lines, "\n") or "No rival history yet.",
+		text = #lines > 0 and table.concat(lines, "\n") or _r("no_history", "No rival history yet."),
 		size = 13,
 		color = theme.SubText,
 		order = 2,

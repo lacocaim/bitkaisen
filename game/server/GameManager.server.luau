@@ -9306,6 +9306,7 @@ function ageUp(player)
 		stats.DomainTrainingThisAge = 0
 		stats.MissionAttemptsThisAge = 0
 		stats.PhysicalConditioningThisAge = 0
+		stats.CursedFingerHuntBlockedThisAge = false
 		stats.MissionAttemptsWindowAge = math.max(0, tonumber(stats.Age) or 0)
 
 		advanceOutsideDojoSenseiAges(stats, 0.5)
@@ -9375,6 +9376,7 @@ function ageUp(player)
 			stats.DomainTrainingThisAge = 0
 			stats.MissionAttemptsThisAge = 0
 			stats.PhysicalConditioningThisAge = 0
+			stats.CursedFingerHuntBlockedThisAge = false
 			stats.MissionAttemptsWindowAge = math.max(0, tonumber(stats.Age) or 0)
 
 			stats.Health = math.clamp((stats.Health or 100) + math.random(-5, 4), 0, 100)
@@ -9552,6 +9554,7 @@ function ageUp(player)
 	stats.DomainTrainingThisAge = 0
 	stats.MissionAttemptsThisAge = 0
 	stats.PhysicalConditioningThisAge = 0
+	stats.CursedFingerHuntBlockedThisAge = false
 	stats.MissionAttemptsWindowAge = math.max(0, tonumber(stats.Age) or 0)
 
 	stats.Health = math.clamp((stats.Health or 100) + math.random(-5, 4), 0, 100)

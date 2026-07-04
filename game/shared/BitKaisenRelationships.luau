@@ -513,7 +513,11 @@ local function reconcileRelationshipTimeline(stats, relationship)
 		local currentAge = tonumber(relationship.Age) or 0
 		local repairedPeerAge = math.max(16, playerAge + stableRelationshipOffset(relationship))
 		local impliedAgeAtMet = currentAge - yearsKnown
-		if currentAge < 16 or (yearsKnown > 1 and impliedAgeAtMet < 16) then
+		-- Only treat a low impliedAgeAtMet as corrupt data when AgeAtMet was never recorded
+		-- (old saves). A legitimate, fully-tracked relationship met in childhood also implies
+		-- a low AgeAtMet and must not be snapped to playerAge.
+		local timelineMissing = ageAtMet == nil
+		if currentAge < 16 or (timelineMissing and yearsKnown > 1 and impliedAgeAtMet < 16) then
 			relationship.Age = repairedPeerAge
 			relationship.AgeAtMet = math.max(16, relationship.Age - yearsKnown)
 		elseif relationship.AgeAtMet == nil and yearsKnown > 1 then

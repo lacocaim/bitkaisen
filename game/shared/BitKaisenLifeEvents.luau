@@ -890,7 +890,7 @@ function BitKaisenLifeEvents.ApplyEvent(stats, eventData, playerLocale)
 	end
 
 
-	if effects.TechniqueMastery then
+	if effects.TechniqueMastery and hasTechnique(stats) then
 		stats.TechniqueMastery = math.clamp((tonumber(stats.TechniqueMastery) or 0) + effects.TechniqueMastery, 0, 100)
 	end
 

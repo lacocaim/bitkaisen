@@ -1234,7 +1234,7 @@ local function buildDojoBackCard(labelText)
 	addStroke(card, COLORS.StrokeSoft, 1)
 	makeLabel(card, labelText or "Return to the main dojo action board.", 13, COLORS.SubText,
 		UDim2.new(0, 20, 0, 20), UDim2.new(1, -190, 0, 28), false)
-	makeRightButton(card, BitKaisenLocale.t(L, "ui.back"), COLORS.Button, 18, function()
+	makeRightButton(card, BitKaisenLocale.tOrFallback(L, "ui.back", nil, "Back"), COLORS.Button, 18, function()
 		setDojoPage("Overview")
 	end)
 end

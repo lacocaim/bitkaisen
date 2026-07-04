@@ -1294,7 +1294,7 @@ local function makeSlotCard(slot, selectedSlot)
 		extra.Parent = card
 	end
 
-	local actionButton = makeSmallButton(card, locked and BitKaisenLocale.t(L, "ui.unlock") or (exists and BitKaisenLocale.t(L, "ui.load") or BitKaisenLocale.t(L, "ui.create")), locked and THEME.Gold or THEME.RedDark, function()
+	local actionButton = makeSmallButton(card, locked and BitKaisenLocale.tOrFallback(L, "ui.unlock", nil, "Unlock") or (exists and BitKaisenLocale.tOrFallback(L, "ui.load", nil, "Load") or BitKaisenLocale.tOrFallback(L, "ui.create", nil, "Create")), locked and THEME.Gold or THEME.RedDark, function()
 		if locked then
 			promptRobuxItem("GamePass", EXTRA_SAVE_SLOTS_GAMEPASS_ID)
 			return
@@ -1314,7 +1314,7 @@ local function makeSlotCard(slot, selectedSlot)
 	actionButton.Position = UDim2.new(1, -116, 0, 18)
 
 	if exists and not locked then
-		local deleteButton = makeSmallButton(card, confirmingDeleteSlotId == slotId and BitKaisenLocale.t(L, "ui.confirm") or BitKaisenLocale.t(L, "ui.delete"), THEME.Panel3, function()
+		local deleteButton = makeSmallButton(card, confirmingDeleteSlotId == slotId and BitKaisenLocale.tOrFallback(L, "ui.confirm", nil, "Confirm") or BitKaisenLocale.tOrFallback(L, "ui.delete", nil, "Delete"), THEME.Panel3, function()
 			if confirmingDeleteSlotId == slotId then
 				deleteSaveSlot:FireServer(slotId)
 				confirmingDeleteSlotId = nil
@@ -1737,7 +1737,7 @@ local function promptGiftRecipient(item)
 	cancel.TextColor3 = THEME.Text
 	cancel.TextSize = 13
 	cancel.Font = Enum.Font.GothamBlack
-	cancel.Text = BitKaisenLocale.t(L, "ui.cancel")
+	cancel.Text = BitKaisenLocale.tOrFallback(L, "ui.cancel", nil, "Cancel")
 	cancel.ZIndex = 5002
 	cancel.Parent = box
 	addCorner(cancel, 8)

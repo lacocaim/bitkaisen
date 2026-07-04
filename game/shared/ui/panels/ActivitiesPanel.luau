@@ -102,7 +102,7 @@ windowStroke.Parent = window
 
 local title = Instance.new("TextLabel")
 title.BackgroundTransparency = 1
-title.Text = BitKaisenLocale.t(L, "ui.activities")
+title.Text = BitKaisenLocale.tOrFallback(L, "ui.activities", nil, "ACTIVITIES")
 title.TextColor3 = THEME.Text
 title.Font = Enum.Font.GothamBlack
 title.TextSize = 23

@@ -16,6 +16,25 @@ local uiState = require("@ui-state/uiState")
 local overlayManager = require("@ui-state/overlayManager")
 
 local topbarIcons = {}
+local settingsIconRef = nil
+
+-- Used by GuideController to point a monetization suggestion at the gear
+-- icon (Settings -> Shop is the only place these products are purchasable).
+-- Same direct-reference technique as the rest of this module -- see
+-- FocusHighlight.luau for the inset-correction fix that makes highlighting
+-- any topbar icon actually land in the right place.
+function topbarIcons.getSettingsIconSpot(): GuiObject?
+	if not settingsIconRef then
+		return nil
+	end
+	local ok, spot = pcall(function()
+		return settingsIconRef:getInstance("IconSpot")
+	end)
+	if ok and spot and spot:IsA("GuiObject") then
+		return spot
+	end
+	return nil
+end
 
 function topbarIcons.init(panelRefs)
 	if not Icon or not Icon.new then
@@ -23,6 +42,7 @@ function topbarIcons.init(panelRefs)
 		return
 	end
 	local settingsIcon = Icon.new()
+	settingsIconRef = settingsIcon
 	settingsIcon:setLabel(utf8.char(0x2699))
 	settingsIcon:setRight()
 	settingsIcon:setOrder(100)

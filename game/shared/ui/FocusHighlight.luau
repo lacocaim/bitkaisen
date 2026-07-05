@@ -17,6 +17,7 @@ local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
 local LAYER_NAME = "FocusHighlightLayer"
+local LOW_LAYER_NAME = "FocusHighlightLayerLow"
 local DIM_LAYER_NAME = "FocusDimLayer"
 local DIM_TRANSPARENCY = 0.55
 
@@ -46,17 +47,30 @@ export type FocusHighlightOptions = {
 	arrow: boolean?,
 	label: string?,
 	dimBackground: boolean?,
+	belowPanels: boolean?,
 }
 
-local function getLayer(): ScreenGui
-	local layer = playerGui:FindFirstChild(LAYER_NAME)
+-- Default layer (1500) sits above literally everything -- needed by the
+-- tutorial, which deliberately wants its spotlight visible over its own
+-- dim/card UI. The persistent Guide (opts.belowPanels = true) uses a
+-- SEPARATE, much lower layer (16 -- just above the dashboard's own 15,
+-- comfortably below every real panel's DisplayOrder, all of which sit in
+-- the 618-730 range) instead. That way it's naturally hidden behind
+-- whatever the player has open -- panels, modals, overlays, one-off things
+-- like the Daily Login popup -- without having to specifically track each
+-- of those separate "is something open" mechanisms (tried that: routes,
+-- modals, and overlays are all different systems in this codebase, and kept
+-- missing new cases -- z-order fixes the whole category at once).
+local function getLayer(low: boolean?): ScreenGui
+	local name = low and LOW_LAYER_NAME or LAYER_NAME
+	local layer = playerGui:FindFirstChild(name)
 	if layer then return layer :: ScreenGui end
 
 	layer = Instance.new("ScreenGui")
-	layer.Name = LAYER_NAME
+	layer.Name = name
 	layer.ResetOnSpawn = false
 	layer.IgnoreGuiInset = true
-	layer.DisplayOrder = 1500
+	layer.DisplayOrder = low and 16 or 1500
 	layer.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	layer.Parent = playerGui
 	return layer :: ScreenGui
@@ -142,7 +156,7 @@ local function attach(target: GuiObject, opts: FocusHighlightOptions?): FocusHig
 	local showArrow = if opts.arrow == nil then true else opts.arrow
 	local cornerRadius = (opts.corner or 0) + OUTWARD_PAD
 
-	local layer = getLayer()
+	local layer = getLayer(opts.belowPanels)
 
 	local root = Instance.new("Frame")
 	root.Name = "FocusHighlight"

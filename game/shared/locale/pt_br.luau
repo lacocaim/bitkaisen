@@ -2048,10 +2048,19 @@ return {
 		help_footer_status = "DISPONÍVEL",
 
 		guide_label = "GUIA",
-		guide_activities = "Treino -- %d sessões disponíveis",
-		guide_missions = "Missões -- %d disponíveis",
-		guide_relationships = "Relacionamentos -- %d oportunidades disponíveis",
-		guide_domain = "Treino de Domínio -- %d sessões disponíveis",
+		guide_activities = "Experimente uma Atividade",
+		guide_rivals = "Enfrente um Rival",
+		guide_missions = "Aceite uma Missão",
+		guide_relationships = "Visite Alguém",
+		guide_domain = "Treine seu Domínio",
+		guide_age_up = "Pressione +IDADE",
+		guide_danger_tip = "Loja -- Recuperação",
+		guide_broke_tip = "Loja -- Dinheiro",
+		guide_losing_streak_tip = "Loja -- Kit de Recuperação",
+		timeskip_offer_title = "Pular no Tempo?",
+		timeskip_offer_body = "Parece que você está envelhecendo rápido. Um Salto no Tempo avança anos instantaneamente.",
+		timeskip_offer_option = "+%d Anos",
+		timeskip_offer_skip = "Não, obrigado",
 	},
 
 	incident_map = {

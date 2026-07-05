@@ -10966,7 +10966,7 @@ updateSettingsEvent.OnServerEvent:Connect(function(player, settingName, value)
 	fireLifeUpdate(player, stats, nil)
 end)
 
-BK_Remotes.Get("MarkTutorialSeen").OnServerEvent:Connect(function(player, tutorialName)
+BK_Remotes.Get("MarkTutorialSeen").OnServerEvent:Connect(function(player, tutorialName, ageValue)
 	if not checkRateLimit(player, "MarkTutorialSeen") then
 		return
 	end
@@ -10984,6 +10984,16 @@ BK_Remotes.Get("MarkTutorialSeen").OnServerEvent:Connect(function(player, tutori
 
 	stats.TutorialFlags = stats.TutorialFlags or {}
 	stats.TutorialFlags[tutorialName .. "Seen"] = true
+	-- Optional: cooldown-based nudges (see cooldownFlags.luau) pass the
+	-- current age-unit count here instead of relying on the permanent
+	-- "Seen" boolean above, so they can fire again later in the same life
+	-- if the same real situation recurs, rather than being a one-shot
+	-- forever (that didn't make sense for things like "you're broke" or
+	-- "you keep aging without doing anything" -- those can genuinely
+	-- happen more than once per life).
+	if typeof(ageValue) == "number" then
+		stats.TutorialFlags[tutorialName .. "LastAge"] = ageValue
+	end
 	saveStats(player, "TutorialSeen")
 	fireLifeUpdate(player, stats, nil)
 end)

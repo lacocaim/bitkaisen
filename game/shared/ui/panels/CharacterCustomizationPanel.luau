@@ -1273,7 +1273,7 @@ function buildUI()
 		refreshPage()
 	end)
 
-	backButton = makeButton(bottomBar, "BackButton", BitKaisenLocale.t(L, "ui.back"), THEME.Button)
+	backButton = makeButton(bottomBar, "BackButton", BitKaisenLocale.tOrFallback(L, "ui.back", nil, "Back"), THEME.Button)
 	backButton.Size = UDim2.new(0, 104, 0, 36)
 	backButton.Position = UDim2.new(1, -280, 0, 18)
 	backButton.Visible = false

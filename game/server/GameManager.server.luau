@@ -5364,7 +5364,7 @@ do
 			stats.CursedEnergy = math.max(0, (tonumber(stats.CursedEnergy) or 0) + effects.CursedEnergy)
 		end
 
-		if effects.TechniqueMastery then
+		if effects.TechniqueMastery and hasTechnique(stats) then
 			stats.TechniqueMastery = math.clamp((tonumber(stats.TechniqueMastery) or 0) + effects.TechniqueMastery, 0, 100)
 		end
 
@@ -6579,7 +6579,7 @@ function applyRandomLifeScenarioEffects(stats, effects)
 	if effects.ReincarnationAnchor then stats.ReincarnationAnchor = tostring(effects.ReincarnationAnchor) end
 	if effects.Money then stats.Money = math.max(0, (tonumber(stats.Money) or 0) + effects.Money) end
 	if effects.Reputation then stats.Reputation = (tonumber(stats.Reputation) or 0) + effects.Reputation end
-	if effects.TechniqueMastery then stats.TechniqueMastery = math.clamp((tonumber(stats.TechniqueMastery) or 0) + effects.TechniqueMastery, 0, 100) end
+	if effects.TechniqueMastery and hasTechnique(stats) then stats.TechniqueMastery = math.clamp((tonumber(stats.TechniqueMastery) or 0) + effects.TechniqueMastery, 0, 100) end
 	if effects.ClanReputation then stats.ClanReputation = math.max(0, (tonumber(stats.ClanReputation) or 0) + effects.ClanReputation) end
 	if effects.DojoPrestige then stats.DojoPrestige = math.max(0, (tonumber(stats.DojoPrestige) or 0) + effects.DojoPrestige) end
 	if effects.DojoCondition then stats.DojoCondition = math.clamp((tonumber(stats.DojoCondition) or 100) + effects.DojoCondition, 0, 100) end
@@ -7604,7 +7604,7 @@ function applyEncounterEffects(stats, effects)
 		stats.TeacherRecommendations = math.max(0, (stats.TeacherRecommendations or 0) + effects.TeacherRecommendations)
 	end
 
-	if effects.TechniqueMastery then
+	if effects.TechniqueMastery and hasTechnique(stats) then
 		stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + effects.TechniqueMastery, 0, 100)
 	end
 
@@ -9306,6 +9306,7 @@ function ageUp(player)
 		stats.DomainTrainingThisAge = 0
 		stats.MissionAttemptsThisAge = 0
 		stats.PhysicalConditioningThisAge = 0
+		stats.CursedFingerHuntBlockedThisAge = false
 		stats.MissionAttemptsWindowAge = math.max(0, tonumber(stats.Age) or 0)
 
 		advanceOutsideDojoSenseiAges(stats, 0.5)
@@ -9375,6 +9376,7 @@ function ageUp(player)
 			stats.DomainTrainingThisAge = 0
 			stats.MissionAttemptsThisAge = 0
 			stats.PhysicalConditioningThisAge = 0
+			stats.CursedFingerHuntBlockedThisAge = false
 			stats.MissionAttemptsWindowAge = math.max(0, tonumber(stats.Age) or 0)
 
 			stats.Health = math.clamp((stats.Health or 100) + math.random(-5, 4), 0, 100)
@@ -9552,6 +9554,7 @@ function ageUp(player)
 	stats.DomainTrainingThisAge = 0
 	stats.MissionAttemptsThisAge = 0
 	stats.PhysicalConditioningThisAge = 0
+	stats.CursedFingerHuntBlockedThisAge = false
 	stats.MissionAttemptsWindowAge = math.max(0, tonumber(stats.Age) or 0)
 
 	stats.Health = math.clamp((stats.Health or 100) + math.random(-5, 4), 0, 100)
@@ -9809,7 +9812,7 @@ function applyChoiceEffects(stats, choiceOption)
 		stats.Reputation = (stats.Reputation or 0) + effects.Reputation
 	end
 
-	if effects.TechniqueMastery then
+	if effects.TechniqueMastery and hasTechnique(stats) then
 		stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + effects.TechniqueMastery, 0, 100)
 	end
 	if effects.Fame or effects.Fear or effects.PathReputation then

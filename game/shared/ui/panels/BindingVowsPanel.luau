@@ -1101,7 +1101,7 @@ local function makeContractPanel()
 	note.Position = UDim2.new(0, 14, 0, 10)
 	note.TextYAlignment = Enum.TextYAlignment.Center
 
-	local cancelButton = makeButton(footer, "Cancel", BitKaisenLocale.t(L, "ui.cancel"), THEME.Button)
+	local cancelButton = makeButton(footer, "Cancel", BitKaisenLocale.tOrFallback(L, "ui.cancel", nil, "Cancel"), THEME.Button)
 	cancelButton.AnchorPoint = Vector2.new(1, 0.5)
 	cancelButton.Size = stacked and UDim2.new(0.42, -10, 0, 34) or UDim2.new(0, 128, 0, 38)
 	cancelButton.Position = stacked and UDim2.new(0.42, 4, 0.72, 0) or UDim2.new(1, -242, 0.5, 0)

@@ -87,6 +87,21 @@ function topbarIcons.init(panelRefs)
 		freeRewardsIcon:deselect()
 	end)
 
+	-- How To Play (replay tutorial) + Guide toggle. Kept separate from the
+	-- settings gear (⚙) since neither is a QoL toggle -- see memory
+	-- project-bitkaisen-tutorial-system for why these two are grouped
+	-- together but distinct from Settings.
+	local helpGuideIcon = Icon.new()
+	helpGuideIcon:setLabel(utf8.char(0x2753))
+	helpGuideIcon:setRight()
+	helpGuideIcon:setOrder(98)
+	helpGuideIcon:bindEvent("selected", function()
+		if panelRefs.helpGuide then
+			overlayManager.show("helpGuide", panelRefs.helpGuide.open, panelRefs.helpGuide.close)
+		end
+		helpGuideIcon:deselect()
+	end)
+
 end
 
 return topbarIcons

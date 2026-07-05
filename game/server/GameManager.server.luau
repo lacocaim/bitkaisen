@@ -10921,6 +10921,7 @@ ALLOWED_SETTINGS = {
 	ScreenShake = "boolean",
 	SkipCombatSkillChecks = "boolean",
 	UIMode = "string",
+	GuideEnabled = "boolean",
 }
 
 ALLOWED_STRING_VALUES = {
@@ -10962,6 +10963,28 @@ updateSettingsEvent.OnServerEvent:Connect(function(player, settingName, value)
 
 	stats.Settings[settingName] = value
 	saveStats(player, "SettingsChanged")
+	fireLifeUpdate(player, stats, nil)
+end)
+
+BK_Remotes.Get("MarkTutorialSeen").OnServerEvent:Connect(function(player, tutorialName)
+	if not checkRateLimit(player, "MarkTutorialSeen") then
+		return
+	end
+
+	if typeof(tutorialName) ~= "string" or tutorialName == "" then
+		return
+	end
+
+	local stats = playerLives[player.UserId]
+	if not stats then
+		return
+	end
+
+	ensureExtraStats(stats)
+
+	stats.TutorialFlags = stats.TutorialFlags or {}
+	stats.TutorialFlags[tutorialName .. "Seen"] = true
+	saveStats(player, "TutorialSeen")
 	fireLifeUpdate(player, stats, nil)
 end)
 

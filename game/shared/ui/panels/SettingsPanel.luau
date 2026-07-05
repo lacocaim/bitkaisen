@@ -113,6 +113,7 @@ local DEFAULT_SETTINGS = {
 	ReducedMotion = false,
 	ScreenShake = true,
 	SkipCombatSkillChecks = false,
+	GuideEnabled = true,
 }
 
 local THEME = {
@@ -1224,6 +1225,9 @@ buildGameplayPage = function()
 
 	makeSectionLabel("Display")
 	makeToggleRow("High Contrast Text", "Makes life log text larger and easier to read.", "HighContrastText")
+
+	makeSectionLabel("Guide")
+	makeToggleRow("Guide", "An indicator that suggests your next move: training, fighting, traveling...", "GuideEnabled")
 end
 
 local function makeSlotCard(slot, selectedSlot)
@@ -1990,4 +1994,12 @@ local function init()
 	_G.BitKaisenPlaySFX = playSFX
 end
 
-return { init = init, playSFX = playSFX }
+local function getGuideEnabled()
+	return currentSettings.GuideEnabled == true
+end
+
+local function setGuideEnabled(value)
+	saveSetting("GuideEnabled", value == true)
+end
+
+return { init = init, playSFX = playSFX, getGuideEnabled = getGuideEnabled, setGuideEnabled = setGuideEnabled }

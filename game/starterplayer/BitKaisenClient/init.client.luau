@@ -52,6 +52,8 @@ local CharacterCustomizationPanel = require("@ui-panels/CharacterCustomizationPa
 local DeathPanel = require("@ui-panels/DeathPanel")
 local MissionSituationPanel = require("@ui-panels/MissionSituationPanel")
 local FirstTimeGuidancePanel = require("@ui-panels/FirstTimeGuidancePanel")
+local HelpGuidePanel = require("@ui-panels/HelpGuidePanel")
+local GuideController = require("@ui-panels/GuideController")
 local IncidentMapPanel = require("@ui-panels/IncidentMapPanel")
 
 local TopBarController = require("@ui-panels/TopBarController")
@@ -157,7 +159,7 @@ local function applyResponsiveLayout(mainPanel: Frame)
 	else
 		local navPanelObj = navPanel :: ScrollingFrame
 		navPanelObj.Size = UDim2.new(0.945, 0, 0, 40)
-		navPanelObj.Position = UDim2.new(0.025, 0, 0.003, 0)
+		navPanelObj.Position = UDim2.new(0.025, 0, 0.028, 0)
 		if NavPanel.fitButtonsToWidth then
 			task.defer(function() NavPanel.fitButtonsToWidth(navPanelObj) end)
 		end
@@ -263,6 +265,7 @@ safeInit("SettingsPanel", SettingsPanel.init)
 safeInit("BindingVowsPanel", BindingVowsPanel.init)
 safeInit("DailyLoginPanel", DailyLoginPanel.init)
 safeInit("FreeRewardsPanel", FreeRewardsPanel.init)
+safeInit("HelpGuidePanel", HelpGuidePanel.init)
 safeInit("UpdateLogPanel", UpdateLogPanel.init)
 safeInit("ClanWarPanel", ClanWarPanel.init)
 safeInit("CultWarPanel", CultWarPanel.init)
@@ -301,6 +304,7 @@ safeInit("CharacterCustomizationPanel", function() CharacterCustomizationPanel.i
 safeInit("DeathPanel", function() DeathPanel.init(playerGui) end)
 safeInit("MissionSituationPanel", function() MissionSituationPanel.init(playerGui) end)
 safeInit("FirstTimeGuidancePanel", function() FirstTimeGuidancePanel.init(playerGui) end)
+safeInit("GuideController", function() GuideController.init(playerGui) end)
 
 safeInit("TopBarController", TopBarController.init)
 safeInit("SFXController", SFXController.init)
@@ -312,6 +316,7 @@ safeInit("topbarIcons", function()
 		cultWar = CultWarPanel,
 		afk = AFKPanel,
 		freeRewards = FreeRewardsPanel,
+		helpGuide = HelpGuidePanel,
 	})
 end)
 

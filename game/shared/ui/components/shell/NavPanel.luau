@@ -99,7 +99,7 @@ local function NavPanel()
 		}))
 	end
 
-	return create("Frame") {
+	local frame = create("Frame") {
 		Name = "NavPanel",
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
@@ -115,6 +115,23 @@ local function NavPanel()
 
 		buttons,
 	}
+
+	-- Self-contained fix: BitKaisenClient sets this frame's Size (a Scale-
+	-- based UDim2) and then calls fitButtonsToWidth via a single task.defer.
+	-- If the engine hadn't finished propagating that Size into a real
+	-- AbsoluteSize by the moment that deferred call ran (e.g. right at boot,
+	-- before the ScreenGui itself has a final on-screen size), the fit would
+	-- run once against a stale/zero width and never get corrected -- leaving
+	-- dead space after the last button. Reacting directly to AbsoluteSize
+	-- changes removes the timing guess entirely: this always re-fits against
+	-- whatever size the frame actually ends up with, however many times or
+	-- whenever that happens.
+	frame:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+		fitButtonsToWidth(frame)
+	end)
+	task.defer(fitButtonsToWidth, frame)
+
+	return frame
 end
 
 local M = setmetatable({}, { __call = function(_, ...) return NavPanel(...) end })

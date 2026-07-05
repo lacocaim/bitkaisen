@@ -114,6 +114,7 @@ tryInit("MobileMentorPanel", function() return require("@ui/mobile/panels/Mobile
 
 tryInit("MobileDailyLoginPanel", function() return require("@ui/mobile/panels/MobileDailyLoginPanel") end)
 tryInit("MobileFreeRewardsPanel", function() return require("@ui/mobile/panels/MobileFreeRewardsPanel") end)
+tryInit("MobileHelpGuidePanel", function() return require("@ui/mobile/panels/MobileHelpGuidePanel") end)
 tryInit("MobileBindingVowsPanel", function() return require("@ui/mobile/panels/MobileBindingVowsPanel") end)
 tryInit("MobileTechniqueMasteryPanel", function() return require("@ui/mobile/panels/MobileTechniqueMasteryPanel") end)
 tryInit("MobileTraitDetailsPanel", function() return require("@ui/mobile/panels/MobileTraitDetailsPanel") end, playerGui)
@@ -123,6 +124,7 @@ tryInit("MobileClanWarPanel", function() return require("@ui/mobile/panels/Mobil
 tryInit("MobileDeathPanel", function() return require("@ui/mobile/panels/MobileDeathPanel") end, playerGui)
 tryInit("MobileMissionSituationPanel", function() return require("@ui/mobile/panels/MobileMissionSituationPanel") end, playerGui)
 tryInit("MobileFirstTimeGuidancePanel", function() return require("@ui/mobile/panels/MobileFirstTimeGuidancePanel") end, playerGui)
+tryInit("MobileGuideController", function() return require("@ui/mobile/panels/MobileGuideController") end, playerGui)
 tryInit("MobileIncidentMapPanel", function() return require("@ui/mobile/panels/MobileIncidentMapPanel") end)
 
 tryInit("MobileCombatPanel", function() return require("@ui/mobile/panels/MobileCombatPanel") end, playerGui)
@@ -168,17 +170,20 @@ do
 	local cultWarRef = nil
 	local afkRef = nil
 	local freeRewardsRef = nil
+	local helpGuideRef = nil
 	pcall(function() godModeRef = require("@ui/mobile/panels/MobileGodModePanel") end)
 	pcall(function() clanWarRef = require("@ui/mobile/panels/MobileClanWarPanel") end)
 	pcall(function() cultWarRef = require("@ui/mobile/panels/MobileCultWarPanel") end)
 	pcall(function() afkRef = require("@ui/mobile/panels/MobileAFKPanel") end)
 	pcall(function() freeRewardsRef = require("@ui/mobile/panels/MobileFreeRewardsPanel") end)
+	pcall(function() helpGuideRef = require("@ui/mobile/panels/MobileHelpGuidePanel") end)
 	topbarIcons.init({
 		godMode = godModeRef,
 		clanWar = clanWarRef,
 		cultWar = cultWarRef,
 		afk = afkRef,
 		freeRewards = freeRewardsRef,
+		helpGuide = helpGuideRef,
 	})
 end
 

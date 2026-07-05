@@ -1,13 +1,27 @@
 local Players = game:GetService("Players")
+
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local responsiveScale = require("@ui/responsiveScale")
+local FocusHighlight = require("@ui/FocusHighlight")
+local guidanceSteps = require("@ui/guidanceSteps")
+
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local _L = BitKaisenLocale.getClientLocale()
+local function _g(key: string, fallback: string): string
+	return BitKaisenLocale.tOrFallback(_L, "guidance." .. key, nil, fallback)
+end
 
 local player = Players.LocalPlayer
 
 local GUI_NAME = "BitKaisenFirstTimeGuidanceUI"
 local MAIN_GUI_NAME = "BitKaisenGui"
+
+-- Set by init() so the module-level `replay` export (used by HelpGuidePanel's
+-- "How To Play" button) can restart the same live instance instead of
+-- creating a second one.
+local activeReplay: (() -> ())? = nil
 
 local THEME = {
 	Panel = Color3.fromRGB(14, 14, 21),
@@ -21,29 +35,6 @@ local THEME = {
 	RedDark = Color3.fromRGB(78, 18, 29),
 	Button = Color3.fromRGB(38, 34, 52),
 	ButtonHover = Color3.fromRGB(53, 48, 72),
-}
-
-local STEPS = {
-	{
-		Title = "Welcome to BitKaisen",
-		Body = "Age up, make choices, and build your cursed legacy.",
-		Button = "NEXT",
-	},
-	{
-		Title = "Use + AGE",
-		Body = "Aging moves your life forward. Some years are quiet, while others trigger events, missions, or relationships.",
-		Button = "NEXT",
-	},
-	{
-		Title = "Check Your Profile",
-		Body = "Your right-side profile shows rank, technique, traits, cursed energy, money, reputation, and progress.",
-		Button = "NEXT",
-	},
-	{
-		Title = "Use The Menus",
-		Body = "Missions, activities, assets, and relationships are your main ways to progress.",
-		Button = "DONE",
-	},
 }
 
 local function addCorner(parent, radius)
@@ -98,6 +89,9 @@ end
 local function init(playerGui: Instance)
 	local updateLifeEvent = ReplicatedStorage:WaitForChild("UpdateLifeEvent")
 	local markTutorialSeen = ReplicatedStorage:FindFirstChild("MarkTutorialSeen")
+	local updateSettingsEvent = ReplicatedStorage:FindFirstChild("UpdateSettingsEvent")
+
+	local STEPS = guidanceSteps.buildSteps()
 
 	local state = {
 		Stats = nil,
@@ -106,7 +100,149 @@ local function init(playerGui: Instance)
 		Showing = false,
 		Started = false,
 		MarkedServer = false,
+		ManualReplay = false,
+		Highlight = nil :: { destroy: () -> () }?,
 	}
+
+	local function clearHighlight()
+		if state.Highlight then
+			state.Highlight.destroy()
+			state.Highlight = nil
+		end
+	end
+
+	local function resolveMainPanel(): Instance?
+		local mainGui = playerGui:FindFirstChild(MAIN_GUI_NAME)
+		return mainGui and mainGui:FindFirstChild("MainPanel")
+	end
+
+	-- Cached proxy frame for TargetIconGroup below: an invisible Frame sized
+	-- to the real bounding box of our 7 topbar icons. Parented on a plain
+	-- (IgnoreGuiInset = false) layer of our own -- confirmed live in Studio
+	-- that a Frame there reports AbsolutePosition exactly equal to whatever
+	-- Position we set (no inset math needed), unlike IgnoreGuiInset = true
+	-- layers, which subtract the inset. That's the actual root cause the
+	-- Quick Access highlight kept failing all session: FocusHighlight's own
+	-- overlay (IgnoreGuiInset = true) needs the inset added back to land on
+	-- a target's true position, and that fix (see FocusHighlight.luau) is
+	-- what makes this proxy resolve correctly now regardless of which layer
+	-- it lives in.
+	local iconGroupLayer: ScreenGui? = nil
+	local iconGroupProxy: Frame? = nil
+
+	local function getIconGroupProxy(): Frame
+		if not iconGroupLayer or not iconGroupLayer.Parent then
+			local layer = Instance.new("ScreenGui")
+			layer.Name = "GuideIconGroupProxyLayer"
+			layer.ResetOnSpawn = false
+			layer.IgnoreGuiInset = false
+			layer.DisplayOrder = 679
+			layer.Parent = playerGui
+			iconGroupLayer = layer
+		end
+		if not iconGroupProxy or not iconGroupProxy.Parent then
+			local proxy = Instance.new("Frame")
+			proxy.Name = "GuideIconGroupProxy"
+			proxy.BackgroundTransparency = 1
+			proxy.Parent = iconGroupLayer
+			iconGroupProxy = proxy
+		end
+		return iconGroupProxy :: Frame
+	end
+
+	-- Roblox's own native menu icon lives inside the same holder as our 7
+	-- custom ones (Settings/GodMode/War/CultWar/AFK/FreeRewards/HelpGuide),
+	-- all as "IconSpot" frames -- but the native one sits at a clearly
+	-- different Y (confirmed live: ours at y=-42, the native one at y=-58,
+	-- far over at x=176, with no overlap between the two groups). Grouping
+	-- by Y and taking the LARGEST group keeps the native icon from dragging
+	-- the box out to the left edge of the screen.
+	local function applyIconGroupBounds(): boolean
+		for _, gui in ipairs(playerGui:GetChildren()) do
+			if gui.Name:find("Topbar") then
+				local holders = gui:FindFirstChild("Holders")
+				local right = holders and holders:FindFirstChild("Right")
+				if right then
+					local groups = {}
+					for _, d in ipairs(right:GetDescendants()) do
+						if d.Name == "IconSpot" and d:IsA("GuiObject") then
+							local y = math.floor(d.AbsolutePosition.Y + 0.5)
+							groups[y] = groups[y] or {}
+							table.insert(groups[y], d)
+						end
+					end
+					local bestGroup = nil
+					for _, group in pairs(groups) do
+						if not bestGroup or #group > #bestGroup then
+							bestGroup = group
+						end
+					end
+					if bestGroup then
+						local minX, minY, maxX, maxY = math.huge, math.huge, -math.huge, -math.huge
+						for _, d in ipairs(bestGroup) do
+							local pos = d.AbsolutePosition
+							local size = d.AbsoluteSize
+							minX = math.min(minX, pos.X)
+							minY = math.min(minY, pos.Y)
+							maxX = math.max(maxX, pos.X + size.X)
+							maxY = math.max(maxY, pos.Y + size.Y)
+						end
+						local proxy = getIconGroupProxy()
+						proxy.Position = UDim2.fromOffset(minX, minY)
+						proxy.Size = UDim2.fromOffset(maxX - minX, maxY - minY)
+						return true
+					end
+				end
+			end
+		end
+		return false
+	end
+
+	local function resolveIconGroupTarget(): GuiObject?
+		if not applyIconGroupBounds() then
+			return nil
+		end
+		-- Re-check shortly after: if this step is reached very soon after
+		-- boot, not all 7 icons may exist yet, producing a too-small/offset
+		-- box that never self-corrects (the proxy's bounds are otherwise
+		-- only computed once). Recomputing once more a bit later fixes that
+		-- without needing a persistent reactive listener.
+		task.delay(0.6, applyIconGroupBounds)
+		return iconGroupProxy
+	end
+
+	local function resolveTarget(step): GuiObject?
+		-- Resolved from the PlayerGui root, not mainPanel -- for targets that
+		-- live outside the dashboard (e.g. the native Roblox topbar holder
+		-- where our custom Icon-based buttons render).
+		if step.TargetGlobalPath then
+			local current: Instance? = playerGui
+			for part in string.gmatch(step.TargetGlobalPath, "[^%.]+") do
+				current = current and current:FindFirstChild(part)
+			end
+			return current :: GuiObject?
+		end
+
+		if step.TargetIconGroup then
+			return resolveIconGroupTarget()
+		end
+
+		local mainPanel = resolveMainPanel()
+		if not mainPanel then return nil end
+
+		if step.NavId then
+			local navPanel = mainPanel:FindFirstChild("NavPanel")
+			local btn = navPanel and navPanel:FindFirstChild(step.NavId .. "Button")
+			return btn :: GuiObject?
+		end
+
+		if step.TargetPath then
+			local found = mainPanel:FindFirstChild(step.TargetPath)
+			return found :: GuiObject?
+		end
+
+		return nil
+	end
 
 	local function isCustomizationOpen()
 		local standalone = playerGui:FindFirstChild("BitKaisenCharacterCustomizationGui")
@@ -144,6 +280,20 @@ local function init(playerGui: Instance)
 	guideGui.IgnoreGuiInset = true
 	guideGui.DisplayOrder = 680
 	guideGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	-- Roblox's AutoLocalize auto-translates recognized short strings (button
+	-- labels like "NEXT"/"SKIP") via its own crowd-sourced dictionary but
+	-- leaves longer custom sentences in English, producing a mixed-language
+	-- mess. Off here since real localization is handled explicitly below.
+	guideGui.AutoLocalize = false
+	-- Off until we actually decide to show the tutorial. ScreenGuis default to
+	-- Enabled=true, and root.Active=true covers the full screen (needed so
+	-- taps can't reach the dashboard underneath while the tutorial IS up --
+	-- see root.Active below) -- left at the default, that full-screen
+	-- blocker would sit active from the instant this module loads until the
+	-- first UpdateLifeEvent arrives and tutorialAlreadySeen() gets to turn it
+	-- off, silently swallowing clicks on anything else (e.g. the Daily Login
+	-- modal) that opens during that window.
+	guideGui.Enabled = false
 	guideGui.Parent = playerGui
 
 	local root = Instance.new("Frame")
@@ -152,7 +302,13 @@ local function init(playerGui: Instance)
 	root.BorderSizePixel = 0
 	root.Size = UDim2.fromScale(1, 1)
 	root.Position = UDim2.fromScale(0, 0)
-	root.Active = false
+	-- Was `false` (only the small card blocked input). That let taps
+	-- anywhere else on screen -- even though the tutorial looked like it was
+	-- "on top" -- fall straight through to the real dashboard underneath
+	-- (confirmed: tapping near NEXT on Mobile was landing on the real
+	-- "Trabajos" nav button instead). Blocking the whole root while the
+	-- tutorial is up stops any tap from reaching the dashboard at all.
+	root.Active = true
 	root.ZIndex = 900
 	root.Parent = guideGui
 
@@ -188,6 +344,19 @@ local function init(playerGui: Instance)
 		end
 		recompute()
 	end
+
+	local stepLabel = Instance.new("TextLabel")
+	stepLabel.Name = "StepCounter"
+	stepLabel.BackgroundTransparency = 1
+	stepLabel.BorderSizePixel = 0
+	stepLabel.Text = ""
+	stepLabel.TextColor3 = THEME.SubText
+	stepLabel.TextTransparency = 1
+	stepLabel.TextSize = 9
+	stepLabel.Font = Enum.Font.Code
+	stepLabel.TextXAlignment = Enum.TextXAlignment.Right
+	stepLabel.ZIndex = 903
+	stepLabel.Parent = card
 
 	local accent = Instance.new("Frame")
 	accent.Name = "Accent"
@@ -263,13 +432,129 @@ local function init(playerGui: Instance)
 		return button
 	end
 
-	local skipButton = makeButton("SkipButton", "SKIP", THEME.RedDark)
-	local nextButton = makeButton("NextButton", "NEXT", THEME.Purple)
+	local skipButton = makeButton("SkipButton", _g("btn_skip", "SKIP"), THEME.RedDark)
+	local nextButton = makeButton("NextButton", _g("btn_next", "NEXT"), THEME.Purple)
+
+	-- Opt-in modal shown once, right after the last step, asking whether to
+	-- keep the persistent Guide on (see plan "sorted-popping-haven" Fase 2/3).
+	local optInGui = Instance.new("ScreenGui")
+	optInGui.Name = "BitKaisenGuideOptInUI"
+	optInGui.ResetOnSpawn = false
+	optInGui.IgnoreGuiInset = true
+	optInGui.DisplayOrder = 681
+	optInGui.Enabled = false
+	optInGui.AutoLocalize = false
+	optInGui.Parent = playerGui
+
+	local optInOverlay = Instance.new("Frame")
+	optInOverlay.Name = "Overlay"
+	optInOverlay.Size = UDim2.fromScale(1, 1)
+	optInOverlay.BackgroundColor3 = Color3.new(0, 0, 0)
+	optInOverlay.BackgroundTransparency = 0.4
+	optInOverlay.BorderSizePixel = 0
+	optInOverlay.Active = true
+	optInOverlay.Parent = optInGui
+
+	-- Styled to match GodModePanel.luau's flat-panel convention (see
+	-- HelpGuidePanel.luau's own rewrite for the same reasoning) instead of
+	-- the one-off "classified dossier" header/footer bars.
+	local GM_BG = Color3.fromRGB(13, 13, 20)
+	local GM_STROKE = Color3.fromRGB(116, 84, 165)
+	local GM_GOLD = Color3.fromRGB(255, 212, 94)
+	local GM_PURPLE = Color3.fromRGB(156, 96, 246)
+	local GM_MUTED = Color3.fromRGB(176, 169, 195)
+
+	local optInCard = Instance.new("Frame")
+	optInCard.Name = "GuideOptInCard"
+	optInCard.AnchorPoint = Vector2.new(0.5, 0.5)
+	optInCard.Position = UDim2.fromScale(0.5, 0.5)
+	optInCard.Size = UDim2.fromOffset(380, 210)
+	optInCard.BackgroundColor3 = GM_BG
+	optInCard.BorderSizePixel = 0
+	optInCard.Active = true
+	optInCard.Parent = optInOverlay
+	addCorner(optInCard, 10)
+	addStroke(optInCard, GM_STROKE, 1, 0)
+	responsiveScale.attach(optInCard, 380, 210)
+
+	local optInTitle = Instance.new("TextLabel")
+	optInTitle.BackgroundTransparency = 1
+	optInTitle.Position = UDim2.new(0, 18, 0, 16)
+	optInTitle.Size = UDim2.new(1, -36, 0, 26)
+	optInTitle.Text = _g("optin_title", "Keep the Guide on?")
+	optInTitle.TextColor3 = GM_GOLD
+	optInTitle.TextSize = 20
+	optInTitle.Font = Enum.Font.GothamBlack
+	optInTitle.TextXAlignment = Enum.TextXAlignment.Left
+	optInTitle.Parent = optInCard
+
+	local optInBody = Instance.new("TextLabel")
+	optInBody.BackgroundTransparency = 1
+	optInBody.Position = UDim2.new(0, 18, 0, 48)
+	optInBody.Size = UDim2.new(1, -36, 0, 56)
+	optInBody.Text = _g("optin_body", "The Guide points at a smart next move -- training, a fight, a trip -- so you're never lost. You can change this anytime in Menu > Settings.")
+	optInBody.TextColor3 = GM_MUTED
+	optInBody.TextSize = 12
+	optInBody.Font = Enum.Font.GothamMedium
+	optInBody.TextWrapped = true
+	optInBody.TextXAlignment = Enum.TextXAlignment.Left
+	optInBody.TextYAlignment = Enum.TextYAlignment.Top
+	optInBody.Parent = optInCard
+
+	local keepButton = Instance.new("TextButton")
+	keepButton.Name = "KeepGuideButton"
+	keepButton.Position = UDim2.new(0, 18, 0, 112)
+	keepButton.Size = UDim2.new(1, -36, 0, 40)
+	keepButton.BackgroundColor3 = GM_PURPLE
+	keepButton.Text = _g("optin_keep_button", "KEEP GUIDE ON")
+	keepButton.TextColor3 = THEME.Text
+	keepButton.TextSize = 14
+	keepButton.Font = Enum.Font.GothamBlack
+	keepButton.AutoButtonColor = true
+	keepButton.Parent = optInCard
+	addCorner(keepButton, 8)
+
+	local skipGuideButton = Instance.new("TextButton")
+	skipGuideButton.Name = "SkipGuideButton"
+	skipGuideButton.BackgroundTransparency = 1
+	skipGuideButton.Position = UDim2.new(0, 18, 0, 160)
+	skipGuideButton.Size = UDim2.new(1, -36, 0, 20)
+	skipGuideButton.Text = _g("optin_skip_button", "No thanks, turn it off")
+	skipGuideButton.TextColor3 = GM_MUTED
+	skipGuideButton.TextSize = 11
+	skipGuideButton.Font = Enum.Font.GothamMedium
+	skipGuideButton.AutoButtonColor = false
+	skipGuideButton.Parent = optInCard
+
+	local function closeOptIn()
+		optInGui.Enabled = false
+	end
+
+	local function showOptIn()
+		optInGui.Enabled = true
+	end
+
+	keepButton.MouseButton1Click:Connect(function()
+		if updateSettingsEvent then
+			updateSettingsEvent:FireServer("GuideEnabled", true)
+		end
+		closeOptIn()
+	end)
+
+	skipGuideButton.MouseButton1Click:Connect(function()
+		if updateSettingsEvent then
+			updateSettingsEvent:FireServer("GuideEnabled", false)
+		end
+		closeOptIn()
+	end)
 
 	local function layout()
 		titleLabel.TextSize = 16
 		titleLabel.Position = UDim2.new(0, 28, 0, 10)
-		titleLabel.Size = UDim2.new(1, -44, 0, 20)
+		titleLabel.Size = UDim2.new(1, -100, 0, 20)
+
+		stepLabel.Position = UDim2.new(1, -80, 0, 12)
+		stepLabel.Size = UDim2.new(0, 60, 0, 14)
 
 		bodyLabel.TextSize = 11
 		bodyLabel.Position = UDim2.new(0, 28, 0, 34)
@@ -284,23 +569,63 @@ local function init(playerGui: Instance)
 		nextButton.TextSize = 11
 	end
 
+	-- Card sits bottom-anchored by default, but if the current target's own
+	-- bounds are ALSO in the bottom half of the screen (e.g. LogContainer),
+	-- a fixed bottom card would sit right on top of it -- so flip the card
+	-- to the top half instead whenever the target is in the bottom half.
+	local function positionCardForTarget(target: GuiObject?, step)
+		local camera = workspace.CurrentCamera
+		local viewport = camera and camera.ViewportSize or Vector2.new(1280, 720)
+
+		-- "right" only makes sense when there's an actual second column of
+		-- free space to sit in (PC's wide layout). On narrow viewports there
+		-- is no spare width -- pinning to the right edge there just makes the
+		-- card span nearly the whole screen and overlap whatever's already
+		-- there (confirmed: broke Mobile's narrow single-column layout).
+		-- Falls through to the normal top/bottom auto-flip below instead.
+		if step and step.CardSide == "right" and viewport.X >= 700 then
+			card.AnchorPoint = Vector2.new(1, 0.5)
+			card.Position = UDim2.new(1, -24, 0.5, 0)
+			return
+		end
+
+		local useTop = false
+		if target then
+			local pos = target.AbsolutePosition
+			local size = target.AbsoluteSize
+			local centerY = pos.Y + size.Y / 2
+			useTop = centerY > viewport.Y * 0.5
+		end
+		if useTop then
+			card.AnchorPoint = Vector2.new(0.5, 0)
+			card.Position = UDim2.new(0.5, 0, 0, 92)
+		else
+			card.AnchorPoint = Vector2.new(0.5, 1)
+			card.Position = UDim2.new(0.5, 0, 1, -92)
+		end
+	end
+
 	local function setStep(index)
 		local step = STEPS[index]
 		if not step then
 			state.Finished = true
 			state.Showing = false
+			state.ManualReplay = false
 			markSeen()
+			clearHighlight()
 
 			tween(card, 0.12, { BackgroundTransparency = 1 })
 			tween(accent, 0.1, { BackgroundTransparency = 1 })
 			tween(titleLabel, 0.1, { TextTransparency = 1 })
 			tween(bodyLabel, 0.1, { TextTransparency = 1 })
+			tween(stepLabel, 0.1, { TextTransparency = 1 })
 			tween(skipButton, 0.1, { BackgroundTransparency = 1, TextTransparency = 1 })
 			tween(nextButton, 0.1, { BackgroundTransparency = 1, TextTransparency = 1 })
 
 			task.delay(0.15, function()
 				card.Visible = false
 				guideGui.Enabled = false
+				showOptIn()
 			end)
 
 			return
@@ -311,7 +636,20 @@ local function init(playerGui: Instance)
 
 		titleLabel.Text = step.Title
 		bodyLabel.Text = step.Body
-		nextButton.Text = step.Button or "NEXT"
+		stepLabel.Text = string.format("%d/%d", index, #STEPS)
+		nextButton.Text = step.Button or _g("btn_next", "NEXT")
+
+		clearHighlight()
+		local target = resolveTarget(step)
+		positionCardForTarget(target, step)
+		if target then
+			state.Highlight = FocusHighlight.attach(target, {
+				color = THEME.Purple,
+				corner = 8,
+				label = step.Title,
+				dimBackground = true,
+			})
+		end
 
 		layout()
 
@@ -320,6 +658,7 @@ local function init(playerGui: Instance)
 		accent.BackgroundTransparency = 1
 		titleLabel.TextTransparency = 1
 		bodyLabel.TextTransparency = 1
+		stepLabel.TextTransparency = 1
 		skipButton.BackgroundTransparency = 1
 		skipButton.TextTransparency = 1
 		nextButton.BackgroundTransparency = 1
@@ -329,6 +668,7 @@ local function init(playerGui: Instance)
 		tween(accent, 0.12, { BackgroundTransparency = 0 })
 		tween(titleLabel, 0.12, { TextTransparency = 0 })
 		tween(bodyLabel, 0.12, { TextTransparency = 0 })
+		tween(stepLabel, 0.12, { TextTransparency = 0.3 })
 		tween(skipButton, 0.12, { BackgroundTransparency = 0, TextTransparency = 0 })
 		tween(nextButton, 0.12, { BackgroundTransparency = 0, TextTransparency = 0 })
 	end
@@ -360,13 +700,25 @@ local function init(playerGui: Instance)
 				return
 			end
 
+			guideGui.Enabled = true
 			setStep(1)
 		end)
+	end
+
+	local function replayTutorial()
+		closeOptIn()
+		clearHighlight()
+		state.ManualReplay = true
+		state.Finished = false
+		state.Started = true
+		guideGui.Enabled = true
+		setStep(1)
 	end
 
 	skipButton.MouseButton1Click:Connect(function()
 		state.Finished = true
 		markSeen()
+		clearHighlight()
 		setStep(#STEPS + 1)
 	end)
 
@@ -384,14 +736,16 @@ local function init(playerGui: Instance)
 		if stats.Alive == false then
 			card.Visible = false
 			state.Showing = false
+			clearHighlight()
 			return
 		end
 
-		if tutorialAlreadySeen(stats) then
+		if tutorialAlreadySeen(stats) and not state.ManualReplay then
 			state.Finished = true
 			state.MarkedServer = true
 			card.Visible = false
 			guideGui.Enabled = false
+			clearHighlight()
 			return
 		end
 
@@ -418,6 +772,14 @@ local function init(playerGui: Instance)
 	end)
 
 	layout()
+
+	activeReplay = replayTutorial
 end
 
-return { init = init }
+local function replay()
+	if activeReplay then
+		activeReplay()
+	end
+end
+
+return { init = init, replay = replay }

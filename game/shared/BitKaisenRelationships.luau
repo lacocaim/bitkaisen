@@ -466,6 +466,15 @@ local function reconcileRelationshipTimeline(stats, relationship)
 		return
 	end
 
+	-- Dead relationships are frozen at their DeathAge (see markRelationshipMurdered
+	-- in BK_RelationshipService.luau) -- recalculating their Age from the current
+	-- player age here would make a stored corpse (e.g. a Brain Transplant host)
+	-- keep "aging" every time the relationship list is touched, even though it's
+	-- no longer alive to age.
+	if relationship.Alive == false then
+		return
+	end
+
 	local playerAge = math.max(0, tonumber(stats.Age) or 0)
 	local role = tostring(relationship.Role or "")
 	local yearsKnown = math.max(0, tonumber(relationship.YearsKnown) or 0)

@@ -1114,19 +1114,6 @@ BitKaisenActivities.Database = {
 		LockedText = "You need an established dojo and students.",
 		HideWhenLocked = true
 	},
-	{
-		Id = "physical_conditioning",
-		Title = "Physical Conditioning",
-		Description = "Train your body so missions do not break you as easily.",
-		MinAge = 10,
-		MaxAge = 75,
-		RequiresTechnique = false,
-		RequiresSorcerer = false,
-		RequiresJujutsuHigh = false,
-		ButtonColor = Color3.fromRGB(95, 95, 120),
-		LockedText = "You are not at the right age for serious conditioning.",
-		HideWhenLocked = true
-	},
 
 	{
 		Id = "barrier_drills",

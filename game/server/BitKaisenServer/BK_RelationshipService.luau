@@ -436,6 +436,18 @@ local function applyRelationshipMilestones(player, stats, relationship)
 			"Mission Partner",
 			"They can now stand beside you during dangerous work."
 		)
+	elseif role == "Notable Sorcerer" and (relationship.Bond or 0) >= 60 and (relationship.Trust or 0) >= 45 then
+		relationship.Role = "Friend"
+		relationship.Status = "Friend"
+		message = appendLine(message, relationship.Name .. " warmed up to you despite their reputation. They are now your friend.")
+
+		fireMajorPopup(
+			player,
+			"FRIENDSHIP FORMED",
+			relationship.Name .. " started trusting you outside of their public standing.",
+			relationship.Name,
+			"They are now listed as a friend."
+		)
 	end
 
 	return message
@@ -589,7 +601,29 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 		})
 
 		local preservedYear = (tonumber(stats.BirthYear) or 0) + (tonumber(stats.Age) or 0)
-		print("[DEBUG][BrainTransplant] Year before=" .. tostring(preservedYear) .. " hostAge=" .. tostring(hostAge) .. " newBirthYear=" .. tostring(preservedYear - hostAge))
+		local oldPlayerAge = tonumber(stats.Age) or 0
+		local ageDelta = hostAge - oldPlayerAge
+
+		-- Brain Transplant resets the player's own Age to the host body's age,
+		-- but that isn't real elapsed time. reconcileRelationshipTimeline derives
+		-- every other living relationship's Age from (MetAtAge/AgeAtMet + current
+		-- player Age), so without this correction the jump in the player's Age
+		-- would make partners/family instantly appear older or younger too.
+		-- Shifting their met-at reference points by the same delta keeps their
+		-- derived Age continuous through the transplant.
+		if ageDelta ~= 0 then
+			for _, other in ipairs(stats.Relationships or {}) do
+				if other ~= relationship then
+					if typeof(other.MetAtAge) == "number" then
+						other.MetAtAge += ageDelta
+					end
+					if typeof(other.AgeAtMet) == "number" then
+						other.AgeAtMet += ageDelta
+					end
+				end
+			end
+		end
+
 		stats.Name = hostName
 		stats.FullName = hostName
 		stats.FirstName = getFirstNameFromFullName(hostName)

@@ -380,6 +380,7 @@ function BK_WorldHistoryService.GetAffiliationNotables(stats)
 			Romance = tonumber(npc.Romance) or 0,
 			Personality = npc.Personality,
 			PublicNote = npc.PublicNote,
+			TraitSummary = npc.Trait,
 		})
 	end
 	return list

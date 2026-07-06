@@ -258,6 +258,25 @@ local function applyTechniqueMirrors(stats, technique)
 	end
 end
 
+-- Same CE ceilings CheckPromotion (BitKaisenStats.luau) uses per grade to gate
+-- promotion, reused here as a sanity cap on inherited CE. train_child (see
+-- BK_RelationshipService.luau) already limits training to 3 uses/age, but a
+-- child can be trained across many ages before a takeover -- without this cap
+-- that legitimately-earned CE could still dwarf what a starting character of
+-- the same grade should have.
+local CHILD_CE_CAP_BY_GRADE = {
+	["Non-Sorcerer"] = 100,
+	["Grade 4"] = 450,
+	["Semi-Grade 3"] = 450,
+	["Grade 3"] = 650,
+	["Semi-Grade 2"] = 800,
+	["Grade 2"] = 1000,
+	["Semi-Grade 1"] = 1200,
+	["Grade 1"] = 1000,
+	["Special Grade"] = 1500,
+	["Special Grade 1"] = 1500,
+}
+
 local function applyChildProfileToStats(newStats, parentStats, chosenChild)
 	if not newStats or not chosenChild then
 		return
@@ -265,7 +284,8 @@ local function applyChildProfileToStats(newStats, parentStats, chosenChild)
 
 	local childTechnique = getBestKnownTechnique(chosenChild)
 	local childMastery = math.clamp(tonumber(chosenChild.TechniqueMastery) or 0, 0, 100)
-	local childCE = math.max(0, tonumber(chosenChild.CursedEnergy) or 0)
+	local childCECap = CHILD_CE_CAP_BY_GRADE[tostring(chosenChild.Grade or "Non-Sorcerer")] or 450
+	local childCE = math.min(childCECap, math.max(0, tonumber(chosenChild.CursedEnergy) or 0))
 
 	newStats.FirstName = splitFirstName(chosenChild.Name)
 	newStats.Gender = tostring(chosenChild.Gender or newStats.Gender or "Unknown")
@@ -279,7 +299,7 @@ local function applyChildProfileToStats(newStats, parentStats, chosenChild)
 		newStats.MonthsIntoAge = math.clamp(tonumber(chosenChild.MonthsIntoAge) or 0, 0, 11)
 	end
 
-	newStats.CEBaseline = math.max(0, tonumber(chosenChild.CEBaseline) or childCE)
+	newStats.CEBaseline = math.min(childCECap, math.max(0, tonumber(chosenChild.CEBaseline) or childCE))
 	newStats.CursedEnergy = math.max(childCE, newStats.CEBaseline)
 	newStats.TechniqueMastery = childMastery
 	newStats.Grade = tostring(chosenChild.Grade or newStats.Grade or "Non-Sorcerer")

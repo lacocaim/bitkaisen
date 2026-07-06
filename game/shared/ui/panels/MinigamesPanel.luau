@@ -703,10 +703,25 @@ local function openCursedFingerHunt(payload)
 		until (fingerPos.X ~= playerPos.X or fingerPos.Y ~= playerPos.Y) and (fingerPos.X ~= cursePos.X or fingerPos.Y ~= cursePos.Y)
 	end
 	local function moveCurse()
-		if math.abs(cursePos.X - playerPos.X) >= math.abs(cursePos.Y - playerPos.Y) then
-			cursePos.X += cursePos.X < playerPos.X and 1 or (cursePos.X > playerPos.X and -1 or 0)
-		else
-			cursePos.Y += cursePos.Y < playerPos.Y and 1 or (cursePos.Y > playerPos.Y and -1 or 0)
+		local function tryAxis(useX)
+			local nx, ny = cursePos.X, cursePos.Y
+			if useX then
+				nx += cursePos.X < playerPos.X and 1 or (cursePos.X > playerPos.X and -1 or 0)
+			else
+				ny += cursePos.Y < playerPos.Y and 1 or (cursePos.Y > playerPos.Y and -1 or 0)
+			end
+			if nx == fingerPos.X and ny == fingerPos.Y then
+				return false
+			end
+			cursePos.X, cursePos.Y = nx, ny
+			return true
+		end
+
+		-- Never let the curse land on the finger's cell -- try the preferred
+		-- axis first, then fall back to the other axis instead of overlapping.
+		local preferX = math.abs(cursePos.X - playerPos.X) >= math.abs(cursePos.Y - playerPos.Y)
+		if not tryAxis(preferX) then
+			tryAxis(not preferX)
 		end
 	end
 	local function redraw()

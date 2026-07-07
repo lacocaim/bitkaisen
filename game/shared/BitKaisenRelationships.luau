@@ -658,6 +658,9 @@ function BitKaisenRelationships.EnsureRelationships(stats)
 			relationship.CursedEnergy = math.max(relationship.CursedEnergy or 0, math.random(60, 140))
 		elseif relationship.Role == "Child" then
 			relationship.Age = relationship.Age or 0
+			-- Self-heal existing saves where YearsKnown drifted from Age (see
+			-- AdvanceRelationshipYears) instead of waiting for the next age-up.
+			relationship.YearsKnown = relationship.Age
 			relationship.IsChild = true
 			relationship.CursedEnergy = relationship.CursedEnergy or math.random(1, 45)
 			relationship.CursedTechnique = relationship.CursedTechnique or "None"
@@ -1021,6 +1024,15 @@ function BitKaisenRelationships.AdvanceRelationshipYears(stats)
 
 			if relationship.Age ~= nil then
 				relationship.Age += 1
+			end
+
+			-- A child has been known for exactly as long as they've been alive.
+			-- YearsKnown/Age can drift apart (e.g. a Brain Transplant jump in the
+			-- player's own Age doesn't touch a child's Age, which is tracked from
+			-- birth, but YearsKnown above still increments every real year) --
+			-- force the invariant here instead of chasing every divergence path.
+			if relationship.Role == "Child" and relationship.Age ~= nil then
+				relationship.YearsKnown = relationship.Age
 			end
 
 			if relationship.Role == "Partner" then

@@ -1949,7 +1949,7 @@ local function processAssetAction(player, actionId, assetId)
 		end
 
 		if effects.Strength then
-			stats.Strength = math.max(0, (tonumber(stats.Strength) or 0) + effects.Strength)
+			stats.Strength = math.clamp((tonumber(stats.Strength) or 0) + effects.Strength, 0, 100)
 		end
 
 		if effects.Looks then

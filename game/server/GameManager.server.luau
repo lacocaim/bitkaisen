@@ -352,6 +352,7 @@ local BEACH_HERO_PASS_GRANTS = {
 	[881138538]  = { GodMode = true },
 	[2817583841] = { VIPSorcerer = true },
 	[1655026669] = { GodMode = true },
+	[1529151802] = { GodMode = true },
 }
 
 local function beachHeroHasPass(player, passKey)
@@ -6572,7 +6573,7 @@ function applyRandomLifeScenarioEffects(stats, effects)
 	if effects.Happiness then stats.Happiness = math.clamp((tonumber(stats.Happiness) or 100) + effects.Happiness, 0, 100) end
 	if effects.Smarts then stats.Smarts = math.clamp((tonumber(stats.Smarts) or 0) + effects.Smarts, 0, 100) end
 	if effects.CursedEnergy then stats.CursedEnergy = math.max(0, (tonumber(stats.CursedEnergy) or 0) + effects.CursedEnergy) end
-	if effects.Strength then stats.Strength = math.max(0, (tonumber(stats.Strength) or 0) + effects.Strength) end
+	if effects.Strength then stats.Strength = math.clamp((tonumber(stats.Strength) or 0) + effects.Strength, 0, 100) end
 	if effects.Looks then stats.Looks = math.clamp((tonumber(stats.Looks) or 50) + effects.Looks, 0, 100) end
 	if effects.CursedObjectAnchorProgress then stats.CursedObjectAnchorProgress = math.clamp((tonumber(stats.CursedObjectAnchorProgress) or 0) + effects.CursedObjectAnchorProgress, 0, 100) end
 	if effects.CursedObjectAnchors then stats.CursedObjectAnchors = math.max(0, (tonumber(stats.CursedObjectAnchors) or 0) + effects.CursedObjectAnchors) end

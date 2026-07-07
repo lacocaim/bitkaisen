@@ -13,7 +13,197 @@ local scroll: ScrollingFrame
 
 local sections = {
 	{
-		header = "Hotfix — Gift System",
+		header = "Update 21 - New Player Guide System",
+		body = "• A full interactive tutorial for new sorcerers, on PC and Mobile: walks you through every screen and mechanic step by step.\n• A persistent Guide that always points you to your next best move: activities, rivals, missions, relationships, domain, or aging up.\n• New Help & Guide panel: replay the tutorial or turn the Guide on/off anytime from one place.\n• Redesigned main UI on PC to match Mobile's dossier style: classified file header, stat bars, and system log.",
+		color = theme.Gold,
+	},
+	{
+		header = "Update 21 - Bug Fixes",
+		body = "• Starting a relationship no longer instantly ages your partner by 10 years.\n• Finger Hunt no longer breaks permanently after dying to it once.\n• Removed stray 'ui.' text showing up on some buttons.\n• Fixed gaining Technique Mastery with no technique to speak of.\n• Children can no longer be trained endlessly without aging up, and their Cursed Energy no longer carries over unbalanced when you take over their life.\n• Brain Transplant no longer incorrectly changes the age of other people in your life.\n• Fixed the curse overlapping a finger during Finger Hunt, making them impossible to tell apart.\n• Notable Sorcerers can now become friends with a great relationship, like everyone else.\n• Removed a duplicate Physical Conditioning training option.\n• Notable Sorcerers' traits and info now display correctly.",
+		color = theme.Green,
+	},
+	{
+		header = "Update 20 - Bug Fixes",
+		body = "• Not all traits were showing up on the mobile UI, fixed and now display correctly.\n• Traits with long text on PC were getting cut off, now show in full.\n• Vows now appear on PC and Xbox, not just mobile, added scroll support.\n• Cemetery now correctly registers your past life technique.\n• Black Flash timing window now appears on mobile when triggered in combat.\n• Text in combat logs no longer cuts off mid sentence.\n• Notable Sorcerer romance now correctly loads personality and gender.\n• Relations panel now shows all traits correctly.",
+		color = theme.Green,
+	},
+	{
+		header = "Update 20 - Multi-Language System",
+		body = "• Added Phase 1 support for Spanish and Portuguese in-game.",
+		color = theme.Blue,
+	},
+	{
+		header = "Update 20 - Black Market",
+		body = "• Buy and sell cursed tools and illegal items through the underground market.",
+		color = theme.Gold,
+	},
+	{
+		header = "Update 20 - Cursed Organization and Cult",
+		body = "• Create your own organization of curse users and build your influence.\n• Declare war between cults and fight for dominance.",
+		color = theme.Purple,
+	},
+	{
+		header = "Update 20 - New Codes",
+		body = "Redeem in Settings > Codes:\n\n• OPCODE: +$15,000, +80 CE, +10 Mastery, +5 Rep\n• BLACKMARKET: +$25,000, +5 Strength, +5 Smarts\n• HIDDENVEIL: +60 CE, +8 Mastery, +10 Fear",
+		color = theme.Blue,
+	},
+	{
+		header = "Update 20 - Beach Hero Gamepass Grants",
+		body = "• Remaining Beach Hero players now automatically receive their earned gamepass on login.",
+		color = theme.Green,
+	},
+	{
+		header = "Summer Update Pt.3 - Bug Fixes",
+		body = "• Black Flash popup no longer blocks the dodge button during combat.\n• Relations (siblings and others) now age correctly alongside the player.\n• Settings menu no longer accidentally triggers buttons behind it.\n• Weeklies now save correctly across servers.\n• 'Steady Work' weekly no longer appears as incomplete after rejoining.\n• Achievement unlock and claim states are now in sync.\n• Xbox cursor now shows the native cursor correctly, dodge restored.",
+		color = theme.Green,
+	},
+	{
+		header = "Summer Update Pt.3 - Black Flash Improvements",
+		body = "• Failing a Black Flash now penalizes you: expect CE drain and the enemy gaining an opening on your next defense.",
+		color = theme.Red,
+	},
+	{
+		header = "Summer Update Pt.3 - CT Preserved When Possessed by Sukuna",
+		body = "• Manga canon: consuming all 20 fingers no longer replaces your Cursed Technique with Shrine. Your technique stays yours.",
+		color = theme.Purple,
+	},
+	{
+		header = "Summer Update Pt.3 - Gender of Notable Sorcerers",
+		body = "• Notable Sorcerer cards now display gender alongside age and grade.",
+		color = theme.Gold,
+	},
+	{
+		header = "Summer Update Pt.3 - Cause of Death",
+		body = "• The death screen now shows the specific reason you died.",
+		color = theme.Gold,
+	},
+	{
+		header = "Summer Update Pt.3 - Mobile UI Redesign",
+		body = "• The main mobile interface has been completely redesigned with a classified file aesthetic.",
+		color = theme.Gold,
+	},
+	{
+		header = "Summer Update Pt.3 - Background Music",
+		body = "• BitKaisen now has background music.",
+		color = theme.Blue,
+	},
+	{
+		header = "Summer Update Pt.2 - Bug Fixes",
+		body = "• Life log text on mobile no longer gets cut off.\n• Brain transplant no longer causes time to roll back.\n• Weekly mission now correctly marks as completed after reconnecting.\n• Fixed visual glitch in reward thumbnails.\n• Mobile UI locked to portrait only with spacing and visibility fixes.\n• World History tabs no longer mix content when tapped simultaneously.\n• Technique Mastery is now accessible from the mobile navigation panel.",
+		color = theme.Green,
+	},
+	{
+		header = "Summer Update Pt.2 - Black Flash in Combat",
+		body = "• New skill check during combat: land a Black Flash with the right timing and your own Mastery level.",
+		color = theme.Red,
+	},
+	{
+		header = "Summer Update Pt.2 - Wanted and Bounty System",
+		body = "• Reach high threat levels and bounty hunters will start tracking you down based on your danger level.",
+		color = theme.Red,
+	},
+	{
+		header = "Summer Update Pt.2 - Hereditary Properties",
+		body = "• Dojo, clan house, and cursed tools can now be passed down as assets through your lineage.",
+		color = theme.Gold,
+	},
+	{
+		header = "Summer Update Pt.2 - Romance with Notable Sorcerers",
+		body = "• Select NPCs with lore are now romanceable, each with their own personality and story.",
+		color = theme.Purple,
+	},
+	{
+		header = "Summer Update Pt.2 - Domain Effects by CT",
+		body = "• Your Cursed Technique now determines unique effects inside your Domain Expansion.",
+		color = theme.Gold,
+	},
+	{
+		header = "Summer Update Pt.2 - Siblings at Birth",
+		body = "• 40% chance to be born with 1 or 2 siblings, each with their own name, age, personality, and background.",
+		color = theme.Purple,
+	},
+	{
+		header = "Summer Update Pt.2 - CE Addiction System",
+		body = "• CE Boosts now build a hidden addiction. At high levels expect withdrawal: losing Health and Happiness each year. It fades if you stop.",
+		color = theme.Red,
+	},
+	{
+		header = "Summer Update Pt.2 - Beach Hero Gamepass Grants",
+		body = "• Players selected during the Beach Hero event now receive their earned gamepass automatically on login: God Mode, VIP Sorcerer, Training Prodigy, or Go Rogue.",
+		color = theme.Green,
+	},
+	{
+		header = "Summer Update Pt.2 - New Codes",
+		body = "Redeem in Settings > Codes:\n\n• SUMMERPT2: +$20,000, +100 CE, +10 Mastery, +10 Rep\n• VEILOFCURSES: +$10,000, +60 CE, +8 Strength, Full Health",
+		color = theme.Blue,
+	},
+	{
+		header = "Summer Update - Bug Fixes",
+		body = "• Auto-enroll into JJH at 16 no longer cuts the Curse User route.\n• Log and actions not scrollable after age up, fixed on mobile and desktop.\n• White cursor on Xbox making combat unplayable, fixed.\n• Jujutsu High existing in the Heian Era (year 810), fixed.",
+		color = theme.Green,
+	},
+	{
+		header = "Summer Update - Cemetery of Lives",
+		body = "• New Cemetery panel: see every past life, cause of death, and legacy summary.",
+		color = theme.Gold,
+	},
+	{
+		header = "Summer Update - Death Ribbons and Life Titles",
+		body = "• Earn a title when you die based on how you lived.\n• Examples: Heroic Sorcerer, Curse User, Wanderer, Fallen, and more.",
+		color = theme.Purple,
+	},
+	{
+		header = "Summer Update - Special Talents at Birth",
+		body = "• Rare birth talents that go beyond your Cursed Technique.\n• Affects training speed, stat growth, social ability, and more.",
+		color = theme.Gold,
+	},
+	{
+		header = "Summer Update - Hidden Karma System",
+		body = "• Every life builds a hidden Karma score that silently shapes your world.\n• You won't see the number, but your choices matter.",
+		color = theme.Purple,
+	},
+	{
+		header = "Summer Update - Fame and Fear Expanded",
+		body = "• New ways to raise Fame and Fear.\n• Rivals, NPCs, and affiliations now react to your reputation.",
+		color = theme.Gold,
+	},
+	{
+		header = "Summer Update - Weekly Challenges",
+		body = "• New WEEKLY nav tab, 6 challenges rotating every Monday.\n• Complete the condition, get the reward, track it in the panel.",
+		color = theme.Blue,
+	},
+	{
+		header = "Summer Update - Time Skip Products",
+		body = "+5, +10, +25 Years now available as developer products in the Shop.\n\n• +5 Years: R$ 75\n• +10 Years: R$ 149\n• +25 Years: R$ 299",
+		color = theme.Blue,
+	},
+	{
+		header = "Summer Update - New Hair Colors",
+		body = "• Green, Blue, and Orange now available at character creation.",
+		color = theme.Gold,
+	},
+	{
+		header = "Summer Update - New Codes",
+		body = "Redeem in Settings > Codes:\n\n• SUMMERUPDATE: +$25k, +120 CE, +12 Mastery, +12 Rep, +12 Happiness\n• CURSESEASON: +$15k, +80 CE, +10 Strength, +10 Rep\n• DOMAINOPENED: +200 CE, +15 Mastery, Full Health, Full Happiness\n• SHADOWTHREAD: +$60k, +200 CE, +15 Mastery, +15 Rep",
+		color = theme.Blue,
+	},
+	{
+		header = "Update 19 - Sound Effects",
+		body = "• Navigation buttons now have sound on press.\n• Sound when aging up (+AGE).\n• Death sound, notifications, positive and negative events.\n• All sounds respect your audio settings in Settings.",
+		color = theme.Blue,
+	},
+	{
+		header = "Update 19 - Bug Fixes",
+		body = "• Fixed bug where recruiting candidates at the Dojo wasn't working.\n• Fixed bug where Brain Transplant changed the character's year incorrectly.\n• Fixed invisible scroll bar on the profile panel.",
+		color = theme.Green,
+	},
+	{
+		header = "Update 19 - UI",
+		body = "• Black background behind the UI on PC and mobile.\n• Navigation buttons redesigned with unique colors per category.\n• Mentor panel updated to match the standard visual style.\n• Main interface looks more balanced and polished on PC.",
+		color = theme.Gold,
+	},
+	{
+		header = "Hotfix - Gift System",
 		body = "• Gifts now work cross-server — enter any Roblox username to send a gift.\n• Recipient no longer needs to be in your server.\n• If the recipient is offline, the gift is saved and delivered on their next login.\n• Server validates the username before opening the Robux prompt.\n• Improved retry handling for edge cases during purchase.",
 		color = theme.Green,
 	},
@@ -211,7 +401,7 @@ local function renderSections()
 	local subtitleCard = mc.mobileCard({ parent = scroll, order = 0, accentColor = theme.Gold })
 	mc.mobileLabel({
 		parent = subtitleCard,
-		text = "Shop overhaul, new gamepasses, VIP expansion, gift system fix, and new codes",
+		text = "UPDATE 21: New Player Guide system and a big round of bug fixes",
 		size = 13,
 		color = theme.SubText,
 		order = 1,

@@ -104,12 +104,12 @@ padding.PaddingLeft = UDim.new(0, 16)
 padding.PaddingRight = UDim.new(0, 16)
 padding.Parent = panel
 
-local title = makeText(panel, "Title", "UPDATE 18", 22, true)
+local title = makeText(panel, "Title", "UPDATE 21", 22, true)
 title.Size = UDim2.new(1, -48, 0, 34)
 title.Position = UDim2.new(0, 0, 0, 0)
 title.TextColor3 = Color3.fromRGB(255, 220, 139)
 
-local subtitle = makeText(panel, "Subtitle", "Shop overhaul, new gamepasses, VIP expansion, gift system fix, and new codes", 14, false)
+local subtitle = makeText(panel, "Subtitle", "New Player Guide system and a big round of bug fixes", 14, false)
 subtitle.Size = UDim2.new(1, -48, 0, 22)
 subtitle.Position = UDim2.new(0, 0, 0, 34)
 subtitle.TextColor3 = Color3.fromRGB(198, 186, 164)
@@ -188,7 +188,83 @@ local function addSection(headerText, bodyText, headerColor)
 	body.TextColor3 = Color3.fromRGB(232, 223, 205)
 end
 
-addSection("Hotfix — Gift System", "• Gifts now work cross-server — enter any Roblox username to send a gift.\n• Recipient no longer needs to be in your server.\n• If the recipient is offline, the gift is saved and delivered on their next login.\n• Server validates the username before opening the Robux prompt.\n• Improved retry handling for edge cases during purchase.\n", Color3.fromRGB(115, 220, 150))
+addSection("Update 21 - New Player Guide System", "• A full <b>interactive tutorial</b> for new sorcerers, on PC and Mobile: walks you through every screen and mechanic step by step.\n• A <b>persistent Guide</b> that always points you to your next best move: activities, rivals, missions, relationships, domain, or aging up.\n• New <b>Help & Guide</b> panel: replay the tutorial or turn the Guide on/off anytime from one place.\n• Redesigned main UI on PC to match Mobile's dossier style: classified file header, stat bars, and system log.\n", Color3.fromRGB(255, 220, 139))
+
+addSection("Update 21 - Bug Fixes", "• Starting a relationship no longer instantly ages your partner by 10 years.\n• Finger Hunt no longer breaks permanently after dying to it once.\n• Removed stray 'ui.' text showing up on some buttons.\n• Fixed gaining Technique Mastery with no technique to speak of.\n• Children can no longer be trained endlessly without aging up, and their Cursed Energy no longer carries over unbalanced when you take over their life.\n• Brain Transplant no longer incorrectly changes the age of other people in your life.\n• Fixed the curse overlapping a finger during Finger Hunt, making them impossible to tell apart.\n• Notable Sorcerers can now become friends with a great relationship, like everyone else.\n• Removed a duplicate Physical Conditioning training option.\n• Notable Sorcerers' traits and info now display correctly.\n", Color3.fromRGB(115, 220, 150))
+
+addSection("Update 20 - Bug Fixes", "• Not all traits were showing up on the mobile UI, fixed and now display correctly.\n• Traits with long text on PC were getting cut off, now show in full.\n• Vows now appear on PC and Xbox, not just mobile, added scroll support.\n• Cemetery now correctly registers your past life technique.\n• Black Flash timing window now appears on mobile when triggered in combat.\n• Text in combat logs no longer cuts off mid sentence.\n• Notable Sorcerer romance now correctly loads personality and gender.\n• Relations panel now shows all traits correctly.\n", Color3.fromRGB(115, 220, 150))
+
+addSection("Update 20 - Multi-Language System", "• Added Phase 1 support for Spanish and Portuguese in-game.\n", Color3.fromRGB(120, 190, 255))
+
+addSection("Update 20 - Black Market", "• Buy and sell cursed tools and illegal items through the underground market.\n", Color3.fromRGB(255, 220, 139))
+
+addSection("Update 20 - Cursed Organization and Cult", "• Create your own organization of curse users and build your influence.\n• Declare war between cults and fight for dominance.\n", Color3.fromRGB(179, 136, 255))
+
+addSection("Update 20 - New Codes", "Redeem in Settings > Codes:\n\n• OPCODE: +$15,000, +80 CE, +10 Mastery, +5 Rep\n• BLACKMARKET: +$25,000, +5 Strength, +5 Smarts\n• HIDDENVEIL: +60 CE, +8 Mastery, +10 Fear\n", Color3.fromRGB(120, 190, 255))
+
+addSection("Update 20 - Beach Hero Gamepass Grants", "• Remaining Beach Hero players now automatically receive their earned gamepass on login.\n", Color3.fromRGB(115, 220, 150))
+
+addSection("Summer Update Pt.3 - Bug Fixes", "• Black Flash popup no longer blocks the dodge button during combat.\n• Relations (siblings and others) now age correctly alongside the player.\n• Settings menu no longer accidentally triggers buttons behind it.\n• Weeklies now save correctly across servers.\n• 'Steady Work' weekly no longer appears as incomplete after rejoining.\n• Achievement unlock and claim states are now in sync.\n• Xbox cursor now shows the native cursor correctly, dodge restored.\n", Color3.fromRGB(115, 220, 150))
+
+addSection("Summer Update Pt.3 - Black Flash Improvements", "• Failing a Black Flash now penalizes you: expect CE drain and the enemy gaining an opening on your next defense.\n", Color3.fromRGB(255, 90, 125))
+
+addSection("Summer Update Pt.3 - CT Preserved When Possessed by Sukuna", "• Manga canon: consuming all 20 fingers no longer replaces your Cursed Technique with Shrine. Your technique stays yours.\n", Color3.fromRGB(179, 136, 255))
+
+addSection("Summer Update Pt.3 - Gender of Notable Sorcerers", "• Notable Sorcerer cards now display gender alongside age and grade.\n", Color3.fromRGB(255, 220, 139))
+
+addSection("Summer Update Pt.3 - Cause of Death", "• The death screen now shows the specific reason you died.\n", Color3.fromRGB(255, 220, 139))
+
+addSection("Summer Update Pt.3 - Mobile UI Redesign", "• The main mobile interface has been completely redesigned with a classified file aesthetic.\n", Color3.fromRGB(255, 220, 139))
+
+addSection("Summer Update Pt.3 - Background Music", "• BitKaisen now has background music.\n", Color3.fromRGB(120, 190, 255))
+
+addSection("Summer Update Pt.2 - Bug Fixes", "• Life log text on mobile no longer gets cut off.\n• Brain transplant no longer causes time to roll back.\n• Weekly mission now correctly marks as completed after reconnecting.\n• Fixed visual glitch in reward thumbnails.\n• Mobile UI locked to portrait only with spacing and visibility fixes.\n• World History tabs no longer mix content when tapped simultaneously.\n• Technique Mastery is now accessible from the mobile navigation panel.\n", Color3.fromRGB(115, 220, 150))
+
+addSection("Summer Update Pt.2 - Black Flash in Combat", "• New skill check during combat: land a Black Flash with the right timing and your own Mastery level.\n", Color3.fromRGB(255, 90, 125))
+
+addSection("Summer Update Pt.2 - Wanted and Bounty System", "• Reach high threat levels and bounty hunters will start tracking you down based on your danger level.\n", Color3.fromRGB(255, 90, 125))
+
+addSection("Summer Update Pt.2 - Hereditary Properties", "• Dojo, clan house, and cursed tools can now be passed down as assets through your lineage.\n", Color3.fromRGB(255, 220, 139))
+
+addSection("Summer Update Pt.2 - Romance with Notable Sorcerers", "• Select NPCs with lore are now romanceable, each with their own personality and story.\n", Color3.fromRGB(179, 136, 255))
+
+addSection("Summer Update Pt.2 - Domain Effects by CT", "• Your Cursed Technique now determines unique effects inside your Domain Expansion.\n", Color3.fromRGB(255, 220, 139))
+
+addSection("Summer Update Pt.2 - Siblings at Birth", "• 40% chance to be born with 1 or 2 siblings, each with their own name, age, personality, and background.\n", Color3.fromRGB(179, 136, 255))
+
+addSection("Summer Update Pt.2 - CE Addiction System", "• CE Boosts now build a hidden addiction. At high levels expect withdrawal: losing Health and Happiness each year. It fades if you stop.\n", Color3.fromRGB(255, 90, 125))
+
+addSection("Summer Update Pt.2 - Beach Hero Gamepass Grants", "• Players selected during the Beach Hero event now receive their earned gamepass automatically on login: God Mode, VIP Sorcerer, Training Prodigy, or Go Rogue.\n", Color3.fromRGB(115, 220, 150))
+
+addSection("Summer Update Pt.2 - New Codes", "Redeem in Settings > Codes:\n\n• SUMMERPT2: +$20,000, +100 CE, +10 Mastery, +10 Rep\n• VEILOFCURSES: +$10,000, +60 CE, +8 Strength, Full Health\n", Color3.fromRGB(120, 190, 255))
+
+addSection("Summer Update - Bug Fixes", "• Auto-enroll into JJH at 16 no longer cuts the Curse User route.\n• Log and actions not scrollable after age up, fixed on mobile and desktop.\n• White cursor on Xbox making combat unplayable, fixed.\n• Jujutsu High existing in the Heian Era (year 810), fixed.\n", Color3.fromRGB(115, 220, 150))
+
+addSection("Summer Update - Cemetery of Lives", "• New Cemetery panel: see every past life, cause of death, and legacy summary.\n", Color3.fromRGB(255, 220, 139))
+
+addSection("Summer Update - Death Ribbons and Life Titles", "• Earn a title when you die based on how you lived.\n• Examples: Heroic Sorcerer, Curse User, Wanderer, Fallen, and more.\n", Color3.fromRGB(179, 136, 255))
+
+addSection("Summer Update - Special Talents at Birth", "• Rare birth talents that go beyond your Cursed Technique.\n• Affects training speed, stat growth, social ability, and more.\n", Color3.fromRGB(255, 220, 139))
+
+addSection("Summer Update - Hidden Karma System", "• Every life builds a hidden Karma score that silently shapes your world.\n• You won't see the number, but your choices matter.\n", Color3.fromRGB(179, 136, 255))
+
+addSection("Summer Update - Fame and Fear Expanded", "• New ways to raise Fame and Fear.\n• Rivals, NPCs, and affiliations now react to your reputation.\n", Color3.fromRGB(255, 220, 139))
+
+addSection("Summer Update - Weekly Challenges", "• New WEEKLY nav tab, 6 challenges rotating every Monday.\n• Complete the condition, get the reward, track it in the panel.\n", Color3.fromRGB(120, 190, 255))
+
+addSection("Summer Update - Time Skip Products", "+5, +10, +25 Years now available as developer products in the Shop.\n\n• +5 Years: R$ 75\n• +10 Years: R$ 149\n• +25 Years: R$ 299\n", Color3.fromRGB(120, 190, 255))
+
+addSection("Summer Update - New Hair Colors", "• Green, Blue, and Orange now available at character creation.\n", Color3.fromRGB(255, 220, 139))
+
+addSection("Summer Update - New Codes", "Redeem in Settings > Codes:\n\n• SUMMERUPDATE: +$25k, +120 CE, +12 Mastery, +12 Rep, +12 Happiness\n• CURSESEASON: +$15k, +80 CE, +10 Strength, +10 Rep\n• DOMAINOPENED: +200 CE, +15 Mastery, Full Health, Full Happiness\n• SHADOWTHREAD: +$60k, +200 CE, +15 Mastery, +15 Rep\n", Color3.fromRGB(120, 190, 255))
+
+addSection("Update 19 - Sound Effects", "• Navigation buttons now have sound on press.\n• Sound when aging up (+AGE).\n• Death sound, notifications, positive and negative events.\n• All sounds respect your audio settings in Settings.\n", Color3.fromRGB(120, 190, 255))
+
+addSection("Update 19 - Bug Fixes", "• Fixed bug where recruiting candidates at the Dojo wasn't working.\n• Fixed bug where Brain Transplant changed the character's year incorrectly.\n• Fixed invisible scroll bar on the profile panel.\n", Color3.fromRGB(115, 220, 150))
+
+addSection("Update 19 - UI", "• Black background behind the UI on PC and mobile.\n• Navigation buttons redesigned with unique colors per category.\n• Mentor panel updated to match the standard visual style.\n• Main interface looks more balanced and polished on PC.\n", Color3.fromRGB(255, 220, 139))
+
+addSection("Hotfix - Gift System", "• Gifts now work cross-server: enter any Roblox username to send a gift.\n• Recipient no longer needs to be in your server.\n• If the recipient is offline, the gift is saved and delivered on their next login.\n• Server validates the username before opening the Robux prompt.\n• Improved retry handling for edge cases during purchase.\n", Color3.fromRGB(115, 220, 150))
 
 addSection("Shop Overhaul", "• All shop prices now match the Creator Dashboard — no more mismatches.\n• Every gamepass and developer product has an accurate description.\n• Go Rogue gamepass now listed in the shop.\n• God Mode updated to R$ 800 with expanded features.\n• 2x Progress updated to R$ 400 — doubled CE, Strength, and Mastery gains.\n• 5 new developer products priced: CT Evolution Accelerator, Black Flash Drill Pack, Clan War Mediation, Cursed Tool Salvage Kit, Combat Recovery Kit.\n", Color3.fromRGB(255, 220, 139))
 
@@ -262,7 +338,7 @@ addSection("Update 10 - Stability", "- Added server validation for test purchase
 
 addSection("Update 10 - Combat Foundation", "- Added interactive combat sessions with player and enemy HP/CE\n- Added attack timing minigame with target zone and sweet spot\n- Added defend QTE for 1 to 3 hit enemy combos\n- Added perfect-dodge counter attack window\n- Added test-place combat starter for verification\n- Added Reset Fight developer product hook with test-place bypass\n")
 
-local footer = makeText(panel, "Footer", "Update 18 is live. Rejoin once if anything looks off after the update.", 12, false)
+local footer = makeText(panel, "Footer", "Update 21 is live. Rejoin once if anything looks off after the update.", 12, false)
 footer.AnchorPoint = Vector2.new(0, 1)
 footer.Position = UDim2.new(0, 0, 1, 0)
 footer.Size = UDim2.new(1, 0, 0, 34)

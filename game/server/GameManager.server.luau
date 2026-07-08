@@ -181,15 +181,6 @@ local NEW_PASS_IDS = {
 	PremiumOrigins = 1902804677,
 	HighSociety = 1903626636,
 }
-local LUCKY_SORCERER_PASS_ID = NEW_PASS_IDS.LuckySorcerer
-local TRAINING_PRODIGY_PASS_ID = NEW_PASS_IDS.TrainingProdigy
-local MISSION_INVESTOR_PASS_ID = NEW_PASS_IDS.MissionInvestor
-local LEGACY_BLESSING_PASS_ID = NEW_PASS_IDS.LegacyBlessing
-local DOJO_EXPANSION_PASS_ID = NEW_PASS_IDS.DojoExpansion
-local FOCUSED_TRAINING_PASS_ID = NEW_PASS_IDS.FocusedTraining
-local PREMIUM_ORIGINS_PASS_ID = NEW_PASS_IDS.PremiumOrigins
-local HIGH_SOCIETY_PASS_ID = NEW_PASS_IDS.HighSociety
-
 local STARTER_SORCERER_PACK_PRODUCT_ID = 3595826857
 local FOCUSED_TRAINING_PRODUCT_ID = 3595838153
 local MONEY_5000_PRODUCT_ID = 3596044734
@@ -389,28 +380,28 @@ function ownsLuckyBirthPass(player)
 end
 
 function ownsLuckySorcererPass(player)
-	return checkCachedGamePassOwnership(player, LUCKY_SORCERER_PASS_ID, ownershipCaches.luckySorcerer, "Lucky Sorcerer")
+	return checkCachedGamePassOwnership(player, NEW_PASS_IDS.LuckySorcerer, ownershipCaches.luckySorcerer, "Lucky Sorcerer")
 end
 
 function ownsTrainingProdigyPass(player)
-	return checkCachedGamePassOwnership(player, TRAINING_PRODIGY_PASS_ID, ownershipCaches.trainingProdigy, "Training Prodigy")
+	return checkCachedGamePassOwnership(player, NEW_PASS_IDS.TrainingProdigy, ownershipCaches.trainingProdigy, "Training Prodigy")
 		or beachHeroHasPass(player, "TrainingProdigy")
 end
 
 function ownsMissionInvestorPass(player)
-	return checkCachedGamePassOwnership(player, MISSION_INVESTOR_PASS_ID, ownershipCaches.missionInvestor, "Mission Investor")
+	return checkCachedGamePassOwnership(player, NEW_PASS_IDS.MissionInvestor, ownershipCaches.missionInvestor, "Mission Investor")
 end
 
 function ownsLegacyBlessingPass(player)
-	return checkCachedGamePassOwnership(player, LEGACY_BLESSING_PASS_ID, ownershipCaches.legacyBlessing, "Legacy Blessing")
+	return checkCachedGamePassOwnership(player, NEW_PASS_IDS.LegacyBlessing, ownershipCaches.legacyBlessing, "Legacy Blessing")
 end
 
 function ownsDojoExpansionPass(player)
-	return checkCachedGamePassOwnership(player, DOJO_EXPANSION_PASS_ID, ownershipCaches.dojoExpansion, "Dojo Expansion")
+	return checkCachedGamePassOwnership(player, NEW_PASS_IDS.DojoExpansion, ownershipCaches.dojoExpansion, "Dojo Expansion")
 end
 
 function ownsFocusedTrainingPass(player)
-	return checkCachedGamePassOwnership(player, FOCUSED_TRAINING_PASS_ID, ownershipCaches.focusedTraining, "Focused Training")
+	return checkCachedGamePassOwnership(player, NEW_PASS_IDS.FocusedTraining, ownershipCaches.focusedTraining, "Focused Training")
 end
 
 function ownsAFKPass(player)
@@ -422,11 +413,11 @@ function ownsBindingVowSpecialistPass(player)
 end
 
 function ownsPremiumOriginsPass(player)
-	return checkCachedGamePassOwnership(player, PREMIUM_ORIGINS_PASS_ID, ownershipCaches.premiumOrigins, "Premium Origins")
+	return checkCachedGamePassOwnership(player, NEW_PASS_IDS.PremiumOrigins, ownershipCaches.premiumOrigins, "Premium Origins")
 end
 
 function ownsHighSocietyPass(player)
-	return checkCachedGamePassOwnership(player, HIGH_SOCIETY_PASS_ID, ownershipCaches.highSociety, "High Society")
+	return checkCachedGamePassOwnership(player, NEW_PASS_IDS.HighSociety, ownershipCaches.highSociety, "High Society")
 end
 
 function ownsExtraDojoStudentsPass(player)
@@ -10322,9 +10313,8 @@ getChallenges.OnServerInvoke = function(player)
 	return BK_ChallengeService.GetChallengesPayload(player)
 end
 
-local DEV_TOOLS_TESTING_PLACE_ID = 104206065947170
 local function canUseDevTools(player)
-	return game.PlaceId == DEV_TOOLS_TESTING_PLACE_ID or isDev(player)
+	return TEST_PURCHASE_PLACE_IDS[game.PlaceId] == true or isDev(player)
 end
 
 getDevTools.OnServerInvoke = function(player)

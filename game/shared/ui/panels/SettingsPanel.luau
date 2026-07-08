@@ -65,6 +65,8 @@ local LEGACY_BLESSING_GAMEPASS_ID = 1865683126
 local FOCUSED_TRAINING_GAMEPASS_ID = 1847591321
 local AFK_PASS_GAMEPASS_ID = 1879156343
 local BINDING_VOW_SPECIALIST_GAMEPASS_ID = 1863380690
+local PREMIUM_ORIGINS_GAMEPASS_ID = 1902804677
+local HIGH_SOCIETY_GAMEPASS_ID = 1903626636
 
 local STARTER_SORCERER_PACK_PRODUCT_ID = 3595826857
 local FOCUSED_TRAINING_PRODUCT_ID = 3595838153
@@ -143,13 +145,17 @@ local THEME = {
 	Bad = Color3.fromRGB(235, 75, 95),
 }
 
+-- Summer sale: 20% off all gamepasses. Set to false to end the sale (UI only —
+-- remember to restore gamepass prices on the Creator Dashboard too).
+local SUMMER_SALE_ACTIVE = true
+
 local SHOP_CATEGORIES = {
 	{
 		Name = "Featured",
 		Subtitle = "Best value packs and starter purchases.",
 		Accent = THEME.Gold,
 		Items = {
-			{ Id = "god_mode", Name = "God Mode", Subtitle = "Premium life tuning: trait edits, clan rerolls, start boosts, legacy trait inheritance, and reset life controls.", Kind = "GamePass", RobloxId = GOD_MODE_GAMEPASS_ID, PriceText = "R$ 800", Accent = THEME.Gold },
+			{ Id = "god_mode", Name = "God Mode", Subtitle = "Premium life tuning: trait edits, clan rerolls, start boosts, legacy trait inheritance, and reset life controls.", Kind = "GamePass", RobloxId = GOD_MODE_GAMEPASS_ID, PriceText = "R$ 800", SalePriceText = "R$ 640", Accent = THEME.Gold },
 			{ Id = "elite_sorcerer_pack", Name = "Elite Sorcerer Pack", Subtitle = "Money, CE, recommendations, boosts, and power rerolls bundled together.", Kind = "Product", RobloxId = ELITE_SORCERER_PACK_PRODUCT_ID, PriceText = "R$ 500", Accent = THEME.Gold },
 			{ Id = "starter_pack", Name = "Starter Sorcerer Pack", Subtitle = "Money, CE boost, and early-game help.", Kind = "Product", RobloxId = STARTER_SORCERER_PACK_PRODUCT_ID, PriceText = "R$ 149", Accent = THEME.Gold },
 			{ Id = "gift_go_rogue", Name = "Gift Go Rogue", Subtitle = "Gift permanent Go Rogue access to another Roblox user.", Kind = "Product", RobloxId = GIFT_GO_ROGUE_PRODUCT_ID, GiftPassKey = "GoRogue", PriceText = "R$ 100", Accent = THEME.Purple },
@@ -213,7 +219,7 @@ local SHOP_CATEGORIES = {
 		Items = {
 			{ Id = "recruit_reroll", Name = "Student Reroll", Subtitle = "Reroll your Grand Dojo recruit board.", Kind = "Product", RobloxId = RECRUIT_REROLL_PRODUCT_ID, PriceText = "R$ 49", Accent = THEME.Orange },
 			{ Id = "dojo_funding_pack", Name = "Dojo Funding Pack", Subtitle = "Funds your clan dojo with money, reputation, repairs, capacity support, and recruit help.", Kind = "Product", RobloxId = DOJO_FUNDING_PACK_PRODUCT_ID, PriceText = "R$ 499", Accent = THEME.Gold },
-			{ Id = "extra_dojo_students", Name = "Extra Dojo Students", Subtitle = "Permanently increases Grand Dojo student capacity by +3.", Kind = "GamePass", RobloxId = EXTRA_DOJO_STUDENTS_GAMEPASS_ID, PriceText = "R$ 99", Accent = THEME.Purple },
+			{ Id = "extra_dojo_students", Name = "Extra Dojo Students", Subtitle = "Permanently increases Grand Dojo student capacity by +3.", Kind = "GamePass", RobloxId = EXTRA_DOJO_STUDENTS_GAMEPASS_ID, PriceText = "R$ 99", SalePriceText = "R$ 79", Accent = THEME.Purple },
 		},
 	},
 	{
@@ -221,19 +227,21 @@ local SHOP_CATEGORIES = {
 		Subtitle = "Permanent account-wide upgrades.",
 		Accent = THEME.Purple,
 		Items = {
-			{ Id = "vip_pass", Name = "VIP Sorcerer Pass", Subtitle = "2x daily login rewards, 1.5x money, 1.5x training, 2x technique mastery, exclusive VIP title, and extra save slots.", Kind = "GamePass", RobloxId = VIP_SORCERER_PASS_ID, PriceText = "R$ 400", Accent = THEME.Purple },
-			{ Id = "extra_save_slots", Name = "Extra Save Slots", Subtitle = "Unlocks save slots 2 and 3 without needing the full VIP pass.", Kind = "GamePass", RobloxId = EXTRA_SAVE_SLOTS_GAMEPASS_ID, PriceText = "R$ 150", Accent = THEME.Blue },
-			{ Id = "double_money", Name = "2x Money", Subtitle = "Doubles money from everything. Missions, jobs, tournaments, and all income sources.", Kind = "GamePass", RobloxId = DOUBLE_MONEY_GAMEPASS_ID, PriceText = "R$ 200", Accent = THEME.Green },
-			{ Id = "double_training", Name = "2x Progress", Subtitle = "Doubles all training gains. CE reserves, Strength, and Technique Mastery.", Kind = "GamePass", RobloxId = DOUBLE_TRAINING_GAMEPASS_ID, PriceText = "R$ 400", Accent = THEME.Red },
-			{ Id = "lucky_birth", Name = "Lucky Birth", Subtitle = "Guaranteed rare or higher trait at birth. 25% luck boost to cursed technique and clan rolls on new lives.", Kind = "GamePass", RobloxId = LUCKY_BIRTH_GAMEPASS_ID, PriceText = "R$ 150", Accent = THEME.Gold },
-			{ Id = "lucky_sorcerer", Name = "Lucky Sorcerer", Subtitle = "15% boost to Smarts, Health, Happiness, Looks, and Strength at birth on every new life.", Kind = "GamePass", RobloxId = LUCKY_SORCERER_GAMEPASS_ID, PriceText = "R$ 349", Accent = THEME.Gold },
-			{ Id = "training_prodigy", Name = "Training Prodigy", Subtitle = "1.5x gains on Cursed Energy, Strength, and Technique Mastery during all training. Stacks with other boosts.", Kind = "GamePass", RobloxId = TRAINING_PRODIGY_GAMEPASS_ID, PriceText = "R$ 349", Accent = THEME.Blue },
-			{ Id = "mission_investor", Name = "Mission Investor", Subtitle = "1.5x cash, reputation, and CE gains from all mission completions. Stacks with 2x Money.", Kind = "GamePass", RobloxId = MISSION_INVESTOR_GAMEPASS_ID, PriceText = "R$ 299", Accent = THEME.Green },
-			{ Id = "legacy_blessing", Name = "Legacy Blessing", Subtitle = "Future heirs start stronger through your family line. Successor lives inherit better base stats.", Kind = "GamePass", RobloxId = LEGACY_BLESSING_GAMEPASS_ID, PriceText = "R$ 349", Accent = THEME.Gold },
-			{ Id = "focused_training_pass", Name = "Focused Training", Subtitle = "Permanent +25% Cursed Energy gains from CE training. Stacks with Training Prodigy and 2x Training.", Kind = "GamePass", RobloxId = FOCUSED_TRAINING_GAMEPASS_ID, PriceText = "R$ 199", Accent = THEME.Blue },
-			{ Id = "afk_pass", Name = "AFK Pass", Subtitle = "2x AFK payouts. AFK is free for everyone; this pass doubles your idle earnings.", Kind = "GamePass", RobloxId = AFK_PASS_GAMEPASS_ID, PriceText = "R$ 200", Accent = THEME.Green },
-			{ Id = "binding_vow_specialist", Name = "Binding Vow Specialist", Subtitle = "Hold up to 5 custom vows per life instead of 3. Negative vow effects are reduced by 25%.", Kind = "GamePass", RobloxId = BINDING_VOW_SPECIALIST_GAMEPASS_ID, PriceText = "R$ 349", Accent = THEME.Purple },
-			{ Id = "go_rogue", Name = "Go Rogue", Subtitle = "Opens the Go Rogue option in Jobs. Exclusive rogue missions and dissociation from JJH.", Kind = "GamePass", RobloxId = GO_ROGUE_GAMEPASS_ID, PriceText = "R$ 100", Accent = THEME.Red },
+			{ Id = "vip_pass", Name = "VIP Sorcerer Pass", Subtitle = "2x daily login rewards, 1.5x money, 1.5x training, 2x technique mastery, exclusive VIP title, and extra save slots.", Kind = "GamePass", RobloxId = VIP_SORCERER_PASS_ID, PriceText = "R$ 299", SalePriceText = "R$ 239", Accent = THEME.Purple },
+			{ Id = "extra_save_slots", Name = "Extra Save Slots", Subtitle = "Unlocks save slots 2 and 3 without needing the full VIP pass.", Kind = "GamePass", RobloxId = EXTRA_SAVE_SLOTS_GAMEPASS_ID, PriceText = "R$ 149", SalePriceText = "R$ 119", Accent = THEME.Blue },
+			{ Id = "double_money", Name = "2x Money", Subtitle = "Doubles money from everything. Missions, jobs, tournaments, and all income sources.", Kind = "GamePass", RobloxId = DOUBLE_MONEY_GAMEPASS_ID, PriceText = "R$ 199", SalePriceText = "R$ 159", Accent = THEME.Green },
+			{ Id = "double_training", Name = "2x Progress", Subtitle = "Doubles all training gains. CE reserves, Strength, and Technique Mastery.", Kind = "GamePass", RobloxId = DOUBLE_TRAINING_GAMEPASS_ID, PriceText = "R$ 199", SalePriceText = "R$ 159", Accent = THEME.Red },
+			{ Id = "lucky_birth", Name = "Lucky Birth", Subtitle = "Guaranteed rare or higher trait at birth. 25% luck boost to cursed technique and clan rolls on new lives.", Kind = "GamePass", RobloxId = LUCKY_BIRTH_GAMEPASS_ID, PriceText = "R$ 150", SalePriceText = "R$ 120", Accent = THEME.Gold },
+			{ Id = "lucky_sorcerer", Name = "Lucky Sorcerer", Subtitle = "15% boost to Smarts, Health, Happiness, Looks, and Strength at birth on every new life.", Kind = "GamePass", RobloxId = LUCKY_SORCERER_GAMEPASS_ID, PriceText = "R$ 349", SalePriceText = "R$ 279", Accent = THEME.Gold },
+			{ Id = "training_prodigy", Name = "Training Prodigy", Subtitle = "1.5x gains on Cursed Energy, Strength, and Technique Mastery during all training. Stacks with other boosts.", Kind = "GamePass", RobloxId = TRAINING_PRODIGY_GAMEPASS_ID, PriceText = "R$ 349", SalePriceText = "R$ 279", Accent = THEME.Blue },
+			{ Id = "mission_investor", Name = "Mission Investor", Subtitle = "1.5x cash, reputation, and CE gains from all mission completions. Stacks with 2x Money.", Kind = "GamePass", RobloxId = MISSION_INVESTOR_GAMEPASS_ID, PriceText = "R$ 299", SalePriceText = "R$ 239", Accent = THEME.Green },
+			{ Id = "legacy_blessing", Name = "Legacy Blessing", Subtitle = "Future heirs start stronger through your family line. Successor lives inherit better base stats.", Kind = "GamePass", RobloxId = LEGACY_BLESSING_GAMEPASS_ID, PriceText = "R$ 349", SalePriceText = "R$ 279", Accent = THEME.Gold },
+			{ Id = "focused_training_pass", Name = "Focused Training", Subtitle = "Permanent +25% Cursed Energy gains from CE training. Stacks with Training Prodigy and 2x Training.", Kind = "GamePass", RobloxId = FOCUSED_TRAINING_GAMEPASS_ID, PriceText = "R$ 199", SalePriceText = "R$ 159", Accent = THEME.Blue },
+			{ Id = "afk_pass", Name = "AFK Pass", Subtitle = "2x AFK payouts. AFK is free for everyone; this pass doubles your idle earnings.", Kind = "GamePass", RobloxId = AFK_PASS_GAMEPASS_ID, PriceText = "R$ 199", SalePriceText = "R$ 159", Accent = THEME.Green },
+			{ Id = "binding_vow_specialist", Name = "Binding Vow Specialist", Subtitle = "Hold up to 5 custom vows per life instead of 3. Negative vow effects are reduced by 25%.", Kind = "GamePass", RobloxId = BINDING_VOW_SPECIALIST_GAMEPASS_ID, PriceText = "R$ 349", SalePriceText = "R$ 279", Accent = THEME.Purple },
+			{ Id = "go_rogue", Name = "Go Rogue", Subtitle = "Opens the Go Rogue option in Jobs. Exclusive rogue missions and dissociation from JJH.", Kind = "GamePass", RobloxId = GO_ROGUE_GAMEPASS_ID, PriceText = "R$ 99", SalePriceText = "R$ 79", Accent = THEME.Red },
+			{ Id = "premium_origins", Name = "Premium Origins", Subtitle = "New lives roll from the premium origin pool and heirs inherit a family heirloom cursed tool.", Kind = "GamePass", RobloxId = PREMIUM_ORIGINS_GAMEPASS_ID, PriceText = "R$ 349", SalePriceText = "R$ 279", Accent = THEME.Gold },
+			{ Id = "high_society", Name = "High Society", Subtitle = "4 relationship actions per age, 1.25x relationship gains, better odds of meeting notable sorcerers, and an exclusive profile badge.", Kind = "GamePass", RobloxId = HIGH_SOCIETY_GAMEPASS_ID, PriceText = "R$ 249", SalePriceText = "R$ 199", Accent = THEME.Purple },
 		},
 	},
 }
@@ -1831,6 +1839,8 @@ local function makeProductCard(item)
 	desc.ZIndex = 634
 	desc.Parent = card
 
+	local onSale = SUMMER_SALE_ACTIVE and item.SalePriceText ~= nil
+
 	local price = Instance.new("TextLabel")
 	price.Size = UDim2.new(0, 110, 0, 20)
 	price.Position = UDim2.new(1, -126, 0, 14)
@@ -1839,9 +1849,36 @@ local function makeProductCard(item)
 	price.TextSize = 11
 	price.Font = Enum.Font.GothamBlack
 	price.TextXAlignment = Enum.TextXAlignment.Right
-	price.Text = tostring(item.PriceText or item.Kind or "SHOP")
+	if onSale then
+		price.RichText = true
+		price.TextColor3 = THEME.Orange
+		price.Text = "<font color='#8a8aa0'><s>" .. tostring(item.PriceText) .. "</s></font>  " .. tostring(item.SalePriceText)
+	else
+		price.Text = tostring(item.PriceText or item.Kind or "SHOP")
+	end
 	price.ZIndex = 634
 	price.Parent = card
+
+	if onSale then
+		local saleTag = Instance.new("TextLabel")
+		saleTag.Size = UDim2.new(0, 92, 0, 16)
+		saleTag.Position = UDim2.new(1, -16, 0, 36)
+		saleTag.AnchorPoint = Vector2.new(1, 0)
+		saleTag.BackgroundColor3 = THEME.Orange
+		saleTag.BorderSizePixel = 0
+		saleTag.TextColor3 = Color3.fromRGB(20, 14, 8)
+		saleTag.TextSize = 10
+		saleTag.Font = Enum.Font.GothamBlack
+		saleTag.Text = "SUMMER -20%"
+		saleTag.ZIndex = 634
+		saleTag.Parent = card
+		addCorner(saleTag, 6)
+
+		local tagPos = Instance.new("UIPadding")
+		tagPos.PaddingLeft = UDim.new(0, 2)
+		tagPos.PaddingRight = UDim.new(0, 2)
+		tagPos.Parent = saleTag
+	end
 
 	local buyText = isStarterPackClaimed and "OWNED" or ((item.RobloxId and item.RobloxId > 0) and (item.GiftPassKey and "GIFT" or "BUY") or "SET ID")
 	local buyButton = makeSmallButton(card, buyText, isStarterPackClaimed and THEME.Panel3 or THEME.RedDark, function()
@@ -1857,6 +1894,10 @@ end
 
 buildShopPage = function()
 	setHeader("Shop", "Organized purchases by category.")
+
+	if SUMMER_SALE_ACTIVE then
+		makeNotice("SUMMER SALE — 20% OFF ALL GAMEPASSES! Limited time only.", 56, THEME.Orange)
+	end
 
 	makeNotice("Shop is split into Featured, Rerolls, Boosts & Recovery, Money, Dojo, and Gamepasses. Developer products can be bought more than once.", 82, THEME.Purple)
 

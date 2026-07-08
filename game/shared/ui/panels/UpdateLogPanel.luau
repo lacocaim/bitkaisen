@@ -104,12 +104,12 @@ padding.PaddingLeft = UDim.new(0, 16)
 padding.PaddingRight = UDim.new(0, 16)
 padding.Parent = panel
 
-local title = makeText(panel, "Title", "UPDATE 21", 22, true)
+local title = makeText(panel, "Title", "UPDATE 22", 22, true)
 title.Size = UDim2.new(1, -48, 0, 34)
 title.Position = UDim2.new(0, 0, 0, 0)
 title.TextColor3 = Color3.fromRGB(255, 220, 139)
 
-local subtitle = makeText(panel, "Subtitle", "New Player Guide system and a big round of bug fixes", 14, false)
+local subtitle = makeText(panel, "Subtitle", "Premium Origins, High Society, a real Domain Clash, and a big bug fix pass", 14, false)
 subtitle.Size = UDim2.new(1, -48, 0, 22)
 subtitle.Position = UDim2.new(0, 0, 0, 34)
 subtitle.TextColor3 = Color3.fromRGB(198, 186, 164)
@@ -187,6 +187,12 @@ local function addSection(headerText, bodyText, headerColor)
 	body.AutomaticSize = Enum.AutomaticSize.Y
 	body.TextColor3 = Color3.fromRGB(232, 223, 205)
 end
+
+addSection("Update 22 - New Gamepasses", "• <b>Premium Origins</b>: guarantees you're born into a canon clan or lineage (Gojo, Zenin, Itadori, and more), plus a family heirloom cursed tool at birth.\n• <b>High Society</b>: +25% Bond, Trust, and Romance gains, an extra relationship action every age, an easier path to courting Notable Sorcerers, and more of them appearing in your world.\n", Color3.fromRGB(255, 220, 139))
+
+addSection("Update 22 - Real Domain Clash", "• Domain Clash is now an actual minigame: a tug of war meter you push toward your side before time runs out, instead of a hidden dice roll.\n• Works with mouse, touch, or gamepad (mash A or B).\n", Color3.fromRGB(179, 136, 255))
+
+addSection("Update 22 - Bug Fixes", "• Fixed the Domain Clash never showing its minigame.\n• Fixed a child's age and 'years known' falling out of sync after using Brain Transplant.\n• Strength, Speed, and Durability can no longer creep past their 100 cap.\n• Fixed Grade Up never advancing once a character was branded a Curse User.\n• Fixed the Affiliations list cutting off and not scrolling all the way down on smaller screens.\n• Fixed the persistent Guide staying visible after being turned off.\n• Update log now shows the latest update instead of getting stuck on an old one.\n• Combat quick-time events now show a 'Press A or B' hint for gamepad players.\n", Color3.fromRGB(115, 220, 150))
 
 addSection("Update 21 - New Player Guide System", "• A full <b>interactive tutorial</b> for new sorcerers, on PC and Mobile: walks you through every screen and mechanic step by step.\n• A <b>persistent Guide</b> that always points you to your next best move: activities, rivals, missions, relationships, domain, or aging up.\n• New <b>Help & Guide</b> panel: replay the tutorial or turn the Guide on/off anytime from one place.\n• Redesigned main UI on PC to match Mobile's dossier style: classified file header, stat bars, and system log.\n", Color3.fromRGB(255, 220, 139))
 
@@ -338,7 +344,7 @@ addSection("Update 10 - Stability", "- Added server validation for test purchase
 
 addSection("Update 10 - Combat Foundation", "- Added interactive combat sessions with player and enemy HP/CE\n- Added attack timing minigame with target zone and sweet spot\n- Added defend QTE for 1 to 3 hit enemy combos\n- Added perfect-dodge counter attack window\n- Added test-place combat starter for verification\n- Added Reset Fight developer product hook with test-place bypass\n")
 
-local footer = makeText(panel, "Footer", "Update 21 is live. Rejoin once if anything looks off after the update.", 12, false)
+local footer = makeText(panel, "Footer", "Update 22 is live. Rejoin once if anything looks off after the update.", 12, false)
 footer.AnchorPoint = Vector2.new(0, 1)
 footer.Position = UDim2.new(0, 0, 1, 0)
 footer.Size = UDim2.new(1, 0, 0, 34)

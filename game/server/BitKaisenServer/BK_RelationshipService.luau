@@ -14,6 +14,34 @@ local BK_WorldHistoryService = require(script.Parent:WaitForChild("BK_WorldHisto
 local BK_RelationshipService = {}
 local context = {}
 
+local function ownsHighSocietyPass(player)
+	if context.OwnsHighSocietyPass then
+		return context.OwnsHighSocietyPass(player)
+	end
+	return false
+end
+
+-- High Society: +25% Bond/Trust/Romance gains. processRelationshipAction sets
+-- this once per action (server processes one remote event at a time, so this
+-- is safe without threading it through all 37 AdjustRelationship call sites
+-- below), and this wrapper applies it uniformly instead.
+local activeGainMult = 1
+
+local function AdjustRelationship(relationship, changes)
+	if activeGainMult ~= 1 and typeof(changes) == "table" then
+		local scaled = {}
+		for key, value in pairs(changes) do
+			if (key == "Bond" or key == "Trust" or key == "Romance") and typeof(value) == "number" then
+				scaled[key] = value * activeGainMult
+			else
+				scaled[key] = value
+			end
+		end
+		changes = scaled
+	end
+	return BitKaisenRelationships.AdjustRelationship(relationship, changes)
+end
+
 local RELATIONSHIP_PAYLOAD_CACHE_TTL = 60
 local relationshipPayloadCache = {}
 
@@ -475,6 +503,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 		return
 	end
 
+	activeGainMult = ownsHighSocietyPass(player) and 1.25 or 1
 	ensureExtraStats(stats)
 	data = typeof(data) == "table" and data or {}
 
@@ -560,9 +589,11 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 
 	local freeRelationshipAction = FREE_RELATIONSHIP_ACTIONS[actionId] == true
 	stats.RelationshipActionsThisAge = stats.RelationshipActionsThisAge or 0
+	-- High Society: +1 relationship action per age (4 instead of 3).
+	local relationshipActionLimit = ownsHighSocietyPass(player) and 4 or 3
 
-	if stats.RelationshipActionsThisAge >= 3 and not freeRelationshipAction then
-		fireLifeUpdate(player, stats, "You already used all 3 relationship actions this year. Age up first.")
+	if stats.RelationshipActionsThisAge >= relationshipActionLimit and not freeRelationshipAction then
+		fireLifeUpdate(player, stats, "You already used all " .. tostring(relationshipActionLimit) .. " relationship actions this year. Age up first.")
 		return
 	end
 
@@ -649,7 +680,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 		)
 
 	elseif actionId == "talk" then
-		BitKaisenRelationships.AdjustRelationship(relationship, {
+		AdjustRelationship(relationship, {
 			Bond = math.random(1, 4),
 			Trust = math.random(1, 3)
 		})
@@ -672,7 +703,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 			romanceGain = math.random(2, 5)
 		end
 
-		BitKaisenRelationships.AdjustRelationship(relationship, {
+		AdjustRelationship(relationship, {
 			Bond = math.random(4, 9),
 			Trust = math.random(2, 5),
 			Romance = romanceGain
@@ -723,7 +754,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 			return
 		end
 
-		BitKaisenRelationships.AdjustRelationship(relationship, {
+		AdjustRelationship(relationship, {
 			Romance = math.random(10, 20),
 			Bond = math.random(2, 5),
 			Trust = math.random(0, 3)
@@ -783,7 +814,14 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 			return
 		end
 
-		if (relationship.Bond or 0) < 40 or (relationship.Trust or 0) < 25 or (relationship.Romance or 0) < 30 then
+		-- High Society: notable sorcerers are a little easier to court (lower
+		-- Bond/Trust/Romance floor). Still a real relationship to build, and
+		-- everyone else keeps the normal thresholds.
+		local askOutBondFloor, askOutTrustFloor, askOutRomanceFloor = 40, 25, 30
+		if relationship.Role == "Notable Sorcerer" and ownsHighSocietyPass(player) then
+			askOutBondFloor, askOutTrustFloor, askOutRomanceFloor = 30, 18, 22
+		end
+		if (relationship.Bond or 0) < askOutBondFloor or (relationship.Trust or 0) < askOutTrustFloor or (relationship.Romance or 0) < askOutRomanceFloor then
 			fireLifeUpdate(player, stats, "You thought about asking " .. relationship.Name .. " out, but the relationship was not there yet.")
 			return
 		end
@@ -804,7 +842,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 			relationship.MetAtAge = relationship.MetAtAge or math.max(0, tonumber(stats.Age) or 0)
 			relationship.AgeAtMet = relationship.AgeAtMet or relationship.Age
 
-			BitKaisenRelationships.AdjustRelationship(relationship, {
+			AdjustRelationship(relationship, {
 				Bond = math.random(6, 12),
 				Trust = math.random(4, 8),
 				Romance = math.random(12, 24)
@@ -840,7 +878,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 				"They are now your partner."
 			)
 		else
-			BitKaisenRelationships.AdjustRelationship(relationship, {
+			AdjustRelationship(relationship, {
 				Bond = -math.random(2, 6),
 				Trust = -math.random(1, 4),
 				Romance = -math.random(4, 10)
@@ -856,7 +894,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 			fireLifeUpdate(player, stats, "You are too young to train with someone.")
 			return
 		end
-		BitKaisenRelationships.AdjustRelationship(relationship, {
+		AdjustRelationship(relationship, {
 			Bond = math.random(2, 6),
 			Respect = math.random(3, 8)
 		})
@@ -880,7 +918,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 			adviceBonus += 3
 		end
 
-		BitKaisenRelationships.AdjustRelationship(relationship, {
+		AdjustRelationship(relationship, {
 			Trust = math.random(1, 4),
 			Respect = math.random(1, 4)
 		})
@@ -899,7 +937,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 		logMessage = pickRandom(adviceLines)
 
 	elseif actionId == "check_in" then
-		BitKaisenRelationships.AdjustRelationship(relationship, {
+		AdjustRelationship(relationship, {
 			Bond = math.random(1, 3),
 			Trust = math.random(2, 5),
 			Fear = -math.random(0, 2)
@@ -921,7 +959,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 			fireLifeUpdate(player, stats, relationship.Name .. " was not ready for that kind of conversation yet.")
 			return
 		end
-		BitKaisenRelationships.AdjustRelationship(relationship, {
+		AdjustRelationship(relationship, {
 			Bond = math.random(4, 9),
 			Trust = math.random(5, 11),
 			Respect = math.random(1, 4),
@@ -962,7 +1000,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 			romanceGain = math.random(2, 6)
 		end
 
-		BitKaisenRelationships.AdjustRelationship(relationship, {
+		AdjustRelationship(relationship, {
 			Bond = math.random(4, 9),
 			Trust = math.random(1, 4),
 			Romance = romanceGain
@@ -984,7 +1022,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 			fireLifeUpdate(player, stats, "You are too young to study seriously with someone.")
 			return
 		end
-		BitKaisenRelationships.AdjustRelationship(relationship, {
+		AdjustRelationship(relationship, {
 			Bond = math.random(2, 5),
 			Trust = math.random(2, 5),
 			Respect = math.random(2, 6)
@@ -1021,7 +1059,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 			relationship.CursedEnergy = (relationship.CursedEnergy or 0) + math.random(1, 5)
 		end
 
-		BitKaisenRelationships.AdjustRelationship(relationship, {
+		AdjustRelationship(relationship, {
 			Bond = math.random(1, 5),
 			Respect = math.random(4, 9),
 			Fear = cleanSession and 0 or math.random(1, 3)
@@ -1038,7 +1076,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 		sincereChance = math.clamp(sincereChance, 20, 85)
 
 		if math.random(1, 100) <= sincereChance then
-			BitKaisenRelationships.AdjustRelationship(relationship, {
+			AdjustRelationship(relationship, {
 				Bond = math.random(1, 4),
 				Trust = math.random(4, 9),
 				Respect = math.random(0, 3),
@@ -1047,7 +1085,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 
 			logMessage = "You apologized to " .. relationship.Name .. " without trying to win the conversation. The trust between you recovered a little."
 		else
-			BitKaisenRelationships.AdjustRelationship(relationship, {
+			AdjustRelationship(relationship, {
 				Trust = -math.random(1, 4),
 				Respect = -math.random(0, 2)
 			})
@@ -1060,7 +1098,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 			fireLifeUpdate(player, stats, "That action is only for family relationships.")
 			return
 		end
-		BitKaisenRelationships.AdjustRelationship(relationship, {
+		AdjustRelationship(relationship, {
 			Bond = math.random(5, 11),
 			Trust = math.random(3, 8),
 			Fear = -math.random(0, 3)
@@ -1087,7 +1125,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 			stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + math.random(2, 5), 0, 100)
 		end
 
-		BitKaisenRelationships.AdjustRelationship(relationship, {
+		AdjustRelationship(relationship, {
 			Trust = math.random(2, 5),
 			Respect = math.random(4, 9)
 		})
@@ -1126,7 +1164,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 			stats.Reputation += math.random(3, 9)
 			stats.MissionsCompleted += 1
 
-			BitKaisenRelationships.AdjustRelationship(relationship, {
+			AdjustRelationship(relationship, {
 				Bond = math.random(3, 8),
 				Trust = math.random(3, 8),
 				Respect = math.random(4, 10),
@@ -1139,7 +1177,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 			stats.Reputation = (stats.Reputation or 0 - math.random(0, 3))
 			stats.MissionsFailed += 1
 
-			BitKaisenRelationships.AdjustRelationship(relationship, {
+			AdjustRelationship(relationship, {
 				Bond = math.random(0, 3),
 				Trust = -math.random(1, 5),
 				Respect = math.random(1, 4),
@@ -1174,7 +1212,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 		if math.random(1, 100) <= chance then
 			stats.TeacherRecommendations += 1
 
-			BitKaisenRelationships.AdjustRelationship(relationship, {
+			AdjustRelationship(relationship, {
 				Trust = math.random(1, 3),
 				Respect = math.random(2, 5)
 			})
@@ -1189,7 +1227,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 				"Recommendations help you advance through semi-grades."
 			)
 		else
-			BitKaisenRelationships.AdjustRelationship(relationship, {
+			AdjustRelationship(relationship, {
 				Respect = math.random(1, 3),
 				Trust = -math.random(1, 3)
 			})
@@ -1204,7 +1242,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 			romanceGain = math.random(3, 8)
 		end
 
-		BitKaisenRelationships.AdjustRelationship(relationship, {
+		AdjustRelationship(relationship, {
 			Bond = math.random(2, 5),
 			Trust = math.random(1, 3),
 			Romance = romanceGain
@@ -1225,7 +1263,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 		local wonArgument = math.random(1, 100) <= ((stats.Smarts or 0) + 20)
 
 		if wonArgument then
-			BitKaisenRelationships.AdjustRelationship(relationship, {
+			AdjustRelationship(relationship, {
 				Bond = -math.random(2, 6),
 				Respect = math.random(2, 6),
 				Trust = -math.random(1, 4)
@@ -1239,7 +1277,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 
 			logMessage = pickRandom(winLines)
 		else
-			BitKaisenRelationships.AdjustRelationship(relationship, {
+			AdjustRelationship(relationship, {
 				Bond = -math.random(4, 10),
 				Trust = -math.random(2, 6),
 				Respect = -math.random(1, 4)
@@ -1349,7 +1387,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 		if math.random(1, 100) <= chance then
 			local child = BitKaisenRelationships.AddChild(stats, sanitizeChildName(data.ChildName), relationship.Name)
 
-			BitKaisenRelationships.AdjustRelationship(relationship, {
+			AdjustRelationship(relationship, {
 				Bond = math.random(3, 8),
 				Trust = math.random(2, 6),
 				Romance = math.random(1, 4)
@@ -1489,7 +1527,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 		relationship.DojoPotential = (relationship.DojoPotential and tostring(relationship.DojoPotential) ~= "") and tostring(relationship.DojoPotential) or "Family Heir"
 		relationship.GrowthStyle = (relationship.GrowthStyle and tostring(relationship.GrowthStyle) ~= "") and tostring(relationship.GrowthStyle) or "Inherited Training"
 		relationship.CursedEnergy = math.max(tonumber(relationship.CursedEnergy) or 0, math.random(25, 55))
-		BitKaisenRelationships.AdjustRelationship(relationship, {
+		AdjustRelationship(relationship, {
 			Bond = math.random(3, 7),
 			Trust = math.random(4, 9),
 			Respect = math.random(4, 9),
@@ -1513,13 +1551,13 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 		local result = BitKaisenRelationships.RebalanceCustody(stats, relationship)
 
 		if result and result.Changed then
-			BitKaisenRelationships.AdjustRelationship(relationship, {
+			AdjustRelationship(relationship, {
 				Trust = math.random(2, 5),
 				Respect = math.random(1, 4)
 			})
 			stats.Happiness = math.clamp((stats.Happiness or 100) + 2, 0, 100)
 		else
-			BitKaisenRelationships.AdjustRelationship(relationship, {
+			AdjustRelationship(relationship, {
 				Trust = -math.random(1, 4),
 				Respect = -math.random(0, 3)
 			})
@@ -1539,7 +1577,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 			return
 		end
 
-		BitKaisenRelationships.AdjustRelationship(relationship, {
+		AdjustRelationship(relationship, {
 			Bond = math.random(3, 7),
 			Trust = math.random(2, 5),
 			Respect = math.random(0, 3)
@@ -1575,7 +1613,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 		relationship.ChildTeachUsedThisAge = teachUsed + 1
 		relationship.CursedEnergy = (relationship.CursedEnergy or 0) + math.random(1, 5)
 
-		BitKaisenRelationships.AdjustRelationship(relationship, {
+		AdjustRelationship(relationship, {
 			Bond = math.random(3, 7),
 			Trust = math.random(2, 6),
 			Respect = math.random(1, 4)
@@ -1588,7 +1626,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 			fireLifeUpdate(player, stats, "You can only protect your child with this action.")
 			return
 		end
-		BitKaisenRelationships.AdjustRelationship(relationship, {
+		AdjustRelationship(relationship, {
 			Bond = math.random(4, 8),
 			Trust = math.random(4, 8),
 			Fear = -math.random(1, 4)
@@ -1610,7 +1648,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 		end
 		relationship.CursedEnergy = (relationship.CursedEnergy or 0) + math.random(4, 10)
 
-		BitKaisenRelationships.AdjustRelationship(relationship, {
+		AdjustRelationship(relationship, {
 			Bond = math.random(2, 6),
 			Respect = math.random(3, 8),
 			Fear = math.random(0, 2)
@@ -1663,7 +1701,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 		end
 		stats.ClanMembers = math.max(tonumber(stats.ClanMembers) or 0, currentStudents + 1)
 		stats.ClanReputation = math.clamp((tonumber(stats.ClanReputation) or 0) + 2, 0, 999)
-		BitKaisenRelationships.AdjustRelationship(relationship, {
+		AdjustRelationship(relationship, {
 			Bond = math.random(2, 5),
 			Trust = math.random(2, 5),
 			Respect = math.random(3, 7),
@@ -1727,7 +1765,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 				caught and "Wanted level and fear increased heavily." or "They are now listed as deceased."
 			)
 		else
-			BitKaisenRelationships.AdjustRelationship(relationship, {
+			AdjustRelationship(relationship, {
 				Bond = -math.random(22, 40),
 				Trust = -math.random(35, 60),
 				Respect = -math.random(8, 18),
@@ -1755,7 +1793,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 		winChance = math.clamp(winChance, 20, 85)
 
 		if math.random(1, 100) <= winChance then
-			BitKaisenRelationships.AdjustRelationship(relationship, {
+			AdjustRelationship(relationship, {
 				Respect = math.random(8, 14),
 				Trust = math.random(2, 5),
 				Bond = math.random(1, 4)
@@ -1767,7 +1805,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 
 			logMessage = "You challenged " .. relationship.Name .. " directly and proved you were not someone they could ignore." .. adjustWorldReputation(stats, 1, 1, 2)
 		else
-			BitKaisenRelationships.AdjustRelationship(relationship, {
+			AdjustRelationship(relationship, {
 				Respect = math.random(2, 6),
 				Trust = -math.random(1, 4),
 				Fear = math.random(1, 4)
@@ -1785,7 +1823,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 			return
 		end
 
-		BitKaisenRelationships.AdjustRelationship(relationship, {
+		AdjustRelationship(relationship, {
 			Trust = math.random(4, 8),
 			Respect = math.random(3, 7),
 			Bond = math.random(0, 3),
@@ -1800,7 +1838,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 			return
 		end
 
-		BitKaisenRelationships.AdjustRelationship(relationship, {
+		AdjustRelationship(relationship, {
 			Bond = math.random(3, 7),
 			Trust = math.random(3, 7),
 			Respect = math.random(1, 4),
@@ -1833,7 +1871,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 		logMessage = logMessage .. applyTraitBuffsFromSnapshot(stats, traitBefore, "Relationship", relationship)
 	end
 	if relationshipActionCostsTurn then
-		stats.RelationshipActionsThisAge = math.clamp((tonumber(stats.RelationshipActionsThisAge) or 0) + 1, 0, 3)
+		stats.RelationshipActionsThisAge = math.clamp((tonumber(stats.RelationshipActionsThisAge) or 0) + 1, 0, relationshipActionLimit)
 	end
 	syncFamilyStatus(stats)
 	fireLifeUpdate(player, stats, logMessage)

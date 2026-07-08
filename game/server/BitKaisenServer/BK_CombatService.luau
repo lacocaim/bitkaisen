@@ -167,6 +167,7 @@ local function publicState(session)
 		PendingAttack = session.PendingAttackPublic,
 		PendingDefense = session.PendingDefensePublic,
 		PendingCounter = session.PendingCounterPublic,
+		PendingDomainClash = session.PendingDomainClashPublic,
 		Winner = session.Winner,
 	}
 end
@@ -219,9 +220,11 @@ local function finishCombat(player, session, winner, reason)
 	session.PendingAttack = nil
 	session.PendingDefense = nil
 	session.PendingCounter = nil
+	session.PendingDomainClash = nil
 	session.PendingAttackPublic = nil
 	session.PendingDefensePublic = nil
 	session.PendingCounterPublic = nil
+	session.PendingDomainClashPublic = nil
 
 	local stats = getStats(player)
 	if stats then
@@ -631,9 +634,11 @@ function BK_CombatService.ResetCurrentFight(player, reason)
 	session.PendingAttack = nil
 	session.PendingDefense = nil
 	session.PendingCounter = nil
+	session.PendingDomainClash = nil
 	session.PendingAttackPublic = nil
 	session.PendingDefensePublic = nil
 	session.PendingCounterPublic = nil
+	session.PendingDomainClashPublic = nil
 	local stats = getStats(player)
 	if stats then
 		stats.Alive = true
@@ -648,62 +653,9 @@ function BK_CombatService.ResetCurrentFight(player, reason)
 	return true
 end
 
-local function resolveDomainAction(player, session)
+local function finishDomainUse(player, session, damage, progressReason)
 	local stats = getStats(player)
 	if not stats then return end
-	BitKaisenDomains.Ensure(stats)
-	local domain = BitKaisenDomains.GetCombatPayload(stats)
-	local uses = tonumber(session.DomainUses) or 0
-	if domain.Unlocked ~= true then
-		addLog(session, _ct(session, "log_domain_none", "Your domain has not manifested yet."))
-		sendState(player, session)
-		return
-	end
-	if uses >= (tonumber(session.DomainMaxUses) or 1) then
-		addLog(session, _ct(session, "log_domain_cooldown", "You cannot expand your domain again in this fight."))
-		sendState(player, session)
-		return
-	end
-	local cost = tonumber(domain.Cost) or 100
-	if session.PlayerCE < cost then
-		addLog(session, _cl(session, "log_domain_no_ce", {cost = cost}, "Not enough CE to expand your domain. Need " .. tostring(cost) .. " CE."))
-		sendState(player, session)
-		return
-	end
-
-	session.DomainUses = uses + 1
-	session.PlayerCE = math.max(0, session.PlayerCE - cost)
-	stats.CursedEnergy = math.max(0, math.floor(session.PlayerCE + 0.5))
-	local playerPower = BitKaisenCombat.GetCombatPower(stats) + (tonumber(domain.ClashBonus) or 0) + math.floor((tonumber(domain.Stability) or 0) / 4)
-	local enemyPower = tonumber(session.Enemy.Power) or 1
-	local complete = tostring(domain.Stage) == "Complete"
-	local clash = enemyPower >= playerPower * 0.72 or math.random(1, 100) <= 28
-	local damage = complete and math.floor(session.Enemy.MaxHP * 0.48) or math.floor(session.Enemy.MaxHP * 0.32)
-	local progressReason = "domain_use"
-
-	if clash then
-		local playerRoll = playerPower + math.random(20, 65)
-		local enemyRoll = enemyPower + math.random(18, 62)
-		if playerRoll >= enemyRoll then
-			stats.DomainClashesWon = (tonumber(stats.DomainClashesWon) or 0) + 1
-			damage = math.floor(damage * 1.15)
-			addLog(session, _cl(session, "log_domain_won", {domain = tostring(domain.Name)}, tostring(domain.Name) .. " won the domain clash."))
-			progressReason = "clash"
-		else
-			stats.DomainClashesLost = (tonumber(stats.DomainClashesLost) or 0) + 1
-			local backlash = math.max(8, math.floor(session.Enemy.Power * 0.14))
-			session.PlayerHP = math.clamp(session.PlayerHP - backlash, 0, session.PlayerMaxHP)
-			stats.Health = math.clamp(math.floor(session.PlayerHP + 0.5), 0, 100)
-			addLog(session, _cl(session, "log_domain_lost", {domain = tostring(domain.Name), dmg = backlash}, tostring(domain.Name) .. " lost the domain clash. Backlash hit for " .. tostring(backlash) .. "."))
-			if session.PlayerHP <= 0 then
-				finishCombat(player, session, "enemy", "Your domain collapsed under the clash.")
-				return
-			end
-			damage = math.floor(damage * 0.45)
-		end
-	else
-		addLog(session, _cl(session, "log_domain_expand", {domain = tostring(domain.Name)}, "Domain Expansion: " .. tostring(domain.Name) .. "."))
-	end
 
 	-- CT-specific effect: modify damage before applying
 	local ctEffect = BitKaisenDomains.GetCTCombatEffect(stats)
@@ -713,7 +665,7 @@ local function resolveDomainAction(player, session)
 		end
 		if ctEffect.CritChance and math.random(1, 100) <= ctEffect.CritChance then
 			damage = math.floor(damage * 1.5)
-			addLog(session, _ct(session, "log_domain_crit", "Critical geometry aligned — damage amplified."))
+			addLog(session, _ct(session, "log_domain_crit", "Critical geometry aligned, damage amplified."))
 		end
 	end
 
@@ -756,6 +708,107 @@ local function resolveDomainAction(player, session)
 			beginEnemyCombo(player, session, false)
 		end
 	end)
+end
+
+function resolveDomainClash(player, session, success)
+	local pending = session.PendingDomainClash
+	if not pending then return end
+	session.PendingDomainClash = nil
+	session.PendingDomainClashPublic = nil
+
+	local stats = getStats(player)
+	if not stats then return end
+
+	local damage = pending.Damage
+	local domainName = pending.DomainName
+
+	if success then
+		stats.DomainClashesWon = (tonumber(stats.DomainClashesWon) or 0) + 1
+		damage = math.floor(damage * 1.15)
+		addLog(session, _cl(session, "log_domain_won", {domain = domainName}, tostring(domainName) .. " won the domain clash."))
+		finishDomainUse(player, session, damage, "clash")
+	else
+		stats.DomainClashesLost = (tonumber(stats.DomainClashesLost) or 0) + 1
+		local backlash = math.max(8, math.floor(session.Enemy.Power * 0.14))
+		session.PlayerHP = math.clamp(session.PlayerHP - backlash, 0, session.PlayerMaxHP)
+		stats.Health = math.clamp(math.floor(session.PlayerHP + 0.5), 0, 100)
+		addLog(session, _cl(session, "log_domain_lost", {domain = domainName, dmg = backlash}, tostring(domainName) .. " lost the domain clash. Backlash hit for " .. tostring(backlash) .. "."))
+		if session.PlayerHP <= 0 then
+			finishCombat(player, session, "enemy", "Your domain collapsed under the clash.")
+			return
+		end
+		damage = math.floor(damage * 0.45)
+		finishDomainUse(player, session, damage, "domain_use")
+	end
+end
+
+local function resolveDomainAction(player, session)
+	local stats = getStats(player)
+	if not stats then return end
+	BitKaisenDomains.Ensure(stats)
+	local domain = BitKaisenDomains.GetCombatPayload(stats)
+	local uses = tonumber(session.DomainUses) or 0
+	if domain.Unlocked ~= true then
+		addLog(session, _ct(session, "log_domain_none", "Your domain has not manifested yet."))
+		sendState(player, session)
+		return
+	end
+	if uses >= (tonumber(session.DomainMaxUses) or 1) then
+		addLog(session, _ct(session, "log_domain_cooldown", "You cannot expand your domain again in this fight."))
+		sendState(player, session)
+		return
+	end
+	local cost = tonumber(domain.Cost) or 100
+	if session.PlayerCE < cost then
+		addLog(session, _cl(session, "log_domain_no_ce", {cost = cost}, "Not enough CE to expand your domain. Need " .. tostring(cost) .. " CE."))
+		sendState(player, session)
+		return
+	end
+
+	session.DomainUses = uses + 1
+	session.PlayerCE = math.max(0, session.PlayerCE - cost)
+	stats.CursedEnergy = math.max(0, math.floor(session.PlayerCE + 0.5))
+	local playerPower = BitKaisenCombat.GetCombatPower(stats) + (tonumber(domain.ClashBonus) or 0) + math.floor((tonumber(domain.Stability) or 0) / 4)
+	local enemyPower = tonumber(session.Enemy.Power) or 1
+	local complete = tostring(domain.Stage) == "Complete"
+	local clash = enemyPower >= playerPower * 0.72 or math.random(1, 100) <= 28
+	local damage = complete and math.floor(session.Enemy.MaxHP * 0.48) or math.floor(session.Enemy.MaxHP * 0.32)
+
+	if clash then
+		-- The clash used to resolve on a single dice roll (playerPower+rand
+		-- vs enemyPower+rand). It's now a real minigame (see openDomainClashMinigame
+		-- in CombatPanel.luau) -- the enemy's pull rate below reuses that same
+		-- power ratio so a clash against a much stronger enemy is genuinely
+		-- harder to win, not just a coin flip either way.
+		local powerRatio = enemyPower / math.max(1, playerPower)
+		local pullRate = math.clamp(7 + (powerRatio - 1) * 12, 4, 20)
+		local token = makeToken("domain_clash")
+		session.Phase = "domain_clash"
+		session.PendingDomainClash = {
+			Token = token,
+			StartedAt = os.clock(),
+			ExpiresAt = os.clock() + 4.5,
+			Damage = damage,
+			DomainName = domain.Name,
+		}
+		session.PendingDomainClashPublic = {
+			Token = token,
+			Duration = 4,
+			PullRate = pullRate,
+			DomainName = domain.Name,
+		}
+		addLog(session, _cl(session, "log_domain_clash_start", {domain = tostring(domain.Name)}, tostring(domain.Name) .. " is clashing against " .. tostring(session.Enemy.Name) .. "'s resistance!"))
+		sendState(player, session)
+		task.delay(4.5, function()
+			if sessions[player.UserId] == session and session.PendingDomainClash and session.PendingDomainClash.Token == token then
+				resolveDomainClash(player, session, false)
+			end
+		end)
+		return
+	end
+
+	addLog(session, _cl(session, "log_domain_expand", {domain = tostring(domain.Name)}, "Domain Expansion: " .. tostring(domain.Name) .. "."))
+	finishDomainUse(player, session, damage, "domain_use")
 end
 
 local function handleAction(player, action, payload)
@@ -870,6 +923,8 @@ local function handleMinigame(player, token, resultType, accuracy, extra)
 		resolveEnemyCombo(player, session, accuracy, tonumber(extra and extra.PerfectHits) or 0)
 	elseif resultType == "counter" and session.PendingCounter and session.PendingCounter.Token == token then
 		resolveCounter(player, session, accuracy == true or (tonumber(accuracy) or 0) >= 0.65)
+	elseif resultType == "domain_clash" and session.PendingDomainClash and session.PendingDomainClash.Token == token then
+		resolveDomainClash(player, session, accuracy == true)
 	end
 end
 

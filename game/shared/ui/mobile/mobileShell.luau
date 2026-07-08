@@ -339,7 +339,7 @@ local function MobileProfileHeader()
 			-- Name row: SUBJECT label + name text + stamp circle
 			create("Frame") {
 				Name = "NameRow",
-				Size = UDim2.new(1, 0, 0, 56),
+				Size = UDim2.new(1, 0, 0, 70),
 				BackgroundTransparency = 1,
 
 				-- SUBJECT label
@@ -389,6 +389,31 @@ local function MobileProfileHeader()
 					TextColor3 = Color3.fromRGB(210, 208, 230),
 					TextSize = 9,
 					Font = Enum.Font.GothamBold,
+					TextXAlignment = Enum.TextXAlignment.Left,
+					TextYAlignment = Enum.TextYAlignment.Center,
+				},
+
+				-- Monetization badges (Premium Origins / High Society)
+				create("TextLabel") {
+					Name = "MonetizationBadges",
+					Position = UDim2.new(0, 0, 0, 56),
+					Size = UDim2.new(1, -50, 0, 12),
+					BackgroundTransparency = 1,
+					RichText = true,
+					Text = derive(function()
+						local s = stats()
+						if not s then return "" end
+						local badges = {}
+						if s.HasPremiumOriginsPass then
+							table.insert(badges, '<font color="#ffcf69">' .. BitKaisenLocale.tOrFallback(L, "ui.badge_premium_origins", nil, "LEGENDARY LINEAGE") .. '</font>')
+						end
+						if s.HasHighSocietyPass then
+							table.insert(badges, '<font color="#e0a6ff">' .. BitKaisenLocale.tOrFallback(L, "ui.badge_high_society", nil, "HIGH SOCIETY") .. '</font>')
+						end
+						return table.concat(badges, "   ")
+					end),
+					TextSize = 8,
+					Font = Enum.Font.GothamBlack,
 					TextXAlignment = Enum.TextXAlignment.Left,
 					TextYAlignment = Enum.TextYAlignment.Center,
 				},

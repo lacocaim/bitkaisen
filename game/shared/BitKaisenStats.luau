@@ -815,6 +815,48 @@ function BitKaisenStats.RollOrigin()
 	return weightedPick(BitKaisenStats.Origins)
 end
 
+-- The canon clans/lineages named after known JJK characters (Gojo, Zenin,
+-- Itadori...) sit at the bottom of the normal Chance-weighted pool -- Gojo
+-- Clan alone is a 0.7% roll. Premium Origins (see GameManager.server.luau's
+-- rollBirthOriginForPlayer) restricts the roll to just this list so an owner
+-- is guaranteed one of them, still picked at random and still carrying only
+-- the same stat bonuses/technique odds anyone who rolled it naturally would
+-- get -- no new power, just a guaranteed shot at the flavor everyone wants.
+local PREMIUM_ORIGIN_IDS = {
+	inumaki_clan = true,
+	kamo_clan = true,
+	zenin_clan = true,
+	fushiguro_lineage = true,
+	okkotsu_lineage = true,
+	itadori_lineage = true,
+	hakari_lineage = true,
+	higuruma_lineage = true,
+	fujiwara_lineage = true,
+	sugawara_lineage = true,
+	gojo_clan = true,
+	kashimo_lineage = true,
+	uraume_lineage = true,
+	geto_lineage = true,
+	kenjaku_clan = true,
+	todo_lineage = true,
+	mei_mei_lineage = true,
+	nanami_lineage = true,
+	kusakabe_lineage = true,
+}
+
+function BitKaisenStats.RollPremiumOrigin()
+	local pool = {}
+	for _, origin in ipairs(BitKaisenStats.Origins) do
+		if PREMIUM_ORIGIN_IDS[origin.Id] then
+			table.insert(pool, origin)
+		end
+	end
+	if #pool == 0 then
+		return BitKaisenStats.RollOrigin()
+	end
+	return weightedPick(pool)
+end
+
 function BitKaisenStats.RollClan()
 	return BitKaisenStats.RollOrigin()
 end
@@ -1197,7 +1239,12 @@ function BitKaisenStats.CheckPromotion(stats)
 	local currentGrade = stats.Grade or "Non-Sorcerer"
 	if currentGrade == "Non-Sorcerer" then return nil end
 
+	-- Curse users store their grade with a "Curse User " prefix (see
+	-- BK_CurseService.luau's makeCurseUser/ensureSorcererRegistrationState) --
+	-- without stripping it too, the lookup below never matches a real grade
+	-- key and a curse user can never be promoted again after their first one.
 	local lookupGrade = string.gsub(currentGrade, "^Unregistered ", "")
+	lookupGrade = string.gsub(lookupGrade, "^Curse User ", "")
 
 	local ce = stats.CursedEnergy or 0
 	local rep = stats.Reputation or 0

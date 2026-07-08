@@ -237,6 +237,14 @@ local function init(playerGui: Instance)
 		state.LastStats = stats
 		clearHighlight()
 
+		-- Callers other than updateLifeEvent (e.g. uiState.subscribe firing on
+		-- ANY panel close, including Help & Guide itself) call refresh()
+		-- directly without checking the toggle first -- guard here too so a
+		-- disabled Guide can never be re-shown by one of those paths.
+		if not isGuideEnabled(stats) then
+			return
+		end
+
 		local cat = pickBasicSuggestion(stats, state.VisitedThisAge)
 
 		local rule = pickMonetizationSuggestion(stats, {
@@ -357,6 +365,16 @@ local function init(playerGui: Instance)
 			end
 		else
 			state.VisitedThisAge[route] = true
+		end
+	end)
+
+	-- Toggling the Guide off in Settings (or from the tutorial's opt-in modal)
+	-- only stops NEW highlights from appearing -- without this, one already on
+	-- screen lingered until the next UpdateLifeEvent instead of disappearing
+	-- the instant the player turns the Guide off.
+	SettingsPanel.onGuideEnabledChanged(function(enabled)
+		if not enabled then
+			clearHighlight()
 		end
 	end)
 end

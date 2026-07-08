@@ -382,6 +382,8 @@ local function syncSettingsFromStats(stats)
 	end
 end
 
+local guideEnabledListeners = {}
+
 local function saveSetting(key, value)
 	if DEFAULT_SETTINGS[key] == nil then return end
 	if typeof(DEFAULT_SETTINGS[key]) == "number" then
@@ -393,6 +395,20 @@ local function saveSetting(key, value)
 	end
 	currentSettings[key] = value
 	updateSettingsEvent:FireServer(key, value)
+
+	-- The Settings toggle and the tutorial's own opt-in modal both flip
+	-- GuideEnabled without going through GuideController, so an already-shown
+	-- highlight used to linger until the next UpdateLifeEvent instead of
+	-- disappearing the instant the player turns the Guide off.
+	if key == "GuideEnabled" then
+		for _, listener in ipairs(guideEnabledListeners) do
+			task.spawn(listener, value)
+		end
+	end
+end
+
+local function onGuideEnabledChanged(callback)
+	table.insert(guideEnabledListeners, callback)
 end
 
 local function hasClaimedStarterPack()
@@ -2002,4 +2018,10 @@ local function setGuideEnabled(value)
 	saveSetting("GuideEnabled", value == true)
 end
 
-return { init = init, playSFX = playSFX, getGuideEnabled = getGuideEnabled, setGuideEnabled = setGuideEnabled }
+return {
+	init = init,
+	playSFX = playSFX,
+	getGuideEnabled = getGuideEnabled,
+	setGuideEnabled = setGuideEnabled,
+	onGuideEnabledChanged = onGuideEnabledChanged,
+}

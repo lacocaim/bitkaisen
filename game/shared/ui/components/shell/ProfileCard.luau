@@ -327,7 +327,7 @@ local function ProfileCard()
 
 				create("Frame") {
 					Name = "NameRow",
-					Size = UDim2.new(1, 0, 0, 60),
+					Size = UDim2.new(1, 0, 0, 74),
 					BackgroundTransparency = 1,
 
 					create("TextLabel") {
@@ -366,6 +366,29 @@ local function ProfileCard()
 						TextColor3 = Color3.fromRGB(210, 208, 230),
 						TextSize = 10,
 						Font = Enum.Font.GothamBold,
+						TextXAlignment = Enum.TextXAlignment.Left,
+						TextYAlignment = Enum.TextYAlignment.Center,
+					},
+					create("TextLabel") {
+						Name = "MonetizationBadges",
+						Position = UDim2.new(0, 0, 0, 58),
+						Size = UDim2.new(1, -54, 0, 14),
+						BackgroundTransparency = 1,
+						RichText = true,
+						Text = derive(function()
+							local s = stats()
+							if not s then return "" end
+							local badges = {}
+							if s.HasPremiumOriginsPass then
+								table.insert(badges, '<font color="#ffcf69">' .. _pc("badge_premium_origins", "LEGENDARY LINEAGE") .. '</font>')
+							end
+							if s.HasHighSocietyPass then
+								table.insert(badges, '<font color="#e0a6ff">' .. _pc("badge_high_society", "HIGH SOCIETY") .. '</font>')
+							end
+							return table.concat(badges, "   ")
+						end),
+						TextSize = 9,
+						Font = Enum.Font.GothamBlack,
 						TextXAlignment = Enum.TextXAlignment.Left,
 						TextYAlignment = Enum.TextYAlignment.Center,
 					},

@@ -205,6 +205,14 @@ local function init(playerGui: Instance)
 		state.LastStats = stats
 		clearHighlight()
 
+		-- See GuideController.luau (PC): uiState.subscribe fires on ANY panel
+		-- close (including Help & Guide itself) and calls refresh() directly,
+		-- bypassing the isGuideEnabled check in updateLifeEvent -- guard here
+		-- too so a disabled Guide can never be re-shown by that path.
+		if not isGuideEnabled(stats) then
+			return
+		end
+
 		local cat = pickBasicSuggestion(stats, state.VisitedThisAge)
 
 		local rule = pickMonetizationSuggestion(stats, {
@@ -307,6 +315,15 @@ local function init(playerGui: Instance)
 			end
 		else
 			state.VisitedThisAge[route] = true
+		end
+	end)
+
+	-- See GuideController.luau (PC): without this, an already-visible
+	-- highlight lingered until the next UpdateLifeEvent instead of clearing
+	-- the instant the player turns the Guide off.
+	SettingsPanel.onGuideEnabledChanged(function(enabled)
+		if not enabled then
+			clearHighlight()
 		end
 	end)
 end

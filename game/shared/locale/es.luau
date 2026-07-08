@@ -370,6 +370,9 @@ return {
 		stat_speed      = "Velocidad",
 		stat_durability = "Durabilidad",
 
+		badge_premium_origins = "LINAJE LEGENDARIO",
+		badge_high_society = "ALTA SOCIEDAD",
+
 		label_age  = "EDAD",
 		label_year = "AÑO",
 		label_era  = "ERA",

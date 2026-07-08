@@ -178,6 +178,8 @@ local NEW_PASS_IDS = {
 	FocusedTraining = 1847591321,
 	AFKPass = 1879156343,
 	BindingVowSpecialist = 1863380690,
+	PremiumOrigins = 1902804677,
+	HighSociety = 1903626636,
 }
 local LUCKY_SORCERER_PASS_ID = NEW_PASS_IDS.LuckySorcerer
 local TRAINING_PRODIGY_PASS_ID = NEW_PASS_IDS.TrainingProdigy
@@ -185,6 +187,8 @@ local MISSION_INVESTOR_PASS_ID = NEW_PASS_IDS.MissionInvestor
 local LEGACY_BLESSING_PASS_ID = NEW_PASS_IDS.LegacyBlessing
 local DOJO_EXPANSION_PASS_ID = NEW_PASS_IDS.DojoExpansion
 local FOCUSED_TRAINING_PASS_ID = NEW_PASS_IDS.FocusedTraining
+local PREMIUM_ORIGINS_PASS_ID = NEW_PASS_IDS.PremiumOrigins
+local HIGH_SOCIETY_PASS_ID = NEW_PASS_IDS.HighSociety
 
 local STARTER_SORCERER_PACK_PRODUCT_ID = 3595826857
 local FOCUSED_TRAINING_PRODUCT_ID = 3595838153
@@ -227,6 +231,8 @@ local ownershipCaches = {
 	focusedTraining = {},
 	afkPass = {},
 	bindingVowSpecialist = {},
+	premiumOrigins = {},
+	highSociety = {},
 }
 
 local RATE_LIMITS = {
@@ -415,6 +421,14 @@ function ownsBindingVowSpecialistPass(player)
 	return checkCachedGamePassOwnership(player, NEW_PASS_IDS.BindingVowSpecialist, ownershipCaches.bindingVowSpecialist, "Binding Vow Specialist")
 end
 
+function ownsPremiumOriginsPass(player)
+	return checkCachedGamePassOwnership(player, PREMIUM_ORIGINS_PASS_ID, ownershipCaches.premiumOrigins, "Premium Origins")
+end
+
+function ownsHighSocietyPass(player)
+	return checkCachedGamePassOwnership(player, HIGH_SOCIETY_PASS_ID, ownershipCaches.highSociety, "High Society")
+end
+
 function ownsExtraDojoStudentsPass(player)
 	return checkCachedGamePassOwnership(player, EXTRA_DOJO_STUDENTS_PASS_ID, ownershipCaches.extraDojoStudents, "Extra Dojo Students")
 end
@@ -465,6 +479,8 @@ function syncMonetizationEntitlements(player, stats)
 	stats.HasBindingVowSpecialistPass = ownsBindingVowSpecialistPass(player)
 	stats.HasLegacyBlessingPass = ownsLegacyBlessingPass(player)
 	stats.HasDojoExpansionPass = ownsDojoExpansionPass(player)
+	stats.HasPremiumOriginsPass = ownsPremiumOriginsPass(player)
+	stats.HasHighSocietyPass = ownsHighSocietyPass(player)
 	if ownsVIPSorcererPass(player) then
 		stats.VIPTitle = "VIP Sorcerer"
 	end
@@ -530,6 +546,14 @@ function getBirthOriginScore(originData)
 end
 
 function rollBirthOriginForPlayer(player)
+	-- Premium Origins guarantees a canon clan/lineage (Gojo, Zenin, Itadori...)
+	-- instead of the full pool where those sit at under 1% chance each. Still
+	-- random WHICH one, and carries the exact same bonuses anyone who rolled
+	-- it naturally gets -- see BitKaisenStats.RollPremiumOrigin for the guardrail.
+	if ownsPremiumOriginsPass(player) then
+		return BitKaisenStats.RollPremiumOrigin()
+	end
+
 	local bestOrigin = BitKaisenStats.RollOrigin()
 
 	if not ownsLuckyBirthPass(player) then
@@ -3625,6 +3649,17 @@ function startNewLife(player)
 	BitKaisenStats.ApplyBirthTechnique(newStats, rolledOrigin, ownsLuckyBirthPass(player))
 	applySecretBirthEasterEggs(player, newStats)
 	applyLuckyBirthBonuses(player, newStats)
+
+	-- Premium Origins heirloom: a family keepsake, always Common/Uncommon by
+	-- design (see the pitch to Luisa) -- flavor and a real collectible, never
+	-- a top-tier tool, so it never becomes a power shortcut.
+	if ownsPremiumOriginsPass(player) then
+		newStats.HasPremiumOrigin = true
+		local heirloomPool = { "rusted_cursed_blade", "sealed_protection_charm", "barrier_tag" }
+		local heirloomId = heirloomPool[math.random(1, #heirloomPool)]
+		BitKaisenCursedTools.AddTool(newStats, heirloomId, "Family Heirloom", getCurrentYear(newStats))
+	end
+
 	normalizeCursedSocietyState(newStats)
 	ensureSorcererRegistrationState(newStats)
 
@@ -11095,6 +11130,8 @@ BitKaisenServiceContext = {
 	OwnsAFKPass = ownsAFKPass,
 	OwnsVIPPass = ownsVIPSorcererPass,
 	OwnsBindingVowSpecialistPass = ownsBindingVowSpecialistPass,
+	OwnsPremiumOriginsPass = ownsPremiumOriginsPass,
+	OwnsHighSocietyPass = ownsHighSocietyPass,
 	ClearVIPCache = clearVIPCache,
 	SyncMonetizationEntitlements = syncMonetizationEntitlements,
 	GenerateDojoRecruitPool = generateDojoRecruitPool,

@@ -6,6 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local responsiveScale = require("@ui/responsiveScale")
 local FocusHighlight = require("@ui/FocusHighlight")
 local guidanceSteps = require("@ui/guidanceSteps")
+local SettingsPanel = require("@ui-panels/SettingsPanel")
 
 local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
 local _L = BitKaisenLocale.getClientLocale()
@@ -89,7 +90,6 @@ end
 local function init(playerGui: Instance)
 	local updateLifeEvent = ReplicatedStorage:WaitForChild("UpdateLifeEvent")
 	local markTutorialSeen = ReplicatedStorage:FindFirstChild("MarkTutorialSeen")
-	local updateSettingsEvent = ReplicatedStorage:FindFirstChild("UpdateSettingsEvent")
 
 	local STEPS = guidanceSteps.buildSteps()
 
@@ -535,16 +535,12 @@ local function init(playerGui: Instance)
 	end
 
 	keepButton.MouseButton1Click:Connect(function()
-		if updateSettingsEvent then
-			updateSettingsEvent:FireServer("GuideEnabled", true)
-		end
+		SettingsPanel.setGuideEnabled(true)
 		closeOptIn()
 	end)
 
 	skipGuideButton.MouseButton1Click:Connect(function()
-		if updateSettingsEvent then
-			updateSettingsEvent:FireServer("GuideEnabled", false)
-		end
+		SettingsPanel.setGuideEnabled(false)
 		closeOptIn()
 	end)
 

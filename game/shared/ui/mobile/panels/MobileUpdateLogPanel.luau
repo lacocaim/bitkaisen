@@ -13,6 +13,21 @@ local scroll: ScrollingFrame
 
 local sections = {
 	{
+		header = "Update 22 - New Gamepasses",
+		body = "• Premium Origins: guarantees you're born into a canon clan or lineage (Gojo, Zenin, Itadori, and more), plus a family heirloom cursed tool at birth.\n• High Society: +25% Bond, Trust, and Romance gains, an extra relationship action every age, an easier path to courting Notable Sorcerers, and more of them appearing in your world.",
+		color = theme.Gold,
+	},
+	{
+		header = "Update 22 - Real Domain Clash",
+		body = "• Domain Clash is now an actual minigame: a tug of war meter you push toward your side before time runs out, instead of a hidden dice roll.\n• Works with touch, mouse, or gamepad (mash A or B).",
+		color = theme.Purple,
+	},
+	{
+		header = "Update 22 - Bug Fixes",
+		body = "• Fixed the Domain Clash never showing its minigame.\n• Fixed a child's age and 'years known' falling out of sync after using Brain Transplant.\n• Strength, Speed, and Durability can no longer creep past their 100 cap.\n• Fixed Grade Up never advancing once a character was branded a Curse User.\n• Fixed the Affiliations list cutting off and not scrolling all the way down on smaller screens.\n• Fixed the persistent Guide staying visible after being turned off.\n• Update log now shows the latest update instead of getting stuck on an old one.\n• Combat quick-time events now show a 'Press A or B' hint for gamepad players.",
+		color = theme.Green,
+	},
+	{
 		header = "Update 21 - New Player Guide System",
 		body = "• A full interactive tutorial for new sorcerers, on PC and Mobile: walks you through every screen and mechanic step by step.\n• A persistent Guide that always points you to your next best move: activities, rivals, missions, relationships, domain, or aging up.\n• New Help & Guide panel: replay the tutorial or turn the Guide on/off anytime from one place.\n• Redesigned main UI on PC to match Mobile's dossier style: classified file header, stat bars, and system log.",
 		color = theme.Gold,
@@ -401,7 +416,7 @@ local function renderSections()
 	local subtitleCard = mc.mobileCard({ parent = scroll, order = 0, accentColor = theme.Gold })
 	mc.mobileLabel({
 		parent = subtitleCard,
-		text = "UPDATE 21: New Player Guide system and a big round of bug fixes",
+		text = "UPDATE 22: Premium Origins, High Society, a real Domain Clash, and a big bug fix pass",
 		size = 13,
 		color = theme.SubText,
 		order = 1,

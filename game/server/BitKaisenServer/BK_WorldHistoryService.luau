@@ -11,6 +11,13 @@ local BK_WorldHistoryService = {}
 
 local context = {}
 
+local function ownsHighSocietyPass(player)
+	if context.OwnsHighSocietyPass then
+		return context.OwnsHighSocietyPass(player)
+	end
+	return false
+end
+
 local FIRST_NAMES = {
 	"Satoru", "Megumi", "Yuta", "Maki", "Kinji", "Kirara", "Noritoshi", "Kasumi", "Aoi", "Mai",
 	"Riko", "Shoko", "Suguru", "Tengen", "Hana", "Yuji", "Nobara", "Tsumiki", "Junpei", "Kokichi",
@@ -244,8 +251,12 @@ local function makeWorldEvent(stats, locale)
 	})
 end
 
-local function makeNotableBirth(stats, forced, locale)
-	if not forced and math.random(1, 100) > 28 then return nil end
+local function makeNotableBirth(stats, forced, locale, player)
+	-- High Society: exclusive "venue" access -- notable sorcerers surface
+	-- more often (45% vs the normal 28%), not guaranteed romance/friendship,
+	-- just more chances to actually meet one.
+	local birthChance = (player and ownsHighSocietyPass(player)) and 45 or 28
+	if not forced and math.random(1, 100) > birthChance then return nil end
 	local birth = weightedPick(BIRTH_TYPES)
 	local clan = pick(CLANS)
 	local name = pick(FIRST_NAMES) .. " " .. clan
@@ -344,7 +355,7 @@ function BK_WorldHistoryService.AdvanceYear(player, stats)
 	ageNotables(stats)
 	local locale = BitKaisenLocale.getPlayerLocale(player.UserId)
 	local worldEntry = makeWorldEvent(stats, locale)
-	local _, birthText = makeNotableBirth(stats, #stats.NotableSorcerers == 0, locale)
+	local _, birthText = makeNotableBirth(stats, #stats.NotableSorcerers == 0, locale, player)
 	local eventHeader = tWorld(locale, "event_header", nil, "[ WORLD EVENT ]")
 	local lines = { "\n<font color='#78beff'><b>" .. eventHeader .. "</b></font> " .. tostring(worldEntry.Text) }
 	if birthText then

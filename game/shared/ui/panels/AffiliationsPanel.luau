@@ -140,9 +140,21 @@ local layout = Instance.new("UIListLayout")
 layout.SortOrder = Enum.SortOrder.LayoutOrder
 layout.Padding = UDim.new(0, 10)
 layout.Parent = scroll
-layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-	scroll.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 18)
-end)
+
+-- window sits under a UIScale (see responsiveScale.attach below), so
+-- layout.AbsoluteContentSize is already the SCALED pixel height. Setting
+-- CanvasSize directly from that gets scaled down a second time when Roblox
+-- renders it (CanvasSize.Offset is itself subject to the same ancestor
+-- UIScale), shrinking the real scrollable area more the smaller the window
+-- is -- exactly the "scroll barely works, worse on smaller screens" bug.
+-- Dividing back out by the current scale keeps CanvasSize in the same
+-- unscaled space Size/Position are authored in.
+local function updateCanvasSize()
+	local uiScale = window:FindFirstChild("ResponsiveScale")
+	local scale = (uiScale and uiScale.Scale > 0) and uiScale.Scale or 1
+	scroll.CanvasSize = UDim2.new(0, 0, 0, (layout.AbsoluteContentSize.Y / scale) + 18)
+end
+layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvasSize)
 
 local function clearScroll()
 	for _, child in ipairs(scroll:GetChildren()) do
@@ -309,7 +321,7 @@ function refresh()
 		local function yieldIfNeeded()
 			rendered += 1
 			if rendered % 5 == 0 then
-				scroll.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 18)
+				updateCanvasSize()
 				task.wait()
 			end
 		end
@@ -403,7 +415,7 @@ function refresh()
 		end
 
 		refreshInProgress = false
-		scroll.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 18)
+		updateCanvasSize()
 	end)
 end
 

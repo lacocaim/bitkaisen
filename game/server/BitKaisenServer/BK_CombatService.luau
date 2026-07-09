@@ -565,10 +565,27 @@ function resolveCounter(player, session, success)
 	end)
 end
 
+function BK_CombatService.HasActiveFight(player)
+	if not player then
+		return false
+	end
+	local existingSession = sessions[player.UserId]
+	return existingSession ~= nil and existingSession.Phase ~= "finished"
+end
+
 function BK_CombatService.StartCombat(player, source, enemyConfig)
 	local stats = getStats(player)
 	if not player or not stats or stats.Alive == false then
 		return false, "No active life."
+	end
+	if BK_CombatService.HasActiveFight(player) then
+		-- Some callers (e.g. Clan War actions) can be invoked again while a fight
+		-- from the same source is still in progress; overwriting sessions[player.UserId]
+		-- here would silently reset the in-progress fight (HP/round/pending minigame)
+		-- back to the start every time, which is what caused Clan War combat to
+		-- keep reinitiating instead of resolving.
+		sendState(player, sessions[player.UserId])
+		return false, "Already in combat."
 	end
 	ensureExtraStats(stats)
 	local enemy = buildEnemy(stats, enemyConfig)

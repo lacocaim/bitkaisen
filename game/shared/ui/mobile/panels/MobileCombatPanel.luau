@@ -132,6 +132,7 @@ local function init(playerGui: Instance)
 	local lastAttackToken = nil
 	local lastDefenseToken = nil
 	local lastCounterToken = nil
+	local lastDomainClashToken = nil
 	local lastResultSignature = nil
 
 	-- Full-screen overlay
@@ -465,6 +466,7 @@ local function init(playerGui: Instance)
 	local function destroyMinigame()
 		if activeMinigame then
 			if activeMinigame.Connection then activeMinigame.Connection:Disconnect() end
+			if activeMinigame.InputConnection then activeMinigame.InputConnection:Disconnect() end
 			if activeMinigame.Root then activeMinigame.Root:Destroy() end
 		end
 		activeMinigame = nil
@@ -834,6 +836,139 @@ local function init(playerGui: Instance)
 		activeMinigame = { Root = root }
 	end
 
+	-- Domain Clash (mobile-optimized tug-of-war meter)
+	local function openDomainClashMinigame(payload)
+		destroyMinigame()
+
+		local root = Instance.new("Frame")
+		root.Name = "MobileCombatDomainClash"
+		root.Size = UDim2.new(1, 0, 1, 0)
+		root.BackgroundColor3 = Color3.new(0, 0, 0)
+		root.BackgroundTransparency = 0.3
+		root.ZIndex = 790
+		root.Parent = gui
+
+		local title = Instance.new("TextLabel")
+		title.AnchorPoint = Vector2.new(0.5, 0)
+		title.Position = UDim2.new(0.5, 0, 0.24, 0)
+		title.Size = UDim2.new(0.9, 0, 0, 34)
+		title.BackgroundTransparency = 1
+		title.Text = tostring(payload.DomainName or "Domain") .. " Clash"
+		title.TextColor3 = theme.Purple
+		title.TextSize = 20
+		title.Font = Enum.Font.GothamBlack
+		title.TextWrapped = true
+		title.TextXAlignment = Enum.TextXAlignment.Center
+		title.ZIndex = 791
+		title.Parent = root
+
+		local bar = Instance.new("Frame")
+		bar.AnchorPoint = Vector2.new(0.5, 0.5)
+		bar.Position = UDim2.new(0.5, 0, 0.36, 0)
+		bar.Size = UDim2.new(0.78, 0, 0, 28)
+		bar.BackgroundColor3 = theme.Bad
+		bar.BorderSizePixel = 0
+		bar.ZIndex = 791
+		bar.Parent = root
+		corner(bar, 8)
+		stroke(bar, Color3.fromRGB(255, 255, 255), 1, 0.4)
+
+		local fill = Instance.new("Frame")
+		fill.AnchorPoint = Vector2.new(0, 0.5)
+		fill.Position = UDim2.new(0, 0, 0.5, 0)
+		fill.Size = UDim2.new(0.5, 0, 1, 0)
+		fill.BackgroundColor3 = theme.Green
+		fill.BorderSizePixel = 0
+		fill.ZIndex = 792
+		fill.Parent = bar
+		corner(fill, 8)
+
+		local marker = Instance.new("Frame")
+		marker.AnchorPoint = Vector2.new(0.5, 0.5)
+		marker.Size = UDim2.new(0, 6, 1.4, 0)
+		marker.Position = UDim2.new(0.5, 0, 0.5, 0)
+		marker.BackgroundColor3 = theme.Text
+		marker.BorderSizePixel = 0
+		marker.ZIndex = 793
+		marker.Parent = bar
+
+		local button = Instance.new("TextButton")
+		button.AnchorPoint = Vector2.new(0.5, 0.5)
+		button.Position = UDim2.new(0.5, 0, 0.58, 0)
+		button.Size = UDim2.new(0, 150, 0, 150)
+		button.BackgroundColor3 = theme.Purple
+		button.Text = _cb("btn_push", "PUSH")
+		button.TextColor3 = theme.Text
+		button.TextSize = 20
+		button.Font = Enum.Font.GothamBlack
+		button.ZIndex = 791
+		button.Parent = root
+		corner(button, 75)
+		stroke(button, Color3.fromRGB(255, 255, 255), 2, 0.3)
+
+		local meter = 50
+		local pullRate = math.clamp(tonumber(payload.PullRate) or 8, 2, 25)
+		local pushPerTap = 6
+		local duration = tonumber(payload.Duration) or 4
+		local startedAt = os.clock()
+		local finished = false
+
+		local function updateBar()
+			local ratio = math.clamp(meter / 100, 0, 1)
+			fill.Size = UDim2.new(ratio, 0, 1, 0)
+			marker.Position = UDim2.new(ratio, 0, 0.5, 0)
+		end
+
+		local function finish(success)
+			if finished then return end
+			finished = true
+			if success then
+				playHitSound()
+				popPlayerText(_cb("pop_clash_won", "CLASH WON"), theme.Green, true)
+			else
+				popPlayerText(_cb("pop_clash_lost", "CLASH LOST"), theme.Bad, true)
+			end
+			pulseFeedback(root, success and theme.Green or theme.Bad)
+			combatMinigameResult:FireServer(payload.Token, "domain_clash", success, {})
+			if activeMinigame and activeMinigame.Connection then
+				activeMinigame.Connection:Disconnect()
+				activeMinigame.Connection = nil
+			end
+			task.delay(0.35, function()
+				if activeMinigame and activeMinigame.Root == root then
+					destroyMinigame()
+				end
+			end)
+		end
+
+		local function push()
+			if finished then return end
+			meter = math.clamp(meter + pushPerTap, 0, 100)
+			shakeGui(button)
+			updateBar()
+			if meter >= 100 then
+				finish(true)
+			end
+		end
+
+		bindTap(button, push)
+
+		updateBar()
+		activeMinigame = {
+			Root = root,
+			Connection = RunService.RenderStepped:Connect(function(dt)
+				if finished then return end
+				meter = math.clamp(meter - pullRate * dt, 0, 100)
+				updateBar()
+				if meter <= 0 then
+					finish(false)
+				elseif os.clock() - startedAt >= duration then
+					finish(meter > 50)
+				end
+			end),
+		}
+	end
+
 	-- Result popup
 	local function showCombatResultPopup(winner, enemyDisplayName)
 		local old = gui:FindFirstChild("MobileCombatResultPopup")
@@ -935,7 +1070,7 @@ local function init(playerGui: Instance)
 			end
 		end
 
-		if state.Phase == "finished" or (not state.PendingAttack and not state.PendingDefense and not state.PendingCounter and activeMinigame) then
+		if state.Phase == "finished" or (not state.PendingAttack and not state.PendingDefense and not state.PendingCounter and not state.PendingDomainClash and activeMinigame) then
 			destroyMinigame()
 		end
 
@@ -1010,6 +1145,14 @@ local function init(playerGui: Instance)
 			end
 		else
 			lastCounterToken = nil
+		end
+		if state.PendingDomainClash then
+			if state.PendingDomainClash.Token ~= lastDomainClashToken then
+				lastDomainClashToken = state.PendingDomainClash.Token
+				openDomainClashMinigame(state.PendingDomainClash)
+			end
+		else
+			lastDomainClashToken = nil
 		end
 	end
 

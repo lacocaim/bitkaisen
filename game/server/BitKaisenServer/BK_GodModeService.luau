@@ -321,6 +321,32 @@ local function applyOriginReroll(stats, origin)
 	stats.InnateDormant = false
 	BitKaisenStats.ApplyBirthTechnique(stats, origin)
 
+	local age = tonumber(stats.Age) or 0
+	local usableNow = age >= 8
+	if usableNow and tostring(stats.InnateTechnique or "None") ~= "None" then
+		stats.CursedTechnique = stats.InnateTechnique
+		stats.TechniqueUsable = true
+		stats.TechniqueAwakened = true
+		stats.InnateDormant = false
+		stats.TechniqueMastery = math.max(tonumber(stats.TechniqueMastery) or 0, math.random(2, 8))
+	elseif usableNow and tostring(stats.CursedTechnique or "None") == "None" then
+		-- The rerolled clan has no innate technique (e.g. a Minor Sorcerer Family) --
+		-- grant a normal one instead of leaving the character with none at all,
+		-- matching the paid Clan Reroll's fallback in BK_CommerceService.grantClanReroll.
+		local normalTechnique = BitKaisenStats.RollTechnique and BitKaisenStats.RollTechnique(tostring(stats.Origin or stats.Clan or ""), { IncludeClanLocked = false }) or "Cursed Energy Discharge"
+		stats.CursedTechnique = normalTechnique
+		stats.TechniqueType = "Normal"
+		stats.TechniqueKnown = true
+		stats.TechniqueUsable = true
+		stats.TechniqueAwakened = true
+		stats.InnateDormant = false
+		stats.TechniqueMastery = math.max(tonumber(stats.TechniqueMastery) or 0, math.random(1, 8))
+	end
+
+	if usableNow and tostring(stats.Grade or "Non-Sorcerer") == "Non-Sorcerer" and tostring(stats.CursedTechnique or "None") ~= "None" then
+		stats.Grade = "Grade 4"
+	end
+
 	return true
 end
 

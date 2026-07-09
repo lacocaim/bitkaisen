@@ -520,7 +520,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 			if typeof(npc) == "table" and tostring(npc.Id) == tostring(relationshipId) then
 				npc.Id = tostring(npc.Id)
 				npc.Name = tostring(npc.Name or "Notable Sorcerer")
-				npc.Role = "Notable Sorcerer"
+				npc.Role = tostring(npc.Role or "Notable Sorcerer")
 				npc.Status = tostring(npc.Status or "Tracked")
 				npc.Age = tonumber(npc.Age) or 0
 				npc.Grade = tostring(npc.Grade or "Unknown")
@@ -637,19 +637,31 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 
 		-- Brain Transplant resets the player's own Age to the host body's age,
 		-- but that isn't real elapsed time. reconcileRelationshipTimeline derives
-		-- every other living relationship's Age from (MetAtAge/AgeAtMet + current
-		-- player Age), so without this correction the jump in the player's Age
-		-- would make partners/family instantly appear older or younger too.
-		-- Shifting their met-at reference points by the same delta keeps their
-		-- derived Age continuous through the transplant.
+		-- every other living relationship's Age from the player's Age using one
+		-- of two formulas: Mother/Father/Sibling/Caretaker use (AgeAtMet + playerAge)
+		-- directly, while every other role uses (AgeAtMet + (playerAge - MetAtAge)).
+		-- To keep their Age unchanged through the instantaneous transplant, only
+		-- MetAtAge needs to shift for the second formula (the AgeDelta cancels out
+		-- algebraically), while AgeAtMet needs to shift by -ageDelta for the first
+		-- formula (it isn't offset by a MetAtAge term). Shifting AgeAtMet by
+		-- +ageDelta for every role (the previous approach) left the second formula's
+		-- jump uncompensated and doubled it for the first, causing relationships to
+		-- age by up to ~2x the transplant's age jump.
+		local directFormulaRoles = {
+			Mother = true,
+			Father = true,
+			Sibling = true,
+			Caretaker = true,
+		}
 		if ageDelta ~= 0 then
 			for _, other in ipairs(stats.Relationships or {}) do
 				if other ~= relationship then
-					if typeof(other.MetAtAge) == "number" then
+					if directFormulaRoles[tostring(other.Role or "")] then
+						if typeof(other.AgeAtMet) == "number" then
+							other.AgeAtMet -= ageDelta
+						end
+					elseif typeof(other.MetAtAge) == "number" then
 						other.MetAtAge += ageDelta
-					end
-					if typeof(other.AgeAtMet) == "number" then
-						other.AgeAtMet += ageDelta
 					end
 				end
 			end

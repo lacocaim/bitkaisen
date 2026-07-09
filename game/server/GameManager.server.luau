@@ -187,8 +187,6 @@ local MISSION_INVESTOR_PASS_ID = NEW_PASS_IDS.MissionInvestor
 local LEGACY_BLESSING_PASS_ID = NEW_PASS_IDS.LegacyBlessing
 local DOJO_EXPANSION_PASS_ID = NEW_PASS_IDS.DojoExpansion
 local FOCUSED_TRAINING_PASS_ID = NEW_PASS_IDS.FocusedTraining
-local PREMIUM_ORIGINS_PASS_ID = NEW_PASS_IDS.PremiumOrigins
-local HIGH_SOCIETY_PASS_ID = NEW_PASS_IDS.HighSociety
 
 local STARTER_SORCERER_PACK_PRODUCT_ID = 3595826857
 local FOCUSED_TRAINING_PRODUCT_ID = 3595838153
@@ -422,11 +420,11 @@ function ownsBindingVowSpecialistPass(player)
 end
 
 function ownsPremiumOriginsPass(player)
-	return checkCachedGamePassOwnership(player, PREMIUM_ORIGINS_PASS_ID, ownershipCaches.premiumOrigins, "Premium Origins")
+	return checkCachedGamePassOwnership(player, NEW_PASS_IDS.PremiumOrigins, ownershipCaches.premiumOrigins, "Premium Origins")
 end
 
 function ownsHighSocietyPass(player)
-	return checkCachedGamePassOwnership(player, HIGH_SOCIETY_PASS_ID, ownershipCaches.highSociety, "High Society")
+	return checkCachedGamePassOwnership(player, NEW_PASS_IDS.HighSociety, ownershipCaches.highSociety, "High Society")
 end
 
 function ownsExtraDojoStudentsPass(player)
@@ -11091,6 +11089,9 @@ BitKaisenServiceContext = {
 	end,
 	StartCombat = function(player, source, enemyConfig)
 		return BK_CombatService.StartCombat(player, source, enemyConfig)
+	end,
+	HasActiveFight = function(player)
+		return BK_CombatService.HasActiveFight(player)
 	end,
 	GetGradeValue = getGradeValue,
 	IsDev = isDev,

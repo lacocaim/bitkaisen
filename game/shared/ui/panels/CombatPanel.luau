@@ -446,6 +446,7 @@ local function init(playerGui: Instance)
 	local function destroyMinigame()
 		if activeMinigame then
 			if activeMinigame.Connection then activeMinigame.Connection:Disconnect() end
+			if activeMinigame.InputConnection then activeMinigame.InputConnection:Disconnect() end
 			if activeMinigame.Root then activeMinigame.Root:Destroy() end
 		end
 		activeMinigame = nil
@@ -613,7 +614,14 @@ local function init(playerGui: Instance)
 			end)
 		end
 		stop.MouseButton1Click:Connect(function() submit(false) end)
-		root.InputBegan:Connect(function(input)
+		-- Use UserInputService (not root.InputBegan) for the gamepad shortcut:
+		-- GuiObject.InputBegan only fires non-positional inputs like gamepad
+		-- buttons when that object currently holds gamepad "selection", which
+		-- this full-screen decorative root Frame never does. On real gamepad
+		-- hardware that silently made this ButtonA/B bind unreliable, forcing
+		-- console players to fight Roblox's native gamepad cursor instead.
+		local inputConn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+			if gameProcessed then return end
 			if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.Space then submit(false) end
 			if input.UserInputType == Enum.UserInputType.Gamepad1 and (input.KeyCode == Enum.KeyCode.ButtonA or input.KeyCode == Enum.KeyCode.ButtonB) then submit(false) end
 		end)
@@ -622,6 +630,7 @@ local function init(playerGui: Instance)
 			Connection = RunService.RenderStepped:Connect(function()
 				positionPointer((os.clock() - startedAt) / duration)
 			end),
+			InputConnection = inputConn,
 		}
 		task.delay(duration * 1.2, function()
 			if activeMinigame and activeMinigame.Root == root then submit(true) end
@@ -663,6 +672,7 @@ local function init(playerGui: Instance)
 		local startedAt = 0
 		local finished = false
 		local activeHitId = 0
+		local currentTriggerDodge = nil
 		local function finish()
 			if finished then return end
 			finished = true
@@ -719,11 +729,7 @@ local function init(playerGui: Instance)
 				task.delay(0.08, nextHit)
 			end
 			button.MouseButton1Click:Connect(triggerDodge)
-			root.InputBegan:Connect(function(input)
-				if input.UserInputType == Enum.UserInputType.Gamepad1 and (input.KeyCode == Enum.KeyCode.ButtonA or input.KeyCode == Enum.KeyCode.ButtonB) then
-					triggerDodge()
-				end
-			end)
+			currentTriggerDodge = triggerDodge
 			task.delay(windowSeconds, function()
 				if not finished and hitId == activeHitId and button and button.Parent then
 					popPlayerText("MISS", theme.Red, false)
@@ -733,8 +739,19 @@ local function init(playerGui: Instance)
 				end
 			end)
 		end
+		-- Single, session-long gamepad listener (see the Attack minigame's
+		-- InputConnection above for why root.InputBegan doesn't work here) --
+		-- it dispatches to whichever DODGE button is currently on screen via
+		-- currentTriggerDodge, since a new button (and a new triggerDodge
+		-- closure) is created for each of the up to 3 hits.
+		local inputConn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+			if gameProcessed then return end
+			if input.UserInputType == Enum.UserInputType.Gamepad1 and (input.KeyCode == Enum.KeyCode.ButtonA or input.KeyCode == Enum.KeyCode.ButtonB) then
+				if currentTriggerDodge then currentTriggerDodge() end
+			end
+		end)
 		task.delay(1, nextHit)
-		activeMinigame = { Root = root }
+		activeMinigame = { Root = root, InputConnection = inputConn }
 	end
 
 	local function openCounterQTE(payload)
@@ -803,7 +820,8 @@ local function init(playerGui: Instance)
 			task.delay(0.2, destroyMinigame)
 		end
 		button.MouseButton1Click:Connect(triggerCounter)
-		root.InputBegan:Connect(function(input)
+		local inputConn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+			if gameProcessed then return end
 			if input.UserInputType == Enum.UserInputType.Gamepad1 and (input.KeyCode == Enum.KeyCode.ButtonA or input.KeyCode == Enum.KeyCode.ButtonB) then
 				triggerCounter()
 			end
@@ -817,7 +835,7 @@ local function init(playerGui: Instance)
 				task.delay(0.2, destroyMinigame)
 			end
 		end)
-		activeMinigame = { Root = root }
+		activeMinigame = { Root = root, InputConnection = inputConn }
 	end
 
 	-- Domain Clash: a tug-of-war meter (0 = enemy side, 100 = player side,
@@ -938,7 +956,8 @@ local function init(playerGui: Instance)
 		end
 
 		button.MouseButton1Click:Connect(push)
-		root.InputBegan:Connect(function(input)
+		local inputConn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+			if gameProcessed then return end
 			if input.UserInputType == Enum.UserInputType.Gamepad1 and (input.KeyCode == Enum.KeyCode.ButtonA or input.KeyCode == Enum.KeyCode.ButtonB) then
 				push()
 			end
@@ -957,6 +976,7 @@ local function init(playerGui: Instance)
 					finish(meter > 50)
 				end
 			end),
+			InputConnection = inputConn,
 		}
 	end
 

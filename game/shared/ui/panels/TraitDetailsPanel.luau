@@ -648,9 +648,18 @@ local function updateFloatingTraitButton()
 	local paddingAfterText = 10
 	local desiredXAbs = labelPos.X + textWidth + paddingAfterText
 
+	-- Clamp against the Traits row's own column (LeftCol), not the full card --
+	-- the dossier layout is a 2-column grid (see ProfileCard.luau), so clamping
+	-- to the whole card's width let a long trait list push this button past
+	-- LeftCol and into RightCol's Tech Stage row, which sits at a similar
+	-- height near the bottom of that column.
+	local traitColumn = activeTraitLabel.Parent and activeTraitLabel.Parent.Parent
 	local minXAbs = labelPos.X + 70
 	local maxXAbs = cardPos.X + cardSize.X - 18
-	local finalXAbs = math.clamp(desiredXAbs, minXAbs, maxXAbs)
+	if traitColumn and traitColumn:IsA("GuiObject") then
+		maxXAbs = math.min(maxXAbs, traitColumn.AbsolutePosition.X + traitColumn.AbsoluteSize.X - 18)
+	end
+	local finalXAbs = math.clamp(desiredXAbs, minXAbs, math.max(minXAbs, maxXAbs))
 
 	local localX = finalXAbs - cardPos.X
 	local localY = centerYAbs - cardPos.Y

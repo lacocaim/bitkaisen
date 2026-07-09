@@ -417,6 +417,10 @@ local function resolveAction(player, stats, actionId)
 		return false, "Unknown cult war action."
 	end
 
+	if context.HasActiveFight and context.HasActiveFight(player) then
+		return false, "Finish your current fight before taking another cult war action."
+	end
+
 	local power = playerWarPower(stats)
 	local tension = tonumber(war.Tension) or 50
 	local roll = math.random(1, 100) + math.floor(power / 12)

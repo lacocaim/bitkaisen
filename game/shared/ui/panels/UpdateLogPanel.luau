@@ -104,12 +104,12 @@ padding.PaddingLeft = UDim.new(0, 16)
 padding.PaddingRight = UDim.new(0, 16)
 padding.Parent = panel
 
-local title = makeText(panel, "Title", "UPDATE 22", 22, true)
+local title = makeText(panel, "Title", "UPDATE 23", 22, true)
 title.Size = UDim2.new(1, -48, 0, 34)
 title.Position = UDim2.new(0, 0, 0, 0)
 title.TextColor3 = Color3.fromRGB(255, 220, 139)
 
-local subtitle = makeText(panel, "Subtitle", "Premium Origins, High Society, a real Domain Clash, and a big bug fix pass", 14, false)
+local subtitle = makeText(panel, "Subtitle", "Kenjaku's Death Paintings, Surgery, and a big bug fix pass", 14, false)
 subtitle.Size = UDim2.new(1, -48, 0, 22)
 subtitle.Position = UDim2.new(0, 0, 0, 34)
 subtitle.TextColor3 = Color3.fromRGB(198, 186, 164)
@@ -187,6 +187,12 @@ local function addSection(headerText, bodyText, headerColor)
 	body.AutomaticSize = Enum.AutomaticSize.Y
 	body.TextColor3 = Color3.fromRGB(232, 223, 205)
 end
+
+addSection("Update 23 - Kenjaku Clan: Death Paintings & Culling Games", "• Kenjaku characters with Brain Transplant can now create <b>Death Paintings</b>, usable as a special attack in combat.\n• Recruit Notable Sorcerers into the <b>Culling Games</b> for a shot at big rewards.\n", Color3.fromRGB(179, 136, 255))
+
+addSection("Update 23 - New Features", "• <b>Looks & Surgery</b>: a new activity to improve your Looks stat, once per age, for a price.\n• You can now <b>rename your children</b> from the relationship menu.\n", Color3.fromRGB(255, 220, 139))
+
+addSection("Update 23 - Bug Fixes", "• Fixed Curse User missions guaranteeing success with zero risk. They now roll against your power like other missions, and failure has real consequences instead of free money.\n• Fixed the Update Log appearing to lag behind when spamming missions or choices too fast; you'll now see a clear warning instead of the action silently doing nothing.\n• Fixed traits like Six Eyes (and every other trait's Cursed Energy, Mastery, Smarts, and Money bonuses) not applying during random life scenarios and some missions. This is very likely why Six Eyes and similar traits felt like they stopped working.\n• Fixed around 130 Spanish/Portuguese activity translations that were never loading correctly.\n• The locked message for founding a Cult now correctly mentions you also need Wanted Level 3+.\n• Fixed Notable Sorcerers repeating the 'became your friend' message over and over.\n• Fixed Brain Transplant incorrectly aging characters.\n• Fixed Clan War and Cult War combat getting stuck in a restart loop.\n• Fixed Domain Clash not working correctly on Mobile.\n• Fixed the info '?' button being misplaced on the Traits/Technique Stage screen.\n• Fixed a critical bug that could make the game fail to load entirely for some players.\n", Color3.fromRGB(115, 220, 150))
 
 addSection("Update 22 - New Gamepasses", "• <b>Premium Origins</b>: guarantees you're born into a canon clan or lineage (Gojo, Zenin, Itadori, and more), plus a family heirloom cursed tool at birth.\n• <b>High Society</b>: +25% Bond, Trust, and Romance gains, an extra relationship action every age, an easier path to courting Notable Sorcerers, and more of them appearing in your world.\n", Color3.fromRGB(255, 220, 139))
 
@@ -344,7 +350,7 @@ addSection("Update 10 - Stability", "- Added server validation for test purchase
 
 addSection("Update 10 - Combat Foundation", "- Added interactive combat sessions with player and enemy HP/CE\n- Added attack timing minigame with target zone and sweet spot\n- Added defend QTE for 1 to 3 hit enemy combos\n- Added perfect-dodge counter attack window\n- Added test-place combat starter for verification\n- Added Reset Fight developer product hook with test-place bypass\n")
 
-local footer = makeText(panel, "Footer", "Update 22 is live. Rejoin once if anything looks off after the update.", 12, false)
+local footer = makeText(panel, "Footer", "Update 23 is live. Rejoin once if anything looks off after the update.", 12, false)
 footer.AnchorPoint = Vector2.new(0, 1)
 footer.Position = UDim2.new(0, 0, 1, 0)
 footer.Size = UDim2.new(1, 0, 0, 34)

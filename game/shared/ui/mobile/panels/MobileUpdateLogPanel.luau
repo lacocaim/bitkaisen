@@ -13,6 +13,21 @@ local scroll: ScrollingFrame
 
 local sections = {
 	{
+		header = "Update 23 - Kenjaku Clan: Death Paintings & Culling Games",
+		body = "• Kenjaku characters with Brain Transplant can now create Death Paintings, usable as a special attack in combat.\n• Recruit Notable Sorcerers into the Culling Games for a shot at big rewards.",
+		color = theme.Purple,
+	},
+	{
+		header = "Update 23 - New Features",
+		body = "• Looks & Surgery: a new activity to improve your Looks stat, once per age, for a price.\n• You can now rename your children from the relationship menu.",
+		color = theme.Gold,
+	},
+	{
+		header = "Update 23 - Bug Fixes",
+		body = "• Fixed Curse User missions guaranteeing success with zero risk. They now roll against your power like other missions, and failure has real consequences instead of free money.\n• Fixed the Update Log appearing to lag behind when spamming missions or choices too fast; you'll now see a clear warning instead of the action silently doing nothing.\n• Fixed traits like Six Eyes (and every other trait's Cursed Energy, Mastery, Smarts, and Money bonuses) not applying during random life scenarios and some missions. This is very likely why Six Eyes and similar traits felt like they stopped working.\n• Fixed around 130 Spanish/Portuguese activity translations that were never loading correctly.\n• The locked message for founding a Cult now correctly mentions you also need Wanted Level 3+.\n• Fixed Notable Sorcerers repeating the 'became your friend' message over and over.\n• Fixed Brain Transplant incorrectly aging characters.\n• Fixed Clan War and Cult War combat getting stuck in a restart loop.\n• Fixed Domain Clash not working correctly on Mobile.\n• Fixed the info '?' button being misplaced on the Traits/Technique Stage screen.\n• Fixed a critical bug that could make the game fail to load entirely for some players.",
+		color = theme.Green,
+	},
+	{
 		header = "Update 22 - New Gamepasses",
 		body = "• Premium Origins: guarantees you're born into a canon clan or lineage (Gojo, Zenin, Itadori, and more), plus a family heirloom cursed tool at birth.\n• High Society: +25% Bond, Trust, and Romance gains, an extra relationship action every age, an easier path to courting Notable Sorcerers, and more of them appearing in your world.",
 		color = theme.Gold,
@@ -416,7 +431,7 @@ local function renderSections()
 	local subtitleCard = mc.mobileCard({ parent = scroll, order = 0, accentColor = theme.Gold })
 	mc.mobileLabel({
 		parent = subtitleCard,
-		text = "UPDATE 22: Premium Origins, High Society, a real Domain Clash, and a big bug fix pass",
+		text = "UPDATE 23: Kenjaku's Death Paintings, Surgery, and a big bug fix pass",
 		size = 13,
 		color = theme.SubText,
 		order = 1,

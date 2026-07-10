@@ -7971,6 +7971,7 @@ local maybeBeginHigherUpsInvitation
 
 function resolveMonthlyLifeEncounter(player, stats, encounter, option)
 	ensureExtraStats(stats)
+	local traitBefore = captureTraitBuffSnapshot(stats)
 
 	local resultText = nil
 
@@ -8022,6 +8023,7 @@ function resolveMonthlyLifeEncounter(player, stats, encounter, option)
 
 	local title = encounter and encounter.Title or "Life Event"
 	local message = "<font color='#78beff'><b>[ " .. string.upper(title) .. " ]</b></font> " .. tostring(resultText or "The situation ended quietly.")
+	message = message .. applyTraitBuffsFromSnapshot(stats, traitBefore, "LifeScenario")
 
 	maybeBeginHigherUpsInvitation(player, stats)
 
@@ -8265,6 +8267,7 @@ end
 
 function resolveVesselEscortDialogue(player, stats, option)
 	ensureExtraStats(stats)
+	local traitBefore = captureTraitBuffSnapshot(stats)
 
 	local effects = option and option.Effects or {}
 	local vesselTrustGain = tonumber(effects.VesselTrust) or 0
@@ -8320,6 +8323,8 @@ function resolveVesselEscortDialogue(player, stats, option)
 			resultText = resultText .. "\nYour body gave out after the mission."
 		end
 	end
+
+	resultText = resultText .. applyTraitBuffsFromSnapshot(stats, traitBefore, "LifeScenario")
 
 	fireLifeUpdate(player, stats, "<font color='#78beff'><b>[ HIGHER-UP MISSION 1/5 ]</b></font> " .. resultText)
 	saveStats(player)

@@ -235,6 +235,48 @@ BitKaisenActivities.Database = {
 	},
 
 	{
+		Id = "surgery",
+		Title = "Cosmetic Surgery",
+		Description = "Pay for a face lift, nose reshaping, or other cosmetic work to improve your Looks.",
+		MinAge = 16,
+		MaxAge = 100,
+		RequiresTechnique = false,
+		RequiresSorcerer = false,
+		RequiresJujutsuHigh = false,
+		ButtonColor = Color3.fromRGB(180, 90, 150),
+		LockedText = "You need to be at least 16 to get cosmetic surgery.",
+		HideWhenLocked = true
+	},
+
+	{
+		Id = "create_death_painting",
+		Title = "Create Death Painting",
+		Description = "Use your Brain Transplant mastery to pour 250 CE into a cursed womb, birthing a Death Painting you can call on later.",
+		MinAge = 0,
+		MaxAge = 120,
+		RequiresTechnique = true,
+		RequiresSorcerer = false,
+		RequiresJujutsuHigh = false,
+		ButtonColor = Color3.fromRGB(90, 20, 30),
+		LockedText = "Only Kenjaku Clan sorcerers with Brain Transplant can create Death Paintings.",
+		HideWhenLocked = true
+	},
+
+	{
+		Id = "cast_culling_games",
+		Title = "Cast the Culling Games",
+		Description = "Unleash the Culling Games on the world using your bound recruits and Death Paintings. This can only be done once.",
+		MinAge = 0,
+		MaxAge = 120,
+		RequiresTechnique = true,
+		RequiresSorcerer = false,
+		RequiresJujutsuHigh = false,
+		ButtonColor = Color3.fromRGB(60, 10, 60),
+		LockedText = "You need at least 3 people recruited and 1 Death Painting to cast the Culling Games.",
+		HideWhenLocked = true
+	},
+
+	{
 		Id = "study_theory",
 		Title = "Study Jujutsu Theory",
 		Description = "Read about curses, barriers, binding vows, and sorcerer history.",
@@ -1372,7 +1414,7 @@ BitKaisenActivities.Database = {
 		RequiresJujutsuHigh = false,
 		RequiresCultEligible = true,
 		ButtonColor = Color3.fromRGB(90, 20, 30),
-		LockedText = "Only Curse Users or rogue sorcerers with a big enough Wanted Level can found a cult.",
+		LockedText = "Only Curse Users or rogue sorcerers can found a cult, and you need Wanted Level 3+ before anyone will follow you.",
 		HideWhenLocked = true
 	},
 
@@ -1954,6 +1996,7 @@ local CATEGORY_MAP = {
 	meditate = "Life",
 	rest = "Life",
 	doctor = "Life",
+	surgery = "Life",
 	socialize = "Social",
 	retirement_reflection = "Life",
 
@@ -2049,6 +2092,8 @@ local CATEGORY_MAP = {
 	curse_user_illegal_job = "Curse User",
 	curse_user_secret_training = "Curse User",
 	curse_user_threaten_informant = "Curse User",
+	create_death_painting = "Curse User",
+	cast_culling_games = "Curse User",
 
 	cult_found = "Cult",
 	cult_recruit_initiate = "Cult",

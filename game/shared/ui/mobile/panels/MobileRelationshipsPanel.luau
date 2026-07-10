@@ -67,6 +67,8 @@ local refreshStamp = 0
 local refreshInProgress = false
 local canBrainTransplant = false
 local canNameChildren = false
+local canRecruitCullingGames = false
+local currentRelationships = {}
 local expandedCardId = nil
 local detailOpen = false
 
@@ -255,6 +257,9 @@ local function getActionsForRelationship(relationship)
 			if (relationship.Bond or 0) >= 40 and (relationship.Trust or 0) >= 25 and (relationship.Romance or 0) >= 30 then
 				table.insert(actions, { Id = "ask_out", Text = _ra("ask_out", "Ask Out") })
 			end
+		end
+		if canRecruitCullingGames and relationship.CullingGameRecruit ~= true then
+			table.insert(actions, { Id = "recruit_for_culling_games", Text = _ra("recruit", "Recruit"), Confirm = true })
 		end
 		return actions
 	end
@@ -520,17 +525,46 @@ local function createActionsGrid(parent: GuiObject, relationship, order: number)
 				relationshipAction:FireServer(relationship.Id, action.Id, extraData)
 			end
 
-			if canNameChildren and (action.Id == "start_family" or action.Id == "adopt_child") then
-				promptChildName(function(childName) fireAction({ ChildName = childName }) end)
-			else
-				fireAction(nil)
+			-- Fire first, name after: see the matching comment in RelationshipsPanel.luau
+			-- (PC) for why naming can't happen before the child actually exists.
+			local isChildBirthAction = canNameChildren and (action.Id == "start_family" or action.Id == "adopt_child")
+			local childIdsBefore = {}
+			if isChildBirthAction then
+				for _, rel in ipairs(currentRelationships) do
+					if rel.Role == "Child" then
+						childIdsBefore[rel.Id] = true
+					end
+				end
 			end
+
+			fireAction(nil)
 
 			task.delay(1.2, function()
 				if pendingRefresh then
 					pendingRefresh = false
 					busyAction = false
-					if isOpen then refreshRelationships(true) end
+					if isOpen then
+						if isChildBirthAction then
+							refreshRelationships(true, function(living)
+								for _, rel in ipairs(living) do
+									if rel.Role == "Child" and not childIdsBefore[rel.Id] then
+										local newChildId = rel.Id
+										promptChildName(function(newName)
+											if newName and newName ~= "" then
+												relationshipAction:FireServer(newChildId, "rename_child", { NewName = newName })
+												task.delay(0.5, function()
+													if isOpen then refreshRelationships(true) end
+												end)
+											end
+										end)
+										break
+									end
+								end
+							end)
+						else
+							refreshRelationships(true)
+						end
+					end
 				end
 			end)
 		end)
@@ -705,7 +739,7 @@ local function makeEmptyCard(text: string, order: number)
 	mobileLabel({ parent = card, text = text, size = 14, color = theme.SubText, order = 1 })
 end
 
-refreshRelationships = function(preservePosition: boolean)
+refreshRelationships = function(preservePosition: boolean, onComplete: ((any) -> ())?)
 	refreshStamp += 1
 	local thisRefresh = refreshStamp
 
@@ -746,7 +780,10 @@ refreshRelationships = function(preservePosition: boolean)
 
 		canBrainTransplant = typeof(result) == "table" and result.CanBrainTransplant == true
 		canNameChildren = typeof(result) == "table" and result.CanNameChildren == true
+		canRecruitCullingGames = typeof(result) == "table" and result.CanRecruitCullingGames == true
 		local living, deceased = normalizeRelationships(result)
+		currentRelationships = living
+		if onComplete then onComplete(living) end
 
 		local order = 1
 

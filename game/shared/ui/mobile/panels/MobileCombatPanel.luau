@@ -337,6 +337,8 @@ local function init(playerGui: Instance)
 	resetButton.Visible = false
 	local blackFlashButton = makeActionButton(_cb("btn_bflash", "B.FLASH"), Color3.fromRGB(48, 28, 90), 7)
 	blackFlashButton.Visible = false
+	local invokeButton = makeActionButton(_cb("btn_invoke", "INVOKE"), Color3.fromRGB(90, 20, 30), 8)
+	invokeButton.Visible = false
 
 	-- Combat log
 	local logCard = Instance.new("Frame")
@@ -1107,6 +1109,10 @@ local function init(playerGui: Instance)
 		blackFlashButton.Text = _cb("bflash_count", "B.FLASH {cost}"):gsub("{cost}", bfCost)
 		blackFlashButton.Visible = not defeated
 		setButtonEnabled(blackFlashButton, bfReady)
+		local deathPaintingsAvailable = tonumber(state.DeathPaintingsAvailable) or 0
+		invokeButton.Visible = not defeated and deathPaintingsAvailable > 0
+		invokeButton.Text = _cb("btn_invoke_count", "INVOKE {n}"):gsub("{n}", deathPaintingsAvailable)
+		setButtonEnabled(invokeButton, playerTurn and deathPaintingsAvailable > 0)
 		resetButton.Visible = defeated
 		setButtonEnabled(resetButton, defeated and state.CanReset == true)
 
@@ -1165,6 +1171,9 @@ local function init(playerGui: Instance)
 	end)
 	bindTap(domainButton, function()
 		if state.Phase == "player_turn" then combatAction:FireServer("domain") end
+	end)
+	bindTap(invokeButton, function()
+		if state.Phase == "player_turn" then combatAction:FireServer("invoke_death_painting") end
 	end)
 	bindTap(blackFlashButton, function()
 		if state.Phase == "player_turn" then combatAction:FireServer("black_flash") end

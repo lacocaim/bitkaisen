@@ -84,6 +84,7 @@ local cardRefs = {}
 local currentRelationships = {}
 local canBrainTransplant = false
 local canNameChildren = false
+local canRecruitCullingGames = false
 local scroll = nil
 local livingPage = 1
 local deceasedPage = 1
@@ -474,6 +475,9 @@ local function getActionsForRelationship(relationship)
 			if (relationship.Bond or 0) >= 40 and (relationship.Trust or 0) >= 25 and (relationship.Romance or 0) >= 30 then
 				table.insert(actions, { Id = "ask_out", Text = "Ask Out" })
 			end
+		end
+		if canRecruitCullingGames and relationship.CullingGameRecruit ~= true then
+			table.insert(actions, { Id = "recruit_for_culling_games", Text = "Recruit", Confirm = true })
 		end
 		return actions
 	end
@@ -1116,20 +1120,48 @@ createActionButtons = function(parent, relationship)
 				relationshipAction:FireServer(relationship.Id, action.Id, extraData)
 			end
 
-			if canNameChildren and (action.Id == "start_family" or action.Id == "adopt_child") then
-				promptChildName(function(childName)
-					fireAction({ ChildName = childName })
-				end)
-			else
-				fireAction(nil)
+			-- Naming used to happen BEFORE start_family/adopt_child were sent,
+			-- so players named a child that might not end up existing (start_family
+			-- can fail its chance roll) and always without knowing the gender
+			-- (AddChild rolls it server-side). Fire the action with no name first;
+			-- only prompt afterward, once we can see the actual child that appeared.
+			local isChildBirthAction = canNameChildren and (action.Id == "start_family" or action.Id == "adopt_child")
+			local childIdsBefore = {}
+			if isChildBirthAction then
+				for _, rel in ipairs(currentRelationships) do
+					if rel.Role == "Child" then
+						childIdsBefore[rel.Id] = true
+					end
+				end
 			end
+
+			fireAction(nil)
 
 			task.delay(1.2, function()
 				if pendingRefresh then
 					pendingRefresh = false
 					busyAction = false
 					if isOpen then
-						refreshRelationships(true)
+						if isChildBirthAction then
+							refreshRelationships(true, function(living)
+								for _, rel in ipairs(living) do
+									if rel.Role == "Child" and not childIdsBefore[rel.Id] then
+										local newChildId = rel.Id
+										promptChildName(function(newName)
+											if newName and newName ~= "" then
+												relationshipAction:FireServer(newChildId, "rename_child", { NewName = newName })
+												task.delay(0.5, function()
+													if isOpen then refreshRelationships(true) end
+												end)
+											end
+										end)
+										break
+									end
+								end
+							end)
+						else
+							refreshRelationships(true)
+						end
 					end
 				end
 			end)
@@ -1447,7 +1479,7 @@ local function createRelationshipCard(relationship, order)
 	}
 end
 
-refreshRelationships = function(preservePosition)
+refreshRelationships = function(preservePosition, onComplete)
 	refreshStamp += 1
 	local thisRefresh = refreshStamp
 
@@ -1494,8 +1526,10 @@ refreshRelationships = function(preservePosition)
 
 		canBrainTransplant = typeof(result) == "table" and result.CanBrainTransplant == true
 		canNameChildren = typeof(result) == "table" and result.CanNameChildren == true
+		canRecruitCullingGames = typeof(result) == "table" and result.CanRecruitCullingGames == true
 		local living, deceased = normalizeRelationships(result)
 		currentRelationships = living
+		if onComplete then onComplete(living) end
 
 		local order = 1
 		local renderedCards = 0

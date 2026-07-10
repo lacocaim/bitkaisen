@@ -366,10 +366,12 @@ local function init(playerGui: Instance)
 	local techniqueButton = makeButton("TECHNIQUE", Color3.fromRGB(73, 52, 126))
 	local domainButton = makeButton("DOMAIN", Color3.fromRGB(91, 58, 145))
 	local blackFlashButton = makeButton("B.FLASH", Color3.fromRGB(48, 28, 90))
+	local invokeButton = makeButton("INVOKE", Color3.fromRGB(90, 20, 30))
 	local defendButton = makeButton("DEFEND", Color3.fromRGB(48, 91, 112))
 	local fleeButton = makeButton("FLEE", Color3.fromRGB(64, 64, 75))
 	local resetButton = makeButton("RESET", Color3.fromRGB(90, 61, 31))
 	blackFlashButton.Visible = false
+	invokeButton.Visible = false
 	resetButton.Visible = false
 
 	local logBox = Instance.new("ScrollingFrame")
@@ -395,6 +397,18 @@ local function init(playerGui: Instance)
 	logPad.PaddingLeft = UDim.new(0, 10)
 	logPad.PaddingRight = UDim.new(0, 10)
 	logPad.Parent = logBox
+
+	local actionRowButtons = { attackButton, techniqueButton, domainButton, blackFlashButton, invokeButton, defendButton, fleeButton, resetButton }
+	local function layoutActionRow()
+		local visibleCount = 0
+		for _, b in ipairs(actionRowButtons) do
+			if b.Visible then visibleCount += 1 end
+		end
+		visibleCount = math.max(visibleCount, 1)
+		for _, b in ipairs(actionRowButtons) do
+			b.Size = UDim2.new(1 / visibleCount, -9, 1, 0)
+		end
+	end
 
 	local function setButtonEnabled(button, enabled)
 		button.Active = enabled
@@ -1076,14 +1090,19 @@ local function init(playerGui: Instance)
 		local bfReady = playerTurn and (tonumber(state.PlayerCE) or 0) >= bfCost
 		blackFlashButton.Text = "B.FLASH " .. tostring(bfCost)
 		blackFlashButton.Visible = not defeated
+		local deathPaintingsAvailable = tonumber(state.DeathPaintingsAvailable) or 0
+		invokeButton.Visible = not defeated and deathPaintingsAvailable > 0
+		invokeButton.Text = "INVOKE " .. tostring(deathPaintingsAvailable)
 		setButtonEnabled(attackButton, playerTurn)
 		setButtonEnabled(techniqueButton, playerTurn and techniqueRemaining > 0 and (tonumber(state.PlayerCE) or 0) >= (tonumber(state.TechniqueCECost) or 0))
 		setButtonEnabled(domainButton, playerTurn and domainReady)
 		setButtonEnabled(blackFlashButton, bfReady)
+		setButtonEnabled(invokeButton, playerTurn and deathPaintingsAvailable > 0)
 		setButtonEnabled(defendButton, playerTurn)
 		setButtonEnabled(fleeButton, playerTurn)
 		resetButton.Visible = defeated
 		setButtonEnabled(resetButton, defeated and state.CanReset == true)
+		layoutActionRow()
 		if defeated and state.CanReset == true and not promptedLossReset then
 			promptedLossReset = true
 			local productId = tonumber(state.ResetProductId) or 0
@@ -1137,6 +1156,9 @@ local function init(playerGui: Instance)
 	end)
 	domainButton.MouseButton1Click:Connect(function()
 		if state.Phase == "player_turn" then combatAction:FireServer("domain") end
+	end)
+	invokeButton.MouseButton1Click:Connect(function()
+		if state.Phase == "player_turn" then combatAction:FireServer("invoke_death_painting") end
 	end)
 	blackFlashButton.MouseButton1Click:Connect(function()
 		if state.Phase == "player_turn" then combatAction:FireServer("black_flash") end

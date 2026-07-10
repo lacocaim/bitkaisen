@@ -1380,12 +1380,26 @@ local function getEraBlockedActivityReason(stats, activityId)
 	return nil
 end
 
+local function hasBrainTransplant(stats)
+	local technique = tostring(stats and stats.CursedTechnique or "None")
+	local innate = tostring(stats and stats.InnateTechnique or "None")
+	return technique == "Brain Transplant" or innate == "Brain Transplant"
+end
+
 local function shouldShowActivityForPlayer(player, stats, activity)
 	if not activity or not activity.Id then
 		return false
 	end
 
 	if not isDev(player) and string.match(tostring(activity.Id), "^dev_") then
+		return false
+	end
+
+	if activity.Id == "create_death_painting" and not (tostring(stats and stats.Clan or "") == "Kenjaku Clan" and hasBrainTransplant(stats)) then
+		return false
+	end
+
+	if activity.Id == "cast_culling_games" and not (tostring(stats and stats.Clan or "") == "Kenjaku Clan" and hasBrainTransplant(stats)) then
 		return false
 	end
 
@@ -1798,6 +1812,97 @@ local function processActivity(player, activityId)
 		stats.Health = math.clamp((stats.Health or 100) - math.random(1, 5), 0, 100)
 		stats.Happiness = math.clamp((stats.Happiness or 100) - math.random(0, 3), 0, 100)
 		logMessage = tAct(player, "physical_conditioning", { str = gain, spd = speedGain, dur = durabilityGain }, "You pushed your body through physical conditioning. Strength +" .. tostring(gain) .. ", Speed +" .. tostring(speedGain) .. ", Durability +" .. tostring(durabilityGain) .. ".")
+
+	elseif activityId == "surgery" then
+		stats.SurgeryThisAge = math.clamp(tonumber(stats.SurgeryThisAge) or 0, 0, 1)
+		if stats.SurgeryThisAge >= 1 then
+			fireLifeUpdate(player, stats, tAct(player, "surgery_limit", nil, "You already had cosmetic work done this age. Age up before going under the knife again."))
+			return false
+		end
+		local surgeryCost = 3500
+		if (tonumber(stats.Money) or 0) < surgeryCost then
+			fireLifeUpdate(player, stats, tAct(player, "surgery_no_money", { cost = surgeryCost }, "Cosmetic surgery costs $" .. tostring(surgeryCost) .. "."))
+			return false
+		end
+		stats.Money -= surgeryCost
+		stats.SurgeryThisAge += 1
+		local looksGain = math.random(4, 10)
+		stats.Looks = math.clamp((tonumber(stats.Looks) or 50) + looksGain, 0, 100)
+		stats.Health = math.clamp((stats.Health or 100) - math.random(1, 4), 0, 100)
+		logMessage = tAct(player, "surgery_result", { gain = looksGain }, "You paid for cosmetic surgery. Looks +" .. tostring(looksGain) .. ".")
+
+	elseif activityId == "create_death_painting" then
+		if not (tostring(stats.Clan or "") == "Kenjaku Clan" and hasBrainTransplant(stats)) then
+			fireLifeUpdate(player, stats, tAct(player, "death_painting_gate", nil, "Only Kenjaku Clan sorcerers with Brain Transplant can create Death Paintings."))
+			return false
+		end
+		stats.DeathPaintings = typeof(stats.DeathPaintings) == "table" and stats.DeathPaintings or {}
+		if #stats.DeathPaintings >= 5 then
+			fireLifeUpdate(player, stats, tAct(player, "death_painting_limit", nil, "You have already created all 5 Death Paintings your body can sustain."))
+			return false
+		end
+		local paintingCost = 250
+		if (tonumber(stats.CursedEnergy) or 0) < paintingCost then
+			fireLifeUpdate(player, stats, tAct(player, "death_painting_no_ce", { cost = paintingCost }, "Creating a Death Painting costs " .. tostring(paintingCost) .. " cursed energy."))
+			return false
+		end
+		stats.CursedEnergy -= paintingCost
+		local power = math.clamp(math.random(40, 70) + math.floor((tonumber(stats.CursedEnergy) or 0) / 200), 0, 100)
+		local paintingId = "death_painting_" .. tostring(math.random(100000, 999999))
+		local paintingName = "Death Painting " .. tostring(#stats.DeathPaintings + 1)
+		table.insert(stats.DeathPaintings, {
+			Id = paintingId,
+			Name = paintingName,
+			Power = power,
+			CreatedAtAge = tonumber(stats.Age) or 0,
+			LastUsedAge = nil,
+		})
+		logMessage = tAct(player, "death_painting_result", { name = paintingName }, "You poured cursed energy into a womb of your own making. <b>" .. paintingName .. "</b> now exists, ready to answer your call in battle.")
+		fireMajorPopup(player, "DEATH PAINTING BORN", "A new cursed existence took shape.", paintingName, "You can invoke it once per age during combat.")
+
+	elseif activityId == "cast_culling_games" then
+		if not (tostring(stats.Clan or "") == "Kenjaku Clan" and hasBrainTransplant(stats)) then
+			fireLifeUpdate(player, stats, tAct(player, "culling_games_gate", nil, "Only Kenjaku Clan sorcerers with Brain Transplant can cast the Culling Games."))
+			return false
+		end
+		if stats.CullingGamesCast == true then
+			fireLifeUpdate(player, stats, tAct(player, "culling_games_repeat", nil, "You have already cast the Culling Games once. There is no repeating it."))
+			return false
+		end
+		stats.CullingGameRecruits = typeof(stats.CullingGameRecruits) == "table" and stats.CullingGameRecruits or {}
+		stats.DeathPaintings = typeof(stats.DeathPaintings) == "table" and stats.DeathPaintings or {}
+		if #stats.CullingGameRecruits < 3 then
+			fireLifeUpdate(player, stats, tAct(player, "culling_games_need_recruits", nil, "You need at least 3 people bound to the Culling Games before casting it."))
+			return false
+		end
+		if #stats.DeathPaintings < 1 then
+			fireLifeUpdate(player, stats, tAct(player, "culling_games_need_painting", nil, "You need at least 1 Death Painting to anchor the Culling Games."))
+			return false
+		end
+
+		local totalPower = #stats.CullingGameRecruits * 30
+		for _, painting in ipairs(stats.DeathPaintings) do
+			totalPower += tonumber(painting.Power) or 0
+		end
+		totalPower += math.floor((tonumber(stats.CursedEnergy) or 0) / 50)
+
+		stats.CullingGamesCast = true
+		local roll = totalPower + math.random(-30, 30)
+		local success = roll >= 300
+
+		if success then
+			stats.Fame = math.clamp((tonumber(stats.Fame) or 0) + 25, 0, 100)
+			stats.Fear = math.clamp((tonumber(stats.Fear) or 0) + 30, 0, 100)
+			stats.Reputation = (tonumber(stats.Reputation) or 0) + 20
+			stats.CursedEnergy = (tonumber(stats.CursedEnergy) or 0) + 100
+			logMessage = tAct(player, "culling_games_success", nil, "The Culling Games tore through the world under your design. Your name is now spoken with dread. Fame, Fear, and Reputation surged, and a burst of cursed energy settled into you.")
+			fireMajorPopup(player, "CULLING GAMES CAST", "A game of death began at your command.", "Feared Architect", "Fame, Fear, and Reputation rose sharply.")
+		else
+			stats.Fear = math.clamp((tonumber(stats.Fear) or 0) + 10, 0, 100)
+			stats.Reputation = (tonumber(stats.Reputation) or 0) - 10
+			logMessage = tAct(player, "culling_games_failure", nil, "The Culling Games slipped out of your control almost as soon as they began. Other sorcerers moved fast to contain the fallout, and your reputation took the hit.")
+			fireMajorPopup(player, "CULLING GAMES BACKFIRED", "The game spiraled before you could shape it.", "Contained", "Reputation dropped, but the world still fears what you attempted.")
+		end
 
 	elseif activityId == "study_theory" then
 		stats.Smarts = math.clamp((stats.Smarts or 0) + update16Gain(stats, 3, 8, true), 0, 100)
@@ -3694,11 +3799,6 @@ local function processActivity(player, activityId)
 		stats.Smarts = math.clamp((stats.Smarts or 0) + math.random(1, 4), 0, 100)
 		logMessage = firstRetirement and "You stepped away from sorcerer society and chose a civilian survival route. Civilian Stability <b>+" .. tostring(stabilityGain) .. "</b>. Jobs will be easier to settle into, and society pressure eased." or "You recommitted to civilian life and kept distance from curse work. Civilian Stability <b>+" .. tostring(stabilityGain) .. "</b>."
 		fireMajorPopup(player, "CIVILIAN ROUTE", "You retired from active sorcerer society.", "Civilian Survival", "Jobs, stability, and lower society pressure now matter more.")
-	elseif activityId == "physical_conditioning" then
-		stats.Health = math.clamp((stats.Health or 100) + math.random(5, 12), 0, 100)
-		stats.Happiness = math.clamp((stats.Happiness or 100) - math.random(0, 3), 0, 100)
-		stats.CursedEnergy += math.random(1, 4)
-		logMessage = "You trained your body until your muscles burned. Your body felt more ready for curse work."
 
 	elseif activityId == "barrier_drills" then
 		stats.Smarts = math.clamp((stats.Smarts or 0) + math.random(4, 9), 0, 100)
@@ -3903,10 +4003,10 @@ function BK_ActivityService.GetActivityListPayload(player)
 	if locale ~= "en" then
 		for _, entry in ipairs(filtered) do
 			local id = entry.Id or ""
-			entry.Title = BitKaisenLocale.tOrFallback(locale, "activities." .. id .. ".title", nil, entry.Title)
-			entry.Description = BitKaisenLocale.tOrFallback(locale, "activities." .. id .. ".desc", nil, entry.Description)
+			entry.Title = BitKaisenLocale.tOrFallback(locale, "activity_cards." .. id .. ".title", nil, entry.Title)
+			entry.Description = BitKaisenLocale.tOrFallback(locale, "activity_cards." .. id .. ".desc", nil, entry.Description)
 			if entry.LockedReason then
-				entry.LockedReason = BitKaisenLocale.tOrFallback(locale, "activities." .. id .. ".locked", nil, entry.LockedReason)
+				entry.LockedReason = BitKaisenLocale.tOrFallback(locale, "activity_cards." .. id .. ".locked", nil, entry.LockedReason)
 			end
 		end
 	end

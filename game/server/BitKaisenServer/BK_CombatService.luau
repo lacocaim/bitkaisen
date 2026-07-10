@@ -162,6 +162,7 @@ local function publicState(session)
 		CanReset = session.CanReset == true and session.Winner == "enemy" and session.Phase == "finished",
 		ResetProductId = tonumber(context.GetResetFightProductId and context.GetResetFightProductId()) or 0,
 		Domain = session.DomainPayload,
+		DeathPaintingsAvailable = session.DeathPaintingsAvailable or 0,
 		BlackFlashCECost = BF_CE_COST,
 		TestingPlace = isTestingPlace(),
 		PendingAttack = session.PendingAttackPublic,
@@ -178,6 +179,15 @@ local function sendState(player, session)
 		if stats then
 			BitKaisenDomains.Ensure(stats)
 			session.DomainPayload = BitKaisenDomains.GetCombatPayload(stats)
+
+			local currentAge = tonumber(stats.Age) or 0
+			local available = 0
+			for _, painting in ipairs(typeof(stats.DeathPaintings) == "table" and stats.DeathPaintings or {}) do
+				if tonumber(painting.LastUsedAge) ~= currentAge then
+					available += 1
+				end
+			end
+			session.DeathPaintingsAvailable = available
 		end
 	end
 	if combatStateUpdate then
@@ -262,8 +272,14 @@ local function finishCombat(player, session, winner, reason)
 			fireLifeUpdate(player, stats, "<font color='#7ee787'><b>[ COMBAT ]</b></font> You defeated <b>" .. session.Enemy.Name .. "</b>. Rewards: <b>+$" .. tostring(moneyGain) .. "</b>, Reputation <b>+" .. tostring(repGain) .. "</b>, CE <b>+" .. tostring(ceGain) .. "</b>" .. ceToolText .. "." .. (dropText ~= "" and ("\n<font color='#f0b955'><b>[ CURSED TOOL ]</b></font>" .. dropText) or ""))
 		elseif winner == "enemy" then
 			stats.CombatLosses = (tonumber(stats.CombatLosses) or 0) + 1
-			addLog(session, _cl(session, "log_defeat", {reason = tostring(reason or _ct(session, "log_defeat_default", "You were overwhelmed."))}, "Defeat. " .. tostring(reason or "You were overwhelmed.")))
-			fireLifeUpdate(player, stats, "<font color='#e53935'><b>[ COMBAT ]</b></font> You were defeated by <b>" .. session.Enemy.Name .. "</b>. " .. tostring(reason or "Your health collapsed."))
+			local scarText = ""
+			if stats.Alive ~= false and math.random(1, 100) <= 30 then
+				local looksLoss = math.random(1, 4)
+				stats.Looks = math.clamp((tonumber(stats.Looks) or 50) - looksLoss, 0, 100)
+				scarText = " The fight left a lasting mark. Looks -" .. tostring(looksLoss) .. "."
+			end
+			addLog(session, _cl(session, "log_defeat", {reason = tostring(reason or _ct(session, "log_defeat_default", "You were overwhelmed."))}, "Defeat. " .. tostring(reason or "You were overwhelmed.") .. scarText))
+			fireLifeUpdate(player, stats, "<font color='#e53935'><b>[ COMBAT ]</b></font> You were defeated by <b>" .. session.Enemy.Name .. "</b>. " .. tostring(reason or "Your health collapsed.") .. scarText)
 		elseif winner == "fled" then
 			stats.CombatFlees = (tonumber(stats.CombatFlees) or 0) + 1
 			addLog(session, _ct(session, "log_escaped", "You escaped the fight."))
@@ -828,6 +844,50 @@ local function resolveDomainAction(player, session)
 	finishDomainUse(player, session, damage, "domain_use")
 end
 
+-- Kenjaku's Death Paintings: a one-time-per-age combat wildcard, not a full
+-- combat ally with its own AI/turns (that would need real balancing work).
+-- Invoking one deals an instant burst of damage scaled by its Power, then
+-- the fight continues exactly like a Domain use (pause -> enemy turn).
+local function resolveInvokeDeathPainting(player, session)
+	local stats = getStats(player)
+	if not stats then return end
+
+	stats.DeathPaintings = typeof(stats.DeathPaintings) == "table" and stats.DeathPaintings or {}
+	local currentAge = tonumber(stats.Age) or 0
+	local best = nil
+	for _, painting in ipairs(stats.DeathPaintings) do
+		if tonumber(painting.LastUsedAge) ~= currentAge then
+			if not best or (tonumber(painting.Power) or 0) > (tonumber(best.Power) or 0) then
+				best = painting
+			end
+		end
+	end
+
+	if not best then
+		addLog(session, _ct(session, "log_no_death_paintings", "No Death Painting is available to invoke this age."))
+		sendState(player, session)
+		return
+	end
+
+	best.LastUsedAge = currentAge
+	local damage = math.floor((tonumber(best.Power) or 50) * 1.4)
+	session.Enemy.HP = math.clamp(session.Enemy.HP - damage, 0, session.Enemy.MaxHP)
+	addLog(session, _cl(session, "log_death_painting_dealt", {name = tostring(best.Name), dmg = damage}, tostring(best.Name) .. " answered your call and dealt " .. tostring(damage) .. " damage."))
+
+	if session.Enemy.HP <= 0 then
+		finishCombat(player, session, "player")
+		return
+	end
+
+	session.Phase = "pause"
+	sendState(player, session)
+	task.delay(0.45, function()
+		if sessions[player.UserId] == session and session.Phase == "pause" then
+			beginEnemyCombo(player, session, false)
+		end
+	end)
+end
+
 local function handleAction(player, action, payload)
 	local session = sessions[player.UserId]
 	if action == "debug_start" then
@@ -905,6 +965,8 @@ local function handleAction(player, action, payload)
 		end
 	elseif action == "domain" and session.Phase == "player_turn" then
 		resolveDomainAction(player, session)
+	elseif action == "invoke_death_painting" and session.Phase == "player_turn" then
+		resolveInvokeDeathPainting(player, session)
 	elseif action == "defend" and session.Phase == "player_turn" then
 		local stats = getStats(player)
 		if stats and stats.Settings and stats.Settings.SkipCombatSkillChecks == true then

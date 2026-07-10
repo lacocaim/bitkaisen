@@ -823,7 +823,7 @@ function applyTraitBuffsFromSnapshot(stats, before, context, relationship)
 	local happinessLossMult = BitKaisenTraits.GetModifier(stats, "HappinessLossMult", 1)
 	local riskMult = BitKaisenTraits.GetModifier(stats, "RiskMult", 1) * getKarmaRiskMod(stats)
 
-	if context == "Activity" or context == "Mission" then
+	if context == "Activity" or context == "Mission" or context == "LifeScenario" then
 		local extra
 		local finalCEMult = ceMult
 		local finalMasteryMult = masteryMult
@@ -6632,7 +6632,9 @@ function resolveRandomLifeScenarioChoice(player, stats, scenario, option)
 	end
 
 	ensureExtraStats(stats)
+	local traitBefore = captureTraitBuffSnapshot(stats)
 	applyRandomLifeScenarioEffects(stats, option.Effects)
+	local traitMessage = applyTraitBuffsFromSnapshot(stats, traitBefore, "LifeScenario")
 
 	if option.AddVow then
 		stats.ActiveVows = stats.ActiveVows or {}
@@ -6667,6 +6669,8 @@ function resolveRandomLifeScenarioChoice(player, stats, scenario, option)
 	if option.AddVow then
 		logMessage ..= " <font color='#ffcd69'><b>Binding Vow gained: " .. tostring(option.AddVow) .. ".</b></font>"
 	end
+
+	logMessage = logMessage .. traitMessage
 
 	fireLifeUpdate(player, stats, logMessage)
 
@@ -9333,6 +9337,7 @@ function ageUp(player)
 		stats.DomainTrainingThisAge = 0
 		stats.MissionAttemptsThisAge = 0
 		stats.PhysicalConditioningThisAge = 0
+		stats.SurgeryThisAge = 0
 		stats.CursedFingerHuntBlockedThisAge = false
 		stats.MissionAttemptsWindowAge = math.max(0, tonumber(stats.Age) or 0)
 
@@ -9403,6 +9408,7 @@ function ageUp(player)
 			stats.DomainTrainingThisAge = 0
 			stats.MissionAttemptsThisAge = 0
 			stats.PhysicalConditioningThisAge = 0
+			stats.SurgeryThisAge = 0
 			stats.CursedFingerHuntBlockedThisAge = false
 			stats.MissionAttemptsWindowAge = math.max(0, tonumber(stats.Age) or 0)
 
@@ -9489,6 +9495,11 @@ function ageUp(player)
 
 			if assetBonuses.HealthRecoveryBonus and assetBonuses.HealthRecoveryBonus > 0 then
 				stats.Health = math.clamp((stats.Health or 100) + assetBonuses.HealthRecoveryBonus, 0, 100)
+			end
+
+			if typeof(stats.DeathPaintings) == "table" and #stats.DeathPaintings > 0 then
+				local deathPaintingCE = #stats.DeathPaintings * 15
+				stats.CursedEnergy = (tonumber(stats.CursedEnergy) or 0) + deathPaintingCE
 			end
 
 			logMessage = logMessage .. BK_WorldHistoryService.AdvanceYear(player, stats)
@@ -9581,6 +9592,7 @@ function ageUp(player)
 	stats.DomainTrainingThisAge = 0
 	stats.MissionAttemptsThisAge = 0
 	stats.PhysicalConditioningThisAge = 0
+	stats.SurgeryThisAge = 0
 	stats.CursedFingerHuntBlockedThisAge = false
 	stats.MissionAttemptsWindowAge = math.max(0, tonumber(stats.Age) or 0)
 
@@ -9746,6 +9758,11 @@ function ageUp(player)
 
 	if assetBonuses.HealthRecoveryBonus and assetBonuses.HealthRecoveryBonus > 0 then
 		stats.Health = math.clamp((stats.Health or 100) + assetBonuses.HealthRecoveryBonus, 0, 100)
+	end
+
+	if typeof(stats.DeathPaintings) == "table" and #stats.DeathPaintings > 0 then
+		local deathPaintingCE = #stats.DeathPaintings * 15
+		stats.CursedEnergy = (tonumber(stats.CursedEnergy) or 0) + deathPaintingCE
 	end
 
 	local forceScenarioThisAge = false
@@ -10513,6 +10530,13 @@ updateLifeEvent.OnServerEvent:Connect(function(player, action, data)
 		ageUp(player)
 	elseif action == "DoMission" then
 		if not checkRateLimit(player, "DoMission") then
+			-- Missions were silently dropped here when clicked faster than the
+			-- cooldown, which made the log look like it was lagging behind the
+			-- player's actions (some clicks just never reached the server at all).
+			local rateLimitedStats = playerLives[player.UserId]
+			if rateLimitedStats then
+				fireLifeUpdate(player, rateLimitedStats, "<font color='#ffcd69'><b>[ SYSTEM ]</b></font> You are moving too fast. Wait a moment before your next mission.")
+			end
 			return
 		end
 
@@ -10529,6 +10553,10 @@ end)
 
 missionChoice.OnServerEvent:Connect(function(player, optionIndex)
 	if not checkRateLimit(player, "MissionChoice") then
+		local rateLimitedStats = playerLives[player.UserId]
+		if rateLimitedStats then
+			fireLifeUpdate(player, rateLimitedStats, "<font color='#ffcd69'><b>[ SYSTEM ]</b></font> You are moving too fast. Wait a moment before your next choice.")
+		end
 		return
 	end
 
@@ -10573,56 +10601,100 @@ missionChoice.OnServerEvent:Connect(function(player, optionIndex)
 	if pending.Type == "CurseUser" then
 		local mission = pending.Mission
 
-		applyChoiceEffects(stats, option)
-		applyMorality(stats, option.Morality or 0)
+		-- Curse user missions had Difficulty/DmgPenalty defined on every entry but
+		-- nothing ever rolled against them, making the whole track free money with
+		-- zero risk. Roll success against the player's power here, same shape as
+		-- the Clan War difficulty rolls, before applying the choice's effects.
+		local difficulty = tonumber(mission and mission.Difficulty) or 30
+		local playerPower = calculatePlayerPower(stats)
+		local successChance = math.clamp(60 + math.floor((playerPower - difficulty) / 2), 8, 95)
+		local missionSuccess = math.random(1, 100) <= successChance
 
 		stats.MissionsCompleted = (stats.MissionsCompleted or 0) + 1
-		adjustKarma(stats, isCurseUser(stats) and -1 or 2)
+		applyMorality(stats, option.Morality or 0)
 
-		local progressGain = tonumber((option.Effects or {}).CurseUserProgress) or tonumber(mission and mission.RewardCE) or 8
-		local effects = option.Effects or {}
-		local rewardParts = {}
+		local logMessage
 
-		if effects.Money and effects.Money ~= 0 then
-			table.insert(rewardParts, "$" .. tostring(effects.Money))
+		if missionSuccess then
+			local traitBefore = captureTraitBuffSnapshot(stats)
+			applyChoiceEffects(stats, option)
+			local traitMessage = applyTraitBuffsFromSnapshot(stats, traitBefore, "Mission")
+			adjustKarma(stats, isCurseUser(stats) and -1 or 2)
+
+			local progressGain = tonumber((option.Effects or {}).CurseUserProgress) or tonumber(mission and mission.RewardCE) or 8
+			local effects = option.Effects or {}
+			local rewardParts = {}
+
+			if effects.Money and effects.Money ~= 0 then
+				table.insert(rewardParts, "$" .. tostring(effects.Money))
+			end
+
+			if effects.CursedEnergy and effects.CursedEnergy ~= 0 then
+				table.insert(rewardParts, "CE " .. ((effects.CursedEnergy > 0 and "+") or "") .. tostring(effects.CursedEnergy))
+			end
+
+			if effects.TechniqueMastery and effects.TechniqueMastery ~= 0 then
+				table.insert(rewardParts, "Mastery " .. ((effects.TechniqueMastery > 0 and "+") or "") .. tostring(effects.TechniqueMastery))
+			end
+
+			if effects.Smarts and effects.Smarts ~= 0 then
+				table.insert(rewardParts, "Smarts " .. ((effects.Smarts > 0 and "+") or "") .. tostring(effects.Smarts))
+			end
+
+			if effects.Reputation and effects.Reputation ~= 0 then
+				table.insert(rewardParts, "Rep " .. ((effects.Reputation > 0 and "+") or "") .. tostring(effects.Reputation))
+			end
+
+			if effects.Happiness and effects.Happiness ~= 0 then
+				table.insert(rewardParts, "Happiness " .. ((effects.Happiness > 0 and "+") or "") .. tostring(effects.Happiness))
+			end
+
+			if effects.Health and effects.Health ~= 0 then
+				table.insert(rewardParts, "Health " .. ((effects.Health > 0 and "+") or "") .. tostring(effects.Health))
+			end
+
+			if progressGain and progressGain > 0 then
+				table.insert(rewardParts, "Underground Progress +" .. tostring(progressGain))
+			end
+
+			local rewardSummary = "Rewards: " .. table.concat(rewardParts, " • ")
+			if #rewardParts <= 0 then
+				rewardSummary = "Rewards: None"
+			end
+
+			logMessage = "<font color='#e53935'><b>[ CURSE USER MISSION ]</b></font> " .. tostring(option.Description or "You completed the job.")
+			logMessage = appendLine(logMessage, rewardSummary)
+			logMessage = grantCurseUserProgress(player, stats, progressGain, logMessage)
+			logMessage = logMessage .. traitMessage
+		else
+			adjustKarma(stats, -2)
+			stats.MissionsFailed = (stats.MissionsFailed or 0) + 1
+
+			local dmgPenalty = tonumber(mission and mission.DmgPenalty) or 10
+			local actualDamage = math.max(2, dmgPenalty - math.floor((stats.Smarts or 0) / 5))
+			local equippedEffects, equippedTool = BitKaisenCursedTools.GetEquippedEffects(stats)
+			local damageReduction = math.clamp(tonumber(equippedEffects.MissionRiskReduction) or 0, 0, math.max(0, actualDamage - 1))
+			if damageReduction > 0 then
+				actualDamage = math.max(1, actualDamage - damageReduction)
+			end
+
+			stats.Health = math.clamp((stats.Health or 100) - actualDamage, 0, 100)
+			stats.Happiness = math.clamp((stats.Happiness or 100) - 12, 0, 100)
+
+			-- Failure still pays out, just a lot less, so it isn't a total waste of the turn.
+			local effects = option.Effects or {}
+			local consolationMoney = math.floor((tonumber(effects.Money) or 0) * 0.25)
+			if consolationMoney ~= 0 then
+				stats.Money = math.max(0, (tonumber(stats.Money) or 0) + consolationMoney)
+			end
+
+			logMessage = "<font color='#e53935'><b>[ CURSE USER MISSION ]</b></font> The job went wrong. " .. tostring(mission and mission.Title or "The job") .. " did not go as planned."
+			logMessage = appendLine(logMessage, "Health <b>-" .. tostring(actualDamage) .. "</b>" .. (consolationMoney ~= 0 and (" | Consolation pay: <b>$" .. tostring(consolationMoney) .. "</b>") or " | No reward."))
+			if damageReduction > 0 then
+				logMessage = logMessage .. "\n<font color='#f0b955'><b>[ CURSED TOOL ]</b></font> " .. tostring(equippedTool and equippedTool.Name or "Your equipped cursed tool") .. " reduced the damage by <b>" .. tostring(damageReduction) .. "</b>."
+			end
 		end
 
-		if effects.CursedEnergy and effects.CursedEnergy ~= 0 then
-			table.insert(rewardParts, "CE " .. ((effects.CursedEnergy > 0 and "+") or "") .. tostring(effects.CursedEnergy))
-		end
-
-		if effects.TechniqueMastery and effects.TechniqueMastery ~= 0 then
-			table.insert(rewardParts, "Mastery " .. ((effects.TechniqueMastery > 0 and "+") or "") .. tostring(effects.TechniqueMastery))
-		end
-
-		if effects.Smarts and effects.Smarts ~= 0 then
-			table.insert(rewardParts, "Smarts " .. ((effects.Smarts > 0 and "+") or "") .. tostring(effects.Smarts))
-		end
-
-		if effects.Reputation and effects.Reputation ~= 0 then
-			table.insert(rewardParts, "Rep " .. ((effects.Reputation > 0 and "+") or "") .. tostring(effects.Reputation))
-		end
-
-		if effects.Happiness and effects.Happiness ~= 0 then
-			table.insert(rewardParts, "Happiness " .. ((effects.Happiness > 0 and "+") or "") .. tostring(effects.Happiness))
-		end
-
-		if effects.Health and effects.Health ~= 0 then
-			table.insert(rewardParts, "Health " .. ((effects.Health > 0 and "+") or "") .. tostring(effects.Health))
-		end
-
-		if progressGain and progressGain > 0 then
-			table.insert(rewardParts, "Underground Progress +" .. tostring(progressGain))
-		end
-
-		local rewardSummary = "Rewards: " .. table.concat(rewardParts, " • ")
-		if #rewardParts <= 0 then
-			rewardSummary = "Rewards: None"
-		end
-
-		local logMessage = "<font color='#e53935'><b>[ CURSE USER MISSION ]</b></font> " .. tostring(option.Description or "You completed the job.")
-		logMessage = appendLine(logMessage, rewardSummary)
-		logMessage = grantCurseUserProgress(player, stats, progressGain, logMessage)
 		logMessage = appendLine(logMessage, "Alignment: <b>" .. tostring(stats.Alignment or getMoralAlignment(stats)) .. "</b> | Reputation: <b>" .. tostring(stats.Reputation or 0) .. "</b>.")
 
 		fireLifeUpdate(player, stats, logMessage)

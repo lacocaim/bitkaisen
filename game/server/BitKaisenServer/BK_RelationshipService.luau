@@ -354,6 +354,7 @@ local FREE_RELATIONSHIP_ACTIONS = {
 	remove_relationship = true,
 	forget_relationship = true,
 	disown_child = true,
+	rename_child = true,
 }
 
 local FAMILY_RELATIONSHIP_ROLES = {
@@ -1505,6 +1506,46 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 			"They have been added to your Relationships page."
 		)
 
+	elseif actionId == "rename_child" then
+		if relationship.Role ~= "Child" then
+			fireLifeUpdate(player, stats, "You can only rename your own children.")
+			return
+		end
+		if not (context.OwnsGodModePass and context.OwnsGodModePass(player) == true) then
+			fireLifeUpdate(player, stats, "Naming your children requires the God Mode pass.")
+			return
+		end
+		local newName = sanitizeChildName(data.NewName)
+		if not newName then
+			fireLifeUpdate(player, stats, "That is not a valid name.")
+			return
+		end
+		local oldName = relationship.Name
+		relationship.Name = newName
+		logMessage = "You renamed " .. tostring(oldName or "your child") .. " to " .. newName .. "."
+
+	elseif actionId == "recruit_for_culling_games" then
+		if not (tostring(stats.Clan or "") == "Kenjaku Clan" and hasBrainTransplant(stats)) then
+			fireLifeUpdate(player, stats, "Only Kenjaku Clan sorcerers with Brain Transplant can recruit for the Culling Games.")
+			return
+		end
+		if relationship.Role ~= "Notable Sorcerer" then
+			fireLifeUpdate(player, stats, "You can only recruit Notable Sorcerers into the Culling Games.")
+			return
+		end
+		stats.CullingGameRecruits = typeof(stats.CullingGameRecruits) == "table" and stats.CullingGameRecruits or {}
+		if relationship.CullingGameRecruit == true then
+			fireLifeUpdate(player, stats, tostring(relationship.Name) .. " is already bound to the Culling Games.")
+			return
+		end
+		if #stats.CullingGameRecruits >= 6 then
+			fireLifeUpdate(player, stats, "You already have 6 people bound to the Culling Games. That is enough to cast it.")
+			return
+		end
+		relationship.CullingGameRecruit = true
+		table.insert(stats.CullingGameRecruits, { Id = tostring(relationship.Id), Name = tostring(relationship.Name) })
+		logMessage = "You bound " .. tostring(relationship.Name) .. " to the Culling Games. There is no walking away from it now."
+
 	elseif actionId == "induct_child_dojo" then
 		local role = tostring(relationship.Role or "")
 		if role ~= "Child" and role ~= "Ward" then
@@ -1968,6 +2009,7 @@ function BK_RelationshipService.GetRelationshipsPayload(player)
 		Relationships = displayList,
 		CanBrainTransplant = hasBrainTransplant(stats),
 		CanNameChildren = context.OwnsGodModePass and context.OwnsGodModePass(player) == true or false,
+		CanRecruitCullingGames = tostring(stats.Clan or "") == "Kenjaku Clan" and hasBrainTransplant(stats),
 	}
 
 	relationshipPayloadCache[player.UserId] = {

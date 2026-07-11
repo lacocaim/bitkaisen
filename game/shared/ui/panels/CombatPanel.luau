@@ -370,9 +370,11 @@ local function init(playerGui: Instance)
 	local defendButton = makeButton("DEFEND", Color3.fromRGB(48, 91, 112))
 	local fleeButton = makeButton("FLEE", Color3.fromRGB(64, 64, 75))
 	local resetButton = makeButton("RESET", Color3.fromRGB(90, 61, 31))
+	local encoreButton = makeButton("ENCORE", Color3.fromRGB(58, 40, 100))
 	blackFlashButton.Visible = false
 	invokeButton.Visible = false
 	resetButton.Visible = false
+	encoreButton.Visible = false
 
 	local logBox = Instance.new("ScrollingFrame")
 	logBox.Name = "CombatLog"
@@ -398,7 +400,7 @@ local function init(playerGui: Instance)
 	logPad.PaddingRight = UDim.new(0, 10)
 	logPad.Parent = logBox
 
-	local actionRowButtons = { attackButton, techniqueButton, domainButton, blackFlashButton, invokeButton, defendButton, fleeButton, resetButton }
+	local actionRowButtons = { attackButton, techniqueButton, domainButton, blackFlashButton, invokeButton, encoreButton, defendButton, fleeButton, resetButton }
 	local function layoutActionRow()
 		local visibleCount = 0
 		for _, b in ipairs(actionRowButtons) do
@@ -1084,8 +1086,15 @@ local function init(playerGui: Instance)
 		techniqueButton.Text = "TECH " .. tostring(techniqueRemaining) .. "/" .. tostring(techniqueMaxUses)
 		local domain = state.Domain or {}
 		local domainCost = tonumber(domain.Cost) or 0
-		local domainReady = domain.Unlocked == true and (tonumber(state.PlayerCE) or 0) >= domainCost
-		domainButton.Text = domain.Unlocked == true and ("DOMAIN " .. tostring(domainCost)) or "DOMAIN"
+		local domainUses = tonumber(state.DomainUses) or 0
+		local domainMaxUses = tonumber(state.DomainMaxUses) or 1
+		local domainExhausted = domainUses >= domainMaxUses
+		local domainReady = domain.Unlocked == true and not domainExhausted and (tonumber(state.PlayerCE) or 0) >= domainCost
+		domainButton.Text = domain.Unlocked ~= true and "DOMAIN"
+			or domainExhausted and "DOMAIN USED"
+			or ("DOMAIN " .. tostring(domainCost))
+		local encoreProductId = tonumber(state.DomainEncoreProductId) or 0
+		encoreButton.Visible = not defeated and domain.Unlocked == true and domainExhausted and encoreProductId > 0
 		local bfCost = tonumber(state.BlackFlashCECost) or 35
 		local bfReady = playerTurn and (tonumber(state.PlayerCE) or 0) >= bfCost
 		blackFlashButton.Text = "B.FLASH " .. tostring(bfCost)
@@ -1098,6 +1107,7 @@ local function init(playerGui: Instance)
 		setButtonEnabled(domainButton, playerTurn and domainReady)
 		setButtonEnabled(blackFlashButton, bfReady)
 		setButtonEnabled(invokeButton, playerTurn and deathPaintingsAvailable > 0)
+		setButtonEnabled(encoreButton, playerTurn)
 		setButtonEnabled(defendButton, playerTurn)
 		setButtonEnabled(fleeButton, playerTurn)
 		resetButton.Visible = defeated
@@ -1146,6 +1156,26 @@ local function init(playerGui: Instance)
 		else
 			lastDomainClashToken = nil
 		end
+
+		-- Safety net: re-derive "should something be showing" from Phase
+		-- itself, independent of token tracking, in case a state update
+		-- was ever missed and left a token stale (see MobileCombatPanel for
+		-- the reported symptom this guards against).
+		if not activeMinigame and state.Phase ~= "player_turn" and state.Phase ~= "pause" and state.Phase ~= "finished" then
+			if state.PendingCounter then
+				lastCounterToken = state.PendingCounter.Token
+				openCounterQTE(state.PendingCounter)
+			elseif state.PendingDefense then
+				lastDefenseToken = state.PendingDefense.Token
+				openDefenseQTE(state.PendingDefense)
+			elseif state.PendingAttack then
+				lastAttackToken = state.PendingAttack.Token
+				openAttackMinigame(state.PendingAttack)
+			elseif state.PendingDomainClash then
+				lastDomainClashToken = state.PendingDomainClash.Token
+				openDomainClashMinigame(state.PendingDomainClash)
+			end
+		end
 	end
 
 	attackButton.MouseButton1Click:Connect(function()
@@ -1159,6 +1189,15 @@ local function init(playerGui: Instance)
 	end)
 	invokeButton.MouseButton1Click:Connect(function()
 		if state.Phase == "player_turn" then combatAction:FireServer("invoke_death_painting") end
+	end)
+	encoreButton.MouseButton1Click:Connect(function()
+		if state.Phase ~= "player_turn" then return end
+		local productId = tonumber(state.DomainEncoreProductId) or 0
+		if game.PlaceId == TEST_PURCHASE_PLACE_ID or RunService:IsStudio() then
+			combatAction:FireServer("domain_encore_purchase_bypass")
+		elseif productId > 0 then
+			MarketplaceService:PromptProductPurchase(player, productId)
+		end
 	end)
 	blackFlashButton.MouseButton1Click:Connect(function()
 		if state.Phase == "player_turn" then combatAction:FireServer("black_flash") end

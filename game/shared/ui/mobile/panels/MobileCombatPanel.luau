@@ -339,6 +339,8 @@ local function init(playerGui: Instance)
 	blackFlashButton.Visible = false
 	local invokeButton = makeActionButton(_cb("btn_invoke", "INVOKE"), Color3.fromRGB(90, 20, 30), 8)
 	invokeButton.Visible = false
+	local encoreButton = makeActionButton(_cb("btn_encore", "ENCORE"), Color3.fromRGB(58, 40, 100), 9)
+	encoreButton.Visible = false
 
 	-- Combat log
 	local logCard = Instance.new("Frame")
@@ -1096,12 +1098,20 @@ local function init(playerGui: Instance)
 
 		local domain = state.Domain or {}
 		local domainCost = tonumber(domain.Cost) or 0
-		local domainReady = domain.Unlocked == true and (tonumber(state.PlayerCE) or 0) >= domainCost
-		domainButton.Text = domain.Unlocked == true and (_cb("domain_unlocked", "DOMAIN {cost}"):gsub("{cost}", domainCost)) or _cb("domain_locked", "DOMAIN")
+		local domainUses = tonumber(state.DomainUses) or 0
+		local domainMaxUses = tonumber(state.DomainMaxUses) or 1
+		local domainExhausted = domainUses >= domainMaxUses
+		local domainReady = domain.Unlocked == true and not domainExhausted and (tonumber(state.PlayerCE) or 0) >= domainCost
+		domainButton.Text = domain.Unlocked ~= true and _cb("domain_locked", "DOMAIN")
+			or domainExhausted and _cb("domain_used", "DOMAIN USED")
+			or (_cb("domain_unlocked", "DOMAIN {cost}"):gsub("{cost}", domainCost))
 
 		setButtonEnabled(attackButton, playerTurn)
 		setButtonEnabled(techniqueButton, playerTurn and techniqueRemaining > 0 and (tonumber(state.PlayerCE) or 0) >= (tonumber(state.TechniqueCECost) or 0))
 		setButtonEnabled(domainButton, playerTurn and domainReady)
+		local encoreProductId = tonumber(state.DomainEncoreProductId) or 0
+		encoreButton.Visible = not defeated and domain.Unlocked == true and domainExhausted and encoreProductId > 0
+		setButtonEnabled(encoreButton, playerTurn)
 		setButtonEnabled(defendButton, playerTurn)
 		setButtonEnabled(fleeButton, playerTurn)
 		local bfCost = tonumber(state.BlackFlashCECost) or 35
@@ -1160,6 +1170,31 @@ local function init(playerGui: Instance)
 		else
 			lastDomainClashToken = nil
 		end
+
+		-- Safety net: the checks above only open a minigame when its Token
+		-- changes from the last one we saw. If a state update ever gets
+		-- missed (e.g. a fast back-to-back enemy combo -> counter window
+		-- under network jitter), the token could stay stale and the player
+		-- would be left staring at the normal action row while the server
+		-- is actually waiting on a QTE tap, unable to act until it times out
+		-- against them (reported as a Mobile-only "menu froze, got killed"
+		-- bug). Re-derive "should something be showing" from Phase itself
+		-- as a fallback, independent of token tracking.
+		if not activeMinigame and state.Phase ~= "player_turn" and state.Phase ~= "pause" and state.Phase ~= "finished" then
+			if state.PendingCounter then
+				lastCounterToken = state.PendingCounter.Token
+				openCounterQTE(state.PendingCounter)
+			elseif state.PendingDefense then
+				lastDefenseToken = state.PendingDefense.Token
+				openDefenseQTE(state.PendingDefense)
+			elseif state.PendingAttack then
+				lastAttackToken = state.PendingAttack.Token
+				openAttackMinigame(state.PendingAttack)
+			elseif state.PendingDomainClash then
+				lastDomainClashToken = state.PendingDomainClash.Token
+				openDomainClashMinigame(state.PendingDomainClash)
+			end
+		end
 	end
 
 	-- Button connections (via tap router for ScrollingFrame reliability)
@@ -1174,6 +1209,15 @@ local function init(playerGui: Instance)
 	end)
 	bindTap(invokeButton, function()
 		if state.Phase == "player_turn" then combatAction:FireServer("invoke_death_painting") end
+	end)
+	bindTap(encoreButton, function()
+		if state.Phase ~= "player_turn" then return end
+		local productId = tonumber(state.DomainEncoreProductId) or 0
+		if game.PlaceId == TEST_PURCHASE_PLACE_ID or RunService:IsStudio() then
+			combatAction:FireServer("domain_encore_purchase_bypass")
+		elseif productId > 0 then
+			MarketplaceService:PromptProductPurchase(player, productId)
+		end
 	end)
 	bindTap(blackFlashButton, function()
 		if state.Phase == "player_turn" then combatAction:FireServer("black_flash") end

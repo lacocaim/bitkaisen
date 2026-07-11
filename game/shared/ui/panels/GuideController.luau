@@ -161,12 +161,18 @@ local MONETIZATION_RULES = {
 	{
 		-- Fusion per Luisa: offer Time Skip either when the 4 categories are
 		-- genuinely exhausted (rare -- see pickBasicSuggestion) OR when the
-		-- player has aged up 2 ages in a row without touching ANY of them at
-		-- all -- a much stronger, more common signal that they just want to
-		-- skip ahead in time, which is literally what this product does.
+		-- player just aged up without touching ANY of them at all -- a
+		-- common signal that they just want to skip ahead in time, which is
+		-- literally what this product does. Was >= 2 ages in a row; dropped
+		-- to >= 1 because an engaged player (the one actually likely to
+		-- spend) almost never hits a 2-in-a-row streak, which left this
+		-- firing for barely anyone (confirmed against real sales data: all 3
+		-- Time Skip tiers combined were under 1% of dev product revenue).
+		-- The 6-year cooldown in cooldownFlags still stops it from
+		-- repeating on the same player too often.
 		id = "GuideTimeSkipTip",
 		check = function(_stats, ctx)
-			return ctx.ageExhausted or ctx.quickAgeUpStreak >= 2
+			return ctx.ageExhausted or ctx.quickAgeUpStreak >= 1
 		end,
 	},
 }

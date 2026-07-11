@@ -76,6 +76,7 @@ local MONEY_100000_PRODUCT_ID = 3596045207
 local RECRUIT_REROLL_PRODUCT_ID = 3596045471
 local RECOMMENDATION_LETTER_PRODUCT_ID = 3600600214
 local EMERGENCY_TREATMENT_PRODUCT_ID = 3600600619
+local BOUNTY_CLEAR_PRODUCT_ID = 3609194803
 
 local CT_REROLL_PRODUCT_ID = 3601369202
 local CLAN_REROLL_PRODUCT_ID = 3601369293
@@ -190,6 +191,7 @@ local SHOP_CATEGORIES = {
 			{ Id = "combat_recovery_kit", Name = "Combat Recovery Kit", Subtitle = "Restore health and cursed energy after rough fights. Does not revive dead lives.", Kind = "Product", RobloxId = COMBAT_RECOVERY_KIT_PRODUCT_ID, PriceText = "R$ 99", Accent = THEME.Green },
 			{ Id = "recommendation_letter", Name = "Recommendation Letter", Subtitle = "Adds +1 teacher recommendation to your promotion record.", Kind = "Product", RobloxId = RECOMMENDATION_LETTER_PRODUCT_ID, PriceText = "R$ 129", Accent = THEME.Gold },
 			{ Id = "emergency_treatment", Name = "Emergency Treatment", Subtitle = "Restores your current life to full health if you are alive.", Kind = "Product", RobloxId = EMERGENCY_TREATMENT_PRODUCT_ID, PriceText = "R$ 49", Accent = THEME.Green },
+			{ Id = "bounty_clear", Name = "Bounty Clear", Subtitle = "Resets your Wanted Level back to 0. Hunters lose your trail.", Kind = "Product", RobloxId = BOUNTY_CLEAR_PRODUCT_ID, PriceText = "R$ 49", Accent = THEME.Red },
 		},
 	},
 	{

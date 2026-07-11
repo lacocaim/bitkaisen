@@ -691,7 +691,10 @@ local function MobileLifeLog()
 				TextXAlignment = Enum.TextXAlignment.Left,
 				RichText = true,
 			},
-			[vide.action(function(sf: ScrollingFrame) scrollRef = sf end)] = true,
+			[vide.action(function(sf: ScrollingFrame)
+				scrollRef = sf
+				sf:GetPropertyChangedSignal("CanvasSize"):Connect(scrollToBottom)
+			end)] = true,
 		},
 	}
 end

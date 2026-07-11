@@ -117,6 +117,9 @@ local function LifeLog()
 
 			[vide.action(function(sf: ScrollingFrame)
 				scrollRef = sf
+				sf:GetPropertyChangedSignal("CanvasSize"):Connect(function()
+					sf.CanvasPosition = Vector2.new(0, math.huge)
+				end)
 			end)] = true,
 		},
 	}

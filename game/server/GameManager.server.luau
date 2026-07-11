@@ -3368,6 +3368,7 @@ function startAsCurseRebirth(player)
 	local preservedSettings = oldStats.Settings
 	local preservedMetaProgress = oldStats.MetaProgress
 	local preservedGodModeSettings = BK_GodModeService.CloneSettings(oldStats)
+	local preservedTutorialFlags = oldStats.TutorialFlags
 	local oldName = tostring(oldStats.Name or "Unknown")
 	local oldTechnique = tostring(oldStats.CursedTechnique or "None")
 	local score = getCurseRebirthScore(oldStats)
@@ -3402,6 +3403,10 @@ function startAsCurseRebirth(player)
 		newStats.GodModeGuaranteedLegacyTraits = preservedGodModeSettings.GuaranteedLegacyTraits == true
 	end
 	BK_GodModeService.EnsureSettings(newStats)
+
+	if typeof(preservedTutorialFlags) == "table" then
+		newStats.TutorialFlags = preservedTutorialFlags
+	end
 
 	local curseNamePrefix = "Curse"
 	if subtype == "Vengeful Cursed Spirit" then curseNamePrefix = "Vengeful Spirit" end
@@ -3556,9 +3561,14 @@ function startNewLife(player)
 	local preservedSettings = nil
 	local preservedMetaProgress = nil
 	local preservedGodModeSettings = nil
+	local preservedTutorialFlags = nil
 
 	if oldStats and oldStats.Settings then
 		preservedSettings = oldStats.Settings
+	end
+
+	if oldStats and typeof(oldStats.TutorialFlags) == "table" then
+		preservedTutorialFlags = oldStats.TutorialFlags
 	end
 
 	if oldStats then
@@ -3617,6 +3627,10 @@ function startNewLife(player)
 		newStats.GodModeGuaranteedLegacyTraits = preservedGodModeSettings.GuaranteedLegacyTraits == true
 	end
 	BK_GodModeService.EnsureSettings(newStats)
+
+	if preservedTutorialFlags then
+		newStats.TutorialFlags = preservedTutorialFlags
+	end
 
 	local rolledOrigin = rollBirthOriginForPlayer(player)
 	local rolledGender = math.random(1, 2) == 1 and "Male" or "Female"
@@ -11150,8 +11164,14 @@ BitKaisenServiceContext = {
 	ResetCombatFight = function(player, reason)
 		return BK_CombatService.ResetCurrentFight(player, reason)
 	end,
+	GrantDomainEncore = function(player)
+		return BK_CombatService.GrantDomainEncore(player)
+	end,
 	GetResetFightProductId = function()
 		return BK_CommerceService.GetResetFightProductId()
+	end,
+	GetDomainEncoreProductId = function()
+		return BK_CommerceService.GetDomainEncoreProductId()
 	end,
 	GetAFKStabilizationProductId = function()
 		return BK_CommerceService.GetAFKStabilizationProductId()

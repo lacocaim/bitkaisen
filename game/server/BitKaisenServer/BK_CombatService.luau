@@ -161,7 +161,10 @@ local function publicState(session)
 		Log = session.Log,
 		CanReset = session.CanReset == true and session.Winner == "enemy" and session.Phase == "finished",
 		ResetProductId = tonumber(context.GetResetFightProductId and context.GetResetFightProductId()) or 0,
+		DomainEncoreProductId = tonumber(context.GetDomainEncoreProductId and context.GetDomainEncoreProductId()) or 0,
 		Domain = session.DomainPayload,
+		DomainUses = session.DomainUses or 0,
+		DomainMaxUses = session.DomainMaxUses or 1,
 		DeathPaintingsAvailable = session.DeathPaintingsAvailable or 0,
 		BlackFlashCECost = BF_CE_COST,
 		TestingPlace = isTestingPlace(),
@@ -686,6 +689,21 @@ function BK_CombatService.ResetCurrentFight(player, reason)
 	return true
 end
 
+-- Domain Encore developer product: grants one extra Domain use for the
+-- CURRENT fight only (does not persist to future fights). Bought mid-combat,
+-- same "save the run right now" moment RCT Revive already proves players
+-- will pay for, just applied before you're on the brink instead of after.
+function BK_CombatService.GrantDomainEncore(player)
+	local session = sessions[player.UserId]
+	if not session or session.Phase == "finished" then
+		return false
+	end
+	session.DomainMaxUses = (tonumber(session.DomainMaxUses) or 1) + 1
+	addLog(session, _ct(session, "log_domain_encore", "Domain Encore purchased. You can expand your domain one more time this fight."))
+	sendState(player, session)
+	return true
+end
+
 local function finishDomainUse(player, session, damage, progressReason)
 	local stats = getStats(player)
 	if not stats then return end
@@ -903,6 +921,12 @@ local function handleAction(player, action, payload)
 	if action == "reset_purchase_bypass" then
 		if session and isTestingPlace() then
 			BK_CombatService.ResetCurrentFight(player, "testing bypass")
+		end
+		return
+	end
+	if action == "domain_encore_purchase_bypass" then
+		if session and isTestingPlace() then
+			BK_CombatService.GrantDomainEncore(player)
 		end
 		return
 	end

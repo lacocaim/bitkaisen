@@ -1951,6 +1951,10 @@ function BitKaisenActivities.CanDoActivity(stats, activity)
 		return false, "You are already enrolled in Jujutsu High."
 	end
 
+	if activity.Id == "apply_jujutsu_high" and stats.GraduatedJujutsuHigh == true then
+		return false, "You already graduated from Jujutsu High."
+	end
+
 	return true, nil
 end
 

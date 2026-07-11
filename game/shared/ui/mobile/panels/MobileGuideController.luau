@@ -131,12 +131,14 @@ local MONETIZATION_RULES = {
 	},
 	{
 		-- Fusion per Luisa: offer Time Skip either when the 4 categories are
-		-- genuinely exhausted (rare) OR when the player has aged up 2 ages
-		-- in a row without touching any of them at all -- a much stronger,
-		-- more common "just wants to skip ahead in time" signal.
+		-- genuinely exhausted (rare) OR when the player just aged up without
+		-- touching any of them at all -- a common "just wants to skip ahead
+		-- in time" signal. Was >= 2 in a row; dropped to >= 1 to match the
+		-- PC GuideController fix (see its comment for the reasoning, backed
+		-- by real sales data showing Time Skip barely selling).
 		id = "GuideTimeSkipTip",
 		check = function(_stats, ctx)
-			return ctx.ageExhausted or ctx.quickAgeUpStreak >= 2
+			return ctx.ageExhausted or ctx.quickAgeUpStreak >= 1
 		end,
 	},
 }

@@ -99,6 +99,10 @@ local GIFT_AFK_STABILIZATION_PRODUCT_ID = 3606084638
 local TEST_GIFT_PRODUCT_ID = 3606089240
 -- Developer Product for resetting an active combat fight.
 local RESET_FIGHT_PRODUCT_ID = 3604877974
+-- Domain Encore: one extra Domain use for the current fight only.
+local DOMAIN_ENCORE_PRODUCT_ID = 3609182085
+-- Bounty Clear: resets Wanted Level back to 0.
+local BOUNTY_CLEAR_PRODUCT_ID = 3609194803
 -- Gamepass for the one-time AFK Stabilization unlock.
 local AFK_STABILIZATION_GAMEPASS_ID = 1879156343
 local AFK_STABILIZATION_PRODUCT_ID = AFK_STABILIZATION_GAMEPASS_ID
@@ -356,6 +360,16 @@ local DEVELOPER_PRODUCTS = {
 	[RESET_FIGHT_PRODUCT_ID] = {
 		Id = "reset_combat_fight",
 		Name = "Reset Fight",
+	},
+
+	[DOMAIN_ENCORE_PRODUCT_ID] = {
+		Id = "domain_encore",
+		Name = "Domain Encore",
+	},
+
+	[BOUNTY_CLEAR_PRODUCT_ID] = {
+		Id = "bounty_clear",
+		Name = "Bounty Clear",
 	},
 
 	[AFK_STABILIZATION_PRODUCT_ID] = {
@@ -1720,6 +1734,16 @@ local function grantCursedToolSalvageKit(player, stats)
 	end
 end
 
+local function grantBountyClear(player, stats)
+	ensureExtraStats(stats)
+	local oldWanted = tonumber(stats.WantedLevel) or 0
+	stats.WantedLevel = 0
+	stats.Purchases = stats.Purchases or {}
+	stats.Purchases.BountyClears = (tonumber(stats.Purchases.BountyClears) or 0) + 1
+	fireMajorPopup(player, "BOUNTY CLEARED", "Your trail went cold. The hunters lost your scent.", "Wanted Level", "0")
+	fireLifeUpdate(player, stats, "<font color='#7ee787'><b>[ BOUNTY CLEAR ]</b></font> Your Wanted Level dropped from <b>" .. tostring(math.floor(oldWanted)) .. "</b> to <b>0</b>.")
+end
+
 local function grantCombatRecoveryKit(player, stats)
 	ensureExtraStats(stats)
 	local oldHealth = tonumber(stats.Health) or 100
@@ -1915,6 +1939,11 @@ local function grantDeveloperProduct(player, productId)
 			context.ResetCombatFight(player, "developer product")
 		end
 
+	elseif productInfo.Id == "domain_encore" then
+		if context.GrantDomainEncore then
+			context.GrantDomainEncore(player)
+		end
+
 	elseif productInfo.Id == "afk_stabilization_unlock" then
 		grantAFKStabilization(player, stats)
 
@@ -1926,6 +1955,9 @@ local function grantDeveloperProduct(player, productId)
 
 	elseif productInfo.Id == "combat_recovery_kit" then
 		grantCombatRecoveryKit(player, stats)
+
+	elseif productInfo.Id == "bounty_clear" then
+		grantBountyClear(player, stats)
 
 	elseif productInfo.Id == "time_skip_5" then
 		grantTimeSkip(player, stats, 5)
@@ -2002,6 +2034,10 @@ end
 
 function BK_CommerceService.GetResetFightProductId()
 	return RESET_FIGHT_PRODUCT_ID
+end
+
+function BK_CommerceService.GetDomainEncoreProductId()
+	return DOMAIN_ENCORE_PRODUCT_ID
 end
 
 function BK_CommerceService.GetAFKStabilizationProductId()

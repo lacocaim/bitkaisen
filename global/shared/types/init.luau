@@ -320,6 +320,10 @@ export type SlotData = {
 	exists: boolean,
 	summary: SlotSummary,
 	stats: LifeStats?,
+	-- Multiplayer Fase 8: only ever set on a publicWorldSaves[worldId]
+	-- entry -- a sibling of `stats`, not a per-character flag, so it
+	-- survives death/new-life within this specific Public world.
+	GodModeUnlocked: boolean?,
 }
 
 export type Account = {
@@ -330,6 +334,13 @@ export type Account = {
 	accountRewards: { [string]: boolean },
 	dailyLogin: { [string]: any },
 	slots: { SlotData },
+	-- Multiplayer Fase 1: Public-mode character saves, keyed by world id.
+	-- Separate from the 3 private `slots` above -- a Public world's save
+	-- persists independently of which private slot is selected.
+	publicWorldSaves: { [string]: SlotData },
+	-- Multiplayer Fase 1: which save Load() should resume on next join.
+	lastWorldMode: string?,
+	lastPublicWorldId: string?,
 }
 
 local settingsSchema = gt.build(gt.struct({

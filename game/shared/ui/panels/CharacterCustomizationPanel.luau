@@ -1273,6 +1273,67 @@ function buildUI()
 		refreshPage()
 	end)
 
+	-- Multiplayer Fase 4 ("Inicio Rápido"): skips both pages entirely --
+	-- server builds and submits a fully-random valid character in one call
+	-- (buildQuickStartCharacterPayload + applyCharacterCustomization,
+	-- GameManager.server.luau), then this panel closes exactly like a
+	-- normal successful FINISH.
+	local quickStartButton = makeButton(bottomBar, "QuickStartButton", _cc("btn_quick_start", "QUICK START"), THEME.Button)
+	quickStartButton.Size = UDim2.new(0, 132, 0, 36)
+	quickStartButton.Position = UDim2.new(0, 164, 0, 18)
+
+	quickStartButton.MouseButton1Click:Connect(function()
+		clearStatusMessage()
+		if submitting then return end
+
+		local quickStartRemote = remotes.get("RequestQuickStartCharacter")
+		if not quickStartRemote then
+			setStatusMessage("Quick start remote not available.", true)
+			return
+		end
+
+		submitting = true
+		quickStartButton.Text = _cc("btn_saving", "SAVING...")
+
+		local ok, result = pcall(function()
+			return quickStartRemote:InvokeServer()
+		end)
+
+		submitting = false
+
+		if ok and typeof(result) == "table" and result.Success == true then
+			quickStartButton.Text = _cc("btn_saved", "SAVED")
+
+			task.delay(0.15, function()
+				if overlay then
+					tween(overlay, 0.18, { BackgroundTransparency = 1 })
+				end
+				if window then
+					tween(window, 0.18, { BackgroundTransparency = 1 })
+				end
+
+				task.delay(0.2, function()
+					if overlay then overlay.Visible = false end
+					if window then window.Visible = false end
+					if screenGui then screenGui.Enabled = false end
+					isOpen = false
+					lockedIdentityState = nil
+					lockedRolledIdentityState = nil
+				end)
+			end)
+		else
+			quickStartButton.Text = _cc("btn_quick_start", "QUICK START")
+			local message = "Could not start quickly."
+			if ok and typeof(result) == "table" and result.Message then
+				message = tostring(result.Message)
+			elseif not ok then
+				message = "Server error. Try again."
+				warn("[CharacterCustomizationPanel] Quick start failed:", result)
+			end
+			setStatusMessage(message, true)
+		end
+	end)
+
 	backButton = makeButton(bottomBar, "BackButton", BitKaisenLocale.tOrFallback(L, "ui.back", nil, "Back"), THEME.Button)
 	backButton.Size = UDim2.new(0, 104, 0, 36)
 	backButton.Position = UDim2.new(1, -280, 0, 18)
@@ -1492,6 +1553,10 @@ local function init(playerGui: Instance)
 
 			if stats.Alive == false then return end
 			if stats.CharacterCustomized == true then return end
+			-- Multiplayer Fase 1: wait for the Private/Public choice (WorldModePanel)
+			-- before customization opens. Only affects brand-new lives -- anyone who
+			-- already finished customization already returned above.
+			if stats.WorldMode == nil then return end
 
 			local lifeKey = getLifeKey(stats)
 			if lastOpenLifeKey == lifeKey and isOpen then return end

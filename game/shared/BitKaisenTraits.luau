@@ -636,7 +636,7 @@ BitKaisenTraits.Definitions = {
 		Description = "good baseline health reduces physical risk and keeps morale stable.",
 		Modifiers = { RiskMult = 0.92, HappinessLossMult = 0.92 } },
 
-	-- Scarred Aura: intimidation effect — risk slightly down, relationship slightly slower
+	-- Scarred Aura: intimidation effect - risk slightly down, relationship slightly slower
 	{ Id = "scarred_aura", Name = "Scarred Aura", Category = "Body", Rarity = "Uncommon", Weight = 55,
 		Description = "visible scars signal experience, deterring casual threats but making warm bonds harder.",
 		Modifiers = { RiskMult = 0.90, RelationshipGainMult = 0.92, MissionSuccessBonus = 2 } },
@@ -994,7 +994,7 @@ BitKaisenTraits.Definitions = {
 		Description = "a body considered for a cursed vessel. CE and awakening are exceptional but danger follows.",
 		Modifiers = { CEGainMult = 1.18, AwakeningChanceBonus = 8, RiskMult = 1.16, RarityPower = 2 } },
 
-	-- Curse Bait: legendary CE, awakening, risk — the highest risk trait
+	-- Curse Bait: legendary CE, awakening, risk - the highest risk trait
 	{ Id = "curse_bait", Name = "Curse Bait", Category = "DarkRare", Rarity = "Legendary", Weight = 5,
 		Description = "curses are drawn to this person instinctively. CE and awakening reach extreme heights, but danger is constant.",
 		Modifiers = { CEGainMult = 1.32, AwakeningChanceBonus = 10, RiskMult = 1.32, CombatGainMult = 1.14, RarityPower = 4 } },
@@ -1511,7 +1511,7 @@ for _, trait in ipairs(BitKaisenTraits.Definitions) do
 end
 
 ----------------------------------------------------------------
--- PUBLIC FUNCTIONS — all signatures preserved exactly
+-- PUBLIC FUNCTIONS - all signatures preserved exactly
 ----------------------------------------------------------------
 function BitKaisenTraits.GetTrait(traitIdOrName)
 	if type(traitIdOrName) == "table" then

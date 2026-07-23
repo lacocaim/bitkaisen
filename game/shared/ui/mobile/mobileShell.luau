@@ -183,17 +183,17 @@ local function MobileProfileHeader()
 	local nameText  = derive(function() local s = stats() return tostring(s and s.Name or "...") end)
 	local ageVal    = derive(function() local s = stats() return s and helpers.getAgeDisplay(s) or "0" end)
 	local monthVal  = derive(function() local s = stats() return s and tostring(s.CurrentMonth or 1) or "1" end)
-	local yearVal   = derive(function() local s = stats() return s and tostring(helpers.getCurrentYear(s)) or "—" end)
-	local eraVal    = derive(function() local s = stats() return s and locEra(helpers.getCurrentEraDisplay(s)) or "—" end)
+	local yearVal   = derive(function() local s = stats() return s and tostring(helpers.getCurrentYear(s)) or "-" end)
+	local eraVal    = derive(function() local s = stats() return s and locEra(helpers.getCurrentEraDisplay(s)) or "-" end)
 	local rankVal   = derive(function()
 		local s = stats()
-		if not s then return "—" end
+		if not s then return "-" end
 		if helpers.isProfileCurseLife(s) then return tostring(s.CurseGrade or "Unknown") end
 		return tostring(s.Grade or "Non-Sorcerer")
 	end)
 	local worldVal  = derive(function()
 		local s = stats()
-		if not s then return "—" end
+		if not s then return "-" end
 		return locPath(tostring(s.LifePath or helpers.getRoutePathText(s) or "Undecided"))
 	end)
 	local fameVal   = derive(function() local s = stats() return tostring(math.clamp(tonumber(s and s.Fame) or 0, 0, 100)) end)
@@ -465,7 +465,7 @@ local function MobileProfileHeader()
 			},
 		},
 
-		-- Divider medio — hijo directo de ProfileHeader, mismo ancho que el de arriba
+		-- Divider medio - hijo directo de ProfileHeader, mismo ancho que el de arriba
 		create("Frame") {
 			Size = UDim2.new(1, 0, 0, 2),
 			BackgroundColor3 = Color3.fromRGB(55, 50, 75),
@@ -700,6 +700,34 @@ local function MobileLifeLog()
 end
 
 local function MobileAgeButton()
+	local stats = playerState.stats
+
+	-- Multiplayer Fase 2 ("El Repique"): same rule as the PC AgeUpButton --
+	-- Public-mode worlds share one calendar, no individual +AGE, only a
+	-- vote to advance it. Private stays exactly as it always was.
+	local buttonText = derive(function()
+		local s = stats()
+		if s and s.WorldMode == "Public" then
+			local count = tonumber(s.PublicEraVoteCount) or 0
+			local needed = tonumber(s.PublicEraVoteNeeded) or 1
+			return "🗳️ " .. _ui("btn_propose_era", "PROPOSE ERA ADVANCE") .. " (" .. count .. "/" .. needed .. ")"
+		end
+		return _ui("btn_age_up", "+ AGE")
+	end)
+
+	-- Visual polish pass: thin fill bar under the label showing vote
+	-- progress at a glance. Zero width (invisible) in Private mode.
+	local voteProgressSize = function()
+		local s = stats()
+		local scale = 0
+		if s and s.WorldMode == "Public" then
+			local count = tonumber(s.PublicEraVoteCount) or 0
+			local needed = math.max(1, tonumber(s.PublicEraVoteNeeded) or 1)
+			scale = math.clamp(count / needed, 0, 1)
+		end
+		return UDim2.new(scale, 0, 1, 0)
+	end
+
 	return create("Frame") {
 		Name = "AgeUpOuter",
 		Size = UDim2.new(0.97, 0, 1, 0),
@@ -740,7 +768,7 @@ local function MobileAgeButton()
 			ZIndex = 12,
 		},
 
-		-- Main button — casi full width
+		-- Main button - casi full width
 		create("TextButton") {
 			Name = "AgeUpButton",
 			AnchorPoint = Vector2.new(0.5, 0.5),
@@ -759,7 +787,7 @@ local function MobileAgeButton()
 				Position = UDim2.new(0.5, 0, 0.5, 0),
 				Size = UDim2.new(1, 0, 1, 0),
 				BackgroundTransparency = 1,
-				Text = "+ AGE",
+				Text = buttonText,
 				TextColor3 = Color3.fromRGB(240, 220, 220),
 				TextSize = 18,
 				Font = Enum.Font.GothamBlack,
@@ -767,11 +795,39 @@ local function MobileAgeButton()
 				ZIndex = 13,
 			},
 
+			create("Frame") {
+				Name = "VoteProgressTrack",
+				AnchorPoint = Vector2.new(0.5, 1),
+				Position = UDim2.new(0.5, 0, 1, -4),
+				Size = UDim2.new(1, -16, 0, 3),
+				BackgroundColor3 = Color3.fromRGB(40, 12, 12),
+				BorderSizePixel = 0,
+				ClipsDescendants = true,
+				ZIndex = 13,
+				create("UICorner") { CornerRadius = UDim.new(0, 2) },
+
+				create("Frame") {
+					Name = "VoteProgressFill",
+					Size = voteProgressSize,
+					BackgroundColor3 = Color3.fromRGB(255, 212, 94),
+					BorderSizePixel = 0,
+					ZIndex = 14,
+				},
+			},
+
 			[vide.action(function(btn: TextButton)
 				bindTap(btn, function()
 					if _G.BitKaisenPlaySFX then _G.BitKaisenPlaySFX("Tick") end
-					local ule = remotes.updateLifeEvent()
-					if ule then ule:FireServer("AgeUp") end
+					local s = stats()
+					if s and s.WorldMode == "Public" then
+						local proposeEraAdvance = remotes.get("ProposeEraAdvance")
+						if proposeEraAdvance then
+							proposeEraAdvance:FireServer()
+						end
+					else
+						local ule = remotes.updateLifeEvent()
+						if ule then ule:FireServer("AgeUp") end
+					end
 				end)
 			end)] = true,
 		},
@@ -895,7 +951,7 @@ local function create_(playerGui: PlayerGui)
 		BorderSizePixel = 0,
 		Parent = gui,
 
-		-- BLOQUE 1: Stats — scroll propio si el perfil no entra.
+		-- BLOQUE 1: Stats - scroll propio si el perfil no entra.
 		-- Ocupa todo el espacio sobre el log (150px) + gap (6px) + age+nav (326px).
 		create("ScrollingFrame") {
 			Name = "StatsScroll",
@@ -921,7 +977,7 @@ local function create_(playerGui: PlayerGui)
 			MobileProfileHeader(),
 		},
 
-		-- BLOQUE 2: Life Log — 150px fijos, scroll interno estilo WhatsApp.
+		-- BLOQUE 2: Life Log - 150px fijos, scroll interno estilo WhatsApp.
 		-- Siempre visible, completamente independiente del bloque de stats.
 		create("Frame") {
 			Name = "LogArea",
@@ -933,7 +989,7 @@ local function create_(playerGui: PlayerGui)
 			MobileLifeLog(),
 		},
 
-		-- BLOQUE 3: +AGE — fijo, con margen claro sobre el nav.
+		-- BLOQUE 3: +AGE - fijo, con margen claro sobre el nav.
 		create("Frame") {
 			Name = "AgeButtonAnchor",
 			Size = UDim2.new(1, 0, 0, 68),
@@ -950,7 +1006,7 @@ local function create_(playerGui: PlayerGui)
 			MobileAgeButton(),
 		},
 
-		-- BLOQUE 4: Nav — muestra 3 filas (6 items), resto scrolleable.
+		-- BLOQUE 4: Nav - muestra 3 filas (6 items), resto scrolleable.
 		create("ScrollingFrame") {
 			Name = "NavAnchor",
 			Size = UDim2.new(1, 0, 0, 162),
@@ -989,9 +1045,21 @@ local function create_(playerGui: PlayerGui)
 			if ageBtn and ageBtn:IsA("TextButton") then
 				bindTap(ageBtn, function()
 					if _G.BitKaisenPlaySFX then _G.BitKaisenPlaySFX("Tick") end
-					local ule = remotes.updateLifeEvent()
-					if ule then
-						ule:FireServer("AgeUp")
+					-- Multiplayer Fase 2 ("El Repique"): this is the live tap
+					-- handler (see comment above -- vide.action doesn't fire
+					-- for this tree), so the Public/Private branch has to
+					-- live here, not in MobileAgeButton()'s own vide.action.
+					local s = playerState.stats()
+					if s and s.WorldMode == "Public" then
+						local proposeEraAdvance = remotes.get("ProposeEraAdvance")
+						if proposeEraAdvance then
+							proposeEraAdvance:FireServer()
+						end
+					else
+						local ule = remotes.updateLifeEvent()
+						if ule then
+							ule:FireServer("AgeUp")
+						end
 					end
 				end)
 			end

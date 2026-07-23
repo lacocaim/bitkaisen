@@ -93,6 +93,9 @@ end
 
 local function ensureGamePassUnlock(player, stats)
 	if not player or not stats or stats.AFKStabilizationUnlocked == true or isTestingPlace() then return end
+	-- Multiplayer Fase 8 (Fair Play Doctrine): no gamepass restores/applies
+	-- inside a Public world -- same rule as GameManager's central check.
+	if stats.WorldMode == "Public" then return end
 	local passId = getProductId()
 	if passId <= 0 then return end
 	local ok, owns = pcall(function()

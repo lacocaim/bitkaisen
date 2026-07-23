@@ -488,7 +488,7 @@ local function makePreviewCard(sacrifice: any, reward: any, severity: any, power
 	else
 		mc.mobileLabel({
 			parent = card,
-			text = _v("cannot_sign", "Cannot sign — sacrifice and reward target the same stat."),
+			text = _v("cannot_sign", "Cannot sign - sacrifice and reward target the same stat."),
 			size = 12,
 			color = theme.Bad,
 			font = Enum.Font.GothamBold,

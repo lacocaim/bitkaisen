@@ -275,7 +275,7 @@ local function init(playerGui: Instance)
 	rctReviveButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 	rctReviveButton.TextSize = 13
 	rctReviveButton.Font = Enum.Font.GothamBlack
-	rctReviveButton.Text = "RCT REVIVE — R$50"
+	rctReviveButton.Text = "RCT REVIVE - R$50"
 	rctReviveButton.AutoButtonColor = false
 	rctReviveButton.ZIndex = 903
 	rctReviveButton.Parent = buttonsHolder
@@ -698,7 +698,7 @@ local function init(playerGui: Instance)
 			rctReviveDesc.TextColor3 = Color3.fromRGB(155, 155, 170)
 			rctReviveDesc.Text = "Your body has already survived through RCT twice in this life."
 		else
-			rctReviveButton.Text = _d("rct_left", "RCT REVIVE — R$50  ({remaining}/{max} LEFT)"):gsub("{remaining}", tostring(remaining)):gsub("{max}", tostring(RCT_REVIVE_MAX_PER_LIFE))
+			rctReviveButton.Text = _d("rct_left", "RCT REVIVE - R$50  ({remaining}/{max} LEFT)"):gsub("{remaining}", tostring(remaining)):gsub("{max}", tostring(RCT_REVIVE_MAX_PER_LIFE))
 			rctReviveButton.Active = true
 			rctReviveButton.BackgroundColor3 = RCT_REVIVE_READY_COLOR
 			rctReviveDesc.TextColor3 = Color3.fromRGB(190, 175, 255)

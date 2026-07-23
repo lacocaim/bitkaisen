@@ -27,7 +27,7 @@ local CLANS = { "Gojo", "Zenin", "Kamo", "Inumaki", "Itadori", "Kusakabe", "Nana
 local REGIONS = { "Kyoto", "Tokyo", "Sendai", "Osaka", "Nara", "Shibuya", "Yokohama", "Nagoya" }
 
 local NOTABLE_PERSONALITIES = {
-	"Quiet but observant — they notice everything and say very little.",
+	"Quiet but observant - they notice everything and say very little.",
 	"Blunt and hard to impress. Respect has to be earned from them, not given.",
 	"Warm on the surface, but cautious about who they let close.",
 	"Fiercely protective of the people they care about, even at cost to themselves.",
@@ -35,7 +35,7 @@ local NOTABLE_PERSONALITIES = {
 	"Calm under pressure in a way that makes others uneasy.",
 	"Kind, but not naive. They have seen enough to know the difference.",
 	"Secretive about their past. Ask the wrong question and they go quiet.",
-	"Loyal once trust is earned — but that process is slow.",
+	"Loyal once trust is earned - but that process is slow.",
 	"Sharp-tongued but reliable when things go wrong.",
 	"Soft-spoken until pressure hits. Then something shifts.",
 	"Polite in a way that keeps score without showing it.",
@@ -46,12 +46,12 @@ local NOTABLE_PERSONALITIES = {
 
 local NOTABLE_LORE_BY_TRAIT = {
 	["Immense Cursed Energy"] = {
-		"Their cursed energy output was detected at birth — a record for their clan.",
+		"Their cursed energy output was detected at birth - a record for their clan.",
 		"Even as a child, the air around them felt heavier than it should.",
 		"The Jujutsu Society flagged their cursed energy readings before they learned to walk.",
 	},
 	["Heavenly Restriction"] = {
-		"Born without a single trace of cursed energy — and stronger for it.",
+		"Born without a single trace of cursed energy - and stronger for it.",
 		"Their body operates at a physical limit no sorcerer can reach. The trade-off was everything.",
 		"What they lost in technique, they rebuilt in pure physical discipline.",
 	},

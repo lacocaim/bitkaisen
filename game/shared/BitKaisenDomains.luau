@@ -40,7 +40,7 @@ local DOMAIN_CT_EFFECTS = {
 	["Rika Manifestation"]        = { DamageMult = 1.10, CERefund = 10, Heal = 0,  Log = "Rika amplifies the domain from within. Her presence sharpens every technique." },
 	["Blood Manipulation"]        = { DamageMult = 1.10, CERefund = 0,  Heal = 10, Log = "Crimson Binding Domain courses through the enemy's veins, feeding your recovery." },
 	["Cursed Speech"]             = { DamageMult = 1.05, CERefund = 0,  Heal = 0,  Log = "Commanding Silence. Every syllable inside the domain is an absolute decree." },
-	["Boogie Woogie"]             = { DamageMult = 1.0,  CERefund = 35, Heal = 0,  Log = "Resonant Switchyard warps space — CE cycles back through the rhythm of the barrier." },
+	["Boogie Woogie"]             = { DamageMult = 1.0,  CERefund = 35, Heal = 0,  Log = "Resonant Switchyard warps space - CE cycles back through the rhythm of the barrier." },
 	["Ratio Technique"]           = { DamageMult = 1.0,  CERefund = 0,  Heal = 0,  CritChance = 40, Log = "Seven-to-Three Court locks the enemy in critical geometry. A weak point reveals itself." },
 	["Construction"]              = { DamageMult = 1.0,  CERefund = 0,  Heal = 20, Log = "Perfected Forge raises barriers that seal your injuries mid-expansion." },
 	["Cursed Spirit Manipulation"]= { DamageMult = 1.15, CERefund = 0,  Heal = 0,  Log = "Parade of Bound Curses overwhelms with sheer numbers. No defense covers every angle." },

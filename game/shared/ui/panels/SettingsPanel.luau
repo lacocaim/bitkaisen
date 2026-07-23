@@ -146,7 +146,7 @@ local THEME = {
 	Bad = Color3.fromRGB(235, 75, 95),
 }
 
--- Summer sale: 20% off all gamepasses. Set to false to end the sale (UI only —
+-- Summer sale: 20% off all gamepasses. Set to false to end the sale (UI only -
 -- remember to restore gamepass prices on the Creator Dashboard too).
 local SUMMER_SALE_ACTIVE = true
 
@@ -199,7 +199,7 @@ local SHOP_CATEGORIES = {
 		Subtitle = "Skip years instantly. Cannot be used on dead lives.",
 		Accent = THEME.Blue,
 		Items = {
-			{ Id = "time_skip_5",  Name = "Time Skip +5 Years",  Subtitle = "Skip 5 years into the future. Your character ages instantly — use wisely.",           Kind = "Product", RobloxId = TIME_SKIP_5_PRODUCT_ID,  PriceText = "R$ 75",  Accent = THEME.Blue },
+			{ Id = "time_skip_5",  Name = "Time Skip +5 Years",  Subtitle = "Skip 5 years into the future. Your character ages instantly - use wisely.",           Kind = "Product", RobloxId = TIME_SKIP_5_PRODUCT_ID,  PriceText = "R$ 75",  Accent = THEME.Blue },
 			{ Id = "time_skip_10", Name = "Time Skip +10 Years", Subtitle = "Skip 10 years into the future. Time waits for no sorcerer.",                          Kind = "Product", RobloxId = TIME_SKIP_10_PRODUCT_ID, PriceText = "R$ 149", Accent = THEME.Blue },
 			{ Id = "time_skip_25", Name = "Time Skip +25 Years", Subtitle = "Skip 25 years into the future. A quarter century, gone in an instant.",               Kind = "Product", RobloxId = TIME_SKIP_25_PRODUCT_ID, PriceText = "R$ 299", Accent = THEME.Purple },
 		},
@@ -1291,7 +1291,7 @@ local function makeSlotCard(slot, selectedSlot)
 
 	local statusText = "Empty Slot"
 	if locked then
-		statusText = "Locked — VIP or Extra Save Slots required."
+		statusText = "Locked - VIP or Extra Save Slots required."
 	elseif exists then
 		statusText = tostring(slot.Name or "Unknown") .. " | Age " .. tostring(slot.Age or 0) .. " | " .. tostring(slot.Grade or "Unknown")
 	end
@@ -1803,6 +1803,13 @@ end)
 
 local function makeProductCard(item)
 	local isStarterPackClaimed = item.Id == "starter_pack" and hasClaimedStarterPack()
+	-- Multiplayer Fase 8 (Fair Play Doctrine): every GamePass in this shop is a paid
+	-- power upgrade, and the server blocks all of them while WorldMode == "Public"
+	-- (see checkCachedGamePassOwnership in GameManager.server.luau). Nothing here
+	-- told the player that before buying it -- this flags it up front. Gift God
+	-- Mode grants the same account-wide gamepass to someone else's account, so
+	-- it gets the same lock even though its Kind is "Product", not "GamePass".
+	local isPublicLocked = (item.Kind == "GamePass" or item.GiftPassKey == "GodMode") and currentStats ~= nil and currentStats.WorldMode == "Public"
 	local card = makeCard(118)
 
 	local accentFrame = Instance.new("Frame")
@@ -1841,7 +1848,7 @@ local function makeProductCard(item)
 	desc.ZIndex = 634
 	desc.Parent = card
 
-	local onSale = SUMMER_SALE_ACTIVE and item.SalePriceText ~= nil
+	local onSale = SUMMER_SALE_ACTIVE and item.SalePriceText ~= nil and not isPublicLocked
 
 	local price = Instance.new("TextLabel")
 	price.Size = UDim2.new(0, 110, 0, 20)
@@ -1851,7 +1858,10 @@ local function makeProductCard(item)
 	price.TextSize = 11
 	price.Font = Enum.Font.GothamBlack
 	price.TextXAlignment = Enum.TextXAlignment.Right
-	if onSale then
+	if isPublicLocked then
+		price.TextColor3 = THEME.Muted
+		price.Text = "NO EFFECT HERE"
+	elseif onSale then
 		price.RichText = true
 		price.TextColor3 = THEME.Orange
 		price.Text = "<font color='#8a8aa0'><s>" .. tostring(item.PriceText) .. "</s></font>  " .. tostring(item.SalePriceText)
@@ -1861,7 +1871,26 @@ local function makeProductCard(item)
 	price.ZIndex = 634
 	price.Parent = card
 
-	if onSale then
+	if isPublicLocked then
+		local lockTag = Instance.new("TextLabel")
+		lockTag.Size = UDim2.new(0, 110, 0, 16)
+		lockTag.Position = UDim2.new(1, -16, 0, 36)
+		lockTag.AnchorPoint = Vector2.new(1, 0)
+		lockTag.BackgroundColor3 = THEME.Bad
+		lockTag.BorderSizePixel = 0
+		lockTag.TextColor3 = Color3.fromRGB(20, 10, 12)
+		lockTag.TextSize = 10
+		lockTag.Font = Enum.Font.GothamBlack
+		lockTag.Text = "LOCKED IN PUBLIC"
+		lockTag.ZIndex = 634
+		lockTag.Parent = card
+		addCorner(lockTag, 6)
+
+		local lockTagPad = Instance.new("UIPadding")
+		lockTagPad.PaddingLeft = UDim.new(0, 2)
+		lockTagPad.PaddingRight = UDim.new(0, 2)
+		lockTagPad.Parent = lockTag
+	elseif onSale then
 		local saleTag = Instance.new("TextLabel")
 		saleTag.Size = UDim2.new(0, 92, 0, 16)
 		saleTag.Position = UDim2.new(1, -16, 0, 36)
@@ -1882,8 +1911,9 @@ local function makeProductCard(item)
 		tagPos.Parent = saleTag
 	end
 
-	local buyText = isStarterPackClaimed and "OWNED" or ((item.RobloxId and item.RobloxId > 0) and (item.GiftPassKey and "GIFT" or "BUY") or "SET ID")
-	local buyButton = makeSmallButton(card, buyText, isStarterPackClaimed and THEME.Panel3 or THEME.RedDark, function()
+	local buyText = isPublicLocked and "LOCKED" or (isStarterPackClaimed and "OWNED" or ((item.RobloxId and item.RobloxId > 0) and (item.GiftPassKey and "GIFT" or "BUY") or "SET ID"))
+	local buyButton = makeSmallButton(card, buyText, (isPublicLocked or isStarterPackClaimed) and THEME.Panel3 or THEME.RedDark, function()
+		if isPublicLocked then playSFX("Error") return end
 		if isStarterPackClaimed then playSFX("Error") return end
 		if item.GiftPassKey then
 			promptGiftRecipient(item)
@@ -1897,8 +1927,12 @@ end
 buildShopPage = function()
 	setHeader("Shop", "Organized purchases by category.")
 
+	if currentStats and currentStats.WorldMode == "Public" then
+		makeNotice("Public worlds are fair-play: gamepasses have no effect here, no matter when you bought them. Developer products (Time Skip, boosts, kits, God Mode for this world) still work.", 82, THEME.Bad)
+	end
+
 	if SUMMER_SALE_ACTIVE then
-		makeNotice("SUMMER SALE — 20% OFF ALL GAMEPASSES! Limited time only.", 56, THEME.Orange)
+		makeNotice("SUMMER SALE - 20% OFF ALL GAMEPASSES! Limited time only.", 56, THEME.Orange)
 	end
 
 	makeNotice("Shop is split into Featured, Rerolls, Boosts & Recovery, Money, Dojo, and Gamepasses. Developer products can be bought more than once.", 82, THEME.Purple)

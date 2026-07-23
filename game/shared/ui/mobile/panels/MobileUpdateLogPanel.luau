@@ -234,17 +234,17 @@ local sections = {
 	},
 	{
 		header = "Hotfix - Gift System",
-		body = "• Gifts now work cross-server — enter any Roblox username to send a gift.\n• Recipient no longer needs to be in your server.\n• If the recipient is offline, the gift is saved and delivered on their next login.\n• Server validates the username before opening the Robux prompt.\n• Improved retry handling for edge cases during purchase.",
+		body = "• Gifts now work cross-server - enter any Roblox username to send a gift.\n• Recipient no longer needs to be in your server.\n• If the recipient is offline, the gift is saved and delivered on their next login.\n• Server validates the username before opening the Robux prompt.\n• Improved retry handling for edge cases during purchase.",
 		color = theme.Green,
 	},
 	{
 		header = "Shop Overhaul",
-		body = "• All shop prices now match the Creator Dashboard — no more mismatches.\n• Every gamepass and developer product has an accurate description.\n• Go Rogue gamepass now listed in the shop.\n• God Mode updated to R$ 800 with expanded features.\n• 2x Progress updated to R$ 400 — doubled CE, Strength, and Mastery gains.\n• 5 new developer products priced: CT Evolution Accelerator, Black Flash Drill Pack, Clan War Mediation, Cursed Tool Salvage Kit, Combat Recovery Kit.",
+		body = "• All shop prices now match the Creator Dashboard - no more mismatches.\n• Every gamepass and developer product has an accurate description.\n• Go Rogue gamepass now listed in the shop.\n• God Mode updated to R$ 800 with expanded features.\n• 2x Progress updated to R$ 400 - doubled CE, Strength, and Mastery gains.\n• 5 new developer products priced: CT Evolution Accelerator, Black Flash Drill Pack, Clan War Mediation, Cursed Tool Salvage Kit, Combat Recovery Kit.",
 		color = theme.Gold,
 	},
 	{
 		header = "New Gamepasses",
-		body = "• Lucky Sorcerer (R$ 349) — +15% birth stats every new life.\n• Training Prodigy (R$ 349) — 1.5x CE, Strength, and Mastery training.\n• Mission Investor (R$ 299) — 1.5x cash from missions (stacks with 2x Money).\n• Legacy Blessing (R$ 349) — Heirs start stronger each generation (+CE, +Strength, +Smarts, +Health, +Rep scaling with bloodline depth).\n• Focused Training (R$ 199) — +25% CE from CE training (stacks with everything).\n• AFK Pass (R$ 200) — 2x AFK payouts (AFK is free for all now).\n• Binding Vow Specialist (R$ 349) — 5 vows instead of 3, -25% negative effects.\n• Dojo Expansion (coming soon) — +5 recruit candidates, +2 student capacity.",
+		body = "• Lucky Sorcerer (R$ 349) - +15% birth stats every new life.\n• Training Prodigy (R$ 349) - 1.5x CE, Strength, and Mastery training.\n• Mission Investor (R$ 299) - 1.5x cash from missions (stacks with 2x Money).\n• Legacy Blessing (R$ 349) - Heirs start stronger each generation (+CE, +Strength, +Smarts, +Health, +Rep scaling with bloodline depth).\n• Focused Training (R$ 199) - +25% CE from CE training (stacks with everything).\n• AFK Pass (R$ 200) - 2x AFK payouts (AFK is free for all now).\n• Binding Vow Specialist (R$ 349) - 5 vows instead of 3, -25% negative effects.\n• Dojo Expansion (coming soon) - +5 recruit candidates, +2 student capacity.",
 		color = theme.Gold,
 	},
 	{
@@ -269,7 +269,7 @@ local sections = {
 	},
 	{
 		header = "New Codes",
-		body = "Redeem in Settings > Codes:\n\n• Update18 — +$25k, +150 CE, +15 Mastery, +15 Rep, +15 Happiness\n• ShopOverhaul — +$30k, +100 CE, +10 Rep\n• VipSorcerer — +200 CE, +20 Mastery, Max Health, Max Happiness\n• BindingVow — +$15k, +100 CE, +15 Strength, +10 Rep\n• SixEyes — +$75k, +300 CE, +20 Mastery, +20 Rep",
+		body = "Redeem in Settings > Codes:\n\n• Update18 - +$25k, +150 CE, +15 Mastery, +15 Rep, +15 Happiness\n• ShopOverhaul - +$30k, +100 CE, +10 Rep\n• VipSorcerer - +200 CE, +20 Mastery, Max Health, Max Happiness\n• BindingVow - +$15k, +100 CE, +15 Strength, +10 Rep\n• SixEyes - +$75k, +300 CE, +20 Mastery, +20 Rep",
 		color = theme.Blue,
 	},
 	{
@@ -279,12 +279,12 @@ local sections = {
 	},
 	{
 		header = "Update 17 - School System",
-		body = "• Characters now attend Elementary School (ages 6-10), Middle School (ages 11-13), and High School (ages 14-15).\n• Academic Performance and Attendance drift each year based on your Smarts stat.\n• Earn a Report Card Grade (A+ through F) from performance and attendance.\n• At age 16 you graduate with a full report card popup — honor students earn Smarts and Reputation bonuses.\n• New school activities: Attend Class, Study for Exams, Join a Club (8 clubs), Skip School.",
+		body = "• Characters now attend Elementary School (ages 6-10), Middle School (ages 11-13), and High School (ages 14-15).\n• Academic Performance and Attendance drift each year based on your Smarts stat.\n• Earn a Report Card Grade (A+ through F) from performance and attendance.\n• At age 16 you graduate with a full report card popup - honor students earn Smarts and Reputation bonuses.\n• New school activities: Attend Class, Study for Exams, Join a Club (8 clubs), Skip School.",
 		color = theme.Red,
 	},
 	{
 		header = "Update 17 - Jujutsu Mentor Career",
-		body = "• Jujutsu High students now graduate at age 20 — become a fully Registered Sorcerer with a graduation popup.\n• Awakened sorcerers who graduate civilian school at 16 are offered a transfer to Jujutsu High.\n• After graduating JJH, apply to become a Jujutsu Mentor (age 20+, Grade 2+, recommendations).\n• 4-rank career ladder: Assistant Instructor, Instructor, Senior Instructor, Master Instructor.\n• Earn yearly salary, Mentor XP, reputation, and students assigned to your care.\n• New mentor activities: Teach a Class, Supervise Student Mission, Grade Students, Mentor a Prodigy.\n• New MENTOR panel in the navigation bar to view rank, income, XP progress, and apply.",
+		body = "• Jujutsu High students now graduate at age 20 - become a fully Registered Sorcerer with a graduation popup.\n• Awakened sorcerers who graduate civilian school at 16 are offered a transfer to Jujutsu High.\n• After graduating JJH, apply to become a Jujutsu Mentor (age 20+, Grade 2+, recommendations).\n• 4-rank career ladder: Assistant Instructor, Instructor, Senior Instructor, Master Instructor.\n• Earn yearly salary, Mentor XP, reputation, and students assigned to your care.\n• New mentor activities: Teach a Class, Supervise Student Mission, Grade Students, Mentor a Prodigy.\n• New MENTOR panel in the navigation bar to view rank, income, XP progress, and apply.",
 		color = theme.Red,
 	},
 	{
@@ -294,7 +294,7 @@ local sections = {
 	},
 	{
 		header = "Update 17 - Full UI Overhaul",
-		body = "• Entire client UI rebuilt on Vide (reactive UI architecture).\n• Replaces old monolithic UI script that was hitting engine limits and breaking features.\n• Every major screen restored to full parity — not stripped-down stubs.\n• Fixed panels that would not open, buttons that did not respond, and reactive-scope crashes.\n• 58 Vide modules under game/shared/ui/ (components, panels, hooks, theme).\n• Single bootstrap mounts the full UI, centralized remotes, shared state system.\n• All 30+ panels migrated: Missions, Activities, Relationships, Assets, Jobs, Settings, Combat, Minigames, Domain, Rivals, History, Mentor, Affiliations, Binding Vows, Daily Login, Free Rewards, Update Log, Clan War, God Mode, AFK, Death, Character Customization, Technique Mastery, Trait Details, and more.",
+		body = "• Entire client UI rebuilt on Vide (reactive UI architecture).\n• Replaces old monolithic UI script that was hitting engine limits and breaking features.\n• Every major screen restored to full parity - not stripped-down stubs.\n• Fixed panels that would not open, buttons that did not respond, and reactive-scope crashes.\n• 58 Vide modules under game/shared/ui/ (components, panels, hooks, theme).\n• Single bootstrap mounts the full UI, centralized remotes, shared state system.\n• All 30+ panels migrated: Missions, Activities, Relationships, Assets, Jobs, Settings, Combat, Minigames, Domain, Rivals, History, Mentor, Affiliations, Binding Vows, Daily Login, Free Rewards, Update Log, Clan War, God Mode, AFK, Death, Character Customization, Technique Mastery, Trait Details, and more.",
 		color = theme.Red,
 	},
 	{
@@ -304,12 +304,12 @@ local sections = {
 	},
 	{
 		header = "Update 17 - PC UI",
-		body = "• TopbarPlus icons restored on PC: Settings, God Mode, War, AFK, Free Rewards.\n• Legacy WAR nav button hidden — War is now TopbarPlus only.\n• AFK panel now has a working close button.\n• Nav button list scrollable — all nav entries reachable.\n• Responsive layout adapts to portrait, landscape, and desktop viewports.\n• Trait info button next to traits on PC profile.\n• Profile card, life log, and shell components fully functional.",
+		body = "• TopbarPlus icons restored on PC: Settings, God Mode, War, AFK, Free Rewards.\n• Legacy WAR nav button hidden - War is now TopbarPlus only.\n• AFK panel now has a working close button.\n• Nav button list scrollable - all nav entries reachable.\n• Responsive layout adapts to portrait, landscape, and desktop viewports.\n• Trait info button next to traits on PC profile.\n• Profile card, life log, and shell components fully functional.",
 		color = theme.Red,
 	},
 	{
 		header = "Update 17 - Quality of Life",
-		body = "• Loading screen shows for a minimum of 5 seconds to ensure everything loads.\n• Loading screen logo and progress bar positioned closer together.\n• Startup log messages silent on live servers — only visible in Studio.\n• Default Roblox respawn button removed.\n• Update Log accessible from Settings panel LOG tab.",
+		body = "• Loading screen shows for a minimum of 5 seconds to ensure everything loads.\n• Loading screen logo and progress bar positioned closer together.\n• Startup log messages silent on live servers - only visible in Studio.\n• Default Roblox respawn button removed.\n• Update Log accessible from Settings panel LOG tab.",
 		color = theme.Red,
 	},
 	{

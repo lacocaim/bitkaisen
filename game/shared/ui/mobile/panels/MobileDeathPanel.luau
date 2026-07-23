@@ -377,7 +377,7 @@ local function init(playerGui: Instance)
 	-- RCT Revive button
 	local rctBtn = mc.mobileButton({
 		parent = actionsFrame,
-		text = _dt("rct_revive", "RCT REVIVE — R$50"),
+		text = _dt("rct_revive", "RCT REVIVE - R$50"),
 		size = UDim2.new(1, 0, 0, 44),
 		position = UDim2.new(0, 0, 0, 0),
 		color = Color3.fromRGB(55, 35, 120),
@@ -506,7 +506,7 @@ local function init(playerGui: Instance)
 			rctHint.Text = _dt("rct_hint_used", "Your body has already survived through RCT twice in this life.")
 			rctHint.TextColor3 = Color3.fromRGB(155, 155, 170)
 		else
-			rctBtn.Text = _dt("rct_left", "RCT REVIVE — R$50  ({remaining}/{max} LEFT)")
+			rctBtn.Text = _dt("rct_left", "RCT REVIVE - R$50  ({remaining}/{max} LEFT)")
 				:gsub("{remaining}", tostring(remaining)):gsub("{max}", tostring(RCT_REVIVE_MAX_PER_LIFE))
 			rctBtn.Active = true
 			rctBtn.BackgroundColor3 = Color3.fromRGB(55, 35, 120)
@@ -549,7 +549,7 @@ local function init(playerGui: Instance)
 
 		local techText, techColor
 		if successor.HasInheritedTechnique then
-			techText = _dt("tech_inherited", "Inherited: <b>{tech}</b> — starts as sorcerer"):gsub("{tech}", tostring(successor.CursedTechnique))
+			techText = _dt("tech_inherited", "Inherited: <b>{tech}</b> - starts as sorcerer"):gsub("{tech}", tostring(successor.CursedTechnique))
 			techColor = Color3.fromRGB(255, 200, 90)
 		else
 			techText = _dt("tech_none", "No technique inherited yet. May still awaken.")

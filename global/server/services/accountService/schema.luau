@@ -287,6 +287,13 @@ local accountTemplate: Account = {
 		{ exists = false, summary = makeEmptySlotSummary(2), stats = nil },
 		{ exists = false, summary = makeEmptySlotSummary(3), stats = nil },
 	},
+	publicWorldSaves = {},
+	-- Multiplayer Fase 1: which save Load() should resume on next join --
+	-- Private slots don't need this (selectedSlot already tracks it), but
+	-- Public saves live in a dict keyed by worldId, so we need to remember
+	-- which world the player was last living in.
+	lastWorldMode = nil,
+	lastPublicWorldId = nil,
 }
 
 return {

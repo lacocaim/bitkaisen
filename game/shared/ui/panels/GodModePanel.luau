@@ -210,16 +210,36 @@ render = function()
 	clearContent()
 	local data = payload or fetchPayload()
 
-	local summaryCard = makeCard(data.Owned and 106 or 158)
-	makeLabel(summaryCard, "Permanent life controls", 10, 20, THEME.Gold, 15, true)
-	makeLabel(summaryCard, data.Owned and "Tune traits, clan rerolls, start boosts, legacy inheritance, and reset the current life while keeping God Mode settings." or "Unlock God Mode to use trait edits, clan rerolls, start boosts, legacy inheritance, and reset life controls.", 36, 50, THEME.Muted, 12, false)
-	if not data.Owned then
-		makeButton(summaryCard, "UNLOCK", 12, 104, 190, 34, THEME.Purple, function()
-			if tonumber(data.PassId) and data.PassId > 0 then
-				MarketplaceService:PromptGamePassPurchase(player, data.PassId)
-			end
-		end)
-		return
+	-- Multiplayer Fase 8 (Fair Play Doctrine): the account-wide gamepass never
+	-- applies inside a Public world, so a different purchase path (and
+	-- explicit "only this world" copy) shows up there instead -- never both.
+	if data.IsPublic then
+		local summaryCard = makeCard(data.Owned and 106 or 182)
+		makeLabel(summaryCard, "Permanent life controls", 10, 20, THEME.Gold, 15, true)
+		if data.Owned then
+			makeLabel(summaryCard, "Tune traits, clan rerolls, start boosts, legacy inheritance, and reset the current life while keeping God Mode settings.", 36, 50, THEME.Muted, 12, false)
+			-- fall through to the rest of the panel below
+		else
+			makeLabel(summaryCard, "This unlock applies ONLY to the Public world you're in right now -- not your account, not any other world. Buy it again separately for each Public world you want it in.", 36, 60, THEME.Muted, 12, false)
+			makeButton(summaryCard, "UNLOCK FOR THIS WORLD", 12, 100, 220, 34, THEME.Purple, function()
+				if tonumber(data.GodModeThisWorldProductId) and data.GodModeThisWorldProductId > 0 then
+					MarketplaceService:PromptProductPurchase(player, data.GodModeThisWorldProductId)
+				end
+			end)
+			return
+		end
+	else
+		local summaryCard = makeCard(data.Owned and 106 or 158)
+		makeLabel(summaryCard, "Permanent life controls", 10, 20, THEME.Gold, 15, true)
+		makeLabel(summaryCard, data.Owned and "Tune traits, clan rerolls, start boosts, legacy inheritance, and reset the current life while keeping God Mode settings." or "Unlock God Mode to use trait edits, clan rerolls, start boosts, legacy inheritance, and reset life controls.", 36, 50, THEME.Muted, 12, false)
+		if not data.Owned then
+			makeButton(summaryCard, "UNLOCK", 12, 104, 190, 34, THEME.Purple, function()
+				if tonumber(data.PassId) and data.PassId > 0 then
+					MarketplaceService:PromptGamePassPurchase(player, data.PassId)
+				end
+			end)
+			return
+		end
 	end
 
 	local settings = data.Settings or {}
@@ -357,6 +377,20 @@ end)
 MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(purchasePlayer, purchasedPassId, wasPurchased)
 	if purchasePlayer ~= player then return end
 	if purchasedPassId ~= GOD_MODE_GAMEPASS_ID then return end
+	task.delay(0.5, function()
+		fetchPayload()
+		if overlay.Visible then
+			render()
+		end
+	end)
+end)
+
+-- Refreshes after the "God Mode (This World)" Dev Product purchase (server
+-- applies the unlock in ProcessReceipt, which finishes slightly before or
+-- around when this event fires -- the short delay covers the gap).
+MarketplaceService.PromptProductPurchaseFinished:Connect(function(purchasePlayer, purchasedProductId, wasPurchased)
+	if purchasePlayer ~= player or wasPurchased ~= true then return end
+	if not payload or purchasedProductId ~= tonumber(payload.GodModeThisWorldProductId) then return end
 	task.delay(0.5, function()
 		fetchPayload()
 		if overlay.Visible then

@@ -72,24 +72,49 @@ render = function()
 	})
 
 	if not data.Owned then
-		mc.mobileLabel({
-			parent = summaryCard,
-			text = _gm("locked_desc", "Unlock God Mode to use trait edits, clan rerolls, start boosts, legacy inheritance, and reset life controls."),
-			size = 13,
-			color = theme.SubText,
-			order = 2,
-		})
-		mc.mobileButton({
-			parent = summaryCard,
-			text = _gm("btn_unlock", "UNLOCK"),
-			color = theme.Purple,
-			order = 3,
-			callback = function()
-				if tonumber(data.PassId) and data.PassId > 0 then
-					MarketplaceService:PromptGamePassPurchase(player, data.PassId)
-				end
-			end,
-		})
+		-- Multiplayer Fase 8 (Fair Play Doctrine): the account-wide gamepass
+		-- never applies inside a Public world, so a different purchase
+		-- path (and explicit "only this world" copy) shows up there
+		-- instead of the normal one -- never both.
+		if data.IsPublic then
+			mc.mobileLabel({
+				parent = summaryCard,
+				text = _gm("locked_desc_public", "This unlock applies ONLY to the Public world you're in right now -- not your account, not any other world. Buy it again separately for each Public world you want it in."),
+				size = 13,
+				color = theme.SubText,
+				order = 2,
+			})
+			mc.mobileButton({
+				parent = summaryCard,
+				text = _gm("btn_unlock_public", "UNLOCK FOR THIS WORLD"),
+				color = theme.Purple,
+				order = 3,
+				callback = function()
+					if tonumber(data.GodModeThisWorldProductId) and data.GodModeThisWorldProductId > 0 then
+						MarketplaceService:PromptProductPurchase(player, data.GodModeThisWorldProductId)
+					end
+				end,
+			})
+		else
+			mc.mobileLabel({
+				parent = summaryCard,
+				text = _gm("locked_desc", "Unlock God Mode to use trait edits, clan rerolls, start boosts, legacy inheritance, and reset life controls."),
+				size = 13,
+				color = theme.SubText,
+				order = 2,
+			})
+			mc.mobileButton({
+				parent = summaryCard,
+				text = _gm("btn_unlock", "UNLOCK"),
+				color = theme.Purple,
+				order = 3,
+				callback = function()
+					if tonumber(data.PassId) and data.PassId > 0 then
+						MarketplaceService:PromptGamePassPurchase(player, data.PassId)
+					end
+				end,
+			})
+		end
 		return
 	end
 
@@ -354,6 +379,18 @@ local function init()
 	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(purchasePlayer, purchasedPassId, wasPurchased)
 		if purchasePlayer ~= player then return end
 		if purchasedPassId ~= GOD_MODE_GAMEPASS_ID then return end
+		task.delay(0.5, function()
+			fetchPayload()
+			if sheet and sheet.Visible then
+				render()
+			end
+		end)
+	end)
+
+	-- Refreshes after the "God Mode (This World)" Dev Product purchase.
+	MarketplaceService.PromptProductPurchaseFinished:Connect(function(purchasePlayer, purchasedProductId, wasPurchased)
+		if purchasePlayer ~= player or wasPurchased ~= true then return end
+		if not payload or purchasedProductId ~= tonumber(payload.GodModeThisWorldProductId) then return end
 		task.delay(0.5, function()
 			fetchPayload()
 			if sheet and sheet.Visible then

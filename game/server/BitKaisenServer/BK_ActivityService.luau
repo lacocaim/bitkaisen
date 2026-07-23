@@ -90,7 +90,7 @@ local function applyMiracleSave(stats, player)
 	local remaining = tonumber(stats.MiracleCharges) or 0
 	fireLifeUpdate(player, stats, remaining > 0
 		and ("<font color='#c8a4ff'><b>[ MIRACLE ]</b></font> A miracle rewrote your fate. Marks remaining: <b>" .. remaining .. "</b>.")
-		or "<font color='#c8a4ff'><b>[ MIRACLE ]</b></font> Your last miracle saved you. Your marks have disappeared — you are now completely vulnerable.")
+		or "<font color='#c8a4ff'><b>[ MIRACLE ]</b></font> Your last miracle saved you. Your marks have disappeared - you are now completely vulnerable.")
 	return true
 end
 

@@ -219,7 +219,7 @@ local function syncHealthToStats(player, session)
 			local remaining = tonumber(stats.MiracleCharges) or 0
 			fireLifeUpdate(player, stats, remaining > 0
 				and ("<font color='#c8a4ff'><b>[ MIRACLE ]</b></font> A miracle rewrote your fate. Marks remaining: <b>" .. remaining .. "</b>.")
-				or "<font color='#c8a4ff'><b>[ MIRACLE ]</b></font> Your last miracle saved you. Your marks have disappeared — you are now completely vulnerable.")
+				or "<font color='#c8a4ff'><b>[ MIRACLE ]</b></font> Your last miracle saved you. Your marks have disappeared - you are now completely vulnerable.")
 		else
 			stats.Alive = false
 			stats.CauseOfDeath = _cl(session, "cause_of_death", {enemy = tostring(session.Enemy and session.Enemy.Name or "an enemy")}, "Defeated in combat by " .. tostring(session.Enemy and session.Enemy.Name or "an enemy"))
@@ -505,7 +505,7 @@ function resolveAttack(player, session, accuracy, sweet)
 			addLog(session, isTechnique and _ct(session, "log_perfect_tech", "Perfect technique timing. Massive impact.") or _ct(session, "log_perfect_hit", "Sweet spot. Maximum impact."))
 		end
 	elseif quality >= 0.7 then
-		addLog(session, isTechnique and _ct(session, "log_clean_tech", "Technique connected cleanly.") or (isBlackFlash and _ct(session, "log_strong_bf", "Strong hit — timing nearly landed the Black Flash.") or _ct(session, "log_clean_hit", "Clean hit.")))
+		addLog(session, isTechnique and _ct(session, "log_clean_tech", "Technique connected cleanly.") or (isBlackFlash and _ct(session, "log_strong_bf", "Strong hit - timing nearly landed the Black Flash.") or _ct(session, "log_clean_hit", "Clean hit.")))
 	elseif quality >= 0.35 then
 		addLog(session, isTechnique and _ct(session, "log_graze_tech", "Technique grazed the target.") or (isBlackFlash and _ct(session, "log_weak_bf", "Black Flash timing slipped. Weak impact.") or _ct(session, "log_glancing_hit", "Glancing hit.")))
 	else
@@ -519,7 +519,7 @@ function resolveAttack(player, session, accuracy, sweet)
 			if bfStats then
 				bfStats.BlackFlashCount = (tonumber(bfStats.BlackFlashCount) or 0) + 1
 			end
-			addLog(session, _cl(session, "log_bf_number", {n = tostring(tonumber(bfStats and bfStats.BlackFlashCount) or 1)}, "BLACK FLASH #" .. tostring(tonumber(bfStats and bfStats.BlackFlashCount) or 1) .. " — ×2.5 damage."))
+			addLog(session, _cl(session, "log_bf_number", {n = tostring(tonumber(bfStats and bfStats.BlackFlashCount) or 1)}, "BLACK FLASH #" .. tostring(tonumber(bfStats and bfStats.BlackFlashCount) or 1) .. " - ×2.5 damage."))
 		elseif quality >= 0.7 then
 			damage = math.floor(damage * 1.3)
 		elseif quality < 0.35 then

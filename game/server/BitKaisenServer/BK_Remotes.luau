@@ -120,6 +120,28 @@ local REMOTE_DEFINITIONS = {
 	-- Weekly Challenges
 	GetChallenges = "RemoteFunction",
 	ChallengeCompleted = "RemoteEvent",
+
+	-- Multiplayer Fase 1: Private/Public world mode choice, asked every join
+	ChooseWorldMode = "RemoteEvent",
+	PromptWorldMode = "RemoteEvent",
+	-- Multiplayer Fase 2: El Repique -- vote to advance the shared calendar
+	ProposeEraAdvance = "RemoteEvent",
+	-- Multiplayer Fase 4: one-tap random character (reuses SubmitCharacterCustomization's validation)
+	RequestQuickStartCharacter = "RemoteFunction",
+	-- Multiplayer Fase 4: Buscador y creación de mundos
+	GetWorldBrowser = "RemoteFunction",
+	RequestJoinWorld = "RemoteFunction",
+	RequestCreateWorld = "RemoteFunction",
+	-- Multiplayer Fase 6: Reunión de Vidas -- real-player interaction
+	GetSouls = "RemoteFunction",
+	SoulAction = "RemoteEvent",
+	-- Multiplayer Fase 6B: live PvP duels between real players
+	GetDuelState = "RemoteFunction",
+	DuelAction = "RemoteEvent",
+	DuelStateUpdate = "RemoteEvent",
+	DuelInvite = "RemoteEvent",
+	-- Multiplayer Fase 7: player cells (clans), wars, territory
+	CellAction = "RemoteEvent",
 }
 
 local remoteCache = {}

@@ -17,6 +17,10 @@ local topbarIcons = require("@ui/topbarIcons")
 local cooldownFlags = require("@ui-state/cooldownFlags")
 local uiState = require("@ui-state/uiState")
 local TimeSkipOfferPanel = require("@ui-panels/TimeSkipOfferPanel")
+local GodModeOfferPanel = require("@ui-panels/GodModeOfferPanel")
+local onceFlags = require("@ui-state/onceFlags")
+
+local getGodMode = ReplicatedStorage:WaitForChild("GetGodMode")
 
 local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
 local _L = BitKaisenLocale.getClientLocale()
@@ -207,6 +211,18 @@ local function ageKey(stats)
 	return tostring(stats.Age or stats.CurrentYear or 0) .. ":" .. tostring(stats.CurrentMonth or 0)
 end
 
+-- Multiplayer God-Mode-per-world monetization nudge (per Luisa): after ~10
+-- real minutes inside a Public-world life, offer the one-time-per-world God
+-- Mode unlock if it hasn't been bought here yet. Time-based on purpose (not
+-- age-based like the categories above) -- Public's calendar moves on its own
+-- schedule via the Repique vote/backup clock, independent of real time, so
+-- an age-key trigger wouldn't reliably land around "10 minutes played".
+local GOD_MODE_OFFER_DELAY_SECONDS = 600
+
+local function lifeKey(stats)
+	return tostring(stats.BirthYear or 0) .. ":" .. tostring(stats.PublicWorldId or "")
+end
+
 local function init(playerGui: Instance)
 	local updateLifeEvent = ReplicatedStorage:WaitForChild("UpdateLifeEvent")
 
@@ -216,7 +232,46 @@ local function init(playerGui: Instance)
 		LastStats = nil :: any,
 		VisitedThisAge = {} :: { [string]: boolean },
 		QuickAgeUpStreak = 0,
+		GodModeOfferArmedKey = nil :: string?,
 	}
+
+	-- Arms (once per life) a delayed check that offers the per-world God Mode
+	-- unlock. Re-checks everything against the LATEST stats when the delay
+	-- fires, since 10 minutes is plenty of time for the life to have ended,
+	-- changed world, or already bought it through the God Mode panel directly.
+	local function maybeArmGodModeOffer(stats)
+		if stats.WorldMode ~= "Public" then
+			return
+		end
+		if onceFlags.isSeen(stats, "GodModeOffer") then
+			return
+		end
+		local key = lifeKey(stats)
+		if state.GodModeOfferArmedKey == key then
+			return
+		end
+		state.GodModeOfferArmedKey = key
+
+		task.delay(GOD_MODE_OFFER_DELAY_SECONDS, function()
+			local current = state.LastStats
+			if not current or current.Alive == false then
+				return
+			end
+			if current.WorldMode ~= "Public" or lifeKey(current) ~= key then
+				return
+			end
+			if onceFlags.isSeen(current, "GodModeOffer") or not isGuideEnabled(current) then
+				return
+			end
+			local ok, payload = pcall(function()
+				return getGodMode:InvokeServer()
+			end)
+			if ok and typeof(payload) == "table" and payload.IsPublic == true and payload.Owned ~= true then
+				onceFlags.markSeen("GodModeOffer")
+				GodModeOfferPanel.show()
+			end
+		end)
+	end
 
 	local function clearHighlight()
 		if state.Highlight then
@@ -335,6 +390,8 @@ local function init(playerGui: Instance)
 			state.LastKey = nil
 			return
 		end
+
+		maybeArmGodModeOffer(stats)
 
 		local key = ageKey(stats)
 		if key ~= state.LastKey then

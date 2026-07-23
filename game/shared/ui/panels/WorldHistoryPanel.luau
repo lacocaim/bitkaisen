@@ -24,6 +24,7 @@ local COLORS = {
 	Blue = Color3.fromRGB(116, 190, 255),
 	Green = Color3.fromRGB(122, 236, 165),
 	Red = Color3.fromRGB(220, 84, 90),
+	Purple = Color3.fromRGB(156, 96, 246),
 }
 
 local gui = Instance.new("ScreenGui")
@@ -147,6 +148,21 @@ influenceTab.ZIndex = 628
 influenceTab.Parent = window
 makeCorner(influenceTab, 7)
 
+-- Multiplayer Fase 3: shared world ranking/events/Sello Final, only
+-- meaningful in Public mode -- renderWorld() explains itself when not.
+local worldTab = Instance.new("TextButton")
+worldTab.Position = UDim2.new(0, 436, 0, 54)
+worldTab.Size = UDim2.new(0, 90, 0, 28)
+worldTab.Text = _wh("tab_world", "WORLD")
+worldTab.TextColor3 = COLORS.SubText
+worldTab.TextSize = 12
+worldTab.Font = Enum.Font.GothamBlack
+worldTab.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+worldTab.BorderSizePixel = 0
+worldTab.ZIndex = 628
+worldTab.Parent = window
+makeCorner(worldTab, 7)
+
 local scroll = Instance.new("ScrollingFrame")
 scroll.Position = UDim2.new(0, 24, 0, 92)
 scroll.Size = UDim2.new(1, -48, 1, -116)
@@ -241,9 +257,12 @@ local function updateTabStyles()
 	livesTab.BackgroundColor3 = (activeTab == "lives" and active or inactive).bg
 	influenceTab.TextColor3 = (activeTab == "influence" and active or inactive).color
 	influenceTab.BackgroundColor3 = (activeTab == "influence" and active or inactive).bg
+	worldTab.TextColor3 = (activeTab == "world" and active or inactive).color
+	worldTab.BackgroundColor3 = (activeTab == "world" and active or inactive).bg
 	if activeTab == "history" then titleLabel.Text = _wh("title", "WORLD HISTORY")
 	elseif activeTab == "titles" then titleLabel.Text = _wh("tab_titles", "TITLES")
 	elseif activeTab == "lives" then titleLabel.Text = _wh("title_lives", "CEMETERY OF LIVES")
+	elseif activeTab == "world" then titleLabel.Text = _wh("tab_world", "WORLD")
 	else titleLabel.Text = _wh("tab_influence", "INFLUENCE") end
 end
 
@@ -456,7 +475,7 @@ local function makeTombstone(parent, lifeData, index)
 	numLabel.BackgroundTransparency = 1
 	numLabel.Size = UDim2.new(1, 0, 0, 20)
 	numLabel.Position = UDim2.new(0, 0, 0, 236)
-	numLabel.Text = "— #" .. tostring(index) .. " —"
+	numLabel.Text = "- #" .. tostring(index) .. " -"
 	numLabel.TextColor3 = Color3.fromRGB(120, 108, 155)
 	numLabel.TextSize = 13
 	numLabel.Font = Enum.Font.GothamBlack
@@ -471,7 +490,7 @@ local function renderLives()
 	updateTabStyles()
 	if not getPastLives then
 		rendering = false
-		text(card(70), "Cemetery unavailable — rejoin to enable it.", 13, COLORS.SubText, 20, false)
+		text(card(70), "Cemetery unavailable - rejoin to enable it.", 13, COLORS.SubText, 20, false)
 		return
 	end
 	local ok, data = pcall(function() return getPastLives:InvokeServer() end)
@@ -583,7 +602,7 @@ local function renderInfluence()
 
 	-- description card
 	local descCard = card(64)
-	text(descCard, "How the world perceives you — built from your actions, missions, and reputation.", 12, COLORS.SubText, 14, false)
+	text(descCard, "How the world perceives you - built from your actions, missions, and reputation.", 12, COLORS.SubText, 14, false)
 	text(descCard, "Fame and Fear grow silently as you live your life.", 11, COLORS.SubText, 36, false)
 
 	-- fame card
@@ -611,6 +630,63 @@ local function renderInfluence()
 	text(wantedCard, wanted >= 70 and "Hunter squads are actively tracking you." or wanted >= 30 and "Authorities have flagged you as a person of interest." or "You are not currently a target.", 11, COLORS.SubText, 38, false)
 end
 
+-- Multiplayer Fase 3: live ranking + shared world events + Sello Final,
+-- only present in the payload for Public players (see GameManager's
+-- getWorldHistory.OnServerInvoke).
+local function renderWorld()
+	rendering = true
+	clear()
+	updateTabStyles()
+	local ok, data = pcall(function() return getWorldHistory:InvokeServer() end)
+	rendering = false
+	if not ok or typeof(data) ~= "table" then
+		text(card(70), _wh("world_load_error", "Could not load world data."), 13, COLORS.Red, 20, true)
+		return
+	end
+
+	if not data.PublicRanking then
+		text(card(70), _wh("world_private_only", "This only applies in Public mode."), 13, COLORS.SubText, 20, false)
+		return
+	end
+
+	if data.PublicSealed == true then
+		local sealCard = card(84)
+		text(sealCard, "🔒  " .. _wh("world_sealed_title", "SELLO FINAL -- THIS WORLD IS SEALED"), 13, COLORS.Red, 12, true)
+		local legendText = data.PublicSoberano and ("👑  " .. _wh("world_sovereign", "You were crowned Hechicero Soberano."))
+			or ("🏅  " .. _wh("world_legend_prefix", "Your legend: ") .. tostring(data.PublicLegendGrade or "?"))
+		text(sealCard, legendText, 12, COLORS.Gold, 40, false)
+	end
+
+	local RANK_MEDALS = { "🥇", "🥈", "🥉" }
+	local rankingCard = card(40 + (math.max(#(data.PublicRanking or {}), 1) * 26))
+	text(rankingCard, "🏆  " .. _wh("world_ranking_title", "NOTABLE SORCERERS OF THIS WORLD"), 13, COLORS.Gold, 12, true)
+	if #(data.PublicRanking or {}) == 0 then
+		text(rankingCard, _wh("world_ranking_empty", "No souls connected right now."), 11, COLORS.SubText, 38, false)
+	else
+		for i, entry in ipairs(data.PublicRanking) do
+			local marker = RANK_MEDALS[i] or ("#" .. tostring(i))
+			text(rankingCard, marker .. "  " .. tostring(entry.Name) .. "  --  " .. tostring(entry.Grade) .. "  (CE " .. tostring(entry.CursedEnergy) .. ")", 12, COLORS.Text, 12 + (i * 26), false)
+		end
+	end
+
+	local legendaryOwners = data.PublicLegendaryOwners or {}
+	if #legendaryOwners > 0 then
+		local legendaryCard = card(40 + (#legendaryOwners * 22))
+		text(legendaryCard, "✨  " .. _wh("world_legendary_title", "LEGENDARY TRAITS CLAIMED"), 13, COLORS.Purple, 12, true)
+		for i, owner in ipairs(legendaryOwners) do
+			text(legendaryCard, tostring(owner.TraitName) .. "  --  " .. tostring(owner.CharacterName), 11, COLORS.SubText, 10 + (i * 22), false)
+		end
+	end
+
+	local events = data.PublicWorldEvents or {}
+	for i = #events, 1, -1 do
+		local entry = events[i]
+		local c = card(64)
+		text(c, "📜  " .. tostring(entry.Year or "?"), 12, COLORS.Blue, 12, true)
+		text(c, tostring(entry.Text or ""), 12, COLORS.Text, 34, false)
+	end
+end
+
 historyTab.MouseButton1Click:Connect(function()
 	if activeTab ~= "history" and not rendering then
 		activeTab = "history"
@@ -636,6 +712,13 @@ influenceTab.MouseButton1Click:Connect(function()
 	if activeTab ~= "influence" and not rendering then
 		activeTab = "influence"
 		renderInfluence()
+	end
+end)
+
+worldTab.MouseButton1Click:Connect(function()
+	if activeTab ~= "world" and not rendering then
+		activeTab = "world"
+		renderWorld()
 	end
 end)
 

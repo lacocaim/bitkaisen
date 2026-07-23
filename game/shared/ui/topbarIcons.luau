@@ -14,6 +14,7 @@ if not iconOk then
 end
 local uiState = require("@ui-state/uiState")
 local overlayManager = require("@ui-state/overlayManager")
+local QuickMenuPanel = require("@ui-panels/QuickMenuPanel")
 
 local topbarIcons = {}
 local settingsIconRef = nil
@@ -52,48 +53,35 @@ function topbarIcons.init(panelRefs)
 		settingsIcon:deselect()
 	end)
 
-	local godModeIcon = Icon.new()
-	godModeIcon:setLabel(utf8.char(0x26A1))
-	godModeIcon:setRight()
-	godModeIcon:setOrder(101)
-	godModeIcon:bindEvent("selected", function()
-		if panelRefs.godMode then
-			overlayManager.show("godMode", panelRefs.godMode.open, panelRefs.godMode.close)
-		end
-		godModeIcon:deselect()
+	-- God Mode, Clan War, Cult War, and AFK used to each have their own
+	-- always-visible topbar icon. Folded into one "MENU" icon (see
+	-- QuickMenuPanel.luau) since none of them are tapped often enough to
+	-- earn a permanent slot, and having every system as its own icon was
+	-- exactly the crowded-topbar complaint (BitSeas/BitShinobi keep only a
+	-- couple of icons visible and put the rest behind a menu). NOTE: the
+	-- label must be an emoji -- plain glyphs like the U+2630 hamburger
+	-- aren't in Roblox's fonts and render as the ugly tofu box.
+	QuickMenuPanel.init(panelRefs)
+	local menuIcon = Icon.new()
+	menuIcon:setLabel(utf8.char(0x1F4CB))
+	menuIcon:setRight()
+	menuIcon:setOrder(101)
+	menuIcon:bindEvent("selected", function()
+		QuickMenuPanel.open()
+		menuIcon:deselect()
 	end)
 
-	local warIcon = Icon.new()
-	warIcon:setLabel(utf8.char(0x2694))
-	warIcon:setRight()
-	warIcon:setOrder(102)
-	warIcon:bindEvent("selected", function()
-		if panelRefs.clanWar then
-			overlayManager.show("clanWar", panelRefs.clanWar.open, panelRefs.clanWar.close)
+	-- Help & Guide gets its own permanent icon (pulled back OUT of the
+	-- quick menu per Luisa) -- new players need it visible, not buried.
+	local helpIcon = Icon.new()
+	helpIcon:setLabel(utf8.char(0x2753))
+	helpIcon:setRight()
+	helpIcon:setOrder(102)
+	helpIcon:bindEvent("selected", function()
+		if panelRefs.helpGuide then
+			overlayManager.show("helpGuide", panelRefs.helpGuide.open, panelRefs.helpGuide.close)
 		end
-		warIcon:deselect()
-	end)
-
-	local cultWarIcon = Icon.new()
-	cultWarIcon:setLabel(utf8.char(0x1F480))
-	cultWarIcon:setRight()
-	cultWarIcon:setOrder(104)
-	cultWarIcon:bindEvent("selected", function()
-		if panelRefs.cultWar then
-			overlayManager.show("cultWar", panelRefs.cultWar.open, panelRefs.cultWar.close)
-		end
-		cultWarIcon:deselect()
-	end)
-
-	local afkIcon = Icon.new()
-	afkIcon:setLabel(utf8.char(0x1F4A4))
-	afkIcon:setRight()
-	afkIcon:setOrder(103)
-	afkIcon:bindEvent("selected", function()
-		if panelRefs.afk then
-			overlayManager.show("afk", panelRefs.afk.open, panelRefs.afk.close)
-		end
-		afkIcon:deselect()
+		helpIcon:deselect()
 	end)
 
 	local freeRewardsIcon = Icon.new()
@@ -107,19 +95,21 @@ function topbarIcons.init(panelRefs)
 		freeRewardsIcon:deselect()
 	end)
 
-	-- How To Play (replay tutorial) + Guide toggle. Kept separate from the
-	-- settings gear (⚙) since neither is a QoL toggle -- see memory
-	-- project-bitkaisen-tutorial-system for why these two are grouped
-	-- together but distinct from Settings.
-	local helpGuideIcon = Icon.new()
-	helpGuideIcon:setLabel(utf8.char(0x2753))
-	helpGuideIcon:setRight()
-	helpGuideIcon:setOrder(98)
-	helpGuideIcon:bindEvent("selected", function()
-		if panelRefs.helpGuide then
-			overlayManager.show("helpGuide", panelRefs.helpGuide.open, panelRefs.helpGuide.close)
-		end
-		helpGuideIcon:deselect()
+	-- Lives (the "souls" route) gets its own permanent icon rather than
+	-- staying only in the NavPanel grid -- on Mobile it was nav order 13 of
+	-- 13, meaning reaching it required scrolling all the way down inside the
+	-- cramped 162px NavAnchor scrollbox (only 6 of 13 entries show without
+	-- scrolling). Nested scroll gestures are notoriously unreliable on real
+	-- touchscreens, so a player could tap around that area and have nothing
+	-- happen -- same reasoning Luisa already gave for pulling Help & Guide
+	-- out of a buried menu into its own icon.
+	local livesIcon = Icon.new()
+	livesIcon:setLabel(utf8.char(0x1F465))
+	livesIcon:setRight()
+	livesIcon:setOrder(98)
+	livesIcon:bindEvent("selected", function()
+		uiState.navigate("souls")
+		livesIcon:deselect()
 	end)
 
 end

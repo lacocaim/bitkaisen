@@ -267,7 +267,7 @@ function refresh()
 		})
 		mobileLabel({
 			parent = note,
-			text = _j("age_hint", "Some roles need you to be older — locked jobs show their minimum age."),
+			text = _j("age_hint", "Some roles need you to be older - locked jobs show their minimum age."),
 			size = 13,
 			color = theme.Gold,
 			order = 1,

@@ -219,7 +219,7 @@ refresh = function()
 				{ text = _cw("betray", "BETRAY"), color = theme.Purple, action = function() fire("ClanWar_Betray") end },
 			}, 3)
 		else
-			mobileLabel({ parent = actionsCard, text = _cw("recovering", "Recovering — no actions available."), size = 13, color = theme.Muted, order = 2 })
+			mobileLabel({ parent = actionsCard, text = _cw("recovering", "Recovering - no actions available."), size = 13, color = theme.Muted, order = 2 })
 		end
 	else
 		-- Peacetime / eligible card
@@ -268,7 +268,7 @@ refresh = function()
 				callback = function() fire("ClanWar_Start") end,
 			})
 		else
-			mobileLabel({ parent = actionsCard, text = _cw("cannot_provoke", "Recovering — cannot provoke yet."), size = 13, color = theme.Muted, order = 1 })
+			mobileLabel({ parent = actionsCard, text = _cw("cannot_provoke", "Recovering - cannot provoke yet."), size = 13, color = theme.Muted, order = 1 })
 		end
 	end
 

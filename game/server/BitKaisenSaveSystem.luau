@@ -32,6 +32,26 @@ end
 
 local DEFAULT_SLOT_COUNT = schema.DEFAULT_SLOT_COUNT
 
+local function buildCleanStats(stats)
+	local cleanStats = {}
+	for k, v in stats do
+		if k == "__SlotId" or k == "__SelectedSlot" or k == "__PublicWorldId" then
+			continue
+		end
+		if typeof(v) == "function" or typeof(v) == "Instance" or typeof(v) == "RBXScriptConnection" then
+			continue
+		end
+		if typeof(v) == "table" then
+			cleanStats[k] = deepClone(v)
+		else
+			cleanStats[k] = v
+		end
+	end
+	cleanStats.DataVersion = cleanStats.DataVersion or 2
+	cleanStats.LastSaved = os.time()
+	return cleanStats
+end
+
 local PROFILE_WAIT_TIMEOUT = 30
 
 local function waitForProfile(player: Player): boolean
@@ -249,6 +269,40 @@ function BitKaisenSaveSystem.LoadSlot(player, slotId)
 	return stats
 end
 
+-- Multiplayer Fase 1: mirrors LoadSlot, but reads a Public-mode save from
+-- account.publicWorldSaves[worldId] instead of the 3 private account.slots.
+function BitKaisenSaveSystem.LoadPublicWorld(player, worldId)
+	if not player or not player.Parent then
+		return nil
+	end
+	if typeof(worldId) ~= "string" or worldId == "" then
+		return nil
+	end
+
+	local account = getAccountData(player)
+	if not account then
+		return nil
+	end
+
+	local saves = account.publicWorldSaves
+	local slotData = saves and saves[worldId]
+	if not slotData or not slotData.exists or not slotData.stats then
+		return nil
+	end
+
+	local stats = {}
+	for k, v in slotData.stats do
+		if typeof(v) == "table" then
+			stats[k] = deepClone(v)
+		else
+			stats[k] = v
+		end
+	end
+	stats.__PublicWorldId = worldId
+
+	return stats
+end
+
 function BitKaisenSaveSystem.Load(player, hasVIP)
 	if not player or not player.Parent then
 		return nil
@@ -264,6 +318,11 @@ function BitKaisenSaveSystem.Load(player, hasVIP)
 		return nil
 	end
 
+	-- Multiplayer Fase 1: Public/Private is now an explicit per-join choice
+	-- (see GameManager's PromptWorldMode/loadOrStartLife) rather than
+	-- something Load() infers on its own -- callers who want the Public
+	-- save call LoadPublicWorld directly. This always resolves the private
+	-- slots, same as before Fase 1 existed.
 	local selectedSlot = account.selectedSlot or 1
 	local loaded = BitKaisenSaveSystem.LoadSlot(player, selectedSlot)
 	return loaded
@@ -277,6 +336,45 @@ function BitKaisenSaveSystem.Save(player, stats, slotId)
 		return false
 	end
 
+	-- Multiplayer Fase 1: a Public-mode life is keyed by world id, not one of
+	-- the 3 private slots. Routes to account.publicWorldSaves instead.
+	if stats.WorldMode == "Public" then
+		local worldId = tostring(stats.PublicWorldId or "")
+		if worldId == "" then
+			return false
+		end
+
+		local cleanStats = buildCleanStats(stats)
+		local summary = buildSummaryFromStats(cleanStats, 0)
+
+		accountService.transaction(function(tx)
+			tx(player, function()
+				accountService.mutateData(function(acc)
+					local new = table.clone(acc)
+					local newPublicSaves = table.clone(new.publicWorldSaves or {})
+					-- Fase 8: clone the EXISTING entry first (not a fresh
+					-- table literal) so sibling fields like GodModeUnlocked
+					-- survive every autosave instead of being silently
+					-- wiped -- same class of bug already caught once in
+					-- BK_WorldStateService.
+					local existingEntry = newPublicSaves[worldId]
+					local newEntry = typeof(existingEntry) == "table" and table.clone(existingEntry) or {}
+					newEntry.exists = true
+					newEntry.summary = summary
+					newEntry.stats = cleanStats
+					newPublicSaves[worldId] = newEntry
+					new.publicWorldSaves = newPublicSaves
+					new.lastWorldMode = "Public"
+					new.lastPublicWorldId = worldId
+					return new
+				end)
+			end)
+		end)
+
+		stats.__PublicWorldId = worldId
+		return true
+	end
+
 	local resolvedSlot = tonumber(slotId) or tonumber(stats.__SlotId)
 	if not resolvedSlot then
 		local account = getAccountData(player)
@@ -284,23 +382,8 @@ function BitKaisenSaveSystem.Save(player, stats, slotId)
 	end
 	resolvedSlot = math.clamp(tonumber(resolvedSlot) or 1, 1, DEFAULT_SLOT_COUNT)
 
-	local cleanStats = {}
-	for k, v in stats do
-		if k == "__SlotId" or k == "__SelectedSlot" then
-			continue
-		end
-		if typeof(v) == "function" or typeof(v) == "Instance" or typeof(v) == "RBXScriptConnection" then
-			continue
-		end
-		if typeof(v) == "table" then
-			cleanStats[k] = deepClone(v)
-		else
-			cleanStats[k] = v
-		end
-	end
-	cleanStats.DataVersion = cleanStats.DataVersion or 2
+	local cleanStats = buildCleanStats(stats)
 	cleanStats.SlotId = resolvedSlot
-	cleanStats.LastSaved = os.time()
 
 	local summary = buildSummaryFromStats(cleanStats, resolvedSlot)
 
@@ -316,6 +399,7 @@ function BitKaisenSaveSystem.Save(player, stats, slotId)
 				}
 				new.slots = newSlots
 				new.selectedSlot = resolvedSlot
+				new.lastWorldMode = "Private"
 				return new
 			end)
 		end)
@@ -514,6 +598,45 @@ function BitKaisenSaveSystem.HasExtraSaveSlotsUnlocked(player)
 		return false
 	end
 	return account.extraSlotsUnlocked == true
+end
+
+-- Multiplayer Fase 8: "God Mode (This World)" dev product -- unlocks God
+-- Mode permanently for ONE specific Public world. Stored as a sibling
+-- field on that world's own publicWorldSaves entry (not inside `stats`),
+-- so it survives death/new-life within the SAME world without being tied
+-- to any one character -- a different Public world needs its own separate
+-- purchase, exactly like the design calls for.
+function BitKaisenSaveSystem.UnlockGodModeForWorld(player, worldId)
+	if not player or typeof(worldId) ~= "string" or worldId == "" then
+		return false
+	end
+	accountService.transaction(function(tx)
+		tx(player, function()
+			accountService.mutateData(function(acc)
+				local new = table.clone(acc)
+				local newPublicSaves = table.clone(new.publicWorldSaves or {})
+				local existingEntry = newPublicSaves[worldId]
+				local newEntry = typeof(existingEntry) == "table" and table.clone(existingEntry) or {}
+				newEntry.GodModeUnlocked = true
+				newPublicSaves[worldId] = newEntry
+				new.publicWorldSaves = newPublicSaves
+				return new
+			end)
+		end)
+	end)
+	return true
+end
+
+function BitKaisenSaveSystem.HasGodModeUnlockedForWorld(player, worldId)
+	if not player or typeof(worldId) ~= "string" or worldId == "" then
+		return false
+	end
+	local account = getAccountData(player)
+	if not account then
+		return false
+	end
+	local entry = account.publicWorldSaves and account.publicWorldSaves[worldId]
+	return typeof(entry) == "table" and entry.GodModeUnlocked == true
 end
 
 function BitKaisenSaveSystem.GrantGiftedGamePassByUserId(userId, passKey)

@@ -503,7 +503,7 @@ BitKaisenSituations.Database = {
 	{
 		Id = "child_with_cursed_energy",
 		Title = "A Child in the Rubble",
-		Body = "You find a child in the wreckage. They are alive, untouched by the curse — but their cursed energy is intense. Possibly a Cursed Womb.",
+		Body = "You find a child in the wreckage. They are alive, untouched by the curse - but their cursed energy is intense. Possibly a Cursed Womb.",
 		MinGrade = "Grade 2",
 		Options = {
 			{

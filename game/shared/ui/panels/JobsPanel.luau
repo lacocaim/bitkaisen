@@ -363,7 +363,7 @@ function refresh()
 		note.Size = UDim2.new(1, -8, 0, 28)
 		note.BackgroundColor3 = Color3.fromRGB(40, 32, 20)
 		note.BorderSizePixel = 0
-		note.Text = "  " .. _j("age_hint", "Some roles need you to be older — locked jobs show their minimum age.")
+		note.Text = "  " .. _j("age_hint", "Some roles need you to be older - locked jobs show their minimum age.")
 		note.TextColor3 = THEME.Gold
 		note.TextSize = 11
 		note.Font = Enum.Font.GothamMedium

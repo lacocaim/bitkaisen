@@ -39,6 +39,15 @@ local BK_JobService = require(ServerScriptService:WaitForChild("BitKaisenServer"
 local BK_CombatService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_CombatService"))
 local BK_AFKService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_AFKService"))
 local BK_ClanWarService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_ClanWarService"))
+local BK_WorldStateService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_WorldStateService"))
+-- Global (not `local`) on purpose -- see the "Out of local registers" note
+-- near publicRepique's declaration. Fase 4 adds a require + a service
+-- reference here; both go global to keep headroom under the 200 ceiling.
+BK_WorldRegistryService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_WorldRegistryService"))
+BK_SoulsService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_SoulsService"))
+BK_DuelService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_DuelService"))
+BK_CellService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_CellService"))
+TeleportService = game:GetService("TeleportService")
 BK_CultWarService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_CultWarService"))
 local BK_DomainService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_DomainService"))
 local BK_GodModeService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_GodModeService"))
@@ -69,6 +78,14 @@ local testPurchase = BK_Remotes.Get("TestPurchase")
 local getRelationships = BK_Remotes.Get("GetRelationships")
 local relationshipAction = BK_Remotes.Get("RelationshipAction")
 getWorldHistory = BK_Remotes.Get("GetWorldHistory")
+-- Global (not `local`) on purpose -- GameManager.server.luau's main chunk is
+-- already at Luau's 200-local-register ceiling (see the Fase 2 "Out of
+-- local registers" incident). New remote caches from here on go global,
+-- matching the existing pattern already used for getWorldHistory/getTitles.
+requestQuickStartCharacter = BK_Remotes.Get("RequestQuickStartCharacter")
+getWorldBrowser = BK_Remotes.Get("GetWorldBrowser")
+requestJoinWorld = BK_Remotes.Get("RequestJoinWorld")
+requestCreateWorld = BK_Remotes.Get("RequestCreateWorld")
 getTitles = BK_Remotes.Get("GetTitles")
 getDevTools = BK_Remotes.Get("GetDevTools")
 devToolsAction = BK_Remotes.Get("DevToolsAction")
@@ -250,7 +267,18 @@ local RATE_LIMITS = {
 	TestPurchase = 0.5,
 	GodModeAction = 0.5,
 	RivalAction = 0.5,
-	DevToolsAction = 0.2
+	DevToolsAction = 0.2,
+	ChooseWorldMode = 1.0,
+	ProposeEraAdvance = 2.0,
+	RequestQuickStartCharacter = 1.0,
+	GetWorldBrowser = 1.0,
+	RequestJoinWorld = 2.0,
+	RequestCreateWorld = 5.0,
+	GetSouls = 1.0,
+	SoulAction = 1.5,
+	GetDuelState = 0.5,
+	DuelAction = 0.5,
+	CellAction = 1.0
 }
 
 function isDev(player)
@@ -268,6 +296,71 @@ end
 local playerLives = {}
 local pendingMissions = {}
 local pendingLegacy = {}
+-- Multiplayer Fase 1: true while a player has been shown PromptWorldMode and
+-- hasn't answered via ChooseWorldMode yet -- gates that remote to a single
+-- join-time answer instead of accepting it whenever, from anyone.
+local pendingWorldModeChoice = {}
+
+-- Multiplayer Fase 2 ("El Repique"): shared-calendar vote state, kept in
+-- memory only (fine while every Public player is on this one server -- Fase
+-- 4's real multi-world/multi-server routing will need to move this to
+-- MemoryStoreService, per the design doc). Bundled into one table instead of
+-- 5 separate top-level locals -- GameManager.server.luau's main chunk was
+-- already right at Luau's 200-local-register ceiling, and 5 new top-level
+-- locals pushed it over ("Out of local registers" at runtime, server never
+-- finishes booting).
+local publicRepique = {
+	votes = {}, -- votes[worldId] = { [userId] = true, ... }
+	lastAdvanceTime = {}, -- lastAdvanceTime[worldId] = os.time()
+	-- Guards against a double-advance if two votes land close enough
+	-- together that the first AdvanceYear's UpdateAsync (which yields)
+	-- hasn't returned yet when the second vote's tally check runs.
+	advanceInProgress = {},
+	VOTE_THRESHOLD = 0.6,
+	BACKUP_CLOCK_SECONDS = 600,
+	-- Catch-up bonus for a brand-new Public character (see
+	-- applyPublicCatchUpBonus): scaled by the world's elapsed years, capped
+	-- so a very old world doesn't hand out something absurd.
+	CATCHUP_MONEY_PER_YEAR = 300,
+	CATCHUP_MONEY_CAP = 15000,
+	CATCHUP_CE_CAP = 20,
+	CATCHUP_SMARTS_CAP = 10,
+	-- Fase 3 ("Sello Final"): years since founding before a world freezes
+	-- for good. Matches the design doc's own proposed default.
+	SEALED_WORLD_AGE_YEARS = 40,
+	-- Fase 5 ("Pulso del Mundo", versión liviana): average connected
+	-- WantedLevel thresholds that trigger a world-wide Represión/Paz
+	-- Dorada announcement on each year-advance.
+	CRACKDOWN_WANTED_THRESHOLD = 40,
+	GOLDEN_PEACE_WANTED_THRESHOLD = 10,
+	-- Fase 5 fix (2026-07-22, reported by Luisa as "muy repetitivo"): the
+	-- Represión/Paz Dorada check ran on every single year-advance with no
+	-- cooldown, so it fired every ~10 min (backup clock) for as long as the
+	-- average WantedLevel stayed on one side of the threshold -- normal for
+	-- brand-new characters, so it spammed constantly. Minimum years between
+	-- Pulso announcements, persisted per-world (worldState.LastPulseEventYear).
+	PULSE_EVENT_COOLDOWN_YEARS = 5,
+	-- Fase 4: which world THIS server process hosts. Resolved once, lazily,
+	-- from the first teleporting player's TeleportData -- falls back to
+	-- DEFAULT_PUBLIC_WORLD_ID when nothing ever provides one (a normal
+	-- direct connection, or Studio Play, where TeleportService doesn't
+	-- really teleport anyone in). nil until resolveCurrentServerWorldId()
+	-- runs at least once.
+	currentWorldId = nil,
+	-- Fase 8 (ciclo de vida de mundos): worldId -> true once this process
+	-- has called BK_WorldRegistryService.MarkEverPopulated for it, so the
+	-- 30s heartbeat doesn't re-write the same DataStore flag forever.
+	everPopulatedMarked = {},
+	-- Fase 8: how long a never-populated world draft stays visible in the
+	-- Buscador before being treated as abandoned (see getWorldBrowser).
+	ABANDONED_WORLD_GRACE_SECONDS = 3600,
+	-- Fase 8: how long an Open world with real history can sit empty
+	-- before it drops out of the general Buscador list too (30 days).
+	-- Never deletes anything -- Join by Code (a separate lookup path)
+	-- still works, and the world just needs someone to log back in.
+	DORMANT_WORLD_HIDE_SECONDS = 30 * 24 * 60 * 60,
+}
+
 local autosaveLoops = {}
 local lastActionTimes = {}
 
@@ -278,6 +371,17 @@ local lastSaveTimes = {}
 
 function checkCachedGamePassOwnership(player, passId, cacheTable, label)
 	if not player then
+		return false
+	end
+
+	-- Multiplayer Fase 8 (Fair Play Doctrine, straight from BitSeas' own rule,
+	-- confirmed by their dev in Discord): NO power gamepass applies inside a
+	-- Public world -- it's strictly free to play there. Consumable Dev
+	-- Products (Time Skip, RCT Revive...) flow through ProcessReceipt, not
+	-- this function, so they keep working. Checked BEFORE the test-place
+	-- shortcut on purpose: the rule must hold in Studio tests too.
+	local publicGateStats = playerLives[player.UserId]
+	if publicGateStats and publicGateStats.WorldMode == "Public" then
 		return false
 	end
 
@@ -442,10 +546,29 @@ function hasGiftedGamePass(player, passKey)
 	return ok and result == true
 end
 
+-- Multiplayer Fase 8: "God Mode (This World)" dev product -- unlocked
+-- per-Public-world (see BitKaisenSaveSystem.UnlockGodModeForWorld), checked
+-- here as a 4th path alongside the account-wide gamepass/gift paths.
+-- Deliberately NOT inside checkCachedGamePassOwnership's Public gate above
+-- (that gate exists specifically to block the account-wide Private
+-- gamepass in Public -- this is the separate, legitimate Public-only path
+-- the Fair Play Doctrine is designed to allow).
+function isGodModeUnlockedForCurrentPublicWorld(player)
+	local stats = playerLives[player.UserId]
+	if not stats or stats.WorldMode ~= "Public" or typeof(stats.PublicWorldId) ~= "string" or stats.PublicWorldId == "" then
+		return false
+	end
+	local ok, result = pcall(function()
+		return BitKaisenSaveSystem.HasGodModeUnlockedForWorld(player, stats.PublicWorldId)
+	end)
+	return ok and result == true
+end
+
 function ownsGodModePass(player)
 	return checkCachedGamePassOwnership(player, GOD_MODE_PASS_ID, ownershipCaches.godMode, "God Mode")
 		or hasGiftedGamePass(player, "GodMode")
 		or beachHeroHasPass(player, "GodMode")
+		or isGodModeUnlockedForCurrentPublicWorld(player)
 end
 
 function ownsGoRoguePass(player)
@@ -688,6 +811,14 @@ end
 
 function fireLifeUpdate(player, stats, message, forceResetLog, isRejoin)
 	updateLifeEvent:FireClient(player, stats, message, forceResetLog == true)
+	-- Multiplayer Fase 8: chat identity attributes, read client-side by
+	-- BitKaisenCoreUI's OnIncomingMessage to color/tag Public chat names.
+	-- SetAttribute is a no-op when the value hasn't changed, so this is
+	-- safe on the hot path.
+	if stats and stats.WorldMode == "Public" then
+		player:SetAttribute("BKChatName", tostring(stats.Name or player.Name))
+		player:SetAttribute("BKChatPath", tostring(stats.LifePath or "Undecided"))
+	end
 	if not BK_ChallengeService or not stats then return end
 
 	local isNewLife = forceResetLog == true and not isRejoin
@@ -696,7 +827,7 @@ function fireLifeUpdate(player, stats, message, forceResetLog, isRejoin)
 
 	-- Only run stat checks every 3 seconds, but always run on new life
 	if not isNewLife and not isRejoin and (now - lastCheck) < 3 then return end
-	-- Loaded stats are not stat changes — InitPlayer already restored the done map
+	-- Loaded stats are not stat changes - InitPlayer already restored the done map
 	if isRejoin then return end
 	_lastChallengeCheck[player.UserId] = now
 
@@ -1324,7 +1455,7 @@ function applyOldAgeMortality(stats)
 			stats.MiracleCharges = charges - 1
 			local remaining = tonumber(stats.MiracleCharges) or 0
 			return "\n<font color='#c8a4ff'><b>[ MIRACLE ]</b></font> Death came for you, but a miracle held it back. Marks remaining: <b>" .. remaining .. "</b>."
-				.. (remaining == 0 and " Your marks are gone — you are now completely vulnerable." or "")
+				.. (remaining == 0 and " Your marks are gone - you are now completely vulnerable." or "")
 		end
 		stats.Alive = false
 		stats.CauseOfDeath = "Old age"
@@ -1898,6 +2029,10 @@ CHARACTER_ERA_TIMELINE = {
 	{ Name = "Collapse Era", StartYear = 2018 },
 }
 
+-- Multiplayer Fase 1: only one Public world exists until Fase 4 builds real
+-- world creation/browsing. Every player who picks Public shares this one.
+local DEFAULT_PUBLIC_WORLD_ID = "genesis"
+
 CHARACTER_GOD_MODE_BIRTH_PATH_FIELDS = {
 	EarlyCurseExposure = true,
 	Temperament = true,
@@ -1976,6 +2111,20 @@ end
 
 function ensureEraYearState(stats, forceResetBirthYear)
 	if typeof(stats) ~= "table" then
+		return
+	end
+
+	-- Multiplayer Fase 1: a Public-mode character's Year/Era comes from the
+	-- shared world state, never from their own BirthYear + Age. The world is
+	-- the source of truth here; nothing below this branch applies to them.
+	if stats.WorldMode == "Public" then
+		local worldId = tostring(stats.PublicWorldId or DEFAULT_PUBLIC_WORLD_ID)
+		local world = BK_WorldStateService.GetOrCreate(worldId)
+		if world then
+			stats.CurrentYear = tonumber(world.Year) or 2000
+			stats.CurrentEra = tostring(world.Era or "Modern Era")
+			stats.Era = stats.CurrentEra
+		end
 		return
 	end
 
@@ -2322,6 +2471,44 @@ local function applyUpbringingStartModifiers(stats)
 		stats.Looks = math.clamp((tonumber(stats.Looks) or 50) + 2, 0, 100)
 		stats.Happiness = math.clamp((tonumber(stats.Happiness) or 100) + 2, 0, 100)
 	end
+end
+
+-- Multiplayer Fase 4 ("Inicio Rápido"): builds a fully-random, valid
+-- customization payload -- same option pools (CHARACTER_CUSTOMIZATION_OPTIONS)
+-- and identity generator (BitKaisenStats.GenerateRandomIdentity) that
+-- startNewLife already uses for a brand-new life's random appearance/name,
+-- just packaged as a payload for applyCharacterCustomization to validate
+-- exactly like a manually-submitted one.
+function buildQuickStartCharacterPayload(player)
+	local rolledOrigin = rollBirthOriginForPlayer(player)
+	local rolledGender = math.random(1, 2) == 1 and "Male" or "Female"
+	local identity = BitKaisenStats.GenerateRandomIdentity(rolledOrigin, rolledGender)
+
+	local function pick(list)
+		return list[math.random(1, #list)]
+	end
+
+	return {
+		FirstName = identity.FirstName,
+		Gender = rolledGender,
+		Appearance = {
+			HairColor = pick(CHARACTER_CUSTOMIZATION_OPTIONS.HairColor),
+			EyeColor = pick(CHARACTER_CUSTOMIZATION_OPTIONS.EyeColor),
+			SkinTone = pick(CHARACTER_CUSTOMIZATION_OPTIONS.SkinTone),
+			Height = pick(CHARACTER_CUSTOMIZATION_OPTIONS.Height),
+			Build = pick(CHARACTER_CUSTOMIZATION_OPTIONS.Build),
+			Feature = pick(CHARACTER_CUSTOMIZATION_OPTIONS.Feature),
+			AuraColor = pick(CHARACTER_CUSTOMIZATION_OPTIONS.AuraColor),
+			OriginLocation = pick(CHARACTER_CUSTOMIZATION_OPTIONS.OriginLocation),
+		},
+		BirthPath = {
+			Era = "Modern Era",
+			Upbringing = pick(CHARACTER_CUSTOMIZATION_OPTIONS.Upbringing),
+			EarlyCurseExposure = pick(CHARACTER_CUSTOMIZATION_OPTIONS.EarlyCurseExposure),
+			Temperament = pick(CHARACTER_CUSTOMIZATION_OPTIONS.Temperament),
+			LifeGoal = pick(CHARACTER_CUSTOMIZATION_OPTIONS.LifeGoal),
+		},
+	}
 end
 
 function applyCharacterCustomization(player, payload)
@@ -3145,6 +3332,10 @@ function startAutosaveLoop(player)
 			end
 
 			if playerLives[player.UserId] then
+				-- Multiplayer Fase 2: worst-case catch-up for a player who's
+				-- been idle since a year-advance -- the dispatcher-side flush
+				-- only fires on their next action.
+				flushPendingPublicYearAdvances(player, playerLives[player.UserId])
 				saveStats(player)
 			end
 		end
@@ -3382,6 +3573,14 @@ function startAsCurseRebirth(player)
 	end
 
 	local newStats = BitKaisenStats.GetDefaultStats()
+
+	-- Multiplayer Fase 1: curse rebirth stays in whichever world the life
+	-- that just ended was in -- see startNewLife for the same rule.
+	newStats.WorldMode = oldStats.WorldMode or "Private"
+	if newStats.WorldMode == "Public" then
+		newStats.PublicWorldId = oldStats.PublicWorldId or DEFAULT_PUBLIC_WORLD_ID
+	end
+
 	ensureExtraStats(newStats)
 	newStats.CharacterCustomized = true
 	ensureCharacterAppearance(newStats)
@@ -3556,7 +3755,62 @@ local function getLifeRibbon(stats)
 	else return "ORDINARY LIFE" end
 end
 
-function startNewLife(player)
+-- Multiplayer Fase 2 (catch-up, "Se une tarde a un mundo ya avanzado" from
+-- the design doc): a brand-new Public character shouldn't start as if the
+-- shared world were also brand new. Scales a modest, capped bonus by how
+-- many years the world has been running (Year - StartYear) so a late
+-- joiner can compete instead of only ever chasing from year 0. Tunables
+-- live on publicRepique (not their own top-level locals) -- see the
+-- "Out of local registers" note on that table's declaration above.
+function applyPublicCatchUpBonus(newStats, worldState)
+	if typeof(worldState) ~= "table" then
+		return
+	end
+
+	local worldAgeYears = math.max(0, (tonumber(worldState.Year) or 0) - (tonumber(worldState.StartYear) or tonumber(worldState.Year) or 0))
+	if worldAgeYears <= 0 then
+		return
+	end
+
+	local moneyBonus = math.min(worldAgeYears * publicRepique.CATCHUP_MONEY_PER_YEAR, publicRepique.CATCHUP_MONEY_CAP)
+	local ceBonus = math.min(worldAgeYears, publicRepique.CATCHUP_CE_CAP)
+	newStats.Money = (tonumber(newStats.Money) or 0) + moneyBonus
+	newStats.CursedEnergy = (tonumber(newStats.CursedEnergy) or 0) + ceBonus
+	newStats.Smarts = math.clamp((tonumber(newStats.Smarts) or 0) + math.min(math.floor(worldAgeYears / 2), publicRepique.CATCHUP_SMARTS_CAP), 1, 100)
+
+	return moneyBonus, ceBonus
+end
+
+-- Multiplayer Fase 5 ("Exclusividad"): filters a freshly-rolled Public
+-- character's traits against the world's Legendary-trait registry -- any
+-- Legendary already held by a DIFFERENT userId gets dropped (born without
+-- it, no re-roll attempted -- simple and safe). Anything that survives
+-- (unclaimed, or already this player's own) gets claimed for them.
+function enforcePublicLegendaryExclusivity(stats, player)
+	local worldId = stats.PublicWorldId
+	if typeof(worldId) ~= "string" or worldId == "" then
+		return
+	end
+	if typeof(stats.Traits) ~= "table" then
+		return
+	end
+
+	local kept = {}
+	for _, traitId in ipairs(stats.Traits) do
+		local trait = BitKaisenTraits.GetTrait(traitId)
+		if trait and trait.Rarity == "Legendary" then
+			local claimed = BK_WorldStateService.ClaimLegendaryTrait(worldId, trait.Id, player.UserId, tostring(stats.Name or "Unknown"))
+			if claimed then
+				table.insert(kept, traitId)
+			end
+		else
+			table.insert(kept, traitId)
+		end
+	end
+	stats.Traits = kept
+end
+
+function startNewLife(player, mode)
 	local oldStats = playerLives[player.UserId]
 	local preservedSettings = nil
 	local preservedMetaProgress = nil
@@ -3608,6 +3862,20 @@ function startNewLife(player)
 	end
 
 	local newStats = BitKaisenStats.GetDefaultStats()
+
+	-- Multiplayer Fase 1: Public/Private is decided once per join (see
+	-- PromptWorldMode/ChooseWorldMode), not re-asked on every new life. A
+	-- life started mid-session (death, reincarnation, God Mode reset) simply
+	-- inherits whichever world the life that just ended was in; only the
+	-- very first life of a session passes `mode` in explicitly.
+	local resolvedWorldMode = mode or (oldStats and oldStats.WorldMode) or "Private"
+	newStats.WorldMode = resolvedWorldMode
+	local publicCatchUpMoney, publicCatchUpCE = nil, nil
+	if resolvedWorldMode == "Public" then
+		newStats.PublicWorldId = (oldStats and oldStats.PublicWorldId) or publicRepique.currentWorldId or DEFAULT_PUBLIC_WORLD_ID
+		publicCatchUpMoney, publicCatchUpCE = applyPublicCatchUpBonus(newStats, BK_WorldStateService.Get(newStats.PublicWorldId))
+	end
+
 	ensureExtraStats(newStats)
 	syncMonetizationEntitlements(player, newStats)
 	applyLuckySorcererBirthBoost(player, newStats)
@@ -3676,7 +3944,24 @@ function startNewLife(player)
 		newStats.Reputation = math.max(0, (newStats.Reputation or 0) + 1)
 	end
 
+	-- Multiplayer Fase 5 ("Exclusividad"): release any Legendary traits the
+	-- ending life held, before rolling the new one's. Successor/rebirth
+	-- flows don't call startNewLife, so a trait passed to a successor is
+	-- never mistakenly freed here -- only a genuinely-ending, non-inherited
+	-- life reaches this point.
+	if oldStats and oldStats.WorldMode == "Public" and typeof(oldStats.PublicWorldId) == "string" and typeof(oldStats.Traits) == "table" then
+		for _, oldTraitId in ipairs(oldStats.Traits) do
+			local oldTrait = BitKaisenTraits.GetTrait(oldTraitId)
+			if oldTrait and oldTrait.Rarity == "Legendary" then
+				BK_WorldStateService.ReleaseLegendaryTrait(oldStats.PublicWorldId, oldTrait.Id, player.UserId)
+			end
+		end
+	end
+
 	newStats.Traits = BitKaisenTraits.RollBirthTraits(newStats, ownsLuckyBirthPass(player))
+	if resolvedWorldMode == "Public" then
+		enforcePublicLegendaryExclusivity(newStats, player)
+	end
 	BitKaisenTraits.ApplyStartingBonuses(newStats)
 	newStats.TraitsRolled = true
 	local godModeStartBoostMessage = BK_GodModeService.ApplyStartBoost(newStats)
@@ -3702,6 +3987,10 @@ function startNewLife(player)
 	birthMessage = birthMessage .. "\nYour name is <b>" .. newStats.Name .. "</b>."
 	birthMessage = birthMessage .. "\nGender: <b>" .. tostring(newStats.Gender or "Unknown") .. "</b>."
 	birthMessage = birthMessage .. "\n" .. BitKaisenTraits.BuildBirthMessage(newStats)
+
+	if publicCatchUpMoney and publicCatchUpMoney > 0 then
+		birthMessage = birthMessage .. "\n<font color='#a782ff'><b>[ EL MUNDO YA AVANZÓ ]</b></font> Este mundo lleva años corriendo sin vos. Arrancás con <b>+$" .. tostring(publicCatchUpMoney) .. "</b> y <b>+" .. tostring(publicCatchUpCE or 0) .. " CE</b> para ponerte a la par."
+	end
 
 	if tostring(newStats.InnateTechnique or "None") ~= "None" then
 		birthMessage = birthMessage .. "\nYou were born with the dormant innate technique <b>" .. tostring(newStats.InnateTechnique) .. "</b>. It should become usable around age 10-11."
@@ -3750,6 +4039,14 @@ function startAsSuccessor(player, successorId, options)
 
 	if not newStats then
 		return false, errorMessage or "Could not create successor."
+	end
+
+	-- Multiplayer Fase 1: a successor stays in whichever world (Public/
+	-- Private) the parent was living in -- see startNewLife for the same
+	-- inheritance rule applied to death/reincarnation.
+	newStats.WorldMode = parentStats.WorldMode or "Private"
+	if newStats.WorldMode == "Public" then
+		newStats.PublicWorldId = parentStats.PublicWorldId or DEFAULT_PUBLIC_WORLD_ID
 	end
 
 	ensureExtraStats(newStats)
@@ -4112,10 +4409,29 @@ function checkAndPromptGroupJoin(player, stats)
 	end)
 end
 
-function loadOrStartLife(player)
-	local loaded = BitKaisenSaveSystem.Load(player, ownsSaveSlotAccess(player))
+function loadOrStartLife(player, mode)
+	-- Multiplayer Fase 1: mode ("Private"/"Public") comes from the join-time
+	-- choice (ChooseWorldMode, fired in response to PromptWorldMode) and
+	-- picks which save to look for. See startNewLife for the fallback case.
+	local loaded
+	if mode == "Public" then
+		loaded = BitKaisenSaveSystem.LoadPublicWorld(player, publicRepique.currentWorldId or DEFAULT_PUBLIC_WORLD_ID)
+	else
+		loaded = BitKaisenSaveSystem.Load(player, ownsSaveSlotAccess(player))
+	end
 
 	if loaded then
+		-- Multiplayer Fase 1: saves from before WorldMode existed (or an
+		-- abandoned mid-customization save) won't have it set. Backfill it
+		-- to match how this save was actually loaded, so the
+		-- CharacterCustomizationPanel guard never blocks on a stale nil.
+		if loaded.WorldMode == nil then
+			loaded.WorldMode = mode == "Public" and "Public" or "Private"
+			if loaded.WorldMode == "Public" then
+				loaded.PublicWorldId = loaded.PublicWorldId or publicRepique.currentWorldId or DEFAULT_PUBLIC_WORLD_ID
+			end
+		end
+
 		ensureExtraStats(loaded)
 		syncMonetizationEntitlements(player, loaded)
 		BitKaisenRelationships.SanitizeOnLoad(loaded)
@@ -4139,11 +4455,34 @@ function loadOrStartLife(player)
 
 		fireLifeUpdate(player, loaded, welcomeMessage, true, true)
 	else
-		startNewLife(player)
+		startNewLife(player, mode)
 	end
 
 	startAutosaveLoop(player)
 	checkAndPromptGroupJoin(player, playerLives[player.UserId])
+
+	-- Multiplayer Fase 2: someone joining mid-vote should see the real
+	-- tally on their very first UpdateLifeEvent, not zeros. Read-only --
+	-- joining never casts a vote on the player's behalf.
+	local stats = playerLives[player.UserId]
+	if stats and stats.WorldMode == "Public" and typeof(stats.PublicWorldId) == "string" then
+		local livingPlayers = getLivingPublicPlayers(stats.PublicWorldId)
+		local aliveCount = #livingPlayers
+		local votes = publicRepique.votes[stats.PublicWorldId] or {}
+		local voteCount = 0
+		for _, p in ipairs(livingPlayers) do
+			if votes[p.UserId] then
+				voteCount += 1
+			end
+		end
+		stats.PublicEraVoteCount = voteCount
+		stats.PublicEraVoteNeeded = math.ceil(aliveCount * publicRepique.VOTE_THRESHOLD)
+		stats.PublicEraAliveCount = aliveCount
+		-- The branch above already sent one UpdateLifeEvent before these
+		-- fields existed on stats -- send a second, corrected snapshot now
+		-- so the vote-progress UI isn't stuck blank until the next action.
+		fireLifeUpdate(player, stats, nil)
+	end
 end
 
 function getSaveSlotPayload(player)
@@ -4214,11 +4553,20 @@ function switchToSaveSlot(player, slotId)
 
 	clearPendingPlayerState(player)
 
+	-- Multiplayer Fase 1: switching slots is a Private-only action; backfill
+	-- WorldMode for saves from before it existed (see loadOrStartLife).
+	loaded.WorldMode = loaded.WorldMode or "Private"
+
 	ensureExtraStats(loaded)
 	BitKaisenRelationships.SanitizeOnLoad(loaded)
 	BitKaisenAssets.SanitizeOnLoad(loaded)
 
 	playerLives[player.UserId] = loaded
+
+	-- Multiplayer Fase 1: commit account.lastWorldMode = "Private" right away
+	-- so a disconnect right after switching slots doesn't leave Load() aimed
+	-- at whatever Public/Private world was active before the switch.
+	forceSaveStats(player, "AfterSelectSaveSlot")
 
 	local message = "<font color='#a782ff'><b>[ SAVE SLOT ]</b></font> Loaded Slot " .. tostring(slotId) .. "."
 	message = message .. "\nWelcome back, <b>" .. tostring(loaded.Name or "Unknown") .. "</b>."
@@ -4322,12 +4670,20 @@ function deleteSaveSlotLife(player, slotId)
 	local loaded = BitKaisenSaveSystem.LoadSlot(player, selectedSlot)
 
 	if loaded then
+		-- Multiplayer Fase 1: same reasoning as switchToSaveSlot -- backfill
+		-- WorldMode for saves from before it existed.
+		loaded.WorldMode = loaded.WorldMode or "Private"
+
 		ensureExtraStats(loaded)
 		syncMonetizationEntitlements(player, loaded)
 		BitKaisenRelationships.SanitizeOnLoad(loaded)
 		BitKaisenAssets.SanitizeOnLoad(loaded)
 
 		playerLives[player.UserId] = loaded
+
+		-- Multiplayer Fase 1: commit lastWorldMode = "Private" right away, in
+		-- case the active life before this delete was a Public one.
+		forceSaveStats(player, "AfterDeleteSaveSlot")
 
 		fireLifeUpdate(
 			player,
@@ -7541,6 +7897,16 @@ function getCurrentYear(stats)
 		return 2000
 	end
 
+	-- Multiplayer Fase 2: a Public character's year always comes from the
+	-- shared world (see ensureEraYearState / El Repique), never from
+	-- BirthYear + Age. Without this, registerEraTransition (called at the
+	-- end of ageUp) would silently stomp the world's shared Year back to
+	-- this player's own birth math the moment a collective year-advance
+	-- calls ageUp() on their behalf.
+	if stats.WorldMode == "Public" then
+		return tonumber(stats.CurrentYear) or 2000
+	end
+
 	local birthYear = tonumber(stats.BirthYear)
 	if birthYear == nil then
 		local birthPath = typeof(stats.BirthPath) == "table" and stats.BirthPath or nil
@@ -9844,6 +10210,361 @@ function ageUp(player)
 	saveStats(player)
 end
 
+-- Multiplayer Fase 2 ("El Repique"): everything below powers the shared
+-- calendar for Public-mode worlds -- collective vote to advance the year,
+-- a backup clock so a world never gets stuck, and deferred application for
+-- anyone mid-combat when the year advances.
+
+-- Every currently-connected player who is alive and living in worldId's
+-- Public world right now. Recomputed fresh every time (never cached), so
+-- someone joining mid-vote is correctly counted in the denominator.
+function getLivingPublicPlayers(worldId)
+	local result = {}
+	for _, p in ipairs(Players:GetPlayers()) do
+		local stats = playerLives[p.UserId]
+		if stats and stats.WorldMode == "Public" and stats.PublicWorldId == worldId and stats.Alive ~= false then
+			table.insert(result, p)
+		end
+	end
+	return result
+end
+
+-- Multiplayer Fase 3 ("Hechiceros Notables"): a live ranking of the world's
+-- currently-connected living souls, by Grade (GRADE_VALUES, already used
+-- elsewhere in this file) then CursedEnergy then Reputation as tiebreaks.
+-- Deliberately scoped to connected players only -- see the plan's notes on
+-- why this doesn't persist an all-time/offline-inclusive index.
+function getPublicWorldRanking(worldId)
+	local livingPlayers = getLivingPublicPlayers(worldId)
+	local entries = {}
+	for _, p in ipairs(livingPlayers) do
+		local stats = playerLives[p.UserId]
+		if stats then
+			table.insert(entries, {
+				UserId = p.UserId,
+				Name = tostring(stats.Name or "Unknown"),
+				Grade = tostring(stats.Grade or "Non-Sorcerer"),
+				GradeValue = GRADE_VALUES[stats.Grade] or 0,
+				CursedEnergy = tonumber(stats.CursedEnergy) or 0,
+				Reputation = tonumber(stats.Reputation) or 0,
+			})
+		end
+	end
+
+	table.sort(entries, function(a, b)
+		if a.GradeValue ~= b.GradeValue then
+			return a.GradeValue > b.GradeValue
+		end
+		if a.CursedEnergy ~= b.CursedEnergy then
+			return a.CursedEnergy > b.CursedEnergy
+		end
+		return a.Reputation > b.Reputation
+	end)
+
+	local top = {}
+	for i = 1, math.min(5, #entries) do
+		top[i] = entries[i]
+	end
+	return top
+end
+
+-- Pushes the current vote tally to every living Public player of worldId, so
+-- their button/progress readout stays in sync even if they didn't just vote.
+function broadcastEraVoteProgress(livingPlayers, voteCount, aliveCount, threshold)
+	for _, p in ipairs(livingPlayers) do
+		local stats = playerLives[p.UserId]
+		if stats then
+			stats.PublicEraVoteCount = voteCount
+			stats.PublicEraVoteNeeded = threshold
+			stats.PublicEraAliveCount = aliveCount
+			fireLifeUpdate(p, stats, nil)
+		end
+	end
+end
+
+-- Applies one year's worth of the shared world's Era/Year to a single
+-- player, then reuses ageUp() as-is for everything else (counter resets,
+-- six-month ticks, era-shift flavor text, etc.) -- no duplicated logic.
+--
+-- Only CurrentYear is set here, deliberately NOT CurrentEra/Era: ageUp()'s
+-- own registerEraTransition (called when a full year completes) detects an
+-- era shift by comparing the OLD stats.CurrentEra against a freshly
+-- computed new one, and generates the "ERA SHIFT" popup/flavor text as a
+-- side effect. Pre-setting CurrentEra here would make previousEra == newEra
+-- every time and silently swallow that narrative moment for every Public
+-- player, exactly the "everyone crosses the era threshold together" beat
+-- the design doc calls out.
+function applyPublicYearAdvanceToPlayer(player, stats, worldState)
+	stats.CurrentYear = tonumber(worldState.Year) or stats.CurrentYear
+	ageUp(player)
+end
+
+-- Applies any year-advances a player missed while mid-combat, as soon as
+-- they're free. Called opportunistically from the UpdateLifeEvent
+-- dispatcher (next action) and the autosave loop (worst case ~2 minutes) --
+-- there's no existing "combat ended" hook to attach to instead.
+function flushPendingPublicYearAdvances(player, stats)
+	if not stats then
+		return
+	end
+	local pending = tonumber(stats.PendingPublicYearAdvances) or 0
+	if pending <= 0 then
+		return
+	end
+	if BK_CombatService.HasActiveFight(player) then
+		return
+	end
+
+	local worldId = stats.PublicWorldId
+	stats.PendingPublicYearAdvances = 0
+	if typeof(worldId) ~= "string" or worldId == "" then
+		return
+	end
+
+	local worldState = BK_WorldStateService.Get(worldId)
+	if not worldState then
+		return
+	end
+
+	for _ = 1, pending do
+		applyPublicYearAdvanceToPlayer(player, stats, worldState)
+	end
+end
+
+-- Multiplayer Fase 3 ("Sello Final"): freezes worldId once it hits
+-- SEALED_WORLD_AGE_YEARS. The design doc leaves the "closing challenge"
+-- undefined ("a definir") -- simplification: whoever is #1 in the live
+-- ranking at the moment of sealing is crowned Hechicero Soberano outright.
+-- Only currently-connected players get a Legend grade (same scoping
+-- limitation as the ranking itself -- see the plan's notes).
+function sealPublicWorld(worldId, livingPlayers, worldState)
+	BK_WorldStateService.SealWorld(worldId)
+	BK_WorldStateService.AddEvent(worldId, worldState.Year, "EL SELLO FINAL ha caído sobre este mundo.")
+
+	local ranking = getPublicWorldRanking(worldId)
+	local rankPosition = {}
+	for i, entry in ipairs(ranking) do
+		rankPosition[entry.UserId] = i
+	end
+
+	local rankedCount = #ranking
+	for _, p in ipairs(livingPlayers) do
+		local stats = playerLives[p.UserId]
+		if stats then
+			local position = rankPosition[p.UserId]
+			local legendGrade, isSoberano
+			if position == 1 then
+				legendGrade, isSoberano = "Soberano", true
+			elseif position and rankedCount > 0 and position <= math.max(1, math.ceil(rankedCount * 0.2)) then
+				legendGrade, isSoberano = "Sobresaliente", false
+			elseif position and rankedCount > 0 and position <= math.max(1, math.ceil(rankedCount * 0.8)) then
+				legendGrade, isSoberano = "Notable", false
+			else
+				legendGrade, isSoberano = "Olvidado", false
+			end
+
+			stats.PublicLegendGrade = legendGrade
+			stats.PublicSoberano = isSoberano
+			stats.PublicWorldSealed = true
+
+			local sealMessage = "<font color='#a782ff'><b>[ SELLO FINAL ]</b></font> Este mundo ha llegado a su fin."
+			if isSoberano then
+				fireMajorPopup(p, "SELLO FINAL", "Este mundo ha llegado a su fin.", "Fuiste coronado Hechicero Soberano.", "Ninguna alma en este mundo llegó más lejos que vos.")
+			else
+				fireMajorPopup(p, "SELLO FINAL", "Este mundo ha llegado a su fin.", "Tu leyenda: " .. legendGrade, "El ranking quedó congelado para siempre.")
+			end
+			fireLifeUpdate(p, stats, sealMessage)
+			forceSaveStats(p, "SelloFinal")
+		end
+	end
+end
+
+-- Advances worldId's shared calendar by one year and applies it to every
+-- currently-connected living soul of that world -- immediately, unless
+-- they're mid-combat (queued via PendingPublicYearAdvances instead).
+function advancePublicWorldYear(worldId, livingPlayers)
+	local previousWorldState = BK_WorldStateService.Get(worldId)
+	local previousEra = previousWorldState and previousWorldState.Era
+	local previousYear = previousWorldState and previousWorldState.Year
+
+	publicRepique.advanceInProgress[worldId] = true
+	local worldState = BK_WorldStateService.AdvanceYear(worldId, getEraForYear)
+	publicRepique.advanceInProgress[worldId] = nil
+	if not worldState then
+		return
+	end
+
+	-- The world was already sealed (or otherwise didn't move) -- nothing to
+	-- apply. Under normal play tryAdvancePublicWorldYear already refuses to
+	-- call this once sealed; this is just defense in depth.
+	if previousYear ~= nil and worldState.Year == previousYear then
+		return
+	end
+
+	publicRepique.votes[worldId] = nil
+	publicRepique.lastAdvanceTime[worldId] = os.time()
+
+	-- Multiplayer Fase 7: territory income ticks every shared year.
+	BK_CellService.OnPublicYearAdvanced(worldId)
+
+	if previousEra and worldState.Era ~= previousEra then
+		-- Multiplayer Fase 7: the era closing settles cell wars (territory
+		-- transfers) and pays out the Juramento de Era.
+		BK_CellService.OnEraChanged(worldId, worldState.Year)
+		BK_WorldStateService.AddEvent(worldId, worldState.Year, "La era cambió a " .. tostring(worldState.Era) .. ".")
+		for _, p in ipairs(livingPlayers) do
+			fireMajorPopup(
+				p,
+				"ERA SHIFT",
+				"El calendario compartido de este mundo cruzó a una nueva era.",
+				tostring(previousEra) .. " -> " .. tostring(worldState.Era),
+				"Todas las almas presentes lo sienten a la vez."
+			)
+		end
+	end
+
+	local aliveCount = #livingPlayers
+	local nextThreshold = math.ceil(aliveCount * publicRepique.VOTE_THRESHOLD)
+
+	for _, p in ipairs(livingPlayers) do
+		local stats = playerLives[p.UserId]
+		if stats then
+			-- The vote just cleared server-side -- every living player's
+			-- displayed tally has to reset to 0 for the next round,
+			-- whether their own year-advance applies now or gets queued.
+			stats.PublicEraVoteCount = 0
+			stats.PublicEraVoteNeeded = nextThreshold
+			stats.PublicEraAliveCount = aliveCount
+
+			if BK_CombatService.HasActiveFight(p) then
+				stats.PendingPublicYearAdvances = (tonumber(stats.PendingPublicYearAdvances) or 0) + 1
+				fireLifeUpdate(p, stats, nil)
+			else
+				applyPublicYearAdvanceToPlayer(p, stats, worldState)
+			end
+		end
+	end
+
+	-- Multiplayer Fase 8: the yearly "newspaper" line -- who leads the world
+	-- as this year closes. Feeds the shared Events log (the MUNDO tab is
+	-- the world's periódico).
+	if aliveCount > 0 then
+		local topSoul = nil
+		local topCE = -1
+		for _, p in ipairs(livingPlayers) do
+			local stats = playerLives[p.UserId]
+			if stats and (tonumber(stats.CursedEnergy) or 0) > topCE then
+				topCE = tonumber(stats.CursedEnergy) or 0
+				topSoul = tostring(stats.Name or p.Name)
+			end
+		end
+		if topSoul then
+			BK_WorldStateService.AddEvent(worldId, worldState.Year, "📰 Año " .. tostring(worldState.Year) .. ": " .. topSoul .. " lidera este mundo con " .. tostring(topCE) .. " de energía maldita.")
+		end
+	end
+
+	-- Multiplayer Fase 5 ("El Pulso del Mundo", versión liviana): the world
+	-- reacts to the connected souls' aggregate WantedLevel instead of the
+	-- full staged/multi-phase event catalog from the design doc (a real
+	-- synchronized event engine -- explicitly out of scope for this pass,
+	-- see the plan). Only fires while the world isn't already sealed.
+	if worldState.Sealed ~= true and aliveCount > 0 then
+		local lastPulseYear = tonumber(worldState.LastPulseEventYear)
+		local pulseOffCooldown = not lastPulseYear or (worldState.Year - lastPulseYear) >= publicRepique.PULSE_EVENT_COOLDOWN_YEARS
+
+		if pulseOffCooldown then
+			local totalWanted = 0
+			for _, p in ipairs(livingPlayers) do
+				local stats = playerLives[p.UserId]
+				if stats then
+					totalWanted += (tonumber(stats.WantedLevel) or 0)
+				end
+			end
+			local averageWanted = totalWanted / aliveCount
+
+			local firedPulseEvent = false
+			if averageWanted >= publicRepique.CRACKDOWN_WANTED_THRESHOLD then
+				firedPulseEvent = true
+				BK_WorldStateService.AddEvent(worldId, worldState.Year, "La Sociedad Jujutsu lanzó una Represión ante el creciente desorden.")
+				for _, p in ipairs(livingPlayers) do
+					fireMajorPopup(
+						p,
+						"REPRESIÓN",
+						"La Sociedad Jujutsu endureció su vigilancia sobre este mundo.",
+						"Patrullas reforzadas para todos.",
+						"El desorden colectivo tiene consecuencias."
+					)
+				end
+			elseif averageWanted <= publicRepique.GOLDEN_PEACE_WANTED_THRESHOLD then
+				firedPulseEvent = true
+				BK_WorldStateService.AddEvent(worldId, worldState.Year, "Una Paz Dorada se asentó sobre este mundo.")
+				for _, p in ipairs(livingPlayers) do
+					fireMajorPopup(
+						p,
+						"PAZ DORADA",
+						"La calma sostenida trajo prosperidad a este mundo.",
+						"Todas las almas presentes lo sienten.",
+						"La paz colectiva también tiene sus frutos."
+					)
+				end
+			end
+
+			if firedPulseEvent then
+				local pulseYearToSave = worldState.Year
+				BK_WorldStateService.Mutate(worldId, function(record)
+					record.LastPulseEventYear = pulseYearToSave
+					return record
+				end)
+			end
+		end
+	end
+
+	local worldAgeYears = (tonumber(worldState.Year) or 0) - (tonumber(worldState.StartYear) or tonumber(worldState.Year) or 0)
+	if worldState.Sealed ~= true and worldAgeYears >= publicRepique.SEALED_WORLD_AGE_YEARS then
+		sealPublicWorld(worldId, livingPlayers, worldState)
+	end
+end
+
+-- Casts (or re-tallies) the vote for worldId. Advances the year immediately
+-- once 60% of the world's currently-living souls are in, or when `forced`
+-- is true (the backup clock ran out of patience).
+function tryAdvancePublicWorldYear(worldId, forced)
+	if publicRepique.advanceInProgress[worldId] then
+		return false
+	end
+
+	-- Multiplayer Fase 3: a sealed world is frozen for good -- no more
+	-- votes, no more backup-clock advances.
+	local currentWorldState = BK_WorldStateService.Get(worldId)
+	if currentWorldState and currentWorldState.Sealed == true then
+		return false
+	end
+
+	local livingPlayers = getLivingPublicPlayers(worldId)
+	local aliveCount = #livingPlayers
+	if aliveCount == 0 then
+		return false
+	end
+
+	local votes = publicRepique.votes[worldId] or {}
+	local voteCount = 0
+	for _, p in ipairs(livingPlayers) do
+		if votes[p.UserId] then
+			voteCount += 1
+		end
+	end
+
+	local threshold = math.ceil(aliveCount * publicRepique.VOTE_THRESHOLD)
+
+	if not forced and voteCount < threshold then
+		broadcastEraVoteProgress(livingPlayers, voteCount, aliveCount, threshold)
+		return false
+	end
+
+	advancePublicWorldYear(worldId, livingPlayers)
+	return true
+end
+
 function applyChoiceEffects(stats, choiceOption)
 	if not choiceOption or not choiceOption.Effects then
 		return
@@ -10327,7 +11048,35 @@ end
 getWorldHistory.OnServerInvoke = function(player)
 	local stats = playerLives[player.UserId]
 	if not stats then return { History = {}, NotableSorcerers = {}, Summary = {} } end
-	return BK_WorldHistoryService.GetWorldHistoryPayload(stats)
+	local payload = BK_WorldHistoryService.GetWorldHistoryPayload(stats)
+
+	-- Multiplayer Fase 3: Public players also get the world's shared
+	-- ranking/events/seal state -- BK_WorldHistoryService itself stays
+	-- ignorant of the "shared world" concept (see its own comments), so
+	-- this gets bolted on here instead of inside that service.
+	if stats.WorldMode == "Public" and typeof(stats.PublicWorldId) == "string" then
+		payload.PublicRanking = getPublicWorldRanking(stats.PublicWorldId)
+		local worldState = BK_WorldStateService.Get(stats.PublicWorldId)
+		payload.PublicWorldEvents = (worldState and worldState.Events) or {}
+		payload.PublicSealed = (worldState and worldState.Sealed) == true
+		payload.PublicLegendGrade = stats.PublicLegendGrade
+		payload.PublicSoberano = stats.PublicSoberano == true
+		-- Multiplayer Fase 5 ("Exclusividad"): who currently holds each of
+		-- the 13 Legendary traits in this world -- public info per the
+		-- design doc ("visible en el ranking de Hechiceros Notables").
+		local legendaryOwners = BK_WorldStateService.GetLegendaryTraitOwners(stats.PublicWorldId)
+		local legendaryList = {}
+		for traitId, owner in pairs(legendaryOwners) do
+			local trait = BitKaisenTraits.GetTrait(traitId)
+			table.insert(legendaryList, {
+				TraitName = trait and trait.Name or tostring(traitId),
+				CharacterName = owner.CharacterName,
+			})
+		end
+		payload.PublicLegendaryOwners = legendaryList
+	end
+
+	return payload
 end
 
 getTitles.OnServerInvoke = function(player)
@@ -10499,6 +11248,10 @@ getSuccessorOptions.OnServerInvoke = function(player)
 end
 
 updateLifeEvent.OnServerEvent:Connect(function(player, action, data)
+	-- Multiplayer Fase 2: catch up on any year-advances this player missed
+	-- while mid-combat, the moment they take any other action.
+	flushPendingPublicYearAdvances(player, playerLives[player.UserId])
+
 	if action == "StartNewLife" then
 		if not checkRateLimit(player, "StartNewLife") then
 			return
@@ -10778,6 +11531,11 @@ end)
 if submitCharacterCustomization then
 	submitCharacterCustomization.OnServerInvoke = function(player, payload)
 		return applyCharacterCustomization(player, payload)
+	end
+
+	-- Multiplayer Fase 4: "Inicio Rápido" -- one tap, fully random character.
+	requestQuickStartCharacter.OnServerInvoke = function(player)
+		return applyCharacterCustomization(player, buildQuickStartCharacterPayload(player))
 	end
 end
 
@@ -11118,6 +11876,281 @@ BK_Remotes.Get("MarkTutorialSeen").OnServerEvent:Connect(function(player, tutori
 	fireLifeUpdate(player, stats, nil)
 end)
 
+-- Multiplayer Fase 1: Private/Public world mode choice, made EVERY join
+-- (matches BitSeas -- confirmed by Luisa this is a per-session gate, not a
+-- one-time-per-life choice). PlayerAdded fires PromptWorldMode and waits
+-- here instead of calling loadOrStartLife directly; this remote is what
+-- actually loads/starts the life once the player answers.
+BK_Remotes.Get("ChooseWorldMode").OnServerEvent:Connect(function(player, mode)
+	if not checkRateLimit(player, "ChooseWorldMode") then
+		return
+	end
+
+	if mode ~= "Private" and mode ~= "Public" then
+		return
+	end
+
+	if not pendingWorldModeChoice[player.UserId] then
+		return
+	end
+	pendingWorldModeChoice[player.UserId] = nil
+
+	-- Entrada Rápida ("Public" with no world picked): with a 12-player server
+	-- size, loading "genesis" locally would strand each soul on whatever
+	-- matchmade server they happened to land on -- separate servers each
+	-- advancing the same world on their own backup clocks. Instead, pool
+	-- everyone: teleport into the fullest open world with room, founding a
+	-- fresh one if none exists. Studio (where reserved-server teleports don't
+	-- work) and teleport failures fall back to the old local genesis flow.
+	if mode == "Public" and not RunService:IsStudio() then
+		local target = BK_WorldRegistryService.FindOpenWorld(function(candidateWorldId)
+			local candidateState = BK_WorldStateService.Get(candidateWorldId)
+			return not (candidateState and candidateState.Sealed)
+		end)
+
+		if not target then
+			target = BK_WorldRegistryService.CreateWorld(player.UserId, {
+				Name = "Shared World",
+				Type = "Open",
+				MinSouls = 1,
+				MaxCapacity = 30,
+				StartEra = "Modern Era",
+			})
+			if target then
+				BK_WorldStateService.GetOrCreate(target.WorldId, CHARACTER_ERA_START_YEARS["Modern Era"], "Modern Era")
+			end
+		end
+
+		if target then
+			local teleportOk = pcall(function()
+				-- 4th arg is spawnName (a string), NOT teleport data -- the
+				-- real payload is the 5th arg. Passing our data table into
+				-- the spawnName slot (as this used to) meant TeleportData
+				-- never actually arrived, so the receiving server always
+				-- fell back to PromptWorldMode instead of loading Public.
+				TeleportService:TeleportToPrivateServer(game.PlaceId, target.AccessCode, { player }, nil, { WorldId = target.WorldId })
+			end)
+			if teleportOk then
+				return
+			end
+		end
+	end
+
+	loadOrStartLife(player, mode)
+end)
+
+-- Multiplayer Fase 2 ("El Repique"): cast a vote to advance the shared
+-- calendar. See tryAdvancePublicWorldYear for the tally/threshold logic.
+BK_Remotes.Get("ProposeEraAdvance").OnServerEvent:Connect(function(player)
+	if not checkRateLimit(player, "ProposeEraAdvance") then
+		return
+	end
+
+	local stats = playerLives[player.UserId]
+	if not stats or stats.Alive == false or stats.WorldMode ~= "Public" then
+		return
+	end
+
+	local worldId = stats.PublicWorldId
+	if typeof(worldId) ~= "string" or worldId == "" then
+		return
+	end
+
+	publicRepique.votes[worldId] = publicRepique.votes[worldId] or {}
+	publicRepique.votes[worldId][player.UserId] = true
+
+	tryAdvancePublicWorldYear(worldId)
+end)
+
+-- Multiplayer Fase 4 ("Buscador y creación"): lists every known real world
+-- (BK_WorldRegistryService) for the Buscador de Mundos UI. Note "genesis",
+-- the Fase 1-3 fallback world, is NOT in this list -- it was never created
+-- through the registry/TeleportService, and only Studio Play or a failed
+-- teleport still lands there (see the ChooseWorldMode handler above).
+-- Fase 8 (ciclo de vida de mundos, pedido de Luisa): the Buscador should
+-- read like BitSeas' curated "worlds on the sea" list, not accumulate
+-- every world ever created. NOTHING here ever deletes data -- every
+-- DataStore record and character save stays intact forever; this only
+-- controls what shows up in the general browse list. Filtered out:
+--   1. Sealed worlds (Sello Final already happened -- nobody can join
+--      those anyway, requestJoinWorld already refuses them).
+--   2. Code-type worlds (invite-only by design) -- these were listing
+--      publicly and joinable with one click on the WorldId alone, with
+--      nobody ever asked for the actual code. That defeated the entire
+--      point of "Código" -- real bug, not a lifecycle choice. They're
+--      only reachable now through the explicit Join-by-Code flow.
+--   3. Truly abandoned drafts: created a while ago, currently empty, and
+--      NEVER had a single player in it (EverPopulated still false).
+--   4. Long-dormant Open worlds: HAD real people at some point, but
+--      nobody's been back in a long time (LastPopulatedAt older than the
+--      dormancy threshold) AND it's empty right now. A world that's
+--      merely quiet for a day or two still shows -- this is for worlds
+--      that have clearly gone cold, so the discovery list stays useful
+--      instead of turning into a graveyard of long-dead worlds.
+getWorldBrowser.OnServerInvoke = function(player)
+	if not checkRateLimit(player, "GetWorldBrowser") then
+		return { Worlds = {} }
+	end
+
+	local visibleWorlds = {}
+	for _, record in ipairs(BK_WorldRegistryService.ListWorlds()) do
+		local worldState = BK_WorldStateService.Get(record.WorldId)
+		local isSealed = worldState and worldState.Sealed == true
+		local isCodeOnly = record.Type == "Code"
+		local population = tonumber(record.Population) or 0
+		local ageSeconds = os.time() - (tonumber(record.CreatedAt) or os.time())
+
+		local neverPopulated = record.EverPopulated ~= true and population == 0
+		local isAbandonedDraft = neverPopulated and ageSeconds > publicRepique.ABANDONED_WORLD_GRACE_SECONDS
+
+		local dormantSeconds = record.LastPopulatedAt and (os.time() - tonumber(record.LastPopulatedAt))
+		local isLongDormant = record.EverPopulated == true and population == 0
+			and dormantSeconds and dormantSeconds > publicRepique.DORMANT_WORLD_HIDE_SECONDS
+
+		if not isSealed and not isCodeOnly and not isAbandonedDraft and not isLongDormant then
+			table.insert(visibleWorlds, record)
+		end
+	end
+
+	return { Worlds = visibleWorlds }
+end
+
+-- Multiplayer Fase 4: join a real world by its id (picked from the browser
+-- list) or its short join code -- both resolve to the same registry
+-- record. Teleports the player into that world's reserved server; the
+-- receiving server's PlayerAdded reads WorldId back out of TeleportData.
+requestJoinWorld.OnServerInvoke = function(player, worldIdOrCode)
+	if not checkRateLimit(player, "RequestJoinWorld") then
+		return { Success = false, Message = "Slow down." }
+	end
+	if typeof(worldIdOrCode) ~= "string" or worldIdOrCode == "" then
+		return { Success = false, Message = "Invalid world." }
+	end
+
+	local record = BK_WorldRegistryService.GetWorld(worldIdOrCode) or BK_WorldRegistryService.GetWorldByJoinCode(worldIdOrCode)
+	if not record then
+		return { Success = false, Message = "World not found." }
+	end
+
+	local targetState = BK_WorldStateService.Get(record.WorldId)
+	if targetState and targetState.Sealed then
+		return { Success = false, Message = "That world has been sealed." }
+	end
+
+	local population = BK_WorldRegistryService.GetPopulation(record.WorldId)
+	if population >= (tonumber(record.MaxCapacity) or 30) then
+		return { Success = false, Message = "That world is full." }
+	end
+
+	local teleportOk = pcall(function()
+		-- 4th arg is spawnName (a string), NOT teleport data -- see the
+		-- comment on the Entrada Rápida call above for the full story.
+		TeleportService:TeleportToPrivateServer(game.PlaceId, record.AccessCode, { player }, nil, { WorldId = record.WorldId })
+	end)
+
+	if not teleportOk then
+		return { Success = false, Message = "Could not join that world. Try again." }
+	end
+
+	return { Success = true }
+end
+
+-- Multiplayer Fase 4: founds a brand-new world (reserves a real server,
+-- registers it, seeds its Era/Year via BK_WorldStateService.GetOrCreate),
+-- then teleports the founder straight in.
+requestCreateWorld.OnServerInvoke = function(player, config)
+	if not checkRateLimit(player, "RequestCreateWorld") then
+		return { Success = false, Message = "Slow down." }
+	end
+	if typeof(config) ~= "table" then
+		return { Success = false, Message = "Invalid world config." }
+	end
+
+	local startEra = tostring(config.StartEra or "Modern Era")
+	if not CHARACTER_ERA_START_YEARS[startEra] then
+		startEra = "Modern Era"
+	end
+	local startYear = CHARACTER_ERA_START_YEARS[startEra]
+
+	local record, errorMessage = BK_WorldRegistryService.CreateWorld(player.UserId, {
+		Name = config.Name,
+		Type = config.Type,
+		MinSouls = config.MinSouls,
+		MaxCapacity = config.MaxCapacity,
+		StartEra = startEra,
+	})
+
+	if not record then
+		return { Success = false, Message = errorMessage or "Could not create world." }
+	end
+
+	BK_WorldStateService.GetOrCreate(record.WorldId, startYear, startEra)
+
+	-- Per Luisa: don't teleport the founder away immediately -- they need a
+	-- moment to actually read/copy the real join code before losing this
+	-- screen. The client now shows the code with a CONNECT NOW button that
+	-- fires RequestJoinWorld (below) with this WorldId whenever they're
+	-- ready, instead of an automatic teleport right here.
+	return { Success = true, WorldId = record.WorldId, JoinCode = record.JoinCode }
+end
+
+-- Multiplayer Fase 4/8: heartbeat this server's live population (the real
+-- souls, not just a count -- see BK_WorldRegistryService.ReportPopulation)
+-- to the world browser. Pulled out as its own function (was inline inside
+-- the 30s loop below) so Players.PlayerAdded can also call it right away --
+-- otherwise a freshly created/joined Public world showed empty avatar
+-- bubbles in the Buscador for up to 30 seconds, since nothing reported
+-- population until the first tick of that loop.
+function reportPublicWorldPopulation(worldId)
+	local souls = {}
+	for _, p in ipairs(Players:GetPlayers()) do
+		local pStats = playerLives[p.UserId]
+		table.insert(souls, { UserId = p.UserId, Name = pStats and pStats.Name or p.Name })
+	end
+	BK_WorldRegistryService.ReportPopulation(worldId, souls)
+
+	-- Fase 8 (ciclo de vida de mundos): mark once, ever, that this world
+	-- had real souls in it -- only need to write this the FIRST time it
+	-- happens per world (not every heartbeat), so gate it on the in-memory
+	-- flag rather than re-writing forever.
+	if #souls > 0 and not publicRepique.everPopulatedMarked[worldId] then
+		publicRepique.everPopulatedMarked[worldId] = true
+		BK_WorldRegistryService.MarkEverPopulated(worldId)
+	end
+end
+
+-- Multiplayer Fase 2 ("El Repique"): backup clock so a Public world never
+-- gets stuck waiting for a 60% vote that never comes.
+-- Multiplayer Fase 4: with real per-world servers, each server process only
+-- ever hosts ONE world -- publicRepique.currentWorldId (resolved from the
+-- first teleporting player's join data, see Players.PlayerAdded), falling
+-- back to DEFAULT_PUBLIC_WORLD_ID when nothing ever set it (a direct
+-- connection or Studio Play, where nobody actually teleported in).
+task.spawn(function()
+	while true do
+		task.wait(30)
+
+		local worldId = publicRepique.currentWorldId or DEFAULT_PUBLIC_WORLD_ID
+
+		reportPublicWorldPopulation(worldId)
+
+		-- Don't let elapsed time accumulate while the world is empty -- a
+		-- lone new player shouldn't get an immediate forced advance just
+		-- because the world sat empty for hours beforehand.
+		if #getLivingPublicPlayers(worldId) == 0 then
+			publicRepique.lastAdvanceTime[worldId] = os.time()
+			continue
+		end
+
+		local lastAdvance = publicRepique.lastAdvanceTime[worldId]
+		if lastAdvance == nil then
+			publicRepique.lastAdvanceTime[worldId] = os.time()
+		elseif os.time() - lastAdvance >= publicRepique.BACKUP_CLOCK_SECONDS then
+			tryAdvancePublicWorldYear(worldId, true)
+		end
+	end
+end)
+
 ----------------------------------------------------------------
 -- DEV COMMANDS
 -- Developer chat command logic moved to BK_DevCommands in Phase 2 split.
@@ -11175,6 +12208,9 @@ BitKaisenServiceContext = {
 	end,
 	GetAFKStabilizationProductId = function()
 		return BK_CommerceService.GetAFKStabilizationProductId()
+	end,
+	GetGodModeThisWorldProductId = function()
+		return BK_CommerceService.GetGodModeThisWorldProductId()
 	end,
 	StartCombat = function(player, source, enemyConfig)
 		return BK_CombatService.StartCombat(player, source, enemyConfig)
@@ -11293,6 +12329,9 @@ BK_MentorService.Init(BitKaisenServiceContext)
 BK_WorldHistoryService.Init(BitKaisenServiceContext)
 BK_ActivityService.Init(BitKaisenServiceContext)
 BK_RelationshipService.Init(BitKaisenServiceContext)
+BK_SoulsService.Init(BitKaisenServiceContext)
+BK_DuelService.Init(BitKaisenServiceContext)
+BK_CellService.Init(BitKaisenServiceContext)
 BK_DevCommands.Init(BitKaisenServiceContext)
 
 initiateGift.OnServerEvent:Connect(function(player, productId, recipientUsername)
@@ -11310,7 +12349,33 @@ Players.PlayerAdded:Connect(function(player)
 			BitKaisenLocale.setPlayerLocale(player.UserId, localeId)
 		end
 	end)
-	loadOrStartLife(player)
+	-- Multiplayer Fase 4: a player who came through the Buscador de Mundos
+	-- (RequestJoinWorld/RequestCreateWorld) already chose/created their
+	-- world before being teleported here -- their TeleportData carries
+	-- which one. Skip the Public/Private gate entirely for them and load
+	-- straight into Public; everyone else (a direct connection, or Studio
+	-- Play, where nothing really teleports) gets the normal Fase 1 gate.
+	local joinData
+	local joinDataOk = pcall(function()
+		joinData = player:GetJoinData()
+	end)
+	local teleportWorldId = joinDataOk and typeof(joinData) == "table" and typeof(joinData.TeleportData) == "table" and joinData.TeleportData.WorldId or nil
+
+	if typeof(teleportWorldId) == "string" and teleportWorldId ~= "" then
+		publicRepique.currentWorldId = publicRepique.currentWorldId or teleportWorldId
+		-- Report population right away instead of waiting for the 30s
+		-- heartbeat -- otherwise the founder/first joiner's avatar bubble
+		-- didn't show up in the Buscador until the first tick fired.
+		reportPublicWorldPopulation(publicRepique.currentWorldId)
+		loadOrStartLife(player, "Public")
+	else
+		-- Multiplayer Fase 1: ask Public/Private on every join (matches BitSeas),
+		-- before any life loads. loadOrStartLife only runs once the player
+		-- answers, from the ChooseWorldMode handler below.
+		pendingWorldModeChoice[player.UserId] = true
+		BK_Remotes.Get("PromptWorldMode"):FireClient(player)
+	end
+
 	task.defer(function()
 		BK_CommerceService.ClaimGiftMailbox(player)
 	end)
@@ -11330,6 +12395,7 @@ Players.PlayerRemoving:Connect(function(player)
 	playerLives[player.UserId] = nil
 	pendingMissions[player.UserId] = nil
 	pendingLegacy[player.UserId] = nil
+	pendingWorldModeChoice[player.UserId] = nil
 	lastActionTimes[player.UserId] = nil
 	dirtySavePlayers[player.UserId] = nil
 	scheduledSavePlayers[player.UserId] = nil

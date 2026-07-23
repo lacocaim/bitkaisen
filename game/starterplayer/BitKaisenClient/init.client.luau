@@ -31,6 +31,8 @@ local AffiliationsPanel = require("@ui-panels/AffiliationsPanel")
 local JobsPanel = require("@ui-panels/JobsPanel")
 local DomainPanel = require("@ui-panels/DomainPanel")
 local RivalsPanel = require("@ui-panels/RivalsPanel")
+local SoulsPanel = require("@ui-panels/SoulsPanel")
+local DuelPanel = require("@ui-panels/DuelPanel")
 local WorldHistoryPanel = require("@ui-panels/WorldHistoryPanel")
 local MentorPanel = require("@ui-panels/MentorPanel")
 local RatesPanel = require("@ui-panels/RatesPanel")
@@ -53,6 +55,8 @@ local DeathPanel = require("@ui-panels/DeathPanel")
 local MissionSituationPanel = require("@ui-panels/MissionSituationPanel")
 local FirstTimeGuidancePanel = require("@ui-panels/FirstTimeGuidancePanel")
 local HelpGuidePanel = require("@ui-panels/HelpGuidePanel")
+local WorldModePanel = require("@ui-panels/WorldModePanel")
+local ArrivalScreenPanel = require("@ui-panels/ArrivalScreenPanel")
 local GuideController = require("@ui-panels/GuideController")
 local IncidentMapPanel = require("@ui-panels/IncidentMapPanel")
 
@@ -80,7 +84,9 @@ if game:GetService("RunService"):IsStudio() then print("[BK] Booting Computer sh
 
 do
 	local sound = Instance.new("Sound")
-	sound.SoundId = "rbxassetid://77695327434474"
+	-- Old track, kept commented in case this new one doesn't land with the
+	-- boss and we need to revert quickly: sound.SoundId = "rbxassetid://77695327434474"
+	sound.SoundId = "rbxassetid://114276920492286"
 	sound.Volume = 0.4
 	sound.Looped = true
 	sound.RollOffMaxDistance = 0
@@ -104,6 +110,7 @@ navRegistry.registerBatch({
 	{ id = "mentor",            label = navT("nav_mentor",         "MENTOR"),         order = 10, color = Color3.fromRGB(55, 200, 230) },
 	{ id = "binding_vows",      label = navT("nav_vows",           "VOWS"),           order = 11, color = Color3.fromRGB(220, 180, 255) },
 	{ id = "technique_mastery", label = navT("nav_mastery",        "MASTERY"),        order = 12, color = Color3.fromRGB(180, 130, 255) },
+	{ id = "souls",             label = navT("nav_souls",          "LIVES"),          order = 13, color = Color3.fromRGB(120, 200, 255) },
 })
 
 local function isMobile()
@@ -258,6 +265,8 @@ safeInit("AffiliationsPanel", AffiliationsPanel.init)
 safeInit("JobsPanel", JobsPanel.init)
 safeInit("DomainPanel", DomainPanel.init)
 safeInit("RivalsPanel", RivalsPanel.init)
+safeInit("SoulsPanel", SoulsPanel.init)
+safeInit("DuelPanel", DuelPanel.init)
 safeInit("WorldHistoryPanel", WorldHistoryPanel.init)
 safeInit("MentorPanel", MentorPanel.init)
 safeInit("DevToolsPanel", DevToolsPanel.init)
@@ -266,6 +275,8 @@ safeInit("BindingVowsPanel", BindingVowsPanel.init)
 safeInit("DailyLoginPanel", DailyLoginPanel.init)
 safeInit("FreeRewardsPanel", FreeRewardsPanel.init)
 safeInit("HelpGuidePanel", HelpGuidePanel.init)
+safeInit("WorldModePanel", WorldModePanel.init)
+safeInit("ArrivalScreenPanel", ArrivalScreenPanel.init)
 safeInit("UpdateLogPanel", UpdateLogPanel.init)
 safeInit("ClanWarPanel", ClanWarPanel.init)
 safeInit("CultWarPanel", CultWarPanel.init)

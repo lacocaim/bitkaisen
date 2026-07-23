@@ -9,7 +9,9 @@ if game:GetService("RunService"):IsStudio() then print("[BK] Booting Mobile shel
 
 do
 	local sound = Instance.new("Sound")
-	sound.SoundId = "rbxassetid://77695327434474"
+	-- Old track, kept commented in case this new one doesn't land with the
+	-- boss and we need to revert quickly: sound.SoundId = "rbxassetid://77695327434474"
+	sound.SoundId = "rbxassetid://114276920492286"
 	sound.Volume = 0.4
 	sound.Looped = true
 	sound.RollOffMaxDistance = 0
@@ -94,6 +96,7 @@ navRegistry.registerBatch({
 	{ id = "mentor",            label = navT("nav_mentor",         "MENTOR"),         order = 10, color = Color3.fromRGB(55, 200, 230) },
 	{ id = "binding_vows",      label = navT("nav_vows",           "VOWS"),           order = 11, color = Color3.fromRGB(220, 180, 255) },
 	{ id = "technique_mastery", label = navT("nav_mastery",        "MASTERY"),        order = 12, color = theme.Purple },
+	{ id = "souls",             label = navT("nav_souls",          "LIVES"),          order = 13, color = Color3.fromRGB(120, 200, 255) },
 })
 
 loadingScreen.bump("Preparing panels...")
@@ -109,12 +112,15 @@ tryInit("MobileJobsPanel", function() return require("@ui/mobile/panels/MobileJo
 tryInit("MobileAffiliationsPanel", function() return require("@ui/mobile/panels/MobileAffiliationsPanel") end)
 tryInit("MobileDomainPanel", function() return require("@ui/mobile/panels/MobileDomainPanel") end)
 tryInit("MobileRivalsPanel", function() return require("@ui/mobile/panels/MobileRivalsPanel") end)
+tryInit("MobileSoulsPanel", function() return require("@ui/mobile/panels/MobileSoulsPanel") end)
 tryInit("MobileWorldHistoryPanel", function() return require("@ui/mobile/panels/MobileWorldHistoryPanel") end)
 tryInit("MobileMentorPanel", function() return require("@ui/mobile/panels/MobileMentorPanel") end)
 
 tryInit("MobileDailyLoginPanel", function() return require("@ui/mobile/panels/MobileDailyLoginPanel") end)
 tryInit("MobileFreeRewardsPanel", function() return require("@ui/mobile/panels/MobileFreeRewardsPanel") end)
 tryInit("MobileHelpGuidePanel", function() return require("@ui/mobile/panels/MobileHelpGuidePanel") end)
+tryInit("MobileWorldModePanel", function() return require("@ui/mobile/panels/MobileWorldModePanel") end)
+tryInit("MobileArrivalScreenPanel", function() return require("@ui/mobile/panels/MobileArrivalScreenPanel") end)
 tryInit("MobileBindingVowsPanel", function() return require("@ui/mobile/panels/MobileBindingVowsPanel") end)
 tryInit("MobileTechniqueMasteryPanel", function() return require("@ui/mobile/panels/MobileTechniqueMasteryPanel") end)
 tryInit("MobileTraitDetailsPanel", function() return require("@ui/mobile/panels/MobileTraitDetailsPanel") end, playerGui)
@@ -135,6 +141,7 @@ tryInit("MobileGodModePanel", function() return require("@ui/mobile/panels/Mobil
 tryInit("MobileAFKPanel", function() return require("@ui/mobile/panels/MobileAFKPanel") end)
 
 tryInit("SettingsPanel", function() return require("@ui-panels/SettingsPanel") end)
+tryInit("DuelPanel", function() return require("@ui-panels/DuelPanel") end)
 
 px.usePx()
 

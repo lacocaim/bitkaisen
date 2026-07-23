@@ -97,6 +97,11 @@ local GIFT_GO_ROGUE_PRODUCT_ID = 3604042615
 local GIFT_GOD_MODE_PRODUCT_ID = 3606084567
 local GIFT_AFK_STABILIZATION_PRODUCT_ID = 3606084638
 local TEST_GIFT_PRODUCT_ID = 3606089240
+-- Multiplayer Fase 8 (Fair Play Doctrine): unlocks God Mode permanently for
+-- ONE specific Public world (per-world, not per-account like the Private
+-- gamepass, and not per-life like a consumable) -- see
+-- BitKaisenSaveSystem.UnlockGodModeForWorld.
+local GOD_MODE_THIS_WORLD_PRODUCT_ID = 3611191860
 -- Developer Product for resetting an active combat fight.
 local RESET_FIGHT_PRODUCT_ID = 3604877974
 -- Domain Encore: one extra Domain use for the current fight only.
@@ -115,9 +120,9 @@ local COMBAT_RECOVERY_KIT_PRODUCT_ID = 3605164164
 
 -- Summer Update: Time Skip developer products.
 -- >>> REPLACE 0s WITH REAL DEVELOPER PRODUCT IDs FROM THE CREATOR DASHBOARD <<<
-local TIME_SKIP_5_PRODUCT_ID  = 3607128993  -- R$75  — Skip 5 years
-local TIME_SKIP_10_PRODUCT_ID = 3607129012  -- R$149 — Skip 10 years
-local TIME_SKIP_25_PRODUCT_ID = 3607129036  -- R$299 — Skip 25 years
+local TIME_SKIP_5_PRODUCT_ID  = 3607128993  -- R$75  - Skip 5 years
+local TIME_SKIP_10_PRODUCT_ID = 3607129012  -- R$149 - Skip 10 years
+local TIME_SKIP_25_PRODUCT_ID = 3607129036  -- R$299 - Skip 25 years
 
 local RCT_REVIVE_MAX_PER_LIFE = 2
 
@@ -355,6 +360,11 @@ local DEVELOPER_PRODUCTS = {
 		GiftPassKey = "TestGift",
 		GiftLabel = "Test Gift",
 		TestOnly = true,
+	},
+
+	[GOD_MODE_THIS_WORLD_PRODUCT_ID] = {
+		Id = "god_mode_this_world",
+		Name = "God Mode (This World)",
 	},
 
 	[RESET_FIGHT_PRODUCT_ID] = {
@@ -1683,6 +1693,31 @@ local function grantAFKStabilization(player, stats)
 	fireLifeUpdate(player, stats, "<font color='#7ee787'><b>[ AFK STABILIZATION ]</b></font> Purchased. You can now activate AFK Stabilization to earn <b>$0.20/sec</b> while idle.")
 end
 
+-- Multiplayer Fase 8 (Fair Play Doctrine): unlocks God Mode permanently for
+-- the Public world the player is CURRENTLY living in -- not their whole
+-- account (that's the Private gamepass, untouched) and not just this one
+-- life (dying and starting a new life in the SAME world keeps it unlocked;
+-- a DIFFERENT Public world needs its own separate purchase). Only makes
+-- sense while actually in a Public life; if bought from Private (shouldn't
+-- be offered there, but the charge can't be undone if it happens), we
+-- still grant the receipt but tell the player plainly why nothing changed.
+local function grantGodModeThisWorld(player, stats)
+	if not stats or stats.WorldMode ~= "Public" or typeof(stats.PublicWorldId) ~= "string" or stats.PublicWorldId == "" then
+		fireLifeUpdate(player, stats, "<font color='#e15a68'><b>[ GOD MODE ]</b></font> This unlock only applies to a Public world -- it did nothing this time because you weren't living in one.")
+		return true
+	end
+
+	local saveSystem = context.BitKaisenSaveSystem
+	if not saveSystem or type(saveSystem.UnlockGodModeForWorld) ~= "function" then
+		return false
+	end
+	saveSystem.UnlockGodModeForWorld(player, stats.PublicWorldId)
+
+	fireMajorPopup(player, "GOD MODE UNLOCKED", "This world is yours to command, permanently.", "⚡ GOD MODE", "Every life you live in this world from now on has it.")
+	fireLifeUpdate(player, stats, "<font color='#f0c25e'><b>[ GOD MODE ]</b></font> Unlocked permanently for this world. Every future life you live here has it.")
+	return true
+end
+
 local function grantClanWarMediation(player, stats)
 	ensureExtraStats(stats)
 	local war = typeof(stats.ClanWarState) == "table" and stats.ClanWarState or {}
@@ -1864,7 +1899,7 @@ local function grantTimeSkip(player, stats, years)
 		"+" .. yearsToSkip .. " Years",
 		"You are now age " .. tostring(stats.Age) .. "."
 	)
-	fireLifeUpdate(player, stats, "<font color='#b388ff'><b>[ TIME SKIP ]</b></font> <b>+" .. yearsToSkip .. " years</b> — you are now age <b>" .. tostring(stats.Age) .. "</b>.")
+	fireLifeUpdate(player, stats, "<font color='#b388ff'><b>[ TIME SKIP ]</b></font> <b>+" .. yearsToSkip .. " years</b> - you are now age <b>" .. tostring(stats.Age) .. "</b>.")
 	return true
 end
 
@@ -1974,6 +2009,9 @@ local function grantDeveloperProduct(player, productId)
 	elseif productInfo.Id == "rct_revive" then
 		grantRCTRevive(player, stats)
 
+	elseif productInfo.Id == "god_mode_this_world" then
+		grantGodModeThisWorld(player, stats)
+
 	else
 		warn("[BK_CommerceService] Unhandled developer product id key: " .. tostring(productInfo.Id))
 		return false
@@ -2042,6 +2080,10 @@ end
 
 function BK_CommerceService.GetAFKStabilizationProductId()
 	return AFK_STABILIZATION_PRODUCT_ID
+end
+
+function BK_CommerceService.GetGodModeThisWorldProductId()
+	return GOD_MODE_THIS_WORLD_PRODUCT_ID
 end
 
 function BK_CommerceService.GetRemainingBoostSeconds(player, boostKey)

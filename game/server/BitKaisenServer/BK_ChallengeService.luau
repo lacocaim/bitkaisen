@@ -186,7 +186,7 @@ function BK_ChallengeService.CheckStats(player, stats)
 	check("reach_rank_2", grade:find("Grade 2") ~= nil or grade:find("Grade 1") ~= nil or grade:find("Special Grade") ~= nil)
 	check("born_cursed",  stats.IsCursedSpirit == true or grade:find("Cursed Spirit") ~= nil)
 
-	-- Death checks — only fire when Alive is false
+	-- Death checks - only fire when Alive is false
 	if stats.Alive == false then
 		local isOldAge = causeRaw:find("old age") ~= nil or causeRaw:find("old") ~= nil and causeRaw:find("age") ~= nil
 		check("die_of_old_age", isOldAge)

@@ -84,7 +84,7 @@ makeCorner(window, 10)
 makeStroke(window)
 responsiveScale.attach(window, 1114, 778)
 
--- Title — igual que WorldHistoryPanel
+-- Title - igual que WorldHistoryPanel
 local titleLabel = Instance.new("TextLabel")
 titleLabel.BackgroundTransparency = 1
 titleLabel.Position = UDim2.new(0, 24, 0, 18)
@@ -111,7 +111,7 @@ timerLabel.TextSize = 12
 timerLabel.ZIndex = 620
 timerLabel.Parent = window
 
--- Close button — igual que WorldHistoryPanel
+-- Close button - igual que WorldHistoryPanel
 local closeBtn = Instance.new("TextButton")
 closeBtn.Name = "CloseBtn"
 closeBtn.Position = UDim2.new(1, -58, 0, 16)

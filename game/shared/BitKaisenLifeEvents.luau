@@ -504,7 +504,7 @@ BitKaisenLifeEvents.Database = {
 		MinWantedLevel = 4,
 		Texts = {
 			"You paid off an official to quietly bury your bounty record. It cost a lot, but it bought breathing room.",
-			"A contact connected you to someone who could make wanted notices disappear — for a price you paid without hesitation.",
+			"A contact connected you to someone who could make wanted notices disappear - for a price you paid without hesitation.",
 			"You funneled money to the right hands and watched your heat level drop. Expensive, but worth it."
 		},
 		Effects = { WantedLevel = -3, Money = -600, Reputation = 2, Happiness = 4 }
@@ -518,7 +518,7 @@ BitKaisenLifeEvents.Database = {
 		Weight = 4,
 		RequiredTechnique = "Miracle",
 		Texts = {
-			"A child stepped off a curb directly into traffic — and a car swerved at the last instant for no clear reason. You forgot what you saw within the hour.",
+			"A child stepped off a curb directly into traffic - and a car swerved at the last instant for no clear reason. You forgot what you saw within the hour.",
 			"A stranger's bag caught on a railing just before she fell down a flight of stairs. You can't remember her face by evening.",
 			"A coin rolled off a table and landed perfectly upright on its edge. You stared at it for a moment, then forgot completely.",
 		},
@@ -549,7 +549,7 @@ BitKaisenLifeEvents.Database = {
 		RequiredTechnique = "Miracle",
 		Texts = {
 			"Two people you'd never met said the exact same sentence at the exact same time on opposite sides of the street. You filed it away somewhere deep.",
-			"A curse you'd been tracking vanished from a location before you arrived — someone else was there and walked away unharmed. Pure chance.",
+			"A curse you'd been tracking vanished from a location before you arrived - someone else was there and walked away unharmed. Pure chance.",
 			"You watched a sparring match end exactly in a draw, down to the half-second. The instructor called it a once-in-a-decade outcome.",
 		},
 		Effects = { MiracleCharges = 1 }
@@ -563,7 +563,7 @@ BitKaisenLifeEvents.Database = {
 		Weight = 3,
 		RequiredTechnique = "Miracle",
 		Texts = {
-			"A cursed spirit attacked you in an alley and froze — for no reason you could identify — just long enough for a sorcerer to arrive and finish it.",
+			"A cursed spirit attacked you in an alley and froze - for no reason you could identify - just long enough for a sorcerer to arrive and finish it.",
 			"You were trapped inside a barrier technique and it collapsed a second before you passed out. The caster claimed it wasn't their doing.",
 			"Your technique misfired and the energy dispersed harmlessly into the air instead of back into your body. You marked it as a fluke.",
 		},

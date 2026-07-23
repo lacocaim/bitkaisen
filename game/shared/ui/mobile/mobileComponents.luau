@@ -61,7 +61,7 @@ local function setupTapRouter()
 		if not bestObj then return end
 
 		-- Check if a higher-DisplayOrder ScreenGui has a blocking (non-transparent) element at
-		-- this position — e.g. a Settings overlay covering the screen. If so, skip the callback.
+		-- this position - e.g. a Settings overlay covering the screen. If so, skip the callback.
 		for _, obj in ipairs(objs) do
 			local sg = obj:FindFirstAncestorWhichIsA("ScreenGui")
 			if sg and sg.Enabled and sg.DisplayOrder > bestOrder then

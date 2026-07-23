@@ -210,9 +210,16 @@ function BK_GodModeService.GetPayload(player)
 	end
 
 	local settings = BK_GodModeService.EnsureSettings(stats)
+	-- Multiplayer Fase 8 (Fair Play Doctrine): the account-wide gamepass never
+	-- applies in Public (see checkCachedGamePassOwnership's Public gate),
+	-- so the client needs to know to offer the per-world Dev Product
+	-- instead, with copy that's explicit about its scope.
+	local isPublic = stats.WorldMode == "Public" and typeof(stats.PublicWorldId) == "string" and stats.PublicWorldId ~= ""
 	return {
 		Owned = ownsGodMode(player),
+		IsPublic = isPublic,
 		PassId = context.PassIds and context.PassIds.GOD_MODE_PASS_ID or 0,
+		GodModeThisWorldProductId = context.GetGodModeThisWorldProductId and context.GetGodModeThisWorldProductId() or 0,
 		PriceNote = "Raise the live God Mode price by +200-400 Robux in Creator Dashboard.",
 		Settings = cloneShallow(settings),
 		TraitAddsUsed = stats.GodModeTraitAddsUsed,

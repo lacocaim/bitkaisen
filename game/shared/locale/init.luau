@@ -120,7 +120,7 @@ function BitKaisenLocale.t(locale: string, key: string, params: { [string]: any 
 		return interpolate(value, params)
 	end
 
-	-- No translation found — return the key so devs can spot missing entries
+	-- No translation found - return the key so devs can spot missing entries
 	return key
 end
 

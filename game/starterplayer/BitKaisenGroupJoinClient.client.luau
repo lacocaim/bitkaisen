@@ -13,7 +13,7 @@ local promptGroupJoin    = ReplicatedStorage:WaitForChild("PromptGroupJoin", 10)
 local claimGroupJoinReward = ReplicatedStorage:WaitForChild("ClaimGroupJoinReward", 10)
 
 if not promptGroupJoin or not claimGroupJoinReward then
-	warn("[BitKaisenGroupJoinClient] Remotes not found — group join feature skipped.")
+	warn("[BitKaisenGroupJoinClient] Remotes not found - group join feature skipped.")
 	return
 end
 

@@ -47,6 +47,7 @@ BK_WorldRegistryService = require(ServerScriptService:WaitForChild("BitKaisenSer
 BK_SoulsService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_SoulsService"))
 BK_DuelService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_DuelService"))
 BK_CellService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_CellService"))
+BK_IncidentMapService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_IncidentMapService"))
 TeleportService = game:GetService("TeleportService")
 BK_CultWarService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_CultWarService"))
 local BK_DomainService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_DomainService"))
@@ -276,6 +277,8 @@ local RATE_LIMITS = {
 	RequestCreateWorld = 5.0,
 	GetSouls = 1.0,
 	SoulAction = 1.5,
+	GetIncidentMap = 0.25,
+	IncidentMapAction = 0.45,
 	GetDuelState = 0.5,
 	DuelAction = 0.5,
 	CellAction = 1.0
@@ -1618,6 +1621,9 @@ function normalizeCursedSocietyState(stats)
 	if typeof(stats.UnlockedPremiumClans) ~= "table" then stats.UnlockedPremiumClans = {} end
 	if typeof(stats.UnlockedPremiumTechniques) ~= "table" then stats.UnlockedPremiumTechniques = {} end
 	if typeof(stats.WorldHistory) ~= "table" then stats.WorldHistory = {} end
+	if typeof(stats.IncidentMap) ~= "table" then
+		stats.IncidentMap = { ActionsTaken = 0, Locations = {} }
+	end
 	if typeof(stats.NotableSorcerers) ~= "table" then stats.NotableSorcerers = {} end
 	if typeof(stats.UnlockedTitles) ~= "table" then stats.UnlockedTitles = {} end
 	if typeof(stats.CursedTools) ~= "table" then stats.CursedTools = {} end
@@ -12332,6 +12338,7 @@ BK_RelationshipService.Init(BitKaisenServiceContext)
 BK_SoulsService.Init(BitKaisenServiceContext)
 BK_DuelService.Init(BitKaisenServiceContext)
 BK_CellService.Init(BitKaisenServiceContext)
+BK_IncidentMapService.Init(BitKaisenServiceContext)
 BK_DevCommands.Init(BitKaisenServiceContext)
 
 initiateGift.OnServerEvent:Connect(function(player, productId, recipientUsername)

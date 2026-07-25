@@ -1,7 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local types = require(ReplicatedStorage:WaitForChild("global"):WaitForChild("types"))
-local objects = require(ReplicatedStorage:WaitForChild("global"):WaitForChild("utils"):WaitForChild("objects"))
 
 export type LifeStats = types.LifeStats
 export type SlotSummary = types.SlotSummary
@@ -183,6 +182,10 @@ local defaultLifeStats: LifeStats = {
 	UnlockedPremiumClans = {},
 	UnlockedPremiumTechniques = {},
 	WorldHistory = {},
+	IncidentMap = {
+		ActionsTaken = 0,
+		Locations = {},
+	},
 	NotableSorcerers = {},
 	UnlockedTitles = {},
 	MiracleCharges = 0,

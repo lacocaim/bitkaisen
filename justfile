@@ -25,7 +25,8 @@ net:
 # ---------- CHECK ----------
 check name="game":
 	selene game/ global/
-	rojo build {{name}}.project.json -o /dev/null 2>&1 || rojo build {{name}}.project.json -o NUL
+	rojo build {{name}}.project.json -o .rojo-check.rbxm
+	Remove-Item -Force .rojo-check.rbxm
 
 # ---------- UTIL ----------
 alias alias path:

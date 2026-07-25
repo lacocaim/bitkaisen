@@ -3,9 +3,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
 local mc = require("@ui/mobile/mobileComponents")
+local uiState = require("@ui-state/uiState")
 local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
 local _L = BitKaisenLocale.getClientLocale()
-local function _im(key, fallback) return BitKaisenLocale.tOrFallback(_L, "incident_map." .. key, nil, fallback) end
+local function _im(key, fallback)
+	return BitKaisenLocale.tOrFallback(_L, "incident_map." .. key, nil, fallback)
+end
 
 local theme = mc.theme
 local bindTap = mc.bindTap
@@ -37,6 +40,18 @@ local busy = false
 
 local getIncidentMap: RemoteFunction
 local incidentMapAction: RemoteEvent
+
+local function waitForRemote(name, className)
+	local deadline = os.clock() + 10
+	repeat
+		local remote = ReplicatedStorage:FindFirstChild(name)
+		if remote and remote:IsA(className) then
+			return remote
+		end
+		task.wait()
+	until os.clock() >= deadline
+	error(name .. " remote missing or has the wrong class")
+end
 
 local renderMap
 local loadMap
@@ -161,7 +176,6 @@ local function makeLocationCard(location, actions, role)
 
 	local made = 0
 	for _, action in ipairs(actions or {}) do
-		if made >= 4 then break end
 		made += 1
 		mc.mobileButton({
 			parent = btnHolder,
@@ -224,13 +238,8 @@ end
 
 function closeMap()
 	isOpen = false
-	TweenService:Create(sheet, TWEEN_FAST, { BackgroundTransparency = 1 }):Play()
-	task.delay(0.16, function()
-		if not isOpen then
-			sheet.Visible = false
-			gui.Enabled = false
-		end
-	end)
+	gui.Enabled = false
+	sheet.Visible = false
 end
 
 local function buildHeader(parent)
@@ -238,6 +247,7 @@ local function buildHeader(parent)
 	header.Size = UDim2.new(1, 0, 0, 50)
 	header.BackgroundColor3 = theme.Panel
 	header.BorderSizePixel = 0
+	header.ZIndex = 10
 	header.Parent = parent
 	mc.corner(header, 0)
 
@@ -250,6 +260,7 @@ local function buildHeader(parent)
 	title.TextSize = 16
 	title.Font = Enum.Font.GothamBlack
 	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.ZIndex = 11
 	title.Parent = header
 
 	subtitle = Instance.new("TextLabel")
@@ -262,6 +273,7 @@ local function buildHeader(parent)
 	subtitle.Font = Enum.Font.GothamBold
 	subtitle.TextXAlignment = Enum.TextXAlignment.Left
 	subtitle.TextWrapped = true
+	subtitle.ZIndex = 11
 	subtitle.Parent = header
 
 	local refreshBtn = Instance.new("TextButton")
@@ -275,6 +287,7 @@ local function buildHeader(parent)
 	refreshBtn.TextSize = 11
 	refreshBtn.Font = Enum.Font.GothamBlack
 	refreshBtn.AutoButtonColor = false
+	refreshBtn.ZIndex = 12
 	refreshBtn.Parent = header
 	mc.corner(refreshBtn, 8)
 	bindTap(refreshBtn, loadMap)
@@ -290,20 +303,23 @@ local function buildHeader(parent)
 	closeBtn.TextSize = 16
 	closeBtn.Font = Enum.Font.GothamBlack
 	closeBtn.AutoButtonColor = false
+	closeBtn.ZIndex = 12
 	closeBtn.Parent = header
 	mc.corner(closeBtn, 999)
-	bindTap(closeBtn, closeMap)
+	bindTap(closeBtn, function()
+		uiState.closeRoute()
+	end)
 end
 
 local function init()
-	getIncidentMap = ReplicatedStorage:WaitForChild("GetIncidentMap")
-	incidentMapAction = ReplicatedStorage:WaitForChild("IncidentMapAction")
+	getIncidentMap = waitForRemote("GetIncidentMap", "RemoteFunction") :: RemoteFunction
+	incidentMapAction = waitForRemote("IncidentMapAction", "RemoteEvent") :: RemoteEvent
 
 	gui = Instance.new("ScreenGui")
 	gui.Name = "BitKaisenMobileIncidentMapGui"
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = false
-	gui.DisplayOrder = 638
+	gui.DisplayOrder = 639
 	gui.Enabled = false
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Parent = playerGui
@@ -319,6 +335,14 @@ local function init()
 
 	buildHeader(sheet)
 	scroll = mc.mobileList(sheet)
+
+	uiState.subscribe(function(route)
+		if route == "incident_map" then
+			openMap()
+		else
+			closeMap()
+		end
+	end)
 end
 
 return { init = init, open = openMap }

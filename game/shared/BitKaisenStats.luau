@@ -442,6 +442,10 @@ function BitKaisenStats.GetDefaultStats()
 		UnlockedPremiumClans = {},
 		UnlockedPremiumTechniques = {},
 		WorldHistory = {},
+		IncidentMap = {
+			ActionsTaken = 0,
+			Locations = {},
+		},
 		NotableSorcerers = {},
 		Looks = 50,
 		Strength = 0,
@@ -714,6 +718,9 @@ function BitKaisenStats.NormalizeCursedSocietyStats(stats)
 	if typeof(stats.UnlockedPremiumClans) ~= "table" then stats.UnlockedPremiumClans = {} end
 	if typeof(stats.UnlockedPremiumTechniques) ~= "table" then stats.UnlockedPremiumTechniques = {} end
 	if typeof(stats.WorldHistory) ~= "table" then stats.WorldHistory = {} end
+	if typeof(stats.IncidentMap) ~= "table" then
+		stats.IncidentMap = { ActionsTaken = 0, Locations = {} }
+	end
 	if typeof(stats.NotableSorcerers) ~= "table" then stats.NotableSorcerers = {} end
 	stats.Looks = math.clamp(tonumber(stats.Looks) or 50, 0, 100)
 	stats.Strength = math.max(0, tonumber(stats.Strength) or 0)

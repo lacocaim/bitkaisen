@@ -97,6 +97,7 @@ navRegistry.registerBatch({
 	{ id = "binding_vows",      label = navT("nav_vows",           "VOWS"),           order = 11, color = Color3.fromRGB(220, 180, 255) },
 	{ id = "technique_mastery", label = navT("nav_mastery",        "MASTERY"),        order = 12, color = theme.Purple },
 	{ id = "souls",             label = navT("nav_souls",          "LIVES"),          order = 13, color = Color3.fromRGB(120, 200, 255) },
+	{ id = "incident_map",       label = navT("nav_incident_map",  "INCIDENT MAP"),   order = 14, color = Color3.fromRGB(200, 75, 120) },
 })
 
 loadingScreen.bump("Preparing panels...")
@@ -131,7 +132,9 @@ tryInit("MobileDeathPanel", function() return require("@ui/mobile/panels/MobileD
 tryInit("MobileMissionSituationPanel", function() return require("@ui/mobile/panels/MobileMissionSituationPanel") end, playerGui)
 tryInit("MobileFirstTimeGuidancePanel", function() return require("@ui/mobile/panels/MobileFirstTimeGuidancePanel") end, playerGui)
 tryInit("MobileGuideController", function() return require("@ui/mobile/panels/MobileGuideController") end, playerGui)
-tryInit("MobileIncidentMapPanel", function() return require("@ui/mobile/panels/MobileIncidentMapPanel") end)
+tryInit("MobileIncidentMapPanel", function()
+	return require("@ui/mobile/panels/MobileIncidentMapPanel")
+end)
 
 tryInit("MobileCombatPanel", function() return require("@ui/mobile/panels/MobileCombatPanel") end, playerGui)
 tryInit("MobileMinigamesPanel", function() return require("@ui/mobile/panels/MobileMinigamesPanel") end, playerGui)

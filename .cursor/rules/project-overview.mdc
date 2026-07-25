@@ -29,7 +29,7 @@ Life simulation with JJK theming: aging, clans, cursed techniques, technique mas
 The game uses a traditional Roblox scripting architecture (not ECS):
 
 ### Server
-- `GameManager.server.luau` is the central server script orchestrating all `BK_*` service modules (combat, activities, jobs, domains, relationships, missions, etc.)
+- `GameManager.server.luau` is the central server script orchestrating all `BK_*` service modules (combat, activities, jobs, domains, relationships, missions, Incident Map, etc.). `BK_IncidentMapService` owns role-validated location actions and uses `BitKaisenIncidentMap` for persistent map state/payloads
 
 ### Client boot flow
 1. `globalClientBootstrap.client.luau` runs first (global init)
@@ -63,7 +63,7 @@ The game uses a traditional Roblox scripting architecture (not ECS):
 ### State
 - `playerState` -- reactive source populated by `UpdateLifeEvent`
 - `uiState` -- route/modal stack + imperative `subscribe(fn)->disconnect` observers for panels
-- `navRegistry` -- dynamic nav entries (missions, activities, relationships, assets, jobs, affiliations, domain, rivals, history, mentor)
+- `navRegistry` -- dynamic nav entries (missions, activities, relationships, assets, jobs, affiliations, domain, rivals, history, mentor, lives, Incident Map)
 - `remotes` -- centralized remote access with lazy WaitForChild + cache
 - `overlayManager` -- single-overlay enforcer: `show(name, openFn, closeFn)` auto-closes the previous full-screen overlay before opening the new one; `closeAll()` closes whatever is open. Used by topbar icons (God Mode, AFK, War), DailyLogin, FreeRewards, and route navigation (`uiState.navigate` calls `closeAll()`). Prevents the opaque-stack "black screen" problem
 - `experienceMode` -- singleton that **auto-detects** Computer/Mobile (UserInputService + viewport), shows the loading screen, and caches the initial life event. No picker, no manual switch
@@ -77,6 +77,7 @@ The game uses a traditional Roblox scripting architecture (not ECS):
 
 ### Studio / repo sync
 - `game.project.json` sets `$ignoreUnknownInstances: true` on ServerScriptService, ReplicatedStorage, and StarterPlayerScripts, so Rojo will **not** delete instances it doesn't manage. Orphan/duplicate scripts saved in the place can therefore linger -- periodically audit (scan those services for duplicate script names) to keep the place in sync with the repo. Server services may print their load banner more than once in Studio Play output; `GameManager` is guarded by `_G.__GameManagerLoaded` and runs once
+- Keep the Rojo CLI and Studio plugin on the same stable version. After changing the `rokit.toml` Rojo pin, run `rokit install` and `rojo plugin install`, then restart Studio
 
 ### Controllers
 `TopBarController`, `SFXController` provide cross-cutting concerns (top bar layout, sound effects)
@@ -119,6 +120,7 @@ remotes/                             -> Blink .blink definitions (codegen output
 - `just packages` -- install deps + generate sourcemap
 - `just dev` -- start dev (rojo serve + darklua smart-sync watch + blink watch)
 - `just net` -- compile blink networking only
+- `just check` -- lint Luau and validate a complete Rojo model build
 
 ## Keeping These Rules Current
 

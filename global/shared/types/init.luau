@@ -34,6 +34,23 @@ export type SlotSummary = {
 	LastSaved: number,
 }
 
+export type IncidentMapLocationState = {
+	Threat: number,
+	Fear: number,
+	SocietyAttention: number,
+	CursedResidue: number,
+	Control: number,
+	ControlledBy: string,
+	ActiveIncident: boolean,
+	Rumor: string,
+	LastResult: string,
+}
+
+export type IncidentMapState = {
+	ActionsTaken: number,
+	Locations: { [string]: IncidentMapLocationState },
+}
+
 export type LifeStats = {
 	DataVersion: number,
 	SlotId: number?,
@@ -203,6 +220,7 @@ export type LifeStats = {
 	UnlockedPremiumClans: { [string]: any },
 	UnlockedPremiumTechniques: { [string]: any },
 	WorldHistory: { [string]: any },
+	IncidentMap: IncidentMapState,
 	NotableSorcerers: { [string]: any },
 	UnlockedTitles: { [string]: any },
 	CursedTools: { [string]: any },

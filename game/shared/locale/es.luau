@@ -419,6 +419,7 @@ return {
 		nav_vows          = "JURAMENTOS",
 		nav_mastery       = "MAESTRÍA",
 		nav_souls         = "VIDAS",
+		nav_incident_map  = "MAPA DE INCIDENTES",
 
 		challenge_title     = "DESAFÍOS SEMANALES",
 		challenge_loading   = "Cargando desafíos...",

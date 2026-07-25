@@ -2,12 +2,25 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local responsiveScale = require("@ui/responsiveScale")
+local uiState = require("@ui-state/uiState")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
-local getIncidentMap = ReplicatedStorage:WaitForChild("GetIncidentMap")
-local incidentMapAction = ReplicatedStorage:WaitForChild("IncidentMapAction")
+local getIncidentMap: RemoteFunction
+local incidentMapAction: RemoteEvent
+
+local function waitForRemote(name, className)
+	local deadline = os.clock() + 10
+	repeat
+		local remote = ReplicatedStorage:FindFirstChild(name)
+		if remote and remote:IsA(className) then
+			return remote
+		end
+		task.wait()
+	until os.clock() >= deadline
+	error(name .. " remote missing or has the wrong class")
+end
 
 local COLORS = {
 	Bg = Color3.fromRGB(7, 7, 10),
@@ -28,14 +41,17 @@ local COLORS = {
 }
 
 local existing = playerGui:FindFirstChild("BitKaisenIncidentMapGui")
-if existing then existing:Destroy() end
+if existing then
+	existing:Destroy()
+end
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "BitKaisenIncidentMapGui"
 gui.ResetOnSpawn = false
-gui.IgnoreGuiInset = true
-gui.DisplayOrder = 638
+gui.IgnoreGuiInset = false
+gui.DisplayOrder = 639
 gui.Enabled = false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = playerGui
 
 local function addCorner(parent, radius)
@@ -316,7 +332,7 @@ local function makeLocationCard(location, actions, role)
 		b.TextSize = isMobile() and 9 or 10
 		b.TextColor3 = action.Locked and COLORS.Muted or (role == "CursedSpirit" and COLORS.Purple or COLORS.Blue)
 		b.LayoutOrder = made
-		b.MouseButton1Click:Connect(function()
+		b.Activated:Connect(function()
 			if action.Locked then return end
 			doAction(location.Id, action.Id)
 		end)
@@ -354,6 +370,7 @@ local function openMap()
 	isOpen = true
 	gui.Enabled = true
 	overlay.Visible = true
+	overlay.Active = true
 	window.Visible = true
 	overlay.BackgroundTransparency = 1
 	window.BackgroundTransparency = 1
@@ -364,22 +381,28 @@ end
 
 local function closeMap()
 	isOpen = false
-	tween(overlay, 0.10, { BackgroundTransparency = 1 })
-	tween(window, 0.10, { BackgroundTransparency = 1 })
-	task.delay(0.11, function()
-		if not isOpen then
-			overlay.Visible = false
-			window.Visible = false
-			gui.Enabled = false
-		end
-	end)
+	gui.Enabled = false
+	overlay.Active = false
+	overlay.Visible = false
+	window.Visible = false
 end
 
-closeButton.MouseButton1Click:Connect(closeMap)
-refreshButton.MouseButton1Click:Connect(loadMap)
+closeButton.Activated:Connect(function()
+	uiState.closeRoute()
+end)
+refreshButton.Activated:Connect(loadMap)
 
 local function init()
-	-- Incident map is opened externally via open(); expose for callers.
+	getIncidentMap = waitForRemote("GetIncidentMap", "RemoteFunction") :: RemoteFunction
+	incidentMapAction = waitForRemote("IncidentMapAction", "RemoteEvent") :: RemoteEvent
+
+	uiState.subscribe(function(route)
+		if route == "incident_map" then
+			openMap()
+		else
+			closeMap()
+		end
+	end)
 end
 
 return { init = init, open = openMap }

@@ -30,6 +30,14 @@ local function smart_sync(name)
 		:argument(`{name}.project.json`)
 		:argument("-o")
 		:argument("sourcemap.json")
+		:inherit_stdout()
+		:run()
+
+	Process.new("rojo")
+		:argument("sourcemap")
+		:argument(`{name}.project.json`)
+		:argument("-o")
+		:argument("sourcemap.json")
 		:argument("--watch")
 		:inherit_stdout()
 		:spawn()
@@ -78,8 +86,6 @@ local function smart_sync(name)
 				if key == "$path" then
 					if build_exclusions[value] then
 						dir["$path"] = build_exclusions[value]
-						-- else
-						-- 	dir["$path"] = "build/" .. value
 					end
 				elseif not starts(key, "$") then
 					recurse_edit(dir[key])

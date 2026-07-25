@@ -135,6 +135,8 @@ local REMOTE_DEFINITIONS = {
 	-- Multiplayer Fase 6: Reunión de Vidas -- real-player interaction
 	GetSouls = "RemoteFunction",
 	SoulAction = "RemoteEvent",
+	GetIncidentMap = "RemoteFunction",
+	IncidentMapAction = "RemoteEvent",
 	-- Multiplayer Fase 6B: live PvP duels between real players
 	GetDuelState = "RemoteFunction",
 	DuelAction = "RemoteEvent",

@@ -4,7 +4,7 @@
 # New tools can be added by running `rokit add <tool>` in a terminal.
 
 [tools]
-rojo = "rojo-rbx/rojo@7.6.1"
+rojo = "rojo-rbx/rojo@7.7.0"
 just = "casey/just@1.47.1"
 blink = "1Axen/blink@0.18.8"
 selene = "kampfkarren/selene@0.30.1"

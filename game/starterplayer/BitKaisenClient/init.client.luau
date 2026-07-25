@@ -111,6 +111,7 @@ navRegistry.registerBatch({
 	{ id = "binding_vows",      label = navT("nav_vows",           "VOWS"),           order = 11, color = Color3.fromRGB(220, 180, 255) },
 	{ id = "technique_mastery", label = navT("nav_mastery",        "MASTERY"),        order = 12, color = Color3.fromRGB(180, 130, 255) },
 	{ id = "souls",             label = navT("nav_souls",          "LIVES"),          order = 13, color = Color3.fromRGB(120, 200, 255) },
+	{ id = "incident_map",       label = navT("nav_incident_map",  "INCIDENT MAP"),   order = 14, color = Color3.fromRGB(200, 75, 120) },
 })
 
 local function isMobile()

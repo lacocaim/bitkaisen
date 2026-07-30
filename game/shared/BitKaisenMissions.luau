@@ -210,7 +210,11 @@ BitKaisenMissions.Database = {
 
 	-- Special Grade
 	{ Id = "special_grade_suppression", Title = "Special Grade Suppression Order", Grade = "Special Grade", RiskColor = Color3.fromRGB(255, 65, 95), Difficulty = 365, RewardCE = 210, RewardMoney = 3200, RewardRep = 120, DmgPenalty = 165, OrphanRescueChance = 1 },
-	{ Id = "citywide_curse_event", Title = "Citywide Curse Event", Grade = "Special Grade", RiskColor = Color3.fromRGB(255, 65, 95), Difficulty = 420, RewardCE = 260, RewardMoney = 4500, RewardRep = 155, DmgPenalty = 190, OrphanRescueChance = 3 }
+	{ Id = "citywide_curse_event", Title = "Citywide Curse Event", Grade = "Special Grade", RiskColor = Color3.fromRGB(255, 65, 95), Difficulty = 420, RewardCE = 260, RewardMoney = 4500, RewardRep = 155, DmgPenalty = 190, OrphanRescueChance = 3 },
+
+	-- Classified (Special Grade only, autonomous operations)
+	{ Id = "classified_extraction", Title = "[CLASSIFIED] High-Value Extraction", Grade = "Special Grade", Classified = true, RiskColor = Color3.fromRGB(200, 30, 60), Difficulty = 480, RewardCE = 320, RewardMoney = 6000, RewardRep = 200, DmgPenalty = 220, OrphanRescueChance = 1 },
+	{ Id = "classified_seal_operation", Title = "[CLASSIFIED] Ancient Seal Operation", Grade = "Special Grade", Classified = true, RiskColor = Color3.fromRGB(200, 30, 60), Difficulty = 550, RewardCE = 400, RewardMoney = 8000, RewardRep = 250, DmgPenalty = 250, OrphanRescueChance = 0 },
 }
 
 local gradeOrder = {

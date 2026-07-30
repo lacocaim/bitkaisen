@@ -209,6 +209,8 @@ local function ProfileCard()
 		return tostring(s.TechniqueEvolutionStage or "Dormant") .. " | " .. tostring(s.TechniqueBranch or "None")
 	end)
 	local recVal    = derive(function() local s = stats() return tostring(s and s.TeacherRecommendations or 0) end)
+	local karmaVal  = derive(function() local s = stats() return tostring(s and s.KarmaLevel or "") end)
+	local karmaVisible = derive(function() local s = stats() return s and s.KarmaLevel ~= nil end)
 	local progressVal = derive(function() return helpers.getProfileProgressText(stats()) or "" end)
 	local progressVisible = derive(function()
 		local t = helpers.getProfileProgressText(stats())
@@ -498,6 +500,11 @@ local function ProfileCard()
 						DInfoRow(_pc("dossier_jjh_pop",   "JJH Pop."),    popularityVal, theme.Gold),
 						DInfoRow(_pc("dossier_tech_stage","Tech Stage"),  evolutionVal, theme.Purple),
 						DInfoRow(_pc("dossier_recs",      "Recs"),        recVal,       theme.Orange),
+						(function()
+							local row = DInfoRow(_pc("dossier_karma", "Karma"), karmaVal, theme.Gold)
+							row.Visible = karmaVisible
+							return row
+						end)(),
 					},
 				},
 

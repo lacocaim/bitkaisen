@@ -996,6 +996,7 @@ end
 function BitKaisenStats.RollTechnique(origin, options)
 	options = options or {}
 	local includeClanLocked = options.IncludeClanLocked == true
+	local excludeLowRarity = options.ExcludeLowRarity == true
 	local valid = {}
 
 	for _, tech in ipairs(BitKaisenStats.Techniques) do
@@ -1003,6 +1004,10 @@ function BitKaisenStats.RollTechnique(origin, options)
 		local isClanLocked = tech.ClanInnate == true or (typeof(tech.Origins) == "table" and #tech.Origins > 0)
 
 		if isClanLocked and not includeClanLocked then
+			allowed = false
+		end
+
+		if allowed and excludeLowRarity and (tech.Rarity == "Common" or tech.Rarity == "Uncommon") then
 			allowed = false
 		end
 
@@ -1051,13 +1056,17 @@ function BitKaisenStats.AwakenInnateTechnique(stats)
 	return true, innate
 end
 
-function BitKaisenStats.AwakenNormalTechnique(stats)
+function BitKaisenStats.AwakenNormalTechnique(stats, options)
 	if not stats then return false, nil end
 	if tostring(stats.CursedTechnique or "None") ~= "None" then return false, nil end
 	if tostring(stats.InnateTechnique or "None") ~= "None" then return false, nil end
 
 	local origin = stats.Origin or stats.Clan or "Minor Sorcerer Family"
-	local technique = BitKaisenStats.RollTechnique(origin, { IncludeClanLocked = false })
+	local rollOptions = { IncludeClanLocked = false }
+	if options and options.ExcludeLowRarity then
+		rollOptions.ExcludeLowRarity = true
+	end
+	local technique = BitKaisenStats.RollTechnique(origin, rollOptions)
 	stats.CursedTechnique = technique
 	stats.InnateTechnique = "None"
 	stats.TechniqueType = "Normal"
@@ -1073,7 +1082,7 @@ function BitKaisenStats.AwakenNormalTechnique(stats)
 	return true, technique
 end
 
-function BitKaisenStats.TryAwaken(stats)
+function BitKaisenStats.TryAwaken(stats, options)
 	if not stats then
 		return false, nil, nil
 	end
@@ -1112,7 +1121,7 @@ function BitKaisenStats.TryAwaken(stats)
 	end
 
 	if math.random(1, 100) <= chance then
-		local ok, tech = BitKaisenStats.AwakenNormalTechnique(stats)
+		local ok, tech = BitKaisenStats.AwakenNormalTechnique(stats, options)
 		return ok, tech, "Normal"
 	end
 

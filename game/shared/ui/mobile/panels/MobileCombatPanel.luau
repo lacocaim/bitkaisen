@@ -339,6 +339,8 @@ local function init(playerGui: Instance)
 	blackFlashButton.Visible = false
 	local invokeButton = makeActionButton(_cb("btn_invoke", "INVOKE"), Color3.fromRGB(90, 20, 30), 8)
 	invokeButton.Visible = false
+	local vowButton = makeActionButton("VOW", Color3.fromRGB(180, 130, 40), 9)
+	vowButton.Visible = true
 	local encoreButton = makeActionButton(_cb("btn_encore", "ENCORE"), Color3.fromRGB(58, 40, 100), 9)
 	encoreButton.Visible = false
 
@@ -1123,6 +1125,8 @@ local function init(playerGui: Instance)
 		invokeButton.Visible = not defeated and deathPaintingsAvailable > 0
 		invokeButton.Text = _cb("btn_invoke_count", "INVOKE {n}"):gsub("{n}", deathPaintingsAvailable)
 		setButtonEnabled(invokeButton, playerTurn and deathPaintingsAvailable > 0)
+		vowButton.Visible = not defeated and not state.ActiveVow
+		setButtonEnabled(vowButton, playerTurn and not state.ActiveVow)
 		resetButton.Visible = defeated
 		setButtonEnabled(resetButton, defeated and state.CanReset == true)
 
@@ -1222,6 +1226,65 @@ local function init(playerGui: Instance)
 	bindTap(blackFlashButton, function()
 		if state.Phase == "player_turn" then combatAction:FireServer("black_flash") end
 	end)
+
+	local mobileVowPopup = nil
+	local MOBILE_VOW_PRESETS = {
+		{ Id = "vow_first_strike", Name = "First Strike", Desc = "Skip attack -> Nullify enemy first hit" },
+		{ Id = "vow_revelation", Name = "Revelation", Desc = "Lose surprise -> +35% damage" },
+		{ Id = "vow_blood", Name = "Blood Pact", Desc = "-20% HP -> +2 extra hits" },
+		{ Id = "vow_silence", Name = "Silence", Desc = "No CT -> +50 CE now" },
+		{ Id = "vow_escape", Name = "Escape", Desc = "Can't pursue -> Dodge next attack" },
+	}
+	local function destroyMobileVowPopup()
+		if mobileVowPopup then mobileVowPopup:Destroy() mobileVowPopup = nil end
+	end
+	bindTap(vowButton, function()
+		if state.Phase ~= "player_turn" or state.ActiveVow then return end
+		if mobileVowPopup then destroyMobileVowPopup() return end
+		local popup = Instance.new("Frame")
+		popup.Name = "MobileVowSelection"
+		popup.Size = UDim2.new(1, -20, 0, (#MOBILE_VOW_PRESETS * 44) + 12)
+		popup.Position = UDim2.new(0, 10, 0, -(#MOBILE_VOW_PRESETS * 44) - 16)
+		popup.BackgroundColor3 = Color3.fromRGB(30, 22, 14)
+		popup.BorderSizePixel = 0
+		popup.ZIndex = 770
+		popup.Parent = actionCard
+		corner(popup, 10)
+		local layout = Instance.new("UIListLayout")
+		layout.FillDirection = Enum.FillDirection.Vertical
+		layout.Padding = UDim.new(0, 4)
+		layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		layout.SortOrder = Enum.SortOrder.LayoutOrder
+		layout.Parent = popup
+		local pad = Instance.new("UIPadding")
+		pad.PaddingTop = UDim.new(0, 6)
+		pad.PaddingLeft = UDim.new(0, 6)
+		pad.PaddingRight = UDim.new(0, 6)
+		pad.Parent = popup
+		for i, vow in ipairs(MOBILE_VOW_PRESETS) do
+			local btn = Instance.new("TextButton")
+			btn.Name = vow.Id
+			btn.Size = UDim2.new(1, 0, 0, 38)
+			btn.BackgroundColor3 = Color3.fromRGB(55, 40, 20)
+			btn.BorderSizePixel = 0
+			btn.Text = vow.Name .. "  |  " .. vow.Desc
+			btn.TextColor3 = Color3.fromRGB(240, 220, 160)
+			btn.TextSize = 13
+			btn.Font = Enum.Font.GothamMedium
+			btn.TextTruncate = Enum.TextTruncate.AtEnd
+			btn.ZIndex = 771
+			btn.LayoutOrder = i
+			btn.AutoButtonColor = true
+			btn.Parent = popup
+			corner(btn, 8)
+			bindTap(btn, function()
+				destroyMobileVowPopup()
+				combatAction:FireServer("invoke_vow", vow.Id)
+			end)
+		end
+		mobileVowPopup = popup
+	end)
+
 	bindTap(defendButton, function()
 		if state.Phase == "player_turn" then combatAction:FireServer("defend") end
 	end)

@@ -1813,6 +1813,57 @@ local function processActivity(player, activityId)
 		stats.Happiness = math.clamp((stats.Happiness or 100) - math.random(0, 3), 0, 100)
 		logMessage = tAct(player, "physical_conditioning", { str = gain, spd = speedGain, dur = durabilityGain }, "You pushed your body through physical conditioning. Strength +" .. tostring(gain) .. ", Speed +" .. tostring(speedGain) .. ", Durability +" .. tostring(durabilityGain) .. ".")
 
+	elseif activityId == "train_durability" then
+		local prodigyMult = ownsTrainingProdigyPass(player) and 1.5 or 1
+		local focusedMult = ownsFocusedTrainingPass(player) and 1.25 or 1
+		local doubleMult = ownsDoubleTrainingPass(player) and 2 or 1
+		local vipMult = ownsVIPPass(player) and 1.5 or 1
+		local mult = prodigyMult * focusedMult * doubleMult * vipMult
+		local gain = math.max(1, math.floor(update16Gain(stats, 5, 12, false) * mult + 0.5))
+		stats.Durability = math.clamp((tonumber(stats.Durability) or 0) + gain, 0, 100)
+		stats.Health = math.clamp((stats.Health or 100) - math.random(2, 6), 0, 100)
+		stats.Happiness = math.clamp((stats.Happiness or 100) - math.random(0, 3), 0, 100)
+		local messages = {
+			"You took every hit without flinching. Your body remembers the pain. Durability +" .. tostring(gain) .. ".",
+			"Endurance training. Each blow you survive makes the next one easier. Durability +" .. tostring(gain) .. ".",
+			"Pain is temporary. The body adapts. Durability +" .. tostring(gain) .. ".",
+		}
+		logMessage = tAct(player, "train_durability", { gain = gain }, messages[math.random(1, #messages)])
+
+	elseif activityId == "train_speed" then
+		local prodigyMult = ownsTrainingProdigyPass(player) and 1.5 or 1
+		local focusedMult = ownsFocusedTrainingPass(player) and 1.25 or 1
+		local doubleMult = ownsDoubleTrainingPass(player) and 2 or 1
+		local vipMult = ownsVIPPass(player) and 1.5 or 1
+		local mult = prodigyMult * focusedMult * doubleMult * vipMult
+		local gain = math.max(1, math.floor(update16Gain(stats, 4, 11, false) * mult + 0.5))
+		stats.Speed = math.clamp((tonumber(stats.Speed) or 0) + gain, 0, 100)
+		stats.Health = math.clamp((stats.Health or 100) - math.random(1, 5), 0, 100)
+		stats.Happiness = math.clamp((stats.Happiness or 100) - math.random(1, 4), 0, 100)
+		local messages = {
+			"You pushed your body past its limit. A half-second faster than yesterday. Speed +" .. tostring(gain) .. ".",
+			"React. Move. Again. Your reflexes are sharpening. Speed +" .. tostring(gain) .. ".",
+			"Faster footwork. The gap between thought and action narrows. Speed +" .. tostring(gain) .. ".",
+		}
+		logMessage = tAct(player, "train_speed", { gain = gain }, messages[math.random(1, #messages)])
+
+	elseif activityId == "train_ce_efficiency" then
+		local prodigyMult = ownsTrainingProdigyPass(player) and 1.5 or 1
+		local focusedMult = ownsFocusedTrainingPass(player) and 1.25 or 1
+		local doubleMult = ownsDoubleTrainingPass(player) and 2 or 1
+		local vipMult = ownsVIPPass(player) and 1.5 or 1
+		local mult = prodigyMult * focusedMult * doubleMult * vipMult
+		local gain = math.max(1, math.floor(update16Gain(stats, 3, 9, false) * mult + 0.5))
+		stats.CEEfficiency = math.clamp((tonumber(stats.CEEfficiency) or 0) + gain, 0, 100)
+		stats.CursedEnergy = math.max(0, (tonumber(stats.CursedEnergy) or 0) - math.random(5, 12))
+		stats.Happiness = math.clamp((stats.Happiness or 100) - math.random(0, 2), 0, 100)
+		local messages = {
+			"Less leakage. The same output, tighter. You're learning to waste nothing. CE Efficiency +" .. tostring(gain) .. ".",
+			"Controlled bursts. Every drop of cursed energy hits its mark. CE Efficiency +" .. tostring(gain) .. ".",
+			"Output refinement. The difference between a sorcerer and a weapon. CE Efficiency +" .. tostring(gain) .. ".",
+		}
+		logMessage = tAct(player, "train_ce_efficiency", { gain = gain }, messages[math.random(1, #messages)])
+
 	elseif activityId == "surgery" then
 		stats.SurgeryThisAge = math.clamp(tonumber(stats.SurgeryThisAge) or 0, 0, 1)
 		if stats.SurgeryThisAge >= 1 then
@@ -2760,6 +2811,47 @@ local function processActivity(player, activityId)
 		stats.TechniqueMastery = math.clamp((tonumber(stats.TechniqueMastery) or 0) + masteryGain, 0, 100)
 		stats.Happiness = math.clamp((stats.Happiness or 100) + math.random(0, 3), 0, 100)
 		logMessage = tAct(player, "jh_train_assistant", { name = stats.AssistantName, trust = trustGain, skill = skillGain, mastery = masteryGain }, "You trained with <b>" .. tostring(stats.AssistantName) .. "</b>. Assistant Trust <b>+" .. tostring(trustGain) .. "</b>, Assistant Skill <b>+" .. tostring(skillGain) .. "</b>, Technique Mastery <b>+" .. tostring(masteryGain) .. "%</b>.")
+
+	elseif activityId == "request_cursed_tool" then
+		local lastRequestAge = tonumber(stats.LastCursedToolRequestAge) or -999
+		if (tonumber(stats.Age) or 0) - lastRequestAge < 1 then
+			stats.ActivitiesDoneThisAge = math.max(0, (stats.ActivitiesDoneThisAge or 1) - 1)
+			fireLifeUpdate(player, stats, "You already requested a cursed tool this year. Wait until next age.")
+			return
+		end
+		stats.LastCursedToolRequestAge = tonumber(stats.Age) or 0
+		stats.CursedToolsOwned = (tonumber(stats.CursedToolsOwned) or 0) + 1
+		stats.Reputation = (tonumber(stats.Reputation) or 0) + math.random(2, 5)
+		stats.CursedEnergy = math.max(0, (tonumber(stats.CursedEnergy) or 0) + math.random(5, 15))
+		local toolNames = { "Iron Will Blade", "Binding Chain", "Residue Compass", "Spirit Cage Glove", "Hollow Edge" }
+		local toolName = toolNames[math.random(1, #toolNames)]
+		logMessage = tAct(player, "request_cursed_tool", { tool = toolName }, "The institution approved your request. You received a cursed tool: <b>" .. toolName .. "</b>.")
+		fireMajorPopup(player, "CURSED TOOL RECEIVED", "Your standing granted you a basic cursed tool.", toolName, "Grade 3+ privilege.")
+
+	elseif activityId == "recommend_promotion" then
+		stats.Reputation = (tonumber(stats.Reputation) or 0) + math.random(3, 8)
+		stats.TeacherRecommendations = (tonumber(stats.TeacherRecommendations) or 0) + 1
+		stats.AffiliationReputation = math.clamp((tonumber(stats.AffiliationReputation) or 0) + math.random(2, 5), 0, 100)
+		local npcNames = { "Yamada Koji", "Hoshino Ren", "Takagi Sora", "Murai Shin", "Aihara Yuki" }
+		local npcName = npcNames[math.random(1, #npcNames)]
+		logMessage = tAct(player, "recommend_promotion", { npc = npcName }, "You recommended <b>" .. npcName .. "</b> for grade advancement. The institution noted your authority. Reputation +" .. tostring(math.random(3, 8)) .. ".")
+
+	elseif activityId == "assign_npc_mission" then
+		local pendingMissions = tonumber(stats.NPCMissionsAssigned) or 0
+		if pendingMissions >= 3 then
+			stats.ActivitiesDoneThisAge = math.max(0, (stats.ActivitiesDoneThisAge or 1) - 1)
+			fireLifeUpdate(player, stats, "You have too many subordinates already deployed. Wait for results before assigning more.")
+			return
+		end
+		stats.NPCMissionsAssigned = pendingMissions + 1
+		stats.NPCMissionRewardsPending = (tonumber(stats.NPCMissionRewardsPending) or 0) + 1
+		stats.Reputation = (tonumber(stats.Reputation) or 0) + math.random(1, 3)
+		local messages = {
+			"You dispatched a Grade 4 sorcerer to handle a disturbance in the suburbs. Results will come in time.",
+			"A Semi-Grade 3 operative was assigned to investigate residue reports under your authority.",
+			"Mission dispatched. Your subordinate acknowledged your command and departed without hesitation.",
+		}
+		logMessage = tAct(player, "assign_npc_mission", nil, messages[math.random(1, #messages)])
 
 	elseif activityId == "evolve_technique" then
 		local technique = tostring(stats.CursedTechnique or "None")

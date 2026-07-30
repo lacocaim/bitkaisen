@@ -367,6 +367,7 @@ local function init(playerGui: Instance)
 	local domainButton = makeButton("DOMAIN", Color3.fromRGB(91, 58, 145))
 	local blackFlashButton = makeButton("B.FLASH", Color3.fromRGB(48, 28, 90))
 	local invokeButton = makeButton("INVOKE", Color3.fromRGB(90, 20, 30))
+	local vowButton = makeButton("VOW", Color3.fromRGB(180, 130, 40))
 	local defendButton = makeButton("DEFEND", Color3.fromRGB(48, 91, 112))
 	local fleeButton = makeButton("FLEE", Color3.fromRGB(64, 64, 75))
 	local resetButton = makeButton("RESET", Color3.fromRGB(90, 61, 31))
@@ -400,7 +401,7 @@ local function init(playerGui: Instance)
 	logPad.PaddingRight = UDim.new(0, 10)
 	logPad.Parent = logBox
 
-	local actionRowButtons = { attackButton, techniqueButton, domainButton, blackFlashButton, invokeButton, encoreButton, defendButton, fleeButton, resetButton }
+	local actionRowButtons = { attackButton, techniqueButton, domainButton, blackFlashButton, invokeButton, vowButton, encoreButton, defendButton, fleeButton, resetButton }
 	local function layoutActionRow()
 		local visibleCount = 0
 		for _, b in ipairs(actionRowButtons) do
@@ -1102,11 +1103,13 @@ local function init(playerGui: Instance)
 		local deathPaintingsAvailable = tonumber(state.DeathPaintingsAvailable) or 0
 		invokeButton.Visible = not defeated and deathPaintingsAvailable > 0
 		invokeButton.Text = "INVOKE " .. tostring(deathPaintingsAvailable)
+		vowButton.Visible = not defeated and not state.ActiveVow
 		setButtonEnabled(attackButton, playerTurn)
 		setButtonEnabled(techniqueButton, playerTurn and techniqueRemaining > 0 and (tonumber(state.PlayerCE) or 0) >= (tonumber(state.TechniqueCECost) or 0))
 		setButtonEnabled(domainButton, playerTurn and domainReady)
 		setButtonEnabled(blackFlashButton, bfReady)
 		setButtonEnabled(invokeButton, playerTurn and deathPaintingsAvailable > 0)
+		setButtonEnabled(vowButton, playerTurn and not state.ActiveVow)
 		setButtonEnabled(encoreButton, playerTurn)
 		setButtonEnabled(defendButton, playerTurn)
 		setButtonEnabled(fleeButton, playerTurn)
@@ -1202,6 +1205,65 @@ local function init(playerGui: Instance)
 	blackFlashButton.MouseButton1Click:Connect(function()
 		if state.Phase == "player_turn" then combatAction:FireServer("black_flash") end
 	end)
+
+	local vowPopup = nil
+	local COMBAT_VOW_PRESETS = {
+		{ Id = "vow_first_strike", Name = "First Strike", Desc = "Skip attack -> Enemy first hit nullified" },
+		{ Id = "vow_revelation", Name = "Revelation", Desc = "Lose CT surprise -> +35% damage" },
+		{ Id = "vow_blood", Name = "Blood Pact", Desc = "-20% HP -> +2 extra hits" },
+		{ Id = "vow_silence", Name = "Silence", Desc = "No CT this fight -> +50 CE now" },
+		{ Id = "vow_escape", Name = "Escape", Desc = "Can't pursue if win -> Dodge next attack" },
+	}
+	local function destroyVowPopup()
+		if vowPopup then vowPopup:Destroy() vowPopup = nil end
+	end
+	vowButton.MouseButton1Click:Connect(function()
+		if state.Phase ~= "player_turn" or state.ActiveVow then return end
+		if vowPopup then destroyVowPopup() return end
+		local popup = Instance.new("Frame")
+		popup.Name = "VowSelection"
+		popup.Size = UDim2.new(0, 260, 0, (#COMBAT_VOW_PRESETS * 38) + 10)
+		popup.Position = UDim2.new(0.5, -130, 0, -((#COMBAT_VOW_PRESETS * 38) + 14))
+		popup.BackgroundColor3 = Color3.fromRGB(30, 22, 14)
+		popup.BorderSizePixel = 0
+		popup.ZIndex = 750
+		popup.Parent = actionRow
+		corner(popup, 8)
+		local layout = Instance.new("UIListLayout")
+		layout.FillDirection = Enum.FillDirection.Vertical
+		layout.Padding = UDim.new(0, 4)
+		layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		layout.SortOrder = Enum.SortOrder.LayoutOrder
+		layout.Parent = popup
+		local pad = Instance.new("UIPadding")
+		pad.PaddingTop = UDim.new(0, 5)
+		pad.PaddingLeft = UDim.new(0, 5)
+		pad.PaddingRight = UDim.new(0, 5)
+		pad.Parent = popup
+		for i, vow in ipairs(COMBAT_VOW_PRESETS) do
+			local btn = Instance.new("TextButton")
+			btn.Name = vow.Id
+			btn.Size = UDim2.new(1, 0, 0, 34)
+			btn.BackgroundColor3 = Color3.fromRGB(55, 40, 20)
+			btn.BorderSizePixel = 0
+			btn.Text = vow.Name .. "  |  " .. vow.Desc
+			btn.TextColor3 = Color3.fromRGB(240, 220, 160)
+			btn.TextSize = 10
+			btn.Font = Enum.Font.GothamMedium
+			btn.TextTruncate = Enum.TextTruncate.AtEnd
+			btn.ZIndex = 751
+			btn.LayoutOrder = i
+			btn.AutoButtonColor = true
+			btn.Parent = popup
+			corner(btn, 6)
+			btn.MouseButton1Click:Connect(function()
+				destroyVowPopup()
+				combatAction:FireServer("invoke_vow", vow.Id)
+			end)
+		end
+		vowPopup = popup
+	end)
+
 	defendButton.MouseButton1Click:Connect(function()
 		if state.Phase == "player_turn" then combatAction:FireServer("defend") end
 	end)

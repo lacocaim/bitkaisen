@@ -198,6 +198,8 @@ local NEW_PASS_IDS = {
 	BindingVowSpecialist = 1863380690,
 	PremiumOrigins = 1902804677,
 	HighSociety = 1903626636,
+	KarmaPass = 1933136291,
+	CursedBloodline = 1932518576,
 }
 local STARTER_SORCERER_PACK_PRODUCT_ID = 3595826857
 local FOCUSED_TRAINING_PRODUCT_ID = 3595838153
@@ -242,6 +244,8 @@ local ownershipCaches = {
 	bindingVowSpecialist = {},
 	premiumOrigins = {},
 	highSociety = {},
+	karmaPass = {},
+	cursedBloodline = {},
 }
 
 local RATE_LIMITS = {
@@ -525,6 +529,14 @@ end
 
 function ownsHighSocietyPass(player)
 	return checkCachedGamePassOwnership(player, NEW_PASS_IDS.HighSociety, ownershipCaches.highSociety, "High Society")
+end
+
+function ownsKarmaPass(player)
+	return checkCachedGamePassOwnership(player, NEW_PASS_IDS.KarmaPass, ownershipCaches.karmaPass, "Karma Pass")
+end
+
+function ownsCursedBloodlinePass(player)
+	return checkCachedGamePassOwnership(player, NEW_PASS_IDS.CursedBloodline, ownershipCaches.cursedBloodline, "Cursed Bloodline")
 end
 
 function ownsExtraDojoStudentsPass(player)
@@ -812,7 +824,21 @@ local function tSys(player, key, params, fallback)
 end
 
 
+local function getKarmaLevelLabel(karma)
+	if karma >= 60 then return "Pure Karma"
+	elseif karma >= 20 then return "Balanced Karma"
+	elseif karma >= -20 then return "Neutral Karma"
+	elseif karma >= -60 then return "Dark Karma"
+	else return "Cursed Karma"
+	end
+end
+
 function fireLifeUpdate(player, stats, message, forceResetLog, isRejoin)
+	if stats then
+		local hasKarma = ownsKarmaPass(player)
+		stats.HasKarmaPass = hasKarma or nil
+		stats.KarmaLevel = hasKarma and getKarmaLevelLabel(tonumber(stats.HiddenKarma) or 0) or nil
+	end
 	updateLifeEvent:FireClient(player, stats, message, forceResetLog == true)
 	-- Multiplayer Fase 8: chat identity attributes, read client-side by
 	-- BitKaisenCoreUI's OnIncomingMessage to color/tag Public chat names.
@@ -1053,6 +1079,24 @@ function getGradeValue(grade)
 	return GRADE_VALUES[stripUnregisteredGradePrefix(grade)] or 0
 end
 
+function getGradeTonePrefix(stats)
+	local gradeText = tostring(stats and stats.Grade or "Non-Sorcerer")
+	local cleanGrade = stripUnregisteredGradePrefix(gradeText)
+	local val = GRADE_VALUES[cleanGrade] or 0
+	if val >= 8 then
+		return "They recognized you before you said a word. The air changed. "
+	elseif val >= 7 then
+		return "Your reputation precedes you. They straightened instinctively. "
+	elseif val >= 6 then
+		return "A glance at your presence told them enough. Respect, unspoken. "
+	elseif val >= 5 then
+		return "They acknowledged you with a measured nod. "
+	elseif val >= 3 then
+		return ""
+	end
+	return ""
+end
+
 function getOfficialGradeName(grade)
 	local officialGrade = stripUnregisteredGradePrefix(grade)
 	if getGradeValue(officialGrade) <= 0 then
@@ -1196,7 +1240,11 @@ end
 
 getKarmaRiskMod = function(stats)
 	local k = tonumber(stats and stats.HiddenKarma) or 0
-	return 1 - (k / 100) * 0.15 + (k < 0 and (-k / 100) * 0.05 or 0)
+	local base = 1 - (k / 100) * 0.15 + (k < 0 and (-k / 100) * 0.05 or 0)
+	if stats and stats.HasKarmaPass and (k >= 20 or k <= -20) then
+		base = base * 0.95
+	end
+	return base
 end
 
 function isCurseUser(stats)
@@ -9702,6 +9750,50 @@ function ageUp(player)
 		end
 	end
 
+	-- JJH Institutional Vote Event (Semi-Grade 1+, every ~3 in-game years)
+	local jjhEventText = ""
+	do
+		local gradeText = tostring(stats.Grade or "Non-Sorcerer")
+		local cleanGrade = gradeText:gsub("^Unregistered ", ""):gsub("^Curse User ", "")
+		local gradeVal = getGradeValue(cleanGrade)
+		if gradeVal >= 6 and stats.InJujutsuHigh then
+			local lastVoteAge = tonumber(stats.LastInstitutionalVoteAge) or 0
+			local currentAge = tonumber(stats.Age) or 0
+			if currentAge - lastVoteAge >= 3 then
+				stats.LastInstitutionalVoteAge = currentAge
+				local decisions = {
+					{ Question = "Send sorcerers to a high-threat zone in Nagoya?", YesEffect = "Threat", YesDelta = -15, NoEffect = "SocietyAttention", NoDelta = 10 },
+					{ Question = "Allocate resources to civilian protection in Shibuya?", YesEffect = "Fear", YesDelta = -10, NoEffect = "Threat", NoDelta = 8 },
+					{ Question = "Deploy a squad to investigate cursed residue near Sendai?", YesEffect = "CursedResidue", YesDelta = -20, NoEffect = "Threat", NoDelta = 5 },
+				}
+				local decision = decisions[math.random(1, #decisions)]
+				local npcApproval = math.random(1, 100) <= 55
+				stats.InstitutionalVotesParticipated = (tonumber(stats.InstitutionalVotesParticipated) or 0) + 1
+				stats.Reputation = (tonumber(stats.Reputation) or 0) + math.random(2, 5)
+				if npcApproval then
+					jjhEventText = "\n<font color='#78beff'><b>[ JJH DECISION ]</b></font> " .. decision.Question .. " The motion passed. Your vote carried weight."
+				else
+					jjhEventText = "\n<font color='#78beff'><b>[ JJH DECISION ]</b></font> " .. decision.Question .. " The motion was rejected. The institution chose differently."
+				end
+			end
+		end
+	end
+
+	-- NPC Mission Rewards (resolve pending dispatched missions)
+	local npcMissionText = ""
+	do
+		local pending = tonumber(stats.NPCMissionRewardsPending) or 0
+		if pending > 0 and math.random(1, 100) <= 40 then
+			stats.NPCMissionRewardsPending = math.max(0, pending - 1)
+			stats.NPCMissionsAssigned = math.max(0, (tonumber(stats.NPCMissionsAssigned) or 0) - 1)
+			local moneyGain = math.random(200, 600)
+			local repGain = math.random(2, 6)
+			stats.Money = (tonumber(stats.Money) or 0) + moneyGain
+			stats.Reputation = (tonumber(stats.Reputation) or 0) + repGain
+			npcMissionText = "\n<font color='#7ee787'><b>[ SUBORDINATE REPORT ]</b></font> A mission you assigned was completed. +$" .. tostring(moneyGain) .. ", Reputation +" .. tostring(repGain) .. "."
+		end
+	end
+
 	local currentAge = tonumber(stats.Age) or 0
 	local isSixMonthTick = currentAge >= 16
 
@@ -9825,7 +9917,7 @@ function ageUp(player)
 				)
 			end
 
-			local awakened, technique, awakenType = BitKaisenStats.TryAwaken(stats)
+			local awakened, technique, awakenType = BitKaisenStats.TryAwaken(stats, { ExcludeLowRarity = ownsCursedBloodlinePass(player) })
 
 			if awakened and technique then
 				if awakenType == "Innate" then
@@ -9966,7 +10058,7 @@ function ageUp(player)
 			beginMonthlyLifeEncounter(player, stats)
 		end
 
-		fireLifeUpdate(player, stats, logMessage)
+		fireLifeUpdate(player, stats, logMessage .. jjhEventText .. npcMissionText)
 		saveStats(player)
 		return
 	end
@@ -10074,7 +10166,7 @@ function ageUp(player)
 		)
 	end
 
-	local awakened, technique, awakenType = BitKaisenStats.TryAwaken(stats)
+	local awakened, technique, awakenType = BitKaisenStats.TryAwaken(stats, { ExcludeLowRarity = ownsCursedBloodlinePass(player) })
 
 	if awakened and technique then
 		if awakenType == "Innate" then
@@ -10212,7 +10304,7 @@ function ageUp(player)
 
 	maybeBeginHigherUpsInvitation(player, stats)
 
-	fireLifeUpdate(player, stats, logMessage)
+	fireLifeUpdate(player, stats, logMessage .. jjhEventText .. npcMissionText)
 	saveStats(player)
 end
 
@@ -12264,6 +12356,8 @@ BitKaisenServiceContext = {
 	OwnsBindingVowSpecialistPass = ownsBindingVowSpecialistPass,
 	OwnsPremiumOriginsPass = ownsPremiumOriginsPass,
 	OwnsHighSocietyPass = ownsHighSocietyPass,
+	OwnsCursedBloodlinePass = ownsCursedBloodlinePass,
+	GetGradeTonePrefix = getGradeTonePrefix,
 	ClearVIPCache = clearVIPCache,
 	SyncMonetizationEntitlements = syncMonetizationEntitlements,
 	GenerateDojoRecruitPool = generateDojoRecruitPool,

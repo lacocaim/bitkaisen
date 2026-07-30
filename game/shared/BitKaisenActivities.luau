@@ -235,6 +235,48 @@ BitKaisenActivities.Database = {
 	},
 
 	{
+		Id = "train_durability",
+		Title = "Train Durability",
+		Description = "Endure punishment until your body stops breaking. Pure resistance training.",
+		MinAge = 8,
+		MaxAge = 80,
+		RequiresTechnique = false,
+		RequiresSorcerer = false,
+		RequiresJujutsuHigh = false,
+		ButtonColor = Color3.fromRGB(120, 85, 50),
+		LockedText = "You are not at the right age to train durability.",
+		HideWhenLocked = true
+	},
+
+	{
+		Id = "train_speed",
+		Title = "Train Speed",
+		Description = "Push your reflexes and footwork beyond their current limits.",
+		MinAge = 8,
+		MaxAge = 80,
+		RequiresTechnique = false,
+		RequiresSorcerer = false,
+		RequiresJujutsuHigh = false,
+		ButtonColor = Color3.fromRGB(45, 130, 160),
+		LockedText = "You are not at the right age to train speed.",
+		HideWhenLocked = true
+	},
+
+	{
+		Id = "train_ce_efficiency",
+		Title = "Train CE Efficiency",
+		Description = "Refine your cursed energy output. Less waste, more precision.",
+		MinAge = 10,
+		MaxAge = 70,
+		RequiresTechnique = false,
+		RequiresSorcerer = true,
+		RequiresJujutsuHigh = false,
+		ButtonColor = Color3.fromRGB(65, 40, 120),
+		LockedText = "Only sorcerers with active cursed energy can refine their output.",
+		HideWhenLocked = true
+	},
+
+	{
 		Id = "surgery",
 		Title = "Cosmetic Surgery",
 		Description = "Pay for a face lift, nose reshaping, or other cosmetic work to improve your Looks.",
@@ -634,6 +676,51 @@ BitKaisenActivities.Database = {
 		RequiresAssistant = true,
 		ButtonColor = Color3.fromRGB(85, 140, 105),
 		LockedText = "You need an assigned assistant first.",
+		HideWhenLocked = true
+	},
+
+	{
+		Id = "request_cursed_tool",
+		Title = "Request Cursed Tool",
+		Description = "As a Grade 3+ sorcerer, petition the institution for a basic cursed tool allocation.",
+		MinAge = 16,
+		MaxAge = 85,
+		RequiresTechnique = false,
+		RequiresSorcerer = true,
+		RequiresJujutsuHigh = true,
+		RequiresGrade = "Grade 3",
+		ButtonColor = Color3.fromRGB(140, 95, 55),
+		LockedText = "You must be Grade 3 or higher to request cursed tools from the institution.",
+		HideWhenLocked = true
+	},
+
+	{
+		Id = "recommend_promotion",
+		Title = "Recommend Promotion",
+		Description = "Use your standing to recommend an NPC sorcerer for grade advancement.",
+		MinAge = 18,
+		MaxAge = 85,
+		RequiresTechnique = false,
+		RequiresSorcerer = true,
+		RequiresJujutsuHigh = true,
+		RequiresGrade = "Grade 2",
+		ButtonColor = Color3.fromRGB(60, 100, 150),
+		LockedText = "You must be Grade 2 or higher to recommend promotions.",
+		HideWhenLocked = true
+	},
+
+	{
+		Id = "assign_npc_mission",
+		Title = "Assign NPC Mission",
+		Description = "Dispatch a lower-ranked sorcerer on a mission under your authority. Rewards arrive over time.",
+		MinAge = 18,
+		MaxAge = 85,
+		RequiresTechnique = false,
+		RequiresSorcerer = true,
+		RequiresJujutsuHigh = true,
+		RequiresGrade = "Grade 1",
+		ButtonColor = Color3.fromRGB(100, 70, 140),
+		LockedText = "You must be Grade 1 or higher to assign missions to subordinates.",
 		HideWhenLocked = true
 	},
 
@@ -1855,6 +1942,21 @@ function BitKaisenActivities.CanDoActivity(stats, activity)
 		return false, activity.LockedText ~= "" and activity.LockedText or "You are not enrolled in Jujutsu High."
 	end
 
+	if activity.RequiresGrade then
+		local gradeOrder = {
+			["Non-Sorcerer"] = 0, ["Grade 4"] = 1, ["Semi-Grade 3"] = 2,
+			["Grade 3"] = 3, ["Semi-Grade 2"] = 4, ["Grade 2"] = 5,
+			["Semi-Grade 1"] = 6, ["Grade 1"] = 7, ["Special Grade"] = 8,
+		}
+		local rawGrade = tostring(stats.Grade or "Non-Sorcerer")
+		local cleanGrade = rawGrade:gsub("^Unregistered ", ""):gsub("^Curse User ", "")
+		local playerRank = gradeOrder[cleanGrade] or 0
+		local requiredRank = gradeOrder[activity.RequiresGrade] or 0
+		if playerRank < requiredRank then
+			return false, activity.LockedText ~= "" and activity.LockedText or "Your grade is too low."
+		end
+	end
+
 	if activity.RequiresSchool then
 		local stage = tostring(stats.SchoolStage or "None")
 		if stage == "None" or stage == "Graduated" then
@@ -2012,6 +2114,9 @@ local CATEGORY_MAP = {
 
 	train_ce = "Training",
 	physical_conditioning = "Training",
+	train_durability = "Training",
+	train_speed = "Training",
+	train_ce_efficiency = "Training",
 	study_theory = "Training",
 	practice_technique = "Training",
 	bulk_train_ce = "Training",
@@ -2029,6 +2134,9 @@ local CATEGORY_MAP = {
 	jujutsu_affiliation_duty = "Jujutsu High",
 	request_assistant = "Jujutsu High",
 	train_with_assistant = "Jujutsu High",
+	request_cursed_tool = "Jujutsu High",
+	recommend_promotion = "Jujutsu High",
+	assign_npc_mission = "Jujutsu High",
 	jujutsu_school_event = "Jujutsu High",
 	goodwill_event = "Jujutsu High",
 	underground_tournament = "Jujutsu High",

@@ -30,6 +30,89 @@ local initialized = false
 local TECHNIQUE_MAX_USES = 3
 local TECHNIQUE_CE_COST = 18
 local BF_CE_COST = 35
+local BLITZ_SPEED_THRESHOLD = 25
+
+local COMBAT_BINDING_VOWS = {
+	{
+		Id = "vow_first_strike",
+		Name = "Vow of the First Strike",
+		OfferDesc = "Cannot attack first this turn",
+		ReceiveDesc = "Enemy first hit does no damage",
+		Validate = function(session)
+			return true
+		end,
+		ApplyOffer = function(session)
+			session.VowSkipAttackThisTurn = true
+		end,
+		ReceiveTrigger = "enemy_first_hit",
+	},
+	{
+		Id = "vow_revelation",
+		Name = "Revelation of Technique",
+		OfferDesc = "Enemy knows your CT (lose surprise bonus)",
+		ReceiveDesc = "+35% damage this combat",
+		Validate = function(session)
+			return true
+		end,
+		ApplyOffer = function(session)
+			session.VowTechniqueRevealed = true
+		end,
+		ReceiveTrigger = "immediate",
+		ApplyReceive = function(session)
+			session.VowDamageBonus = 0.35
+		end,
+	},
+	{
+		Id = "vow_blood",
+		Name = "Blood Pact",
+		OfferDesc = "-20% HP",
+		ReceiveDesc = "+2 hits on next attack",
+		Validate = function(session)
+			local cost = math.floor(session.PlayerHP * 0.2)
+			return cost >= 5 and (session.PlayerHP - cost) > 0
+		end,
+		ApplyOffer = function(session)
+			local cost = math.floor(session.PlayerHP * 0.2)
+			session.PlayerHP = math.max(1, session.PlayerHP - cost)
+		end,
+		ReceiveTrigger = "immediate",
+		ApplyReceive = function(session)
+			session.VowExtraHits = 2
+		end,
+	},
+	{
+		Id = "vow_silence",
+		Name = "Vow of Silence",
+		OfferDesc = "Cannot use CT this combat",
+		ReceiveDesc = "+50 CE recovered immediately",
+		Validate = function(session)
+			return true
+		end,
+		ApplyOffer = function(session)
+			session.TechniqueMaxUses = 0
+		end,
+		ReceiveTrigger = "immediate",
+		ApplyReceive = function(session)
+			session.PlayerCE = math.min(session.PlayerMaxCE, session.PlayerCE + 50)
+		end,
+	},
+	{
+		Id = "vow_escape",
+		Name = "Promise of Escape",
+		OfferDesc = "If you win, cannot pursue the enemy",
+		ReceiveDesc = "Guaranteed dodge on next attack",
+		Validate = function(session)
+			return true
+		end,
+		ApplyOffer = function(session)
+			session.VowNoPursuit = true
+		end,
+		ReceiveTrigger = "immediate",
+		ApplyReceive = function(session)
+			session.VowGuaranteedDodge = true
+		end,
+	},
+}
 
 local TEST_PURCHASE_PLACE_IDS = {
 	[104206065947170] = true,
@@ -126,6 +209,7 @@ local function buildEnemy(stats, config)
 		Grade = grade,
 		Kind = tostring(config.Kind or "Enemy"),
 		Power = power,
+		Speed = tonumber(config.Speed) or math.clamp(math.floor(power * 0.4) + math.random(-5, 10), 10, 90),
 		MaxHP = maxHp,
 		HP = maxHp,
 		ComboMin = math.clamp(tonumber(config.ComboMin) or 1, 1, 3),
@@ -371,6 +455,23 @@ function resolveEnemyCombo(player, session, accuracy, perfectHits)
 	if dodgeRatio >= 1 or perfect >= hits then
 		damage = 0
 	end
+	if session.VowGuaranteedDodge then
+		damage = 0
+		session.VowGuaranteedDodge = false
+		addLog(session, "Binding Vow: Guaranteed dodge consumed. Enemy attack nullified.")
+	end
+	if session.ActiveVow == "vow_first_strike" and not session.VowFirstHitUsed then
+		damage = 0
+		session.VowFirstHitUsed = true
+		addLog(session, "Binding Vow: First strike absorbed. The enemy's opening hit did nothing.")
+	end
+	local perceptionBlitzDamage = 0
+	if session.PerceptionBlitzPending and damage > 0 then
+		perceptionBlitzDamage = math.floor(damage * 0.75)
+		session.PerceptionBlitzPending = false
+		addLog(session, "You read their movement before they struck. Perception Blitz. Counter: " .. tostring(perceptionBlitzDamage) .. " damage.")
+		session.Enemy.HP = math.clamp(session.Enemy.HP - perceptionBlitzDamage, 0, session.Enemy.MaxHP)
+	end
 	session.PlayerHP = math.clamp(session.PlayerHP - damage, 0, session.PlayerMaxHP)
 	session.PendingDefense = nil
 	session.PendingDefensePublic = nil
@@ -535,8 +636,18 @@ function resolveAttack(player, session, accuracy, sweet)
 		session.TechniqueUses = (tonumber(session.TechniqueUses) or 0) + 1
 		session.PlayerCE = math.max(0, session.PlayerCE - (tonumber(session.TechniqueCECost) or TECHNIQUE_CE_COST))
 	end
-	session.Enemy.HP = math.clamp(session.Enemy.HP - damage, 0, session.Enemy.MaxHP)
-	addLog(session, _cl(session, "log_enemy_takes", {enemy = session.Enemy.Name, dmg = damage}, session.Enemy.Name .. " takes " .. tostring(damage) .. " damage."))
+	if session.VowDamageBonus and session.VowDamageBonus > 0 then
+		damage = math.floor(damage * (1 + session.VowDamageBonus))
+	end
+	local totalDamage = damage
+	if session.VowExtraHits and session.VowExtraHits > 0 then
+		local extraHitDmg = math.floor(damage * 0.5)
+		totalDamage = damage + (extraHitDmg * session.VowExtraHits)
+		addLog(session, "Binding Vow: +" .. tostring(session.VowExtraHits) .. " extra hits for +" .. tostring(extraHitDmg * session.VowExtraHits) .. " damage.")
+		session.VowExtraHits = 0
+	end
+	session.Enemy.HP = math.clamp(session.Enemy.HP - totalDamage, 0, session.Enemy.MaxHP)
+	addLog(session, _cl(session, "log_enemy_takes", {enemy = session.Enemy.Name, dmg = totalDamage}, session.Enemy.Name .. " takes " .. tostring(totalDamage) .. " damage."))
 	session.PendingAttack = nil
 	session.PendingAttackPublic = nil
 	if session.Enemy.HP <= 0 then
@@ -635,6 +746,22 @@ function BK_CombatService.StartCombat(player, source, enemyConfig)
 	}
 	sessions[player.UserId] = session
 	addLog(session, _cl(session, "log_engaged", {enemy = enemy.Name}, enemy.Name .. " engaged you in combat."))
+
+	local playerSpeed = tonumber(stats.Speed) or 0
+	local enemySpeed = session.Enemy.Speed or 0
+	local speedDiff = playerSpeed - enemySpeed
+	if speedDiff >= BLITZ_SPEED_THRESHOLD then
+		local playerPower = BitKaisenCombat.GetCombatPower(stats)
+		local blitzBaseDamage = math.max(7, math.floor(math.min(playerPower, 260) * 0.13))
+		local blitzDamage = math.max(3, math.floor(blitzBaseDamage * 0.5))
+		session.Enemy.HP = math.clamp(session.Enemy.HP - blitzDamage, 0, session.Enemy.MaxHP)
+		session.BlitzUsed = true
+		addLog(session, "Your speed advantage opened a gap before they could react. Blitz. " .. tostring(blitzDamage) .. " damage.")
+	elseif speedDiff <= -BLITZ_SPEED_THRESHOLD then
+		session.PerceptionBlitzPending = true
+		session.PerceptionBlitzUsed = true
+	end
+
 	fireMajorPopup(player, _ct(session, "log_combat_started", "COMBAT STARTED"), _cl(session, "log_combat_forced", {enemy = enemy.Name}, enemy.Name .. " has forced a fight."), enemy.Grade, _ct(session, "log_combat_hint", "Attack, defend, or flee."))
 	sendState(player, session)
 	return true
@@ -931,6 +1058,12 @@ local function handleAction(player, action, payload)
 		return
 	end
 	if not session or session.Phase == "finished" then return end
+	if session.VowSkipAttackThisTurn and (action == "attack" or action == "technique" or action == "black_flash") and session.Phase == "player_turn" then
+		addLog(session, "Binding Vow: You cannot attack this turn. The vow holds.")
+		session.VowSkipAttackThisTurn = false
+		beginEnemyCombo(player, session, false)
+		return
+	end
 	if action == "attack" and session.Phase == "player_turn" then
 		local stats = getStats(player)
 		if stats and stats.Settings and stats.Settings.SkipCombatSkillChecks == true then
@@ -1003,6 +1136,39 @@ local function handleAction(player, action, payload)
 		else
 			beginEnemyCombo(player, session, true)
 		end
+	elseif action == "invoke_vow" and session.Phase == "player_turn" then
+		if session.ActiveVow then
+			addLog(session, _ct(session, "log_vow_already", "You already have an active binding vow this combat."))
+			sendState(player, session)
+			return
+		end
+		local vowId = tostring(payload or "")
+		local vowDef = nil
+		for _, v in ipairs(COMBAT_BINDING_VOWS) do
+			if v.Id == vowId then vowDef = v break end
+		end
+		if not vowDef then
+			addLog(session, _ct(session, "log_vow_invalid", "Invalid binding vow."))
+			sendState(player, session)
+			return
+		end
+		if not vowDef.Validate(session) then
+			addLog(session, _ct(session, "log_vow_cannot", "You cannot afford this vow's cost right now."))
+			sendState(player, session)
+			return
+		end
+		session.ActiveVow = vowDef.Id
+		vowDef.ApplyOffer(session)
+		if vowDef.ReceiveTrigger == "immediate" and vowDef.ApplyReceive then
+			vowDef.ApplyReceive(session)
+		end
+		addLog(session, "Binding Vow activated: " .. vowDef.Name .. ". " .. vowDef.OfferDesc .. " -> " .. vowDef.ReceiveDesc)
+		local stats = getStats(player)
+		if stats then
+			stats.Health = math.clamp(math.floor(session.PlayerHP + 0.5), 0, 100)
+			stats.CursedEnergy = math.max(0, math.floor(session.PlayerCE + 0.5))
+		end
+		sendState(player, session)
 	elseif action == "flee" and session.Phase == "player_turn" then
 		local stats = getStats(player)
 		local chance = math.clamp(35 + math.floor((tonumber(stats and stats.Smarts) or 0) / 3) - math.floor(session.Enemy.Power / 16), 12, 82)

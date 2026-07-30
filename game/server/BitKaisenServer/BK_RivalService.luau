@@ -116,7 +116,11 @@ function BK_RivalService.OnAgeUp(player, stats)
 	if rival then
 		setPending(player, rival, "Yearly Reputation Pressure")
 		stats.RivalEncounters = math.max(0, tonumber(stats.RivalEncounters) or 0) + 1
-		text = "<font color='#ff8c69'><b>[ RIVAL ]</b></font> <b>" .. tostring(rival.Name) .. "</b> stepped into your path. They are " .. tostring(rival.Reason or "watching your rise") .. ". Open <b>Rivals</b> to respond."
+		local tonePrefix = ""
+		if context.GetGradeTonePrefix then
+			tonePrefix = context.GetGradeTonePrefix(stats)
+		end
+		text = "<font color='#ff8c69'><b>[ RIVAL ]</b></font> " .. tonePrefix .. "<b>" .. tostring(rival.Name) .. "</b> stepped into your path. They are " .. tostring(rival.Reason or "watching your rise") .. ". Open <b>Rivals</b> to respond."
 		fireMajorPopup(player, "RIVAL ENCOUNTER", tostring(rival.Name) .. " has challenged your era.", tostring(rival.Grade or "Unknown Grade"), tostring(rival.Reason or "A rivalry begins."))
 	else
 		local activeCount = #BitKaisenRivals.GetActiveRivals(stats)

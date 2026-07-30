@@ -192,6 +192,13 @@ local function ownsDoubleTrainingPass(player)
 	return false
 end
 
+local function ownsCursedBloodlinePass(player)
+	if context.OwnsCursedBloodlinePass then
+		return context.OwnsCursedBloodlinePass(player)
+	end
+	return false
+end
+
 local function clearVIPCache(player)
 	if context.ClearVIPCache then
 		return context.ClearVIPCache(player)
@@ -623,7 +630,7 @@ local function isCursedSpiritLife(stats)
 		or string.find(societyStatus, "cursed spirit") ~= nil
 end
 
-local function rollOpenTechnique(stats)
+local function rollOpenTechnique(stats, options)
 	local originName = "Minor Sorcerer Family"
 
 	if stats then
@@ -631,15 +638,17 @@ local function rollOpenTechnique(stats)
 	end
 
 	if BitKaisenStats.RollTechnique then
-		return BitKaisenStats.RollTechnique(originName, {
+		local rollOptions = {
 			IncludeClanLocked = false,
-		})
+			ExcludeLowRarity = options and options.ExcludeLowRarity or false,
+		}
+		return BitKaisenStats.RollTechnique(originName, rollOptions)
 	end
 
 	return "Cursed Energy Discharge"
 end
 
-local function rollTechniqueForCurrentOrigin(stats)
+local function rollTechniqueForCurrentOrigin(stats, options)
 	local originData = getCurrentOriginData(stats)
 
 	if originData then
@@ -650,7 +659,7 @@ local function rollTechniqueForCurrentOrigin(stats)
 		end
 	end
 
-	return rollOpenTechnique(stats), "Normal"
+	return rollOpenTechnique(stats, options), "Normal"
 end
 
 local function applyTechniqueToStats(stats, techniqueName, techniqueType, forceUsable)
@@ -1098,10 +1107,11 @@ local function grantCursedTechniqueReroll(player, stats, silent)
 	ensureExtraStats(stats)
 
 	local oldTechnique = getTechniqueName(stats)
-	local newTechnique, techniqueType = rollTechniqueForCurrentOrigin(stats)
+	local rollOptions = { ExcludeLowRarity = ownsCursedBloodlinePass(player) }
+	local newTechnique, techniqueType = rollTechniqueForCurrentOrigin(stats, rollOptions)
 
 	if not newTechnique or tostring(newTechnique) == "None" then
-		newTechnique = rollOpenTechnique(stats)
+		newTechnique = rollOpenTechnique(stats, rollOptions)
 		techniqueType = "Normal"
 	end
 

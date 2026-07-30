@@ -205,6 +205,8 @@ local function MobileProfileHeader()
 	local moneyVal  = derive(function() local s = stats() return "$" .. helpers.formatMoneyAmount(s and s.Money or 0) end)
 	local repVal    = derive(function() local s = stats() return tostring(s and s.Reputation or 0) end)
 	local repColor  = derive(function() local s = stats() return (tonumber(s and s.Reputation) or 0) < 0 and theme.Red or theme.Gold end)
+	local karmaVal  = derive(function() local s = stats() return tostring(s and s.KarmaLevel or "") end)
+	local karmaVisible = derive(function() local s = stats() return s and s.KarmaLevel ~= nil end)
 	local schoolVal = derive(function()
 		local s = stats()
 		if not s then return _ui("school_none", "None") end
@@ -553,6 +555,11 @@ local function MobileProfileHeader()
 					DInfoRow(_ui("dossier_ce",        "CE"),        ceVal,     theme.Purple),
 					DInfoRow(_ui("dossier_money",     "Money"),     moneyVal,  theme.Green),
 					DInfoRow(_ui("dossier_rep",       "Rep"),       repVal,    repColor),
+					(function()
+						local row = DInfoRow(_ui("dossier_karma", "Karma"), karmaVal, theme.Gold)
+						row.Visible = karmaVisible
+						return row
+					end)(),
 					DInfoRow(_ui("dossier_school",    "School"),    schoolVal, theme.Blue),
 					DInfoRow(_ui("dossier_path",      "Path"),      pathVal,   pathColor),
 					DInfoRow(_ui("dossier_alignment", "Alignment"), alignVal,  alignColor),

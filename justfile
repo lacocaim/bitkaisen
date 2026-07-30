@@ -1,5 +1,3 @@
-set shell := ["powershell", "-c"]
-
 setup name="game":
 	rokit install --no-trust-check
 	pesde install
@@ -26,7 +24,7 @@ net:
 check name="game":
 	selene game/ global/
 	rojo build {{name}}.project.json -o .rojo-check.rbxm
-	Remove-Item -Force .rojo-check.rbxm
+	rm -f .rojo-check.rbxm
 
 # ---------- UTIL ----------
 alias alias path:

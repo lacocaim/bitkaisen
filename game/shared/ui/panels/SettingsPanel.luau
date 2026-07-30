@@ -67,6 +67,8 @@ local AFK_PASS_GAMEPASS_ID = 1879156343
 local BINDING_VOW_SPECIALIST_GAMEPASS_ID = 1863380690
 local PREMIUM_ORIGINS_GAMEPASS_ID = 1902804677
 local HIGH_SOCIETY_GAMEPASS_ID = 1903626636
+local KARMA_PASS_GAMEPASS_ID = 1933136291
+local CURSED_BLOODLINE_GAMEPASS_ID = 1932518576
 
 local STARTER_SORCERER_PACK_PRODUCT_ID = 3595826857
 local FOCUSED_TRAINING_PRODUCT_ID = 3595838153
@@ -244,6 +246,8 @@ local SHOP_CATEGORIES = {
 			{ Id = "go_rogue", Name = "Go Rogue", Subtitle = "Opens the Go Rogue option in Jobs. Exclusive rogue missions and dissociation from JJH.", Kind = "GamePass", RobloxId = GO_ROGUE_GAMEPASS_ID, PriceText = "R$ 99", SalePriceText = "R$ 79", Accent = THEME.Red },
 			{ Id = "premium_origins", Name = "Premium Origins", Subtitle = "New lives roll from the premium origin pool and heirs inherit a family heirloom cursed tool.", Kind = "GamePass", RobloxId = PREMIUM_ORIGINS_GAMEPASS_ID, PriceText = "R$ 349", SalePriceText = "R$ 279", Accent = THEME.Gold },
 			{ Id = "high_society", Name = "High Society", Subtitle = "4 relationship actions per age, 1.25x relationship gains, better odds of meeting notable sorcerers, and an exclusive profile badge.", Kind = "GamePass", RobloxId = HIGH_SOCIETY_GAMEPASS_ID, PriceText = "R$ 249", SalePriceText = "R$ 199", Accent = THEME.Purple },
+			{ Id = "karma_pass", Name = "Karma Pass", Subtitle = "Reveals your hidden karma level in the profile card and grants a passive 5% bonus to favorable events.", Kind = "GamePass", RobloxId = KARMA_PASS_GAMEPASS_ID, PriceText = "R$ 199", SalePriceText = "R$ 149", Accent = THEME.Gold },
+			{ Id = "cursed_bloodline", Name = "Cursed Bloodline", Subtitle = "Guarantees Rare or higher cursed techniques on every new life and reroll. Common and Uncommon are permanently filtered out.", Kind = "GamePass", RobloxId = CURSED_BLOODLINE_GAMEPASS_ID, PriceText = "R$ 549", SalePriceText = "R$ 449", Accent = THEME.Red },
 		},
 	},
 }
@@ -2041,7 +2045,7 @@ MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(purchasePlaye
 	if purchasePlayer ~= player then return end
 	if not wasPurchased then return end
 	playSFX("Purchase")
-	if purchasedPassId == VIP_SORCERER_PASS_ID or purchasedPassId == EXTRA_SAVE_SLOTS_GAMEPASS_ID or purchasedPassId == LUCKY_BIRTH_GAMEPASS_ID or purchasedPassId == EXTRA_DOJO_STUDENTS_GAMEPASS_ID or purchasedPassId == DOUBLE_MONEY_GAMEPASS_ID or purchasedPassId == DOUBLE_TRAINING_GAMEPASS_ID or purchasedPassId == GOD_MODE_GAMEPASS_ID then
+	if purchasedPassId == VIP_SORCERER_PASS_ID or purchasedPassId == EXTRA_SAVE_SLOTS_GAMEPASS_ID or purchasedPassId == LUCKY_BIRTH_GAMEPASS_ID or purchasedPassId == EXTRA_DOJO_STUDENTS_GAMEPASS_ID or purchasedPassId == DOUBLE_MONEY_GAMEPASS_ID or purchasedPassId == DOUBLE_TRAINING_GAMEPASS_ID or purchasedPassId == GOD_MODE_GAMEPASS_ID or purchasedPassId == KARMA_PASS_GAMEPASS_ID or purchasedPassId == CURSED_BLOODLINE_GAMEPASS_ID then
 		task.delay(0.5, function()
 			if isOpen and currentTab == "Saves" then
 				rebuildPage(buildSavesPage, "Saves")

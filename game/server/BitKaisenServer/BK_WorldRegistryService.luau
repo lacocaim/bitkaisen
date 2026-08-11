@@ -207,10 +207,9 @@ function BK_WorldRegistryService.MarkEverPopulated(worldId)
 	end
 	pcall(function()
 		registryStore:UpdateAsync(registryKey(worldId), function(old)
-			if typeof(old) ~= "table" then
-				return old
-			end
-			local new = table.clone(old)
+			-- If old is nil (DataStore throttle/hiccup right after world creation)
+			-- we still write the flags rather than silently cancelling the update.
+			local new = typeof(old) == "table" and table.clone(old) or {}
 			new.EverPopulated = true
 			new.LastPopulatedAt = os.time()
 			return new

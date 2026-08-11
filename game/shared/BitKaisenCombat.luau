@@ -153,6 +153,10 @@ function BitKaisenCombat.GetCombatPower(stats, options)
 		power += tonumber(equippedTool.Effects.CombatPower) or 0
 		power += tonumber(equippedTool.Effects.DefensePower) or 0
 	end
+	local toolEntry = typeof(stats.CursedTools) == "table" and stats.EquippedCursedToolId and stats.CursedTools[stats.EquippedCursedToolId]
+	if toolEntry and toolEntry.Imbued then
+		power += tonumber(toolEntry.ImbuedPower) or 0
+	end
 
 	local techniqueLower = string.lower(tostring(technique or ""))
 	if string.find(techniqueLower, "cursed spirit manipulation", 1, true) then
@@ -160,6 +164,12 @@ function BitKaisenCombat.GetCombatPower(stats, options)
 	elseif string.find(techniqueLower, "ten shadows", 1, true) then
 		power += math.min(46, (tonumber(stats.TamedShikigami) or 0) * 5)
 	end
+	local spiritCount = tonumber(stats.VengefulSpirits) or 0
+	if spiritCount > 0 then
+		local ce = math.min(100, tonumber(stats.CursedEnergy) or 0)
+		power += math.min(40, spiritCount * (5 + math.floor(ce / 20)))
+	end
+	power += math.min(25, math.floor((tonumber(stats.CEOutput) or 0) * 0.35))
 
 	local techniqueModifiers = BitKaisenTechniqueEffects.GetCombatModifiers(stats)
 	power += techniqueModifiers.PowerBonus or 0

@@ -203,6 +203,9 @@ function BitKaisenCursedTools.GetOwnedPayload(stats)
 				AcquiredFrom = item.AcquiredFrom or "Unknown",
 				AcquiredYear = item.AcquiredYear,
 				SellValue = BitKaisenCursedTools.GetSellValue(def),
+				Affinity = math.clamp(tonumber(item.Affinity) or 0, 0, 100),
+				Imbued = item.Imbued == true,
+				ImbuedPower = tonumber(item.ImbuedPower) or 0,
 			})
 		end
 	end
@@ -267,6 +270,40 @@ function BitKaisenCursedTools.AddTool(stats, toolId, source, year)
 		AcquiredYear = year,
 	}
 	return def, true
+end
+
+function BitKaisenCursedTools.GrowAffinity(stats, toolId, amount)
+	if not toolId then return end
+	local owned = BitKaisenCursedTools.EnsureInventory(stats)
+	local entry = owned[toolId]
+	if not entry then return end
+	entry.Affinity = math.clamp((tonumber(entry.Affinity) or 0) + (tonumber(amount) or 1), 0, 100)
+end
+
+function BitKaisenCursedTools.ImbueTool(stats, toolId)
+	local def = BitKaisenCursedTools.GetTool(toolId)
+	if not def then
+		return false, "That cursed tool does not exist."
+	end
+	local owned = BitKaisenCursedTools.EnsureInventory(stats)
+	local entry = owned[toolId]
+	if not entry then
+		return false, "You do not own that cursed tool."
+	end
+	if entry.Imbued then
+		return false, tostring(def.Name) .. " is already imbued."
+	end
+	if (tonumber(entry.Affinity) or 0) < 75 then
+		return false, "Affinity with " .. tostring(def.Name) .. " is too low. You need at least 75%."
+	end
+	if (tonumber(stats.TechniqueMastery) or 0) < 60 then
+		return false, "Your technique mastery is too low. You need at least 60 to imbue a cursed tool."
+	end
+	local ce = tonumber(stats.CursedEnergy) or 0
+	local imbuedPower = math.max(2, math.floor(ce * 0.04))
+	entry.Imbued = true
+	entry.ImbuedPower = imbuedPower
+	return true, "<font color='#f0b955'><b>[ CURSED TOOL ]</b></font> <b>" .. tostring(def.Name) .. "</b> has been imbued with your cursed energy. +" .. tostring(imbuedPower) .. " combat power."
 end
 
 function BitKaisenCursedTools.GetDuplicateReward(tool)

@@ -1208,6 +1208,9 @@ local function openPanel()
 
 	applyLayout()
 	currentPayload = fetchPayload()
+	if not isOpen then
+		return
+	end
 	rebuild()
 
 	overlay.Visible = true

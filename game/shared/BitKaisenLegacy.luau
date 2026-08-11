@@ -265,7 +265,7 @@ end
 -- that legitimately-earned CE could still dwarf what a starting character of
 -- the same grade should have.
 local CHILD_CE_CAP_BY_GRADE = {
-	["Non-Sorcerer"] = 100,
+	["Non-Sorcerer"] = 450,
 	["Grade 4"] = 450,
 	["Semi-Grade 3"] = 450,
 	["Grade 3"] = 650,

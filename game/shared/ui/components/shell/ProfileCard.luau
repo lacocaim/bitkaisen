@@ -169,7 +169,8 @@ local function ProfileCard()
 		end
 		return technique
 	end)
-	local traitVal  = derive(function() local s = stats() return tostring(s and s.TraitSummary or "None") end)
+	local traitVal    = derive(function() local s = stats() return tostring(s and s.TraitSummary or "None") end)
+	local ceTraitVal  = derive(function() local s = stats() local t = s and tostring(s.CETrait or "") return (t and t ~= "") and ("Cursed Energy — " .. t) or "None" end)
 	local assistantVal = derive(function()
 		local s = stats()
 		if not s then return "None" end
@@ -180,6 +181,10 @@ local function ProfileCard()
 	end)
 
 	local ceVal     = derive(function() local s = stats() return tostring(s and s.CursedEnergy or 0) end)
+	local cePotVal  = derive(function() local s = stats() return tostring(s and s.CEPotential or 0) end)
+	local ceOutVal  = derive(function() local s = stats() return tostring(s and s.CEOutput or 0) end)
+	local ceReinVal = derive(function() local s = stats() return tostring(s and s.CEReinforcement or 0) end)
+	local ceCtrlVal = derive(function() local s = stats() return tostring(s and s.CEControl or 0) end)
 	local moneyVal  = derive(function() local s = stats() return "$" .. helpers.formatMoneyAmount(s and s.Money or 0) end)
 	local repVal    = derive(function() local s = stats() return tostring(s and s.Reputation or 0) end)
 	local repColor  = derive(function() local s = stats() return (tonumber(s and s.Reputation) or 0) < 0 and theme.Red or theme.Gold end)
@@ -481,6 +486,7 @@ local function ProfileCard()
 							uiState.navigate("technique_mastery")
 						end),
 						DInfoRow(_pc("dossier_traits",    "Traits"),    traitVal,     theme.Gold, "Traits"),
+						DInfoRow(_pc("dossier_cetrait",   "CE Trait"),  ceTraitVal,   theme.Purple),
 						DInfoRow(_pc("dossier_assistant", "Assistant"), assistantVal, theme.SubText),
 					},
 
@@ -492,6 +498,10 @@ local function ProfileCard()
 						LayoutOrder = 2,
 						create("UIListLayout") { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 5) },
 						DInfoRow(_pc("dossier_ce",        "CE"),          ceVal,        theme.Purple),
+						DInfoRow(_pc("dossier_cepot",     "CE Potential"),cePotVal,     theme.Purple),
+						DInfoRow(_pc("dossier_ceout",     "CE Output"),   ceOutVal,     theme.Purple),
+						DInfoRow(_pc("dossier_cerein",    "CE Reinf."),   ceReinVal,    theme.Purple),
+						DInfoRow(_pc("dossier_cectrl",    "CE Control"),  ceCtrlVal,    theme.Purple),
 						DInfoRow(_pc("dossier_money",     "Money"),       moneyVal,     theme.Green),
 						DInfoRow(_pc("dossier_rep",       "Rep"),         repVal,       repColor),
 						DInfoRow(_pc("dossier_school",    "School"),      schoolVal,    theme.Blue),

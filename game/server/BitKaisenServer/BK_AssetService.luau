@@ -979,6 +979,11 @@ local function processAssetAction(player, actionId, assetId)
 		fireLifeUpdate(player, stats, "<font color='#f0b955'><b>[ CURSED TOOL ]</b></font> Cursed tool unequipped.")
 		saveStats(player, "unequip cursed tool")
 		return
+	elseif actionId == "ImbueCursedTool" then
+		local ok, msg = BitKaisenCursedTools.ImbueTool(stats, assetId)
+		fireLifeUpdate(player, stats, msg)
+		if ok then saveStats(player, "imbue cursed tool") end
+		return
 	end
 
 	if isCurseLife(stats) and isDojoAction(actionId, assetId) then

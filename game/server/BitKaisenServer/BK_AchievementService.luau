@@ -57,6 +57,19 @@ local function getGradeValue(grade)
 	return 0
 end
 
+local function hasAccountReward(player, rewardKey)
+	if context.HasAccountReward then
+		return context.HasAccountReward(player, rewardKey)
+	end
+	return false
+end
+
+local function markAccountReward(player, rewardKey)
+	if context.MarkAccountReward then
+		context.MarkAccountReward(player, rewardKey)
+	end
+end
+
 local ACHIEVEMENT_DEFINITIONS = {
 	{
 		Id = "awakened_technique",
@@ -319,8 +332,13 @@ local ACHIEVEMENT_DEFINITIONS = {
 		IsUnlocked = function(stats)
 			return stats.SecretAchievements and stats.SecretAchievements.Myth == true
 		end,
-		Grant = function(stats)
-			return "The Ryomen myth reward is granted automatically at birth."
+		Grant = function(stats, player)
+			if not hasAccountReward(player, "SecretReward_RyomenMythCash") then
+				stats.Money = (tonumber(stats.Money) or 0) + 10000
+				markAccountReward(player, "SecretReward_RyomenMythCash")
+				return "+$10,000 Starting Cash"
+			end
+			return "The cash reward for this achievement was already granted in a past life."
 		end
 	},
 	{
@@ -331,8 +349,13 @@ local ACHIEVEMENT_DEFINITIONS = {
 		IsUnlocked = function(stats)
 			return stats.SecretAchievements and stats.SecretAchievements.PumpkinKing == true
 		end,
-		Grant = function(stats)
-			return "The Pumpkin King reward is granted automatically at birth."
+		Grant = function(stats, player)
+			if not hasAccountReward(player, "SecretReward_PumpkinKingCash") then
+				stats.Money = (tonumber(stats.Money) or 0) + 25000
+				markAccountReward(player, "SecretReward_PumpkinKingCash")
+				return "+$25,000 Starting Cash"
+			end
+			return "The cash reward for this achievement was already granted in a past life."
 		end
 	},
 }
@@ -434,7 +457,7 @@ local function claimAchievementReward(player, achievementId)
 
 	local rewardSummary = "Reward claimed."
 	local grantOk, grantResult = pcall(function()
-		return definition.Grant(stats)
+		return definition.Grant(stats, player)
 	end)
 
 	if grantOk and grantResult then

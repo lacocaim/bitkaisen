@@ -919,6 +919,9 @@ local function openPanel()
 	resetPending()
 
 	currentPayload = fetchPayload()
+	if not isOpen then
+		return
+	end
 	rebuild()
 
 	sheet.Visible = true

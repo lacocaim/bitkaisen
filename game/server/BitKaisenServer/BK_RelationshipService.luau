@@ -514,7 +514,8 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 
 	local deadBodyAction = actionId == "brain_transplant"
 	local cleanupAction = actionId == "remove_relationship" or actionId == "forget_relationship" or actionId == "disown_child" or deadBodyAction
-	local relationship = getRelationshipById(stats, relationshipId, cleanupAction)
+	local needsDeadRelationship = cleanupAction or actionId == "bind_vengeful_spirit" or actionId == "release_vengeful_spirit"
+	local relationship = getRelationshipById(stats, relationshipId, needsDeadRelationship)
 
 	if not relationship and tostring(actionId) ~= "forget_relationship" then
 		for _, npc in ipairs(stats.NotableSorcerers or {}) do
@@ -1511,9 +1512,16 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 			fireLifeUpdate(player, stats, "You can only rename your own children.")
 			return
 		end
-		if not (context.OwnsGodModePass and context.OwnsGodModePass(player) == true) then
-			fireLifeUpdate(player, stats, "Naming your children requires the God Mode pass.")
+		if relationship.Alive == false then
+			fireLifeUpdate(player, stats, "You cannot rename someone who has passed.")
 			return
+		end
+		local isInitialNaming = data.IsInitialNaming == true and (tonumber(relationship.Age) or 1) == 0
+		if not isInitialNaming then
+			if not (context.OwnsGodModePass and context.OwnsGodModePass(player) == true) then
+				fireLifeUpdate(player, stats, "Naming your children requires the God Mode pass.")
+				return
+			end
 		end
 		local newName = sanitizeChildName(data.NewName)
 		if not newName then
@@ -1901,6 +1909,63 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 		stats.Happiness = math.clamp((stats.Happiness or 100) + math.random(1, 4), 0, 100)
 		logMessage = "You encouraged " .. relationship.Name .. " instead of forcing growth. It helped them feel seen."
 
+	elseif actionId == "bind_vengeful_spirit" then
+		if relationship.Alive ~= false then
+			fireLifeUpdate(player, stats, "You can only bind the spirit of someone who has passed.")
+			return
+		end
+		if (tonumber(stats.CursedEnergy) or 0) < 40 then
+			fireLifeUpdate(player, stats, "Your cursed energy is too weak to bind a vengeful spirit. You need at least 40 CE.")
+			return
+		end
+		local spiritNames = stats.VengefulSpiritNames or {}
+		if #spiritNames >= 3 then
+			fireLifeUpdate(player, stats, "You cannot bind more than 3 vengeful spirits at once.")
+			return
+		end
+		for _, n in ipairs(spiritNames) do
+			if n == relationship.Name then
+				fireLifeUpdate(player, stats, relationship.Name .. " is already bound to you.")
+				return
+			end
+		end
+		local bond = tonumber(relationship.Bond) or 0
+		local trust = tonumber(relationship.Trust) or 0
+		local personality
+		if bond >= 75 and trust >= 75 then
+			personality = "Devoted"
+		elseif bond >= 50 or trust >= 50 then
+			personality = "Reluctant"
+		else
+			personality = "Hostile"
+		end
+		table.insert(spiritNames, relationship.Name)
+		stats.VengefulSpiritNames = spiritNames
+		stats.VengefulSpirits = #spiritNames
+		logMessage = relationship.Name .. " has been bound as a vengeful spirit. Their will persists — " .. personality .. "."
+
+	elseif actionId == "release_vengeful_spirit" then
+		if relationship.Alive ~= false then
+			fireLifeUpdate(player, stats, "You can only release the spirit of someone who has passed.")
+			return
+		end
+		local spiritNames = stats.VengefulSpiritNames or {}
+		local found = false
+		for i, n in ipairs(spiritNames) do
+			if n == relationship.Name then
+				table.remove(spiritNames, i)
+				found = true
+				break
+			end
+		end
+		if not found then
+			fireLifeUpdate(player, stats, relationship.Name .. " is not bound to you.")
+			return
+		end
+		stats.VengefulSpiritNames = spiritNames
+		stats.VengefulSpirits = #spiritNames
+		logMessage = "You released " .. relationship.Name .. "'s spirit. The bond is severed."
+
 	else
 		fireLifeUpdate(player, stats, "Invalid relationship action.")
 		return
@@ -1911,7 +1976,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 	end
 
 	logMessage = checkPromotionAndPopup(player, stats, logMessage)
-	if actionId ~= "brain_transplant" and actionId ~= "murder_relationship" then
+	if actionId ~= "brain_transplant" and actionId ~= "murder_relationship" and actionId ~= "bind_vengeful_spirit" and actionId ~= "release_vengeful_spirit" then
 		logMessage = appendLine(logMessage, applyRelationshipMilestones(player, stats, relationship))
 	end
 
@@ -1920,7 +1985,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 		logMessage = logMessage .. "\nYour body could not handle the strain."
 	end
 
-	if actionId ~= "brain_transplant" and actionId ~= "murder_relationship" then
+	if actionId ~= "brain_transplant" and actionId ~= "murder_relationship" and actionId ~= "bind_vengeful_spirit" and actionId ~= "release_vengeful_spirit" then
 		logMessage = logMessage .. applyTraitBuffsFromSnapshot(stats, traitBefore, "Relationship", relationship)
 	end
 	if relationshipActionCostsTurn then
@@ -2010,6 +2075,8 @@ function BK_RelationshipService.GetRelationshipsPayload(player)
 		CanBrainTransplant = hasBrainTransplant(stats),
 		CanNameChildren = context.OwnsGodModePass and context.OwnsGodModePass(player) == true or false,
 		CanRecruitCullingGames = tostring(stats.Clan or "") == "Kenjaku Clan" and hasBrainTransplant(stats),
+		VengefulSpiritNames = stats.VengefulSpiritNames or {},
+		CanBindSpirit = (tonumber(stats.CursedEnergy) or 0) >= 40 and #(stats.VengefulSpiritNames or {}) < 3,
 	}
 
 	relationshipPayloadCache[player.UserId] = {

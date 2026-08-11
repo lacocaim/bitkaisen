@@ -1622,14 +1622,19 @@ local function grantRCTRevive(player, stats)
 	end
 
 	if stats.Alive ~= false then
+		-- ProcessReceipt fired after a new life was already active (common when the
+		-- original server shut down before the receipt was processed and Roblox
+		-- re-delivered it in the next session). Bank the revive so the player's
+		-- purchase is honoured at their next death instead of silently disappearing.
+		stats.RCTPendingRevive = math.max(0, tonumber(stats.RCTPendingRevive) or 0) + 1
 		fireMajorPopup(
 			player,
 			"RCT REVIVE",
-			"Your life is not currently at death's edge.",
-			"No death detected",
-			"RCT Revive is meant to be used from the death screen."
+			"Your revive was received after your new life had already begun.",
+			"Revive Banked",
+			"It will activate automatically the next time you die."
 		)
-		fireLifeUpdate(player, stats, "<font color='#a782ff'><b>[ RCT REVIVE ]</b></font> No death state was detected, so your life continued unchanged.")
+		fireLifeUpdate(player, stats, "<font color='#a782ff'><b>[ RCT REVIVE ]</b></font> Your revive was processed after a new life had already begun. It has been banked and will activate automatically the next time you die.")
 		return true
 	end
 

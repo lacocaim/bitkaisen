@@ -28,29 +28,9 @@ local function setChatConfigs(enabled)
 	end)
 end
 
--- Chat starts OFF everywhere (the original BitKaisen behavior)...
-setCoreGui(Enum.CoreGuiType.Chat, false)
-setChatConfigs(false)
-
--- ...and comes back ON only inside a Public world (Multiplayer Fase 8,
--- the Fair Play Doctrine social layer): the first UpdateLifeEvent whose stats say
--- WorldMode == "Public" flips it for the rest of the session. Private
--- sessions never see it -- the classic solo game stays chat-free.
-local chatEnabled = false
-task.spawn(function()
-	local updateLifeEvent = ReplicatedStorage:WaitForChild("UpdateLifeEvent", 30)
-	if not updateLifeEvent then
-		return
-	end
-	updateLifeEvent.OnClientEvent:Connect(function(stats)
-		if chatEnabled or typeof(stats) ~= "table" or stats.WorldMode ~= "Public" then
-			return
-		end
-		chatEnabled = true
-		setCoreGui(Enum.CoreGuiType.Chat, true)
-		setChatConfigs(true)
-	end)
-end)
+-- Chat is enabled for all players globally.
+setCoreGui(Enum.CoreGuiType.Chat, true)
+setChatConfigs(true)
 
 -- Public chat identity: color each sender's name by their LifePath and tag
 -- their cell, read from player attributes kept fresh by the server

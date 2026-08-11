@@ -291,9 +291,11 @@ local function buildOwnedTab(data)
 				parent = card, text = tostring(tool.Description or ""),
 				size = 13, color = theme.SubText, order = 3,
 			})
+			local affinity = math.clamp(tonumber(tool.Affinity) or 0, 0, 100)
+			local affinityText = tool.Imbued and "IMBUED" or ("Affinity: " .. tostring(affinity) .. "%")
 			if tool.EffectText and tool.EffectText ~= "" then
 				mobileLabel({
-					parent = card, text = tostring(tool.EffectText),
+					parent = card, text = tostring(tool.EffectText) .. " | " .. affinityText,
 					size = 12, color = color, font = Enum.Font.GothamBold, order = 4,
 				})
 			end
@@ -308,6 +310,19 @@ local function buildOwnedTab(data)
 					fireAssetAction(tool.Equipped and "UnequipCursedTool" or "EquipCursedTool", tool.Id)
 				end,
 			})
+			if not tool.Imbued and affinity >= 75 then
+				mobileButton({
+					parent = card,
+					text = _as("btn_imbue", "IMBUE"),
+					order = 6,
+					size = UDim2.new(1, 0, 0, 40),
+					color = theme.Gold,
+					textSize = 13,
+					callback = function()
+						fireAssetAction("ImbueCursedTool", tool.Id)
+					end,
+				})
+			end
 			orderIndex += 1
 		end
 	end

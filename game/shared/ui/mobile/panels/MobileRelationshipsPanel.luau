@@ -66,6 +66,8 @@ local pendingRefresh = false
 local refreshStamp = 0
 local refreshInProgress = false
 local canBrainTransplant = false
+local canBindSpirit = false
+local vengefulSpiritNames = {}
 local canNameChildren = false
 local canRecruitCullingGames = false
 local currentRelationships = {}
@@ -245,6 +247,15 @@ local function getActionsForRelationship(relationship)
 		local actions = { { Id = "forget_relationship", Text = _ra("forget", "Forget"), Confirm = true } }
 		if canBrainTransplant then
 			table.insert(actions, { Id = "brain_transplant", Text = _ra("transplant", "Transplant"), Confirm = true })
+		end
+		local alreadyBound = false
+		for _, n in ipairs(vengefulSpiritNames) do
+			if n == relationship.Name then alreadyBound = true break end
+		end
+		if alreadyBound then
+			table.insert(actions, { Id = "release_vengeful_spirit", Text = _ra("release_spirit", "Release Spirit"), Confirm = true })
+		elseif canBindSpirit then
+			table.insert(actions, { Id = "bind_vengeful_spirit", Text = _ra("bind_spirit", "Bind Spirit"), Confirm = true })
 		end
 		return actions
 	end
@@ -551,7 +562,7 @@ local function createActionsGrid(parent: GuiObject, relationship, order: number)
 										local newChildId = rel.Id
 										promptChildName(function(newName)
 											if newName and newName ~= "" then
-												relationshipAction:FireServer(newChildId, "rename_child", { NewName = newName })
+												relationshipAction:FireServer(newChildId, "rename_child", { NewName = newName, IsInitialNaming = true })
 												task.delay(0.5, function()
 													if isOpen then refreshRelationships(true) end
 												end)
@@ -781,6 +792,8 @@ refreshRelationships = function(preservePosition: boolean, onComplete: ((any) ->
 		canBrainTransplant = typeof(result) == "table" and result.CanBrainTransplant == true
 		canNameChildren = typeof(result) == "table" and result.CanNameChildren == true
 		canRecruitCullingGames = typeof(result) == "table" and result.CanRecruitCullingGames == true
+		canBindSpirit = typeof(result) == "table" and result.CanBindSpirit == true
+		vengefulSpiritNames = (typeof(result) == "table" and typeof(result.VengefulSpiritNames) == "table") and result.VengefulSpiritNames or {}
 		local living, deceased = normalizeRelationships(result)
 		currentRelationships = living
 		if onComplete then onComplete(living) end

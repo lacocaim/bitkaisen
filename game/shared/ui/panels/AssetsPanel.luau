@@ -1971,6 +1971,8 @@ refreshAssets = function()
 				descLabel.ZIndex = 355
 				descLabel.Parent = card
 
+				local affinity = math.clamp(tonumber(tool.Affinity) or 0, 0, 100)
+				local affinityText = tool.Imbued and "IMBUED" or ("Affinity: " .. tostring(affinity) .. "%")
 				local effectLabel = Instance.new("TextLabel")
 				effectLabel.Size = compactToolCards and UDim2.new(1, -36, 0, 32) or UDim2.new(1, -178, 0, 34)
 				effectLabel.Position = compactToolCards and UDim2.new(0, 18, 0, 108) or UDim2.new(0, 18, 0, 96)
@@ -1980,7 +1982,7 @@ refreshAssets = function()
 				effectLabel.Font = Enum.Font.GothamBlack
 				effectLabel.TextWrapped = true
 				effectLabel.TextXAlignment = Enum.TextXAlignment.Left
-				effectLabel.Text = tostring(tool.EffectText or "")
+				effectLabel.Text = tostring(tool.EffectText or "") .. " | " .. affinityText
 				effectLabel.ZIndex = 355
 				effectLabel.Parent = card
 
@@ -2002,6 +2004,26 @@ refreshAssets = function()
 				b.MouseButton1Click:Connect(function()
 					fireAssetAction(tool.Equipped and "UnequipCursedTool" or "EquipCursedTool", tool.Id)
 				end)
+
+				if not tool.Imbued and affinity >= 75 and not compactToolCards then
+					local imbueBtn = Instance.new("TextButton")
+					imbueBtn.Size = UDim2.new(0, 90, 0, 28)
+					imbueBtn.Position = compactToolCards and UDim2.new(0, 148, 1, -38) or UDim2.new(1, -248, 0.5, -14)
+					imbueBtn.BackgroundColor3 = COLORS.Gold
+					imbueBtn.BorderSizePixel = 0
+					imbueBtn.TextColor3 = Color3.fromRGB(20, 20, 20)
+					imbueBtn.TextSize = 11
+					imbueBtn.Font = Enum.Font.GothamBlack
+					imbueBtn.Text = "IMBUE"
+					imbueBtn.AutoButtonColor = false
+					imbueBtn.ZIndex = 356
+					imbueBtn.Parent = card
+					addCorner(imbueBtn, 7)
+					setButtonTween(imbueBtn, lighten(COLORS.Gold, 20))
+					imbueBtn.MouseButton1Click:Connect(function()
+						fireAssetAction("ImbueCursedTool", tool.Id)
+					end)
+				end
 				yieldForLargeAssetLists()
 			end
 		end

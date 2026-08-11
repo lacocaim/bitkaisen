@@ -1386,6 +1386,12 @@ local function hasBrainTransplant(stats)
 	return technique == "Brain Transplant" or innate == "Brain Transplant"
 end
 
+local function isKenjakuClan(stats)
+	local clan = tostring(stats and stats.Clan or "")
+	local origin = tostring(stats and stats.Origin or "")
+	return clan == "Kenjaku Clan" or origin == "Kenjaku Clan"
+end
+
 local function shouldShowActivityForPlayer(player, stats, activity)
 	if not activity or not activity.Id then
 		return false
@@ -1395,11 +1401,11 @@ local function shouldShowActivityForPlayer(player, stats, activity)
 		return false
 	end
 
-	if activity.Id == "create_death_painting" and not (tostring(stats and stats.Clan or "") == "Kenjaku Clan" and hasBrainTransplant(stats)) then
+	if activity.Id == "create_death_painting" and not (isKenjakuClan(stats) and hasBrainTransplant(stats)) then
 		return false
 	end
 
-	if activity.Id == "cast_culling_games" and not (tostring(stats and stats.Clan or "") == "Kenjaku Clan" and hasBrainTransplant(stats)) then
+	if activity.Id == "cast_culling_games" and not (isKenjakuClan(stats) and hasBrainTransplant(stats)) then
 		return false
 	end
 
@@ -1777,6 +1783,16 @@ local function processActivity(player, activityId)
 		local vipMult = ownsVIPPass(player) and 1.5 or 1
 		local ceMult = prodigyMult * focusedMult * doubleMult * vipMult
 		stats.CursedEnergy += math.floor((update16Gain(stats, 5, 14, false) + bonus) * ceMult)
+		local cePotentialCap = math.max(1, tonumber(stats.CEPotential) or 0)
+		if (tonumber(stats.CEOutput) or 0) < cePotentialCap then
+			stats.CEOutput = math.min(cePotentialCap, (tonumber(stats.CEOutput) or 0) + math.random(0, 1))
+		end
+		if (tonumber(stats.CEReinforcement) or 0) < cePotentialCap then
+			stats.CEReinforcement = math.min(cePotentialCap, (tonumber(stats.CEReinforcement) or 0) + math.random(0, 1))
+		end
+		if (tonumber(stats.CEControl) or 0) < cePotentialCap then
+			stats.CEControl = math.min(cePotentialCap, (tonumber(stats.CEControl) or 0) + math.random(0, 1))
+		end
 		stats.Health = math.clamp((stats.Health or 100) - math.random(2, 8), 0, 100)
 		stats.Happiness = math.clamp((stats.Happiness or 100) - math.random(0, 4), 0, 100)
 
@@ -1883,7 +1899,7 @@ local function processActivity(player, activityId)
 		logMessage = tAct(player, "surgery_result", { gain = looksGain }, "You paid for cosmetic surgery. Looks +" .. tostring(looksGain) .. ".")
 
 	elseif activityId == "create_death_painting" then
-		if not (tostring(stats.Clan or "") == "Kenjaku Clan" and hasBrainTransplant(stats)) then
+		if not (isKenjakuClan(stats) and hasBrainTransplant(stats)) then
 			fireLifeUpdate(player, stats, tAct(player, "death_painting_gate", nil, "Only Kenjaku Clan sorcerers with Brain Transplant can create Death Paintings."))
 			return false
 		end
@@ -1912,7 +1928,7 @@ local function processActivity(player, activityId)
 		fireMajorPopup(player, "DEATH PAINTING BORN", "A new cursed existence took shape.", paintingName, "You can invoke it once per age during combat.")
 
 	elseif activityId == "cast_culling_games" then
-		if not (tostring(stats.Clan or "") == "Kenjaku Clan" and hasBrainTransplant(stats)) then
+		if not (isKenjakuClan(stats) and hasBrainTransplant(stats)) then
 			fireLifeUpdate(player, stats, tAct(player, "culling_games_gate", nil, "Only Kenjaku Clan sorcerers with Brain Transplant can cast the Culling Games."))
 			return false
 		end
@@ -2594,6 +2610,16 @@ local function processActivity(player, activityId)
 		stats.TechniqueMastery = math.clamp(oldMastery + masteryGain, 0, 100)
 
 		stats.CursedEnergy += math.floor((math.random(5, 12) + math.floor(trainingBonus / 2)) * techMult)
+		local cePotentialCap2 = math.max(1, tonumber(stats.CEPotential) or 0)
+		if (tonumber(stats.CEOutput) or 0) < cePotentialCap2 then
+			stats.CEOutput = math.min(cePotentialCap2, (tonumber(stats.CEOutput) or 0) + math.random(0, 1))
+		end
+		if (tonumber(stats.CEReinforcement) or 0) < cePotentialCap2 then
+			stats.CEReinforcement = math.min(cePotentialCap2, (tonumber(stats.CEReinforcement) or 0) + math.random(0, 1))
+		end
+		if (tonumber(stats.CEControl) or 0) < cePotentialCap2 then
+			stats.CEControl = math.min(cePotentialCap2, (tonumber(stats.CEControl) or 0) + math.random(0, 1))
+		end
 		stats.Reputation += math.random(1, 3)
 		stats.Health = math.clamp((stats.Health or 100) - math.random(1, 4), 0, 100)
 		stats.Happiness = math.clamp((stats.Happiness or 100) - math.random(0, 3), 0, 100)

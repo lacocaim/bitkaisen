@@ -336,7 +336,7 @@ function BitKaisenStats.GetDefaultStats()
 		Age = 0,
 		CurrentMonth = 1,
 		MonthsIntoAge = 0,
-		Health = 100, Happiness = 100, Smarts = math.random(20, 80), CursedEnergy = math.random(5, 35),
+		Health = 100, Happiness = 100, Smarts = math.random(20, 80), CursedEnergy = math.random(5, 35), CETrait = "",
 		Grade = "Non-Sorcerer", Clan = "Minor Sorcerer Family", Origin = "Minor Sorcerer Family", OriginCategory = "Family",
 		CursedTechnique = "None",
 		InnateTechnique = "None",
@@ -353,6 +353,12 @@ function BitKaisenStats.GetDefaultStats()
 		StoredCursePower = 0,
 		TamedShikigami = 0,
 		TamedShikigamiNames = {},
+		VengefulSpirits = 0,
+		VengefulSpiritNames = {},
+		CEPotential = 0,
+		CEOutput = 0,
+		CEReinforcement = 0,
+		CEControl = 0,
 		PlayerClanInnateTechnique = "None",
 
 		-- Phase 1: Cursed Society foundation fields.

@@ -1,3 +1,5 @@
+set shell := ["powershell", "-Command"]
+
 setup name="game":
 	rokit install --no-trust-check
 	pesde install

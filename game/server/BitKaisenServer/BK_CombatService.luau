@@ -204,10 +204,25 @@ local function buildEnemy(stats, config)
 		"Ambushing Sorcerer",
 		"Restless Grade Curse",
 	}
+	local kind = tostring(config.Kind or "Enemy")
+	local pattern
+	if kind == "Curse Obstacle" or grade == "Special Grade" then
+		pattern = "heavy"
+	elseif kind == "Clan War Fighter" then
+		pattern = "aggressive"
+	elseif kind == "Curse User" then
+		pattern = "defensive"
+	elseif kind == "Rogue Curse User" or kind == "Enemy" then
+		pattern = "erratic"
+	else
+		pattern = "standard"
+	end
+
 	return {
 		Name = tostring(config.Name or names[math.random(1, #names)]),
 		Grade = grade,
-		Kind = tostring(config.Kind or "Enemy"),
+		Kind = kind,
+		Pattern = pattern,
 		Power = power,
 		Speed = tonumber(config.Speed) or math.clamp(math.floor(power * 0.4) + math.random(-5, 10), 10, 90),
 		MaxHP = maxHp,
@@ -338,6 +353,9 @@ local function finishCombat(player, session, winner, reason)
 			stats.Reputation = (tonumber(stats.Reputation) or 0) + repGain
 			stats.CursedEnergy = (tonumber(stats.CursedEnergy) or 0) + ceGain
 			stats.CombatWins = (tonumber(stats.CombatWins) or 0) + 1
+			if stats.EquippedCursedToolId then
+				BitKaisenCursedTools.GrowAffinity(stats, stats.EquippedCursedToolId, math.random(2, 5))
+			end
 			local dropText = ""
 			local dropChance, maxRarity = BitKaisenCursedTools.GetCombatDropConfig(session.Enemy.Power)
 			if math.random(1, 100) <= dropChance then
@@ -405,11 +423,72 @@ local resolveEnemyCombo
 local resolveAttack
 local resolveCounter
 
+local PATTERN_LOGS = {
+	aggressive = {
+		"They came in fast — no hesitation.",
+		"No opening. They're going all in.",
+		"Full pressure. They're not holding back.",
+	},
+	defensive = {
+		"They're waiting for you to overextend.",
+		"Measured. They strike only when certain.",
+		"Calculated pressure — they know what they're doing.",
+	},
+	heavy = {
+		"The air shifts. Something massive is coming.",
+		"They're charging — this one will hurt.",
+		"Full force. Brace yourself.",
+	},
+	erratic = {
+		"Unpredictable. You can't read the next move.",
+		"Wild swings — no pattern to follow.",
+		"Their cursed energy is unstable. Anything could happen.",
+	},
+	standard = {},
+}
+
 local function beginEnemyCombo(player, session, guarded, autoResolve, warningOverride)
-	local hits = math.random(session.Enemy.ComboMin, session.Enemy.ComboMax)
+	local enemy = session.Enemy
+	local pattern = tostring(enemy.Pattern or "standard")
+	local turnCount = tonumber(session.EnemyComboCount) or 0
+	session.EnemyComboCount = turnCount + 1
+	local TurnCount = session.EnemyComboCount
+
+	local hits = math.random(enemy.ComboMin, enemy.ComboMax)
+
+	if pattern == "aggressive" then
+		if TurnCount == 1 then
+			hits = enemy.ComboMax
+		end
+	elseif pattern == "defensive" then
+		hits = math.max(enemy.ComboMin, math.random(enemy.ComboMin, enemy.ComboMax) - 1)
+		session.EnemyCounterBoost = true
+		session.EnemyCounterBoostTurn = TurnCount
+	elseif pattern == "heavy" then
+		if TurnCount % 2 == 0 then
+			hits = enemy.ComboMin
+			session.EnemyRecharging = true
+		else
+			hits = enemy.ComboMax
+			session.EnemyRecharging = false
+		end
+	elseif pattern == "erratic" then
+		local roll = math.random(1, 3)
+		if roll == 1 then
+			hits = enemy.ComboMin
+		elseif roll == 2 then
+			hits = enemy.ComboMax
+		end
+	end
+
 	if (tonumber(session.EnemyAdvantage) or 0) > 0 then
 		hits = hits + 1
 		session.EnemyAdvantage = 0
+	end
+
+	local patternLogs = PATTERN_LOGS[pattern]
+	if patternLogs and #patternLogs > 0 and TurnCount == 1 then
+		addLog(session, patternLogs[math.random(1, #patternLogs)])
 	end
 	local token = makeToken("defense")
 	session.Phase = "enemy_attack"
@@ -567,10 +646,26 @@ local function startAttackCheck(player, session, isTechnique, autoResolve, isBla
 	end)
 end
 
+local CE_TRAIT_LOGS = {
+	["Lightning CE"]       = "Your cursed energy crackles — sharp, electric, unpredictable.",
+	["Cursed Flame CE"]    = "Cursed energy burns at the edges. The air smells like scorched fate.",
+	["Infinity Pulse CE"]  = "A wave of reversed cursed energy pulses outward, then snaps inward.",
+	["Venom CE"]           = "Your cursed energy carries something corrosive — it lingers.",
+	["Serene CE"]          = "Perfectly composed. Your cursed energy flows without a single ripple.",
+	["Cursed Pressure CE"] = "The weight of your cursed energy is felt before it's seen.",
+}
+
 function resolveAttack(player, session, accuracy, sweet)
 	local pending = session.PendingAttack
 	if not pending then return end
 	local stats = getStats(player)
+	if not session.CETraitActivated then
+		local ceTrait = stats and tostring(stats.CETrait or "")
+		if ceTrait ~= "" and CE_TRAIT_LOGS[ceTrait] then
+			addLog(session, CE_TRAIT_LOGS[ceTrait])
+		end
+		session.CETraitActivated = true
+	end
 	local playerPower = BitKaisenCombat.GetCombatPower(stats)
 	local strength = getStrength(stats)
 	local baseDamage = math.max(7, math.floor((math.min(playerPower, 260) * (pending.IsTechnique and 0.18 or 0.13)) + (pending.IsTechnique and 0 or math.min(22, strength * 0.035))))
@@ -634,7 +729,9 @@ function resolveAttack(player, session, accuracy, sweet)
 	end
 	if isTechnique then
 		session.TechniqueUses = (tonumber(session.TechniqueUses) or 0) + 1
-		session.PlayerCE = math.max(0, session.PlayerCE - (tonumber(session.TechniqueCECost) or TECHNIQUE_CE_COST))
+		local ceCost = tonumber(session.TechniqueCECost) or TECHNIQUE_CE_COST
+		local ceRefund = math.floor((tonumber(stats and stats.CEControl) or 0) * 0.2)
+		session.PlayerCE = math.min(session.PlayerMaxCE, math.max(0, session.PlayerCE - ceCost + ceRefund))
 	end
 	if session.VowDamageBonus and session.VowDamageBonus > 0 then
 		damage = math.floor(damage * (1 + session.VowDamageBonus))
@@ -655,6 +752,10 @@ function resolveAttack(player, session, accuracy, sweet)
 		return
 	end
 	session.Phase = "pause"
+	if session.EnemyRecharging then
+		session.EnemyRecharging = false
+		addLog(session, "They're absorbing cursed energy. The next hit will be heavier.")
+	end
 	addLog(session, _ct(session, "log_enemy_reels", "The enemy reels. Prepare for the counterattack."))
 	sendState(player, session)
 	task.delay(0.15, function()
@@ -674,6 +775,12 @@ function resolveCounter(player, session, success)
 		local strength = getStrength(stats)
 		local damage = math.max(8, math.floor((math.min(BitKaisenCombat.GetCombatPower(stats), 260) * 0.11) + math.min(18, strength * 0.025)))
 		damage = math.min(damage, math.floor(session.Enemy.MaxHP * 0.16))
+		if session.EnemyCounterBoost and session.EnemyCounterBoostTurn == (tonumber(session.EnemyComboCount) or 0) then
+			damage = math.floor(damage * 1.3)
+			session.EnemyCounterBoost = false
+			session.EnemyCounterBoostTurn = nil
+			addLog(session, "They used your opening. Counter hit harder.")
+		end
 		session.Enemy.HP = math.clamp(session.Enemy.HP - damage, 0, session.Enemy.MaxHP)
 		addLog(session, _cl(session, "log_counter_hit", {dmg = damage}, "Counter attack landed for " .. tostring(damage) .. "."))
 		if session.Enemy.HP <= 0 then
@@ -730,7 +837,7 @@ function BK_CombatService.StartCombat(player, source, enemyConfig)
 		PlayerHP = playerHealth,
 		PlayerMaxHP = 100,
 		PlayerCE = playerCE,
-		PlayerMaxCE = math.max(playerCE, 100),
+		PlayerMaxCE = math.max(playerCE, 100) + math.floor((tonumber(stats and stats.CEReinforcement) or 0) * 0.5),
 		StartHealth = playerHealth,
 		StartCE = playerCE,
 		TechniqueUses = 0,

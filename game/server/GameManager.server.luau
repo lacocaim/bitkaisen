@@ -360,7 +360,7 @@ local publicRepique = {
 	everPopulatedMarked = {},
 	-- Fase 8: how long a never-populated world draft stays visible in the
 	-- Buscador before being treated as abandoned (see getWorldBrowser).
-	ABANDONED_WORLD_GRACE_SECONDS = 3600,
+	ABANDONED_WORLD_GRACE_SECONDS = 86400,
 	-- Fase 8: how long an Open world with real history can sit empty
 	-- before it drops out of the general Buscador list too (30 days).
 	-- Never deletes anything -- Join by Code (a separate lookup path)
@@ -1953,8 +1953,26 @@ function ensureTraitState(stats)
 		stats.Traits = BitKaisenTraits.RollBirthTraits(stats)
 		BitKaisenTraits.ApplyStartingBonuses(stats)
 		stats.TraitsRolled = true
+		if not stats.CETrait or stats.CETrait == "" then
+			local CE_TRAITS = {
+				"Lightning CE", "Cursed Flame CE", "Infinity Pulse CE",
+				"Venom CE", "Serene CE", "Cursed Pressure CE",
+			}
+			local threshold = math.random(8, 12)
+			if math.random(1, 100) <= threshold then
+				stats.CETrait = CE_TRAITS[math.random(1, #CE_TRAITS)]
+			end
+		end
 	else
 		stats.TraitSummary = BitKaisenTraits.GetTraitDisplay(stats)
+	end
+
+	if (tonumber(stats.CEPotential) or 0) == 0 then
+		local ce = math.max(0, tonumber(stats.CursedEnergy) or 0)
+		stats.CEPotential     = math.random(20, 70)
+		stats.CEOutput        = math.max(1, math.floor(ce * 0.08))
+		stats.CEReinforcement = math.max(1, math.floor(ce * 0.06))
+		stats.CEControl       = math.max(1, math.floor(ce * 0.05))
 	end
 end
 
@@ -2715,6 +2733,7 @@ function ensureExtraStats(stats)
 	stats.RCTRevives = math.max(0, tonumber(stats.RCTRevives) or 0)
 	stats.RCTReviveMaxPerLife = RCT_REVIVE_MAX_PER_LIFE
 	stats.RCTSecondChances = math.max(0, tonumber(stats.RCTSecondChances) or 0)
+	stats.RCTPendingRevive = math.max(0, tonumber(stats.RCTPendingRevive) or 0)
 	stats.RCTOldAgeYearsRemaining = math.max(0, tonumber(stats.RCTOldAgeYearsRemaining) or 0)
 	stats.LastRCTOldAgeExtensionYears = math.max(0, tonumber(stats.LastRCTOldAgeExtensionYears) or 0)
 	stats.InnateTechnique = stats.InnateTechnique or "None"
@@ -3972,6 +3991,11 @@ function startNewLife(player, mode)
 
 	newStats.CursedEnergy += rolledOrigin.BonusCE
 	newStats.Smarts = math.clamp(newStats.Smarts + rolledOrigin.BonusSmarts, 1, 100)
+	local birthPotential = math.random(1, 100)
+	newStats.CEPotential      = birthPotential
+	newStats.CEOutput         = math.max(1, math.floor(math.random(3, 10) * (birthPotential / 100) + 0.5))
+	newStats.CEReinforcement  = math.max(1, math.floor(math.random(3, 10) * (birthPotential / 100) + 0.5))
+	newStats.CEControl        = math.max(1, math.floor(math.random(3, 10) * (birthPotential / 100) + 0.5))
 
 	BitKaisenStats.ApplyBirthTechnique(newStats, rolledOrigin, ownsLuckyBirthPass(player))
 	applySecretBirthEasterEggs(player, newStats)
@@ -3985,6 +4009,21 @@ function startNewLife(player, mode)
 		local heirloomPool = { "rusted_cursed_blade", "sealed_protection_charm", "barrier_tag" }
 		local heirloomId = heirloomPool[math.random(1, #heirloomPool)]
 		BitKaisenCursedTools.AddTool(newStats, heirloomId, "Family Heirloom", getCurrentYear(newStats))
+	end
+
+	if oldStats and oldStats.EquippedCursedToolId then
+		local oldEntry = typeof(oldStats.CursedTools) == "table" and oldStats.CursedTools[oldStats.EquippedCursedToolId]
+		if oldEntry and oldEntry.Imbued then
+			BitKaisenCursedTools.EnsureInventory(newStats)
+			newStats.CursedTools[oldStats.EquippedCursedToolId] = {
+				Id = oldStats.EquippedCursedToolId,
+				AcquiredFrom = "Inherited",
+				AcquiredYear = getCurrentYear(newStats),
+				Affinity = math.floor((tonumber(oldEntry.Affinity) or 0) * 0.5),
+				Imbued = false,
+				ImbuedPower = 0,
+			}
+		end
 	end
 
 	normalizeCursedSocietyState(newStats)
@@ -4230,7 +4269,10 @@ function startAsSuccessor(player, successorId, options)
 		"Generation " .. tostring(newStats.Generation or 2) .. " of your bloodline."
 	)
 
-	saveStats(player)
+	-- forceSaveStats instead of saveStats: the debounced save (25s) can miss
+	-- if the player exits right after choosing their successor, leaving the slot
+	-- with the parent's Alive=false state and showing the death screen on rejoin.
+	forceSaveStats(player, "successor")
 	return true, nil
 end
 
@@ -4496,6 +4538,19 @@ function loadOrStartLife(player, mode)
 
 		playerLives[player.UserId] = loaded
 
+		-- A banked RCT revive credit (stored when ProcessReceipt fired after a new life
+		-- was already active) auto-applies the moment we detect Alive==false on load,
+		-- before the death screen ever reaches the client.
+		if loaded.Alive == false and loaded.RCTPendingRevive > 0 then
+			loaded.RCTPendingRevive = loaded.RCTPendingRevive - 1
+			loaded.Alive = true
+			loaded.Health = math.max(tonumber(loaded.Health) or 0, 35)
+			loaded.RCTRevives = loaded.RCTRevives + 1
+			loaded.LastRCTReviveAt = os.time()
+			loaded.CauseOfDeath = nil
+			forceSaveStats(player, "RCTPendingRevive")
+		end
+
 		local welcomeMessage = tSys(player, "save_loaded", { name = loaded.Name or "Unknown" },
 			"<font color='#a782ff'><b>[ SAVE LOADED ]</b></font> Welcome back, <b>" .. tostring(loaded.Name or "Unknown") .. "</b>.")
 
@@ -4616,6 +4671,15 @@ function switchToSaveSlot(player, slotId)
 	BitKaisenAssets.SanitizeOnLoad(loaded)
 
 	playerLives[player.UserId] = loaded
+
+	if loaded.Alive == false and loaded.RCTPendingRevive > 0 then
+		loaded.RCTPendingRevive = loaded.RCTPendingRevive - 1
+		loaded.Alive = true
+		loaded.Health = math.max(tonumber(loaded.Health) or 0, 35)
+		loaded.RCTRevives = loaded.RCTRevives + 1
+		loaded.LastRCTReviveAt = os.time()
+		loaded.CauseOfDeath = nil
+	end
 
 	-- Multiplayer Fase 1: commit account.lastWorldMode = "Private" right away
 	-- so a disconnect right after switching slots doesn't leave Load() aimed
@@ -12085,9 +12149,18 @@ end)
 --      merely quiet for a day or two still shows -- this is for worlds
 --      that have clearly gone cold, so the discovery list stays useful
 --      instead of turning into a graveyard of long-dead worlds.
+local worldBrowserCache = { result = nil, at = 0 }
+local WORLD_BROWSER_CACHE_TTL = 15
+
 getWorldBrowser.OnServerInvoke = function(player)
 	if not checkRateLimit(player, "GetWorldBrowser") then
 		return { Worlds = {} }
+	end
+
+	-- Return cached result if fresh enough -- ListWorlds does N sequential
+	-- DataStore reads which can take several seconds with many worlds.
+	if worldBrowserCache.result and (os.time() - worldBrowserCache.at) < WORLD_BROWSER_CACHE_TTL then
+		return worldBrowserCache.result
 	end
 
 	local visibleWorlds = {}
@@ -12110,7 +12183,10 @@ getWorldBrowser.OnServerInvoke = function(player)
 		end
 	end
 
-	return { Worlds = visibleWorlds }
+	local response = { Worlds = visibleWorlds }
+	worldBrowserCache.result = response
+	worldBrowserCache.at = os.time()
+	return response
 end
 
 -- Multiplayer Fase 4: join a real world by its id (picked from the browser
@@ -12316,6 +12392,8 @@ BitKaisenServiceContext = {
 	HasActiveFight = function(player)
 		return BK_CombatService.HasActiveFight(player)
 	end,
+	HasAccountReward = hasAccountReward,
+	MarkAccountReward = markAccountReward,
 	GetGradeValue = getGradeValue,
 	IsDev = isDev,
 	ForceAwaken = forceAwaken,

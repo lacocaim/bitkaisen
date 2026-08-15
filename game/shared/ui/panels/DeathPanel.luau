@@ -89,7 +89,7 @@ local function init(playerGui: Instance)
 
 	local window = Instance.new("Frame")
 	window.Name = "DeathWindow"
-	window.Size = UDim2.new(0, 640, 0, 680)
+	window.Size = UDim2.new(0, 640, 0, 730)
 	window.AnchorPoint = Vector2.new(0.5, 0.5)
 	window.Position = UDim2.new(0.5, 0, 0.54, 0)
 	window.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
@@ -100,7 +100,7 @@ local function init(playerGui: Instance)
 	window.Parent = overlay
 	addCorner(window, 14)
 	addStroke(window, Color3.fromRGB(120, 35, 35), 2)
-	responsiveScale.attach(window, 640, 680)
+	responsiveScale.attach(window, 640, 730)
 
 	local title = Instance.new("TextLabel")
 	title.Name = "Title"
@@ -198,7 +198,7 @@ local function init(playerGui: Instance)
 
 	local buttonsHolder = Instance.new("Frame")
 	buttonsHolder.Name = "ButtonsHolder"
-	buttonsHolder.Size = UDim2.new(1, -70, 0, 260)
+	buttonsHolder.Size = UDim2.new(1, -70, 0, 314)
 	buttonsHolder.Position = UDim2.new(0, 35, 0, 403)
 	buttonsHolder.BackgroundTransparency = 1
 	buttonsHolder.ZIndex = 902
@@ -363,6 +363,23 @@ local function init(playerGui: Instance)
 	reincarnateDesc.ZIndex = 903
 	reincarnateDesc.Parent = buttonsHolder
 
+	local quickRerollButton = Instance.new("TextButton")
+	quickRerollButton.Name = "QuickRerollButton"
+	quickRerollButton.Size = UDim2.new(1, 0, 0, 38)
+	quickRerollButton.Position = UDim2.new(0, 0, 0, 278)
+	quickRerollButton.BackgroundColor3 = Color3.fromRGB(38, 26, 65)
+	quickRerollButton.BorderSizePixel = 0
+	quickRerollButton.TextColor3 = Color3.fromRGB(200, 170, 255)
+	quickRerollButton.TextSize = 13
+	quickRerollButton.Font = Enum.Font.GothamBlack
+	quickRerollButton.Text = "QUICK REROLL  — Pick CT & Clan"
+	quickRerollButton.AutoButtonColor = false
+	quickRerollButton.ZIndex = 903
+	quickRerollButton.Parent = buttonsHolder
+	addCorner(quickRerollButton, 9)
+	addStroke(quickRerollButton, Color3.fromRGB(90, 55, 160), 1)
+	setHoverTween(quickRerollButton, Color3.fromRGB(58, 40, 100))
+
 	-- Successor Picker
 	local pickerOverlay = Instance.new("Frame")
 	pickerOverlay.Name = "SuccessorPickerOverlay"
@@ -450,11 +467,885 @@ local function init(playerGui: Instance)
 		pickerScroll.CanvasSize = UDim2.new(0, 0, 0, pickerLayout.AbsoluteContentSize.Y + 16)
 	end)
 
+	local lastDeathStats = nil   -- forward-declared so Quick Reroll closures can reference it
+	local hideDeathScreen        -- forward-declared; assigned below in the State section
+
+	-- ================== QUICK REROLL DATA ==================
+	local BitKaisenStats = require(ReplicatedStorage:WaitForChild("BitKaisenStats"))
+
+	local QR_TOTAL_CHANCE = 0
+	for _, origin in ipairs(BitKaisenStats.Origins) do
+		if (origin.Chance or 0) > 0 then QR_TOTAL_CHANCE = QR_TOTAL_CHANCE + origin.Chance end
+	end
+
+	local QR_CT_PROB  = {}  -- CT name → combined natural probability (0-1)
+	local QR_CT_CLANS = {}  -- CT name → { origin, ... }
+	for _, origin in ipairs(BitKaisenStats.Origins) do
+		if (origin.Chance or 0) > 0 and typeof(origin.InnatePool) == "table" then
+			local poolTotal = 0
+			for _, e in ipairs(origin.InnatePool) do poolTotal = poolTotal + (e.Weight or 1) end
+			for _, e in ipairs(origin.InnatePool) do
+				local ct = e.Name
+				QR_CT_CLANS[ct] = QR_CT_CLANS[ct] or {}
+				table.insert(QR_CT_CLANS[ct], origin)
+				QR_CT_PROB[ct] = (QR_CT_PROB[ct] or 0) + (origin.Chance / QR_TOTAL_CHANCE) * ((e.Weight or 1) / poolTotal)
+			end
+		end
+	end
+
+	local QR_CT_NAMES = {}
+	for ct in pairs(QR_CT_CLANS) do table.insert(QR_CT_NAMES, ct) end
+	table.sort(QR_CT_NAMES, function(a, b)
+		local pa, pb = QR_CT_PROB[a] or 0, QR_CT_PROB[b] or 0
+		if math.abs(pa - pb) > 0.0005 then return pa < pb end
+		return a < b
+	end)
+
+	local QR_CT_COLORS = {
+		["Limitless"]                  = Color3.fromRGB(138, 92, 246),
+		["Ten Shadows"]                = Color3.fromRGB(55, 55, 70),
+		["Copy"]                       = Color3.fromRGB(100, 200, 255),
+		["Rika Manifestation"]         = Color3.fromRGB(230, 100, 160),
+		["Shrine"]                     = Color3.fromRGB(220, 80, 80),
+		["Brain Transplant"]           = Color3.fromRGB(120, 200, 120),
+		["Pumpkin Control"]            = Color3.fromRGB(230, 140, 40),
+		["Cursed Spirit Manipulation"] = Color3.fromRGB(100, 60, 160),
+		["Idle Transfiguration"]       = Color3.fromRGB(90, 180, 160),
+		["Mythical Beast Amber"]       = Color3.fromRGB(240, 180, 50),
+		["Puppet Manipulation"]        = Color3.fromRGB(180, 120, 80),
+		["Mechamaru"]                  = Color3.fromRGB(150, 150, 180),
+		["Heavenly Restriction"]       = Color3.fromRGB(200, 200, 220),
+		["Private Pure Love Train"]    = Color3.fromRGB(220, 100, 180),
+		["Deadly Sentencing"]          = Color3.fromRGB(220, 60, 60),
+		["Projection Sorcery"]         = Color3.fromRGB(80, 160, 240),
+		["Blood Manipulation"]         = Color3.fromRGB(200, 50, 50),
+		["Cursed Speech"]              = Color3.fromRGB(160, 120, 220),
+		["Boogie Woogie"]              = Color3.fromRGB(100, 220, 120),
+		["Ratio Technique"]            = Color3.fromRGB(220, 200, 100),
+		["Construction"]               = Color3.fromRGB(180, 160, 120),
+		["Tool Manipulation"]          = Color3.fromRGB(160, 160, 160),
+		["Simple Domain"]              = Color3.fromRGB(80, 140, 200),
+		["Ice Formation"]              = Color3.fromRGB(150, 220, 255),
+		["Disaster Flames"]            = Color3.fromRGB(240, 120, 40),
+	}
+	local QR_CT_DESCS = {
+		["Limitless"]                  = "Manipulates space at the atomic level.",
+		["Ten Shadows"]                = "Summons shikigami from shadow.",
+		["Copy"]                       = "Replicates any cursed technique on contact.",
+		["Rika Manifestation"]         = "Channels the Queen of Curses.",
+		["Shrine"]                     = "Slashes that cut across any distance.",
+		["Brain Transplant"]           = "Transplants consciousness. Near-immortal.",
+		["Pumpkin Control"]            = "Conjures explosive pumpkin constructs.",
+		["Cursed Spirit Manipulation"] = "Absorbs and deploys cursed spirits.",
+		["Idle Transfiguration"]       = "Reshapes souls and bodies at a touch.",
+		["Mythical Beast Amber"]       = "Electrifies the body to superhuman extremes.",
+		["Puppet Manipulation"]        = "Remote-controls puppets and constructs.",
+		["Mechamaru"]                  = "Pilots mechanical shells from any distance.",
+		["Heavenly Restriction"]       = "No cursed energy for a perfected body.",
+		["Private Pure Love Train"]    = "Probability jackpot. Losing streaks reset.",
+		["Deadly Sentencing"]          = "Holds court to strip the right to exist.",
+		["Projection Sorcery"]         = "Divides time into frames. Deviation freezes.",
+		["Blood Manipulation"]         = "Shapes and weaponizes blood.",
+		["Cursed Speech"]              = "Words carry absolute commands.",
+		["Boogie Woogie"]              = "Swaps positions of CE carriers with a clap.",
+		["Ratio Technique"]            = "Exploits the 7:3 ratio as a fatal point.",
+		["Construction"]               = "Materializes anything imagined in detail.",
+		["Tool Manipulation"]          = "Remotely controls cursed tools.",
+		["Simple Domain"]              = "Automatic counter-technique barrier.",
+		["Ice Formation"]              = "Shapes and fires weaponized ice.",
+		["Disaster Flames"]            = "Generates destructive cursed-energy flames.",
+		["Soul Striking"]              = "Delivers hits that bypass physical defenses.",
+		["Divergent Fist"]             = "CE release on contact doubles strike impact.",
+		["New Shadow Style"]           = "Precise sword-form amplified by CE.",
+		["Barrier Technique"]          = "Erects curtains and barriers with CE.",
+		["Contractual Re-Creation"]    = "Reconstructs anything previously memorized.",
+		["Sky Manipulation"]           = "Reshapes and commands aerial space.",
+		["Cursed Energy Discharge"]    = "Releases CE in raw, unfocused bursts.",
+		["Shikigami Technique"]        = "Creates and directs shikigami constructs.",
+		["Rot Technique"]              = "Decays cursed matter and living targets.",
+		["Comedian"]                   = "Reality-warping through laughter and absurdity.",
+	}
+
+	local QR_DEFAULT_COLOR = Color3.fromRGB(120, 80, 180)
+	local function getQRCTRarity(ct)
+		local p = (QR_CT_PROB[ct] or 0) * 100
+		if p <= 0.3 then return "LEGENDARY", Color3.fromRGB(220, 160, 255)
+		elseif p <= 1 then return "RARE", Color3.fromRGB(100, 160, 255)
+		elseif p <= 3 then return "UNCOMMON", Color3.fromRGB(100, 210, 120)
+		else return "COMMON", Color3.fromRGB(160, 160, 170)
+		end
+	end
+	local function getQRClanRarity(chance)
+		local p = QR_TOTAL_CHANCE > 0 and (chance / QR_TOTAL_CHANCE) * 100 or 0
+		if p <= 0.5 then return "LEGENDARY", Color3.fromRGB(220, 160, 255)
+		elseif p <= 1.5 then return "RARE", Color3.fromRGB(100, 160, 255)
+		elseif p <= 3 then return "UNCOMMON", Color3.fromRGB(100, 210, 120)
+		else return "COMMON", Color3.fromRGB(160, 160, 170)
+		end
+	end
+
+	-- ================== QUICK REROLL OVERLAY ==================
+	local rerollOverlay = Instance.new("Frame")
+	rerollOverlay.Name = "QuickRerollOverlay"
+	rerollOverlay.Size = UDim2.new(1, 0, 1, 0)
+	rerollOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	rerollOverlay.BackgroundTransparency = 1
+	rerollOverlay.Visible = false
+	rerollOverlay.ZIndex = 960
+	rerollOverlay.Parent = gui
+
+	local rerollWindow = Instance.new("Frame")
+	rerollWindow.Name = "QuickRerollWindow"
+	rerollWindow.Size = UDim2.new(0, 600, 0, 540)
+	rerollWindow.AnchorPoint = Vector2.new(0.5, 0.5)
+	rerollWindow.Position = UDim2.new(0.5, 0, 0.56, 0)
+	rerollWindow.BackgroundColor3 = Color3.fromRGB(12, 10, 20)
+	rerollWindow.BackgroundTransparency = 1
+	rerollWindow.BorderSizePixel = 0
+	rerollWindow.Visible = false
+	rerollWindow.ZIndex = 961
+	rerollWindow.Parent = rerollOverlay
+	addCorner(rerollWindow, 14)
+	addStroke(rerollWindow, Color3.fromRGB(90, 45, 140), 2)
+	responsiveScale.attach(rerollWindow, 600, 540)
+
+	local rerollTitleLabel = Instance.new("TextLabel")
+	rerollTitleLabel.Size = UDim2.new(1, -90, 0, 28)
+	rerollTitleLabel.Position = UDim2.new(0, 22, 0, 14)
+	rerollTitleLabel.BackgroundTransparency = 1
+	rerollTitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	rerollTitleLabel.TextSize = 18
+	rerollTitleLabel.Font = Enum.Font.GothamBlack
+	rerollTitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	rerollTitleLabel.Text = "QUICK REROLL"
+	rerollTitleLabel.ZIndex = 962
+	rerollTitleLabel.Parent = rerollWindow
+
+	local rerollBreadcrumb = Instance.new("TextLabel")
+	rerollBreadcrumb.Size = UDim2.new(1, -90, 0, 16)
+	rerollBreadcrumb.Position = UDim2.new(0, 22, 0, 44)
+	rerollBreadcrumb.BackgroundTransparency = 1
+	rerollBreadcrumb.TextColor3 = Color3.fromRGB(160, 140, 200)
+	rerollBreadcrumb.TextSize = 10
+	rerollBreadcrumb.Font = Enum.Font.GothamBold
+	rerollBreadcrumb.TextXAlignment = Enum.TextXAlignment.Left
+	rerollBreadcrumb.Text = "Step 1 of 3  —  Select Cursed Technique"
+	rerollBreadcrumb.ZIndex = 962
+	rerollBreadcrumb.Parent = rerollWindow
+
+	local rerollDivider = Instance.new("Frame")
+	rerollDivider.Size = UDim2.new(1, -44, 0, 1)
+	rerollDivider.Position = UDim2.new(0, 22, 0, 64)
+	rerollDivider.BackgroundColor3 = Color3.fromRGB(55, 45, 80)
+	rerollDivider.BorderSizePixel = 0
+	rerollDivider.ZIndex = 962
+	rerollDivider.Parent = rerollWindow
+
+	local rerollClose = Instance.new("TextButton")
+	rerollClose.Size = UDim2.new(0, 34, 0, 34)
+	rerollClose.Position = UDim2.new(1, -48, 0, 12)
+	rerollClose.BackgroundColor3 = Color3.fromRGB(25, 20, 38)
+	rerollClose.BorderSizePixel = 0
+	rerollClose.TextColor3 = Color3.fromRGB(220, 90, 90)
+	rerollClose.TextSize = 14
+	rerollClose.Font = Enum.Font.GothamBlack
+	rerollClose.Text = "X"
+	rerollClose.AutoButtonColor = false
+	rerollClose.ZIndex = 963
+	rerollClose.Parent = rerollWindow
+	addCorner(rerollClose, 7)
+	setHoverTween(rerollClose, Color3.fromRGB(45, 20, 35))
+
+	local QR_CONTENT_Y = 70
+	local QR_CONTENT_H = 540 - QR_CONTENT_Y - 6
+
+	-- ===== PAGE 1: CT SELECTION =====
+	local ctPage = Instance.new("Frame")
+	ctPage.Name = "CTPage"
+	ctPage.Size = UDim2.new(1, 0, 0, QR_CONTENT_H)
+	ctPage.Position = UDim2.new(0, 0, 0, QR_CONTENT_Y)
+	ctPage.BackgroundTransparency = 1
+	ctPage.ZIndex = 962
+	ctPage.Parent = rerollWindow
+
+	local ctTopBar = Instance.new("Frame")
+	ctTopBar.Size = UDim2.new(1, 0, 0, 42)
+	ctTopBar.BackgroundTransparency = 1
+	ctTopBar.ZIndex = 963
+	ctTopBar.Parent = ctPage
+
+	local ctRandomBtn = Instance.new("TextButton")
+	ctRandomBtn.Size = UDim2.new(0, 130, 0, 30)
+	ctRandomBtn.Position = UDim2.new(0, 14, 0, 6)
+	ctRandomBtn.BackgroundColor3 = Color3.fromRGB(35, 28, 55)
+	ctRandomBtn.BorderSizePixel = 0
+	ctRandomBtn.TextColor3 = Color3.fromRGB(200, 180, 255)
+	ctRandomBtn.TextSize = 11
+	ctRandomBtn.Font = Enum.Font.GothamBlack
+	ctRandomBtn.Text = "RANDOM CT"
+	ctRandomBtn.AutoButtonColor = false
+	ctRandomBtn.ZIndex = 964
+	ctRandomBtn.Parent = ctTopBar
+	addCorner(ctRandomBtn, 7)
+	addStroke(ctRandomBtn, Color3.fromRGB(80, 55, 130), 1)
+	setHoverTween(ctRandomBtn, Color3.fromRGB(55, 44, 85))
+
+	local ctRandomEverythingBtn = Instance.new("TextButton")
+	ctRandomEverythingBtn.Size = UDim2.new(0, 160, 0, 30)
+	ctRandomEverythingBtn.Position = UDim2.new(0, 152, 0, 6)
+	ctRandomEverythingBtn.BackgroundColor3 = Color3.fromRGB(22, 48, 32)
+	ctRandomEverythingBtn.BorderSizePixel = 0
+	ctRandomEverythingBtn.TextColor3 = Color3.fromRGB(130, 215, 150)
+	ctRandomEverythingBtn.TextSize = 11
+	ctRandomEverythingBtn.Font = Enum.Font.GothamBlack
+	ctRandomEverythingBtn.Text = "RANDOM EVERYTHING"
+	ctRandomEverythingBtn.AutoButtonColor = false
+	ctRandomEverythingBtn.ZIndex = 964
+	ctRandomEverythingBtn.Parent = ctTopBar
+	addCorner(ctRandomEverythingBtn, 7)
+	addStroke(ctRandomEverythingBtn, Color3.fromRGB(50, 100, 65), 1)
+	setHoverTween(ctRandomEverythingBtn, Color3.fromRGB(36, 72, 48))
+
+	local ctScroll = Instance.new("ScrollingFrame")
+	ctScroll.Size = UDim2.new(1, -18, 0, QR_CONTENT_H - 44)
+	ctScroll.Position = UDim2.new(0, 9, 0, 42)
+	ctScroll.BackgroundTransparency = 1
+	ctScroll.BorderSizePixel = 0
+	ctScroll.ScrollBarThickness = 4
+	ctScroll.ScrollBarImageColor3 = Color3.fromRGB(90, 55, 140)
+	ctScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+	ctScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	ctScroll.ZIndex = 963
+	ctScroll.Parent = ctPage
+
+	local ctGrid = Instance.new("UIGridLayout")
+	ctGrid.CellSize = UDim2.new(0.5, -6, 0, 80)
+	ctGrid.CellPadding = UDim2.new(0, 8, 0, 8)
+	ctGrid.SortOrder = Enum.SortOrder.LayoutOrder
+	ctGrid.Parent = ctScroll
+
+	local ctScrollPad = Instance.new("UIPadding")
+	ctScrollPad.PaddingLeft = UDim.new(0, 4)
+	ctScrollPad.PaddingRight = UDim.new(0, 4)
+	ctScrollPad.PaddingTop = UDim.new(0, 4)
+	ctScrollPad.PaddingBottom = UDim.new(0, 4)
+	ctScrollPad.Parent = ctScroll
+
+	-- CT Info modal (inline)
+	local ctInfoModal = Instance.new("Frame")
+	ctInfoModal.Name = "CTInfoModal"
+	ctInfoModal.Size = UDim2.new(0, 320, 0, 190)
+	ctInfoModal.AnchorPoint = Vector2.new(0.5, 0.5)
+	ctInfoModal.Position = UDim2.fromScale(0.5, 0.5)
+	ctInfoModal.BackgroundColor3 = Color3.fromRGB(18, 14, 30)
+	ctInfoModal.BorderSizePixel = 0
+	ctInfoModal.Visible = false
+	ctInfoModal.ZIndex = 985
+	ctInfoModal.Parent = rerollWindow
+	addCorner(ctInfoModal, 12)
+	addStroke(ctInfoModal, Color3.fromRGB(100, 60, 160), 2)
+
+	local ctInfoCloseBtn = Instance.new("TextButton")
+	ctInfoCloseBtn.Size = UDim2.new(0, 26, 0, 26)
+	ctInfoCloseBtn.Position = UDim2.new(1, -34, 0, 8)
+	ctInfoCloseBtn.BackgroundColor3 = Color3.fromRGB(30, 22, 45)
+	ctInfoCloseBtn.BorderSizePixel = 0
+	ctInfoCloseBtn.TextColor3 = Color3.fromRGB(200, 80, 80)
+	ctInfoCloseBtn.TextSize = 12
+	ctInfoCloseBtn.Font = Enum.Font.GothamBlack
+	ctInfoCloseBtn.Text = "X"
+	ctInfoCloseBtn.AutoButtonColor = false
+	ctInfoCloseBtn.ZIndex = 986
+	ctInfoCloseBtn.Parent = ctInfoModal
+	addCorner(ctInfoCloseBtn, 5)
+
+	local ctInfoNameLabel = Instance.new("TextLabel")
+	ctInfoNameLabel.Size = UDim2.new(1, -50, 0, 26)
+	ctInfoNameLabel.Position = UDim2.new(0, 14, 0, 10)
+	ctInfoNameLabel.BackgroundTransparency = 1
+	ctInfoNameLabel.TextColor3 = Color3.fromRGB(240, 235, 255)
+	ctInfoNameLabel.TextSize = 15
+	ctInfoNameLabel.Font = Enum.Font.GothamBlack
+	ctInfoNameLabel.TextXAlignment = Enum.TextXAlignment.Left
+	ctInfoNameLabel.Text = ""
+	ctInfoNameLabel.ZIndex = 986
+	ctInfoNameLabel.Parent = ctInfoModal
+
+	local ctInfoRarityLabel = Instance.new("TextLabel")
+	ctInfoRarityLabel.Size = UDim2.new(1, -28, 0, 16)
+	ctInfoRarityLabel.Position = UDim2.new(0, 14, 0, 38)
+	ctInfoRarityLabel.BackgroundTransparency = 1
+	ctInfoRarityLabel.TextSize = 9
+	ctInfoRarityLabel.Font = Enum.Font.GothamBold
+	ctInfoRarityLabel.TextXAlignment = Enum.TextXAlignment.Left
+	ctInfoRarityLabel.Text = ""
+	ctInfoRarityLabel.ZIndex = 986
+	ctInfoRarityLabel.Parent = ctInfoModal
+
+	local ctInfoDescLabel = Instance.new("TextLabel")
+	ctInfoDescLabel.Size = UDim2.new(1, -28, 0, 56)
+	ctInfoDescLabel.Position = UDim2.new(0, 14, 0, 58)
+	ctInfoDescLabel.BackgroundTransparency = 1
+	ctInfoDescLabel.TextColor3 = Color3.fromRGB(210, 205, 230)
+	ctInfoDescLabel.TextSize = 11
+	ctInfoDescLabel.Font = Enum.Font.GothamMedium
+	ctInfoDescLabel.TextWrapped = true
+	ctInfoDescLabel.TextYAlignment = Enum.TextYAlignment.Top
+	ctInfoDescLabel.TextXAlignment = Enum.TextXAlignment.Left
+	ctInfoDescLabel.Text = ""
+	ctInfoDescLabel.ZIndex = 986
+	ctInfoDescLabel.Parent = ctInfoModal
+
+	local ctInfoClansLabel = Instance.new("TextLabel")
+	ctInfoClansLabel.Size = UDim2.new(1, -28, 0, 48)
+	ctInfoClansLabel.Position = UDim2.new(0, 14, 0, 120)
+	ctInfoClansLabel.BackgroundTransparency = 1
+	ctInfoClansLabel.TextColor3 = Color3.fromRGB(155, 140, 185)
+	ctInfoClansLabel.TextSize = 9
+	ctInfoClansLabel.Font = Enum.Font.GothamBold
+	ctInfoClansLabel.TextWrapped = true
+	ctInfoClansLabel.TextYAlignment = Enum.TextYAlignment.Top
+	ctInfoClansLabel.TextXAlignment = Enum.TextXAlignment.Left
+	ctInfoClansLabel.Text = ""
+	ctInfoClansLabel.ZIndex = 986
+	ctInfoClansLabel.Parent = ctInfoModal
+
+	local function openCTInfoModal(ctName)
+		local rarity, rarityColor = getQRCTRarity(ctName)
+		ctInfoNameLabel.Text = ctName
+		ctInfoNameLabel.TextColor3 = QR_CT_COLORS[ctName] or QR_DEFAULT_COLOR
+		local prob = (QR_CT_PROB[ctName] or 0) * 100
+		ctInfoRarityLabel.Text = rarity .. "  —  " .. string.format("%.2f%%", prob) .. " natural rate"
+		ctInfoRarityLabel.TextColor3 = rarityColor
+		ctInfoDescLabel.Text = QR_CT_DESCS[ctName] or "A clan-exclusive cursed technique."
+		local clans = QR_CT_CLANS[ctName] or {}
+		local names = {}
+		for _, clan in ipairs(clans) do table.insert(names, clan.DisplayName) end
+		ctInfoClansLabel.Text = "Available from: " .. (#names > 0 and table.concat(names, ", ") or "—")
+		ctInfoModal.Visible = true
+	end
+
+	ctInfoCloseBtn.MouseButton1Click:Connect(function()
+		ctInfoModal.Visible = false
+	end)
+
+	-- ===== PAGE 2: CLAN SELECTION =====
+	local clanPage = Instance.new("Frame")
+	clanPage.Name = "ClanPage"
+	clanPage.Size = UDim2.new(1, 0, 0, QR_CONTENT_H)
+	clanPage.Position = UDim2.new(0, 0, 0, QR_CONTENT_Y)
+	clanPage.BackgroundTransparency = 1
+	clanPage.ZIndex = 962
+	clanPage.Visible = false
+	clanPage.Parent = rerollWindow
+
+	local clanTopBar = Instance.new("Frame")
+	clanTopBar.Size = UDim2.new(1, 0, 0, 54)
+	clanTopBar.BackgroundTransparency = 1
+	clanTopBar.ZIndex = 963
+	clanTopBar.Parent = clanPage
+
+	local clanBackBtn = Instance.new("TextButton")
+	clanBackBtn.Size = UDim2.new(0, 80, 0, 28)
+	clanBackBtn.Position = UDim2.new(0, 14, 0, 6)
+	clanBackBtn.BackgroundColor3 = Color3.fromRGB(30, 25, 45)
+	clanBackBtn.BorderSizePixel = 0
+	clanBackBtn.TextColor3 = Color3.fromRGB(190, 180, 210)
+	clanBackBtn.TextSize = 11
+	clanBackBtn.Font = Enum.Font.GothamBold
+	clanBackBtn.Text = "BACK"
+	clanBackBtn.AutoButtonColor = false
+	clanBackBtn.ZIndex = 964
+	clanBackBtn.Parent = clanTopBar
+	addCorner(clanBackBtn, 7)
+	setHoverTween(clanBackBtn, Color3.fromRGB(48, 40, 70))
+
+	local clanRandomBtn = Instance.new("TextButton")
+	clanRandomBtn.Size = UDim2.new(0, 130, 0, 28)
+	clanRandomBtn.Position = UDim2.new(1, -148, 0, 6)
+	clanRandomBtn.BackgroundColor3 = Color3.fromRGB(35, 28, 55)
+	clanRandomBtn.BorderSizePixel = 0
+	clanRandomBtn.TextColor3 = Color3.fromRGB(200, 180, 255)
+	clanRandomBtn.TextSize = 11
+	clanRandomBtn.Font = Enum.Font.GothamBlack
+	clanRandomBtn.Text = "RANDOM CLAN"
+	clanRandomBtn.AutoButtonColor = false
+	clanRandomBtn.ZIndex = 964
+	clanRandomBtn.Parent = clanTopBar
+	addCorner(clanRandomBtn, 7)
+	addStroke(clanRandomBtn, Color3.fromRGB(80, 55, 130), 1)
+	setHoverTween(clanRandomBtn, Color3.fromRGB(55, 44, 85))
+
+	local clanCTLabel = Instance.new("TextLabel")
+	clanCTLabel.Size = UDim2.new(1, -28, 0, 16)
+	clanCTLabel.Position = UDim2.new(0, 14, 0, 38)
+	clanCTLabel.BackgroundTransparency = 1
+	clanCTLabel.TextColor3 = Color3.fromRGB(155, 140, 190)
+	clanCTLabel.TextSize = 9
+	clanCTLabel.Font = Enum.Font.GothamBold
+	clanCTLabel.TextXAlignment = Enum.TextXAlignment.Left
+	clanCTLabel.Text = ""
+	clanCTLabel.ZIndex = 963
+	clanCTLabel.Parent = clanPage
+
+	local clanScroll = Instance.new("ScrollingFrame")
+	clanScroll.Size = UDim2.new(1, -18, 0, QR_CONTENT_H - 58)
+	clanScroll.Position = UDim2.new(0, 9, 0, 56)
+	clanScroll.BackgroundTransparency = 1
+	clanScroll.BorderSizePixel = 0
+	clanScroll.ScrollBarThickness = 4
+	clanScroll.ScrollBarImageColor3 = Color3.fromRGB(90, 55, 140)
+	clanScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+	clanScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	clanScroll.ZIndex = 963
+	clanScroll.Parent = clanPage
+
+	local clanLayout = Instance.new("UIListLayout")
+	clanLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	clanLayout.Padding = UDim.new(0, 6)
+	clanLayout.Parent = clanScroll
+
+	local clanScrollPad = Instance.new("UIPadding")
+	clanScrollPad.PaddingLeft = UDim.new(0, 4)
+	clanScrollPad.PaddingRight = UDim.new(0, 4)
+	clanScrollPad.PaddingTop = UDim.new(0, 3)
+	clanScrollPad.PaddingBottom = UDim.new(0, 3)
+	clanScrollPad.Parent = clanScroll
+
+	-- ===== PAGE 3: SUMMARY =====
+	local summaryPage = Instance.new("Frame")
+	summaryPage.Name = "SummaryPage"
+	summaryPage.Size = UDim2.new(1, 0, 0, QR_CONTENT_H)
+	summaryPage.Position = UDim2.new(0, 0, 0, QR_CONTENT_Y)
+	summaryPage.BackgroundTransparency = 1
+	summaryPage.ZIndex = 962
+	summaryPage.Visible = false
+	summaryPage.Parent = rerollWindow
+
+	local summaryBox = Instance.new("Frame")
+	summaryBox.Size = UDim2.new(1, -44, 0, 175)
+	summaryBox.Position = UDim2.new(0, 22, 0, 24)
+	summaryBox.BackgroundColor3 = Color3.fromRGB(18, 14, 28)
+	summaryBox.BorderSizePixel = 0
+	summaryBox.ZIndex = 963
+	summaryBox.Parent = summaryPage
+	addCorner(summaryBox, 12)
+	addStroke(summaryBox, Color3.fromRGB(80, 50, 120), 1)
+
+	local summaryBoxTitle = Instance.new("TextLabel")
+	summaryBoxTitle.Size = UDim2.new(1, -28, 0, 20)
+	summaryBoxTitle.Position = UDim2.new(0, 14, 0, 12)
+	summaryBoxTitle.BackgroundTransparency = 1
+	summaryBoxTitle.TextColor3 = Color3.fromRGB(200, 180, 255)
+	summaryBoxTitle.TextSize = 11
+	summaryBoxTitle.Font = Enum.Font.GothamBlack
+	summaryBoxTitle.TextXAlignment = Enum.TextXAlignment.Left
+	summaryBoxTitle.Text = "CONFIRM NEW LIFE"
+	summaryBoxTitle.ZIndex = 964
+	summaryBoxTitle.Parent = summaryBox
+
+	local summaryCTLine = Instance.new("TextLabel")
+	summaryCTLine.Size = UDim2.new(1, -28, 0, 32)
+	summaryCTLine.Position = UDim2.new(0, 14, 0, 40)
+	summaryCTLine.BackgroundTransparency = 1
+	summaryCTLine.TextColor3 = Color3.fromRGB(235, 235, 245)
+	summaryCTLine.TextSize = 16
+	summaryCTLine.Font = Enum.Font.GothamBlack
+	summaryCTLine.TextXAlignment = Enum.TextXAlignment.Left
+	summaryCTLine.RichText = true
+	summaryCTLine.Text = ""
+	summaryCTLine.ZIndex = 964
+	summaryCTLine.Parent = summaryBox
+
+	local summaryClanLine = Instance.new("TextLabel")
+	summaryClanLine.Size = UDim2.new(1, -28, 0, 32)
+	summaryClanLine.Position = UDim2.new(0, 14, 0, 80)
+	summaryClanLine.BackgroundTransparency = 1
+	summaryClanLine.TextColor3 = Color3.fromRGB(235, 235, 245)
+	summaryClanLine.TextSize = 16
+	summaryClanLine.Font = Enum.Font.GothamBlack
+	summaryClanLine.TextXAlignment = Enum.TextXAlignment.Left
+	summaryClanLine.RichText = true
+	summaryClanLine.Text = ""
+	summaryClanLine.ZIndex = 964
+	summaryClanLine.Parent = summaryBox
+
+	local summaryNoteLine = Instance.new("TextLabel")
+	summaryNoteLine.Size = UDim2.new(1, -28, 0, 36)
+	summaryNoteLine.Position = UDim2.new(0, 14, 0, 126)
+	summaryNoteLine.BackgroundTransparency = 1
+	summaryNoteLine.TextColor3 = Color3.fromRGB(140, 130, 165)
+	summaryNoteLine.TextSize = 10
+	summaryNoteLine.Font = Enum.Font.GothamMedium
+	summaryNoteLine.TextWrapped = true
+	summaryNoteLine.TextYAlignment = Enum.TextYAlignment.Top
+	summaryNoteLine.TextXAlignment = Enum.TextXAlignment.Left
+	summaryNoteLine.Text = "Name and appearance will be customized in the next step."
+	summaryNoteLine.ZIndex = 964
+	summaryNoteLine.Parent = summaryBox
+
+	local lastPickBadge = Instance.new("Frame")
+	lastPickBadge.Size = UDim2.new(1, -44, 0, 28)
+	lastPickBadge.Position = UDim2.new(0, 22, 0, 208)
+	lastPickBadge.BackgroundColor3 = Color3.fromRGB(42, 32, 68)
+	lastPickBadge.BorderSizePixel = 0
+	lastPickBadge.Visible = false
+	lastPickBadge.ZIndex = 963
+	lastPickBadge.Parent = summaryPage
+	addCorner(lastPickBadge, 7)
+	addStroke(lastPickBadge, Color3.fromRGB(100, 70, 160), 1)
+
+	local lastPickText = Instance.new("TextLabel")
+	lastPickText.Size = UDim2.new(1, -16, 1, 0)
+	lastPickText.Position = UDim2.new(0, 8, 0, 0)
+	lastPickText.BackgroundTransparency = 1
+	lastPickText.TextColor3 = Color3.fromRGB(180, 150, 240)
+	lastPickText.TextSize = 10
+	lastPickText.Font = Enum.Font.GothamBold
+	lastPickText.TextXAlignment = Enum.TextXAlignment.Left
+	lastPickText.Text = ""
+	lastPickText.ZIndex = 964
+	lastPickText.Parent = lastPickBadge
+
+	local summaryConfirmBtn = Instance.new("TextButton")
+	summaryConfirmBtn.Size = UDim2.new(0.5, -16, 0, 42)
+	summaryConfirmBtn.Position = UDim2.new(0.5, 6, 0, QR_CONTENT_H - 50)
+	summaryConfirmBtn.BackgroundColor3 = Color3.fromRGB(32, 96, 52)
+	summaryConfirmBtn.BorderSizePixel = 0
+	summaryConfirmBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	summaryConfirmBtn.TextSize = 13
+	summaryConfirmBtn.Font = Enum.Font.GothamBlack
+	summaryConfirmBtn.Text = "CONFIRM & START"
+	summaryConfirmBtn.AutoButtonColor = false
+	summaryConfirmBtn.ZIndex = 963
+	summaryConfirmBtn.Parent = summaryPage
+	addCorner(summaryConfirmBtn, 9)
+	setHoverTween(summaryConfirmBtn, Color3.fromRGB(48, 138, 75))
+
+	local summaryRePickBtn = Instance.new("TextButton")
+	summaryRePickBtn.Size = UDim2.new(0.5, -16, 0, 42)
+	summaryRePickBtn.Position = UDim2.new(0, 10, 0, QR_CONTENT_H - 50)
+	summaryRePickBtn.BackgroundColor3 = Color3.fromRGB(32, 26, 52)
+	summaryRePickBtn.BorderSizePixel = 0
+	summaryRePickBtn.TextColor3 = Color3.fromRGB(200, 180, 240)
+	summaryRePickBtn.TextSize = 13
+	summaryRePickBtn.Font = Enum.Font.GothamBlack
+	summaryRePickBtn.Text = "RE-PICK"
+	summaryRePickBtn.AutoButtonColor = false
+	summaryRePickBtn.ZIndex = 963
+	summaryRePickBtn.Parent = summaryPage
+	addCorner(summaryRePickBtn, 9)
+	setHoverTween(summaryRePickBtn, Color3.fromRGB(52, 44, 84))
+
+	-- ===== REROLL STATE & NAVIGATION =====
+	local isShowingReroll = false
+	local rerollBusy = false
+	local rerollSelectedCT = nil
+	local rerollSelectedClanId = nil
+	local rerollCurrentCT = nil
+	local rerollSessionToken = 0  -- incremented each open; delayed callbacks check token before acting
+
+	local goToCTPage, goToClanPage, goToSummaryPage
+
+	goToCTPage = function()
+		ctInfoModal.Visible = false
+		ctPage.Visible = true
+		clanPage.Visible = false
+		summaryPage.Visible = false
+		rerollBreadcrumb.Text = "Step 1 of 3  —  Select Cursed Technique"
+	end
+
+	local function populateClanPage(forCT)
+		for _, child in ipairs(clanScroll:GetChildren()) do
+			if child:IsA("TextButton") or child:IsA("Frame") then child:Destroy() end
+		end
+		local clans = QR_CT_CLANS[forCT] or {}
+		local lastClanId = lastDeathStats and lastDeathStats.LastQuickRerollClan
+
+		local sorted = {}
+		for _, clan in ipairs(clans) do table.insert(sorted, clan) end
+		table.sort(sorted, function(a, b)
+			if (a.Id == lastClanId) ~= (b.Id == lastClanId) then return a.Id == lastClanId end
+			if a.Chance ~= b.Chance then return a.Chance < b.Chance end
+			return a.DisplayName < b.DisplayName
+		end)
+
+		for i, clan in ipairs(sorted) do
+			local card = Instance.new("TextButton")
+			card.Name = "Clan_" .. clan.Id
+			card.Size = UDim2.new(1, -8, 0, 56)
+			card.BackgroundColor3 = Color3.fromRGB(18, 14, 28)
+			card.BorderSizePixel = 0
+			card.AutoButtonColor = false
+			card.Text = ""
+			card.LayoutOrder = i
+			card.ZIndex = 964
+			card.Parent = clanScroll
+			addCorner(card, 8)
+			addStroke(card, Color3.fromRGB(55, 40, 80), 1)
+			setHoverTween(card, Color3.fromRGB(30, 24, 46))
+
+			local nameL = Instance.new("TextLabel")
+			nameL.Size = UDim2.new(1, -170, 0, 24)
+			nameL.Position = UDim2.new(0, 12, 0, 7)
+			nameL.BackgroundTransparency = 1
+			nameL.TextColor3 = Color3.fromRGB(235, 235, 245)
+			nameL.TextSize = 13
+			nameL.Font = Enum.Font.GothamBlack
+			nameL.TextXAlignment = Enum.TextXAlignment.Left
+			nameL.Text = clan.DisplayName
+			nameL.ZIndex = 965
+			nameL.Parent = card
+
+			local rarity, rarityColor = getQRClanRarity(clan.Chance)
+			local pct = string.format("%.2f%%", QR_TOTAL_CHANCE > 0 and (clan.Chance / QR_TOTAL_CHANCE) * 100 or 0)
+			local rarityL = Instance.new("TextLabel")
+			rarityL.Size = UDim2.new(1, -170, 0, 16)
+			rarityL.Position = UDim2.new(0, 12, 0, 32)
+			rarityL.BackgroundTransparency = 1
+			rarityL.TextColor3 = rarityColor
+			rarityL.TextSize = 9
+			rarityL.Font = Enum.Font.GothamBold
+			rarityL.TextXAlignment = Enum.TextXAlignment.Left
+			rarityL.Text = rarity .. "  " .. pct
+			rarityL.ZIndex = 965
+			rarityL.Parent = card
+
+			if clan.Id == lastClanId then
+				local badge = Instance.new("TextLabel")
+				badge.Size = UDim2.new(0, 78, 0, 20)
+				badge.Position = UDim2.new(1, -92, 0.5, -10)
+				badge.BackgroundColor3 = Color3.fromRGB(55, 40, 90)
+				badge.BorderSizePixel = 0
+				badge.TextColor3 = Color3.fromRGB(200, 170, 255)
+				badge.TextSize = 9
+				badge.Font = Enum.Font.GothamBlack
+				badge.TextXAlignment = Enum.TextXAlignment.Center
+				badge.Text = "LAST PICK"
+				badge.ZIndex = 966
+				badge.Parent = card
+				addCorner(badge, 5)
+			end
+
+			card.MouseButton1Click:Connect(function()
+				goToSummaryPage(forCT, clan.Id, clan.DisplayName)
+			end)
+		end
+	end
+
+	goToClanPage = function(ctName)
+		rerollCurrentCT = ctName
+		populateClanPage(ctName)
+		clanCTLabel.Text = "CT selected: " .. ctName .. "  —  " .. #(QR_CT_CLANS[ctName] or {}) .. " origin(s) available"
+		ctPage.Visible = false
+		clanPage.Visible = true
+		summaryPage.Visible = false
+		rerollBreadcrumb.Text = "Step 2 of 3  —  Select Clan  (" .. ctName .. ")"
+	end
+
+	goToSummaryPage = function(ctName, clanId, clanDisplayName)
+		rerollSelectedCT = ctName
+		rerollSelectedClanId = clanId
+		local ctColor = QR_CT_COLORS[ctName] or QR_DEFAULT_COLOR
+		local hex = string.format("%02x%02x%02x",
+			math.floor(ctColor.R * 255), math.floor(ctColor.G * 255), math.floor(ctColor.B * 255))
+		summaryCTLine.Text   = string.format('Technique:  <b><font color="#%s">%s</font></b>', hex, ctName)
+		summaryClanLine.Text = string.format('Origin:  <b>%s</b>', clanDisplayName)
+		local lastClan = lastDeathStats and lastDeathStats.LastQuickRerollClan
+		local lastCT   = lastDeathStats and lastDeathStats.LastQuickRerollCT
+		if lastClan == clanId and lastCT == ctName then
+			lastPickText.Text = "★  Same combination as your last Quick Reroll"
+			lastPickBadge.Visible = true
+		else
+			lastPickBadge.Visible = false
+		end
+		ctPage.Visible = false
+		clanPage.Visible = false
+		summaryPage.Visible = true
+		rerollBreadcrumb.Text = "Step 3 of 3  —  Confirm"
+	end
+
+	local function showReroll()
+		if isShowingReroll then return end
+		isShowingReroll = true
+		rerollBusy = false
+		rerollSessionToken = rerollSessionToken + 1
+		summaryConfirmBtn.Text = "CONFIRM & START"
+		summaryConfirmBtn.Active = true
+		goToCTPage()
+		rerollOverlay.Visible = true
+		rerollWindow.Visible = true
+		rerollOverlay.BackgroundTransparency = 1
+		rerollWindow.BackgroundTransparency = 1
+		rerollWindow.Position = UDim2.new(0.5, 0, 0.56, 0)
+		TweenService:Create(rerollOverlay, TweenInfo.new(0.22), { BackgroundTransparency = 0.5 }):Play()
+		TweenService:Create(rerollWindow, TweenInfo.new(0.26, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+			BackgroundTransparency = 0,
+			Position = UDim2.new(0.5, 0, 0.5, 0),
+		}):Play()
+	end
+
+	local function hideReroll()
+		if not isShowingReroll then return end
+		isShowingReroll = false
+		ctInfoModal.Visible = false
+		TweenService:Create(rerollOverlay, TweenInfo.new(0.18), { BackgroundTransparency = 1 }):Play()
+		local t = TweenService:Create(rerollWindow, TweenInfo.new(0.18), {
+			BackgroundTransparency = 1,
+			Position = UDim2.new(0.5, 0, 0.56, 0),
+		})
+		t:Play()
+		t.Completed:Wait()
+		if not isShowingReroll then
+			rerollWindow.Visible = false
+			rerollOverlay.Visible = false
+		end
+	end
+
+	-- Populate CT cells (done once at init)
+	for i, ctName in ipairs(QR_CT_NAMES) do
+		local cell = Instance.new("TextButton")
+		cell.Name = "CT_" .. i
+		cell.BackgroundColor3 = Color3.fromRGB(18, 14, 28)
+		cell.BorderSizePixel = 0
+		cell.AutoButtonColor = false
+		cell.Text = ""
+		cell.LayoutOrder = i
+		cell.ZIndex = 964
+		cell.Parent = ctScroll
+		addCorner(cell, 8)
+		addStroke(cell, Color3.fromRGB(55, 40, 80), 1)
+		setHoverTween(cell, Color3.fromRGB(30, 24, 46))
+
+		local accent = Instance.new("Frame")
+		accent.Size = UDim2.new(0, 3, 1, -14)
+		accent.Position = UDim2.new(0, 6, 0, 7)
+		accent.BackgroundColor3 = QR_CT_COLORS[ctName] or QR_DEFAULT_COLOR
+		accent.BorderSizePixel = 0
+		accent.ZIndex = 965
+		accent.Parent = cell
+		addCorner(accent, 2)
+
+		local nameL = Instance.new("TextLabel")
+		nameL.Size = UDim2.new(1, -44, 0, 22)
+		nameL.Position = UDim2.new(0, 16, 0, 5)
+		nameL.BackgroundTransparency = 1
+		nameL.TextColor3 = Color3.fromRGB(235, 235, 245)
+		nameL.TextSize = 11
+		nameL.Font = Enum.Font.GothamBlack
+		nameL.TextXAlignment = Enum.TextXAlignment.Left
+		nameL.TextWrapped = true
+		nameL.Text = ctName
+		nameL.ZIndex = 965
+		nameL.Parent = cell
+
+		local rarity, rarityColor = getQRCTRarity(ctName)
+		local prob = (QR_CT_PROB[ctName] or 0) * 100
+		local rarityL = Instance.new("TextLabel")
+		rarityL.Size = UDim2.new(1, -16, 0, 14)
+		rarityL.Position = UDim2.new(0, 16, 0, 28)
+		rarityL.BackgroundTransparency = 1
+		rarityL.TextColor3 = rarityColor
+		rarityL.TextSize = 8
+		rarityL.Font = Enum.Font.GothamBold
+		rarityL.TextXAlignment = Enum.TextXAlignment.Left
+		rarityL.Text = rarity .. "  " .. string.format("%.2f%%", prob)
+		rarityL.ZIndex = 965
+		rarityL.Parent = cell
+
+		local descL = Instance.new("TextLabel")
+		descL.Size = UDim2.new(1, -20, 0, 26)
+		descL.Position = UDim2.new(0, 16, 0, 46)
+		descL.BackgroundTransparency = 1
+		descL.TextColor3 = Color3.fromRGB(160, 155, 185)
+		descL.TextSize = 9
+		descL.Font = Enum.Font.GothamMedium
+		descL.TextXAlignment = Enum.TextXAlignment.Left
+		descL.TextYAlignment = Enum.TextYAlignment.Top
+		descL.TextWrapped = true
+		descL.Text = QR_CT_DESCS[ctName] or "Clan-exclusive technique."
+		descL.ZIndex = 965
+		descL.Parent = cell
+
+		local infoBtn = Instance.new("TextButton")
+		infoBtn.Size = UDim2.new(0, 20, 0, 20)
+		infoBtn.Position = UDim2.new(1, -26, 0, 5)
+		infoBtn.BackgroundColor3 = Color3.fromRGB(28, 20, 46)
+		infoBtn.BorderSizePixel = 0
+		infoBtn.TextColor3 = Color3.fromRGB(155, 115, 215)
+		infoBtn.TextSize = 11
+		infoBtn.Font = Enum.Font.GothamBlack
+		infoBtn.Text = "?"
+		infoBtn.AutoButtonColor = false
+		infoBtn.ZIndex = 966
+		infoBtn.Parent = cell
+		addCorner(infoBtn, 4)
+
+		local capturedCT = ctName
+		infoBtn.MouseButton1Click:Connect(function()
+			openCTInfoModal(capturedCT)
+		end)
+		cell.MouseButton1Click:Connect(function()
+			if ctInfoModal.Visible then return end
+			goToClanPage(capturedCT)
+		end)
+	end
+
+	-- Reroll button connections
+	rerollClose.MouseButton1Click:Connect(function()
+		hideReroll()
+	end)
+	clanBackBtn.MouseButton1Click:Connect(function()
+		goToCTPage()
+	end)
+	clanRandomBtn.MouseButton1Click:Connect(function()
+		local clans = QR_CT_CLANS[rerollCurrentCT] or {}
+		if #clans > 0 then
+			local picked = clans[math.random(1, #clans)]
+			goToSummaryPage(rerollCurrentCT, picked.Id, picked.DisplayName)
+		end
+	end)
+	ctRandomBtn.MouseButton1Click:Connect(function()
+		if #QR_CT_NAMES > 0 then
+			goToClanPage(QR_CT_NAMES[math.random(1, #QR_CT_NAMES)])
+		end
+	end)
+	ctRandomEverythingBtn.MouseButton1Click:Connect(function()
+		updateLifeEvent:FireServer("StartNewLife")
+		local tok = rerollSessionToken
+		task.delay(0.25, function()
+			if rerollSessionToken ~= tok then return end
+			hideReroll()
+			hideDeathScreen()
+		end)
+	end)
+	summaryRePickBtn.MouseButton1Click:Connect(function()
+		goToCTPage()
+	end)
+	summaryConfirmBtn.MouseButton1Click:Connect(function()
+		if rerollBusy then return end
+		rerollBusy = true
+		summaryConfirmBtn.Text = "STARTING..."
+		summaryConfirmBtn.Active = false
+		updateLifeEvent:FireServer("StartNewLife", {
+			PreferredOriginId = rerollSelectedClanId,
+			PreferredCT       = rerollSelectedCT,
+		})
+		local tok = rerollSessionToken
+		task.delay(0.35, function()
+			if rerollSessionToken ~= tok then return end
+			hideReroll()
+			hideDeathScreen()
+		end)
+	end)
+	quickRerollButton.MouseButton1Click:Connect(function()
+		showReroll()
+	end)
+
 	-- State
 	local isShowingDeath = false
 	local isShowingPicker = false
 	local pickerBusy = false
-	local lastDeathStats = nil
 
 	local function getViewport()
 		local camera = workspace.CurrentCamera
@@ -791,7 +1682,7 @@ local function init(playerGui: Instance)
 		}):Play()
 	end
 
-	local function hideDeathScreen()
+	hideDeathScreen = function()
 		isShowingDeath = false
 
 		TweenService:Create(overlay, TweenInfo.new(0.18), {

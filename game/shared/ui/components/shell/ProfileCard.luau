@@ -12,6 +12,7 @@ local function _pc(key, fallback) return BitKaisenLocale.tOrFallback(_pcL, "ui."
 
 local create = vide.create
 local derive = vide.derive
+local source = vide.source
 
 local DIM    = Color3.fromRGB(100, 98, 120)
 local DIMLO  = Color3.fromRGB(60, 58, 78)
@@ -220,6 +221,80 @@ local function ProfileCard()
 	local progressVisible = derive(function()
 		local t = helpers.getProfileProgressText(stats())
 		return t ~= nil and t ~= ""
+	end)
+
+	local cursedDataOpen = source(false)
+
+	local resentmentVal = derive(function() local s = stats() return math.max(0, tonumber(s and s.CursedResentment) or 0) end)
+	local resentmentFrac = derive(function() return math.clamp(resentmentVal() / 200, 0, 1) end)
+	local resentmentColor = derive(function() return resentmentVal() > 100 and theme.Red or Color3.fromRGB(180, 60, 220) end)
+
+	local rctRevivesText = derive(function()
+		local s = stats()
+		if not s then return nil end
+		local used = math.max(0, tonumber(s.RCTRevives) or 0)
+		local maxR = math.max(0, tonumber(s.RCTReviveMaxPerLife) or 0)
+		if used == 0 and maxR == 0 then return nil end
+		return tostring(used) .. " / " .. tostring(maxR) .. " this life"
+	end)
+	local rctPendingText = derive(function()
+		local s = stats()
+		local v = math.max(0, tonumber(s and s.RCTPendingRevive) or 0)
+		return v > 0 and (tostring(v) .. " banked") or nil
+	end)
+	local ceTraitName = derive(function()
+		local s = stats()
+		local t = s and tostring(s.CETrait or "")
+		return (t and t ~= "") and t or nil
+	end)
+	local awakeningText = derive(function()
+		local s = stats()
+		if not s then return "Not yet" end
+		if s.AwakeningTriggered == true then
+			local ctx = tostring(s.AwakeningContext or "")
+			local label = ctx == "near_death" and "Near-death"
+				or ctx == "domain_loss" and "Domain loss"
+				or ctx == "mission_survive" and "Mission survival"
+				or ctx == "age_threshold" and "Age threshold"
+				or "Triggered"
+			return "Triggered — " .. label
+		elseif s.AwakeningEligible == true then
+			return "Eligible — not yet met"
+		else
+			return "Not yet"
+		end
+	end)
+	local awakeningColor = derive(function()
+		local s = stats()
+		if s and s.AwakeningTriggered == true then return theme.Purple end
+		if s and s.AwakeningEligible == true then return theme.Gold end
+		return theme.Muted
+	end)
+	local timesExorcisedText = derive(function()
+		local s = stats()
+		if not (s and helpers.isProfileCurseLife(s)) then return nil end
+		local v = math.max(0, tonumber(s.TimesExorcised) or 0)
+		return tostring(v)
+	end)
+	local bindingVowText = derive(function()
+		local s = stats()
+		if not s or s.BindingVowActive == nil then return nil end
+		return s.BindingVowActive and "Active" or "None"
+	end)
+	local vodRCTText = derive(function()
+		local s = stats()
+		if not s or s.VoDRCTUsed == nil then return nil end
+		return s.VoDRCTUsed and "Used this life" or "Available"
+	end)
+	local vodRCTColor = derive(function()
+		local s = stats()
+		return (s and s.VoDRCTUsed) and theme.Muted or theme.Green
+	end)
+	local rctSecondChancesText = derive(function()
+		local s = stats()
+		if not s then return nil end
+		local v = math.max(0, tonumber(s.RCTSecondChances) or 0)
+		return v > 0 and tostring(v) or nil
 	end)
 
 	local fileId = derive(function()
@@ -531,6 +606,189 @@ local function ProfileCard()
 					TextWrapped = true,
 					Visible = progressVisible,
 					LayoutOrder = 2,
+				},
+
+				-- Cursed Data collapsible section
+				create("Frame") {
+					Name = "CursedDataSection",
+					Size = UDim2.new(1, 0, 0, 0),
+					AutomaticSize = Enum.AutomaticSize.Y,
+					BackgroundTransparency = 1,
+					LayoutOrder = 3,
+					create("UIListLayout") { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 0) },
+
+					-- Toggle button
+					create("TextButton") {
+						Name = "CursedDataToggle",
+						Size = UDim2.new(1, 0, 0, 22),
+						BackgroundColor3 = Color3.fromRGB(18, 14, 28),
+						BorderSizePixel = 0,
+						LayoutOrder = 1,
+						Text = function() return cursedDataOpen() and "\226\150\190 CURSED DATA" or "\226\150\184 CURSED DATA" end,
+						TextColor3 = Color3.fromRGB(160, 80, 200),
+						TextSize = 9,
+						Font = Enum.Font.GothamBlack,
+						TextXAlignment = Enum.TextXAlignment.Left,
+						create("UIPadding") { PaddingLeft = UDim.new(0, 4) },
+						create("UIStroke") { Color = Color3.fromRGB(55, 30, 75), Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border },
+						Activated = function()
+							cursedDataOpen(not cursedDataOpen())
+						end,
+					},
+
+					-- Expandable body
+					create("Frame") {
+						Name = "CursedDataBody",
+						Size = UDim2.new(1, 0, 0, 0),
+						AutomaticSize = function()
+							return cursedDataOpen() and Enum.AutomaticSize.Y or Enum.AutomaticSize.None
+						end,
+						BackgroundColor3 = Color3.fromRGB(12, 8, 20),
+						BorderSizePixel = 0,
+						Visible = cursedDataOpen,
+						LayoutOrder = 2,
+						create("UIStroke") { Color = Color3.fromRGB(55, 30, 75), Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border },
+						create("UIPadding") { PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 10), PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8) },
+						create("UIListLayout") { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6) },
+
+						-- Cursed Resentment bar (always shown)
+						create("Frame") {
+							Name = "ResentmentRow",
+							Size = UDim2.new(1, 0, 0, 0),
+							AutomaticSize = Enum.AutomaticSize.Y,
+							BackgroundTransparency = 1,
+							LayoutOrder = 1,
+							create("UIListLayout") { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 3) },
+
+							create("Frame") {
+								Size = UDim2.new(1, 0, 0, 14),
+								BackgroundTransparency = 1,
+								create("TextLabel") {
+									Size = UDim2.new(0, 110, 1, 0),
+									BackgroundTransparency = 1,
+									Text = "\226\128\162 CURSED RESENTMENT",
+									TextColor3 = LABEL,
+									TextSize = 8,
+									Font = Enum.Font.GothamBold,
+									TextXAlignment = Enum.TextXAlignment.Left,
+								},
+								create("TextLabel") {
+									Position = UDim2.new(0, 112, 0, 0),
+									Size = UDim2.new(1, -112, 1, 0),
+									BackgroundTransparency = 1,
+									Text = function() return tostring(resentmentVal()) .. " / 200" end,
+									TextColor3 = function() return resentmentVal() > 100 and theme.Red or Color3.fromRGB(200, 196, 218) end,
+									TextSize = 10,
+									Font = Enum.Font.GothamBlack,
+									TextXAlignment = Enum.TextXAlignment.Right,
+								},
+							},
+
+							-- Bar track
+							create("Frame") {
+								Size = UDim2.new(1, 0, 0, 6),
+								BackgroundColor3 = Color3.fromRGB(22, 16, 34),
+								BorderSizePixel = 0,
+								ClipsDescendants = true,
+								create("UICorner") { CornerRadius = UDim.new(0, 999) },
+								-- Fill
+								create("Frame") {
+									Size = function() return UDim2.new(resentmentFrac(), 0, 1, 0) end,
+									BackgroundColor3 = resentmentColor,
+									BorderSizePixel = 0,
+									create("UICorner") { CornerRadius = UDim.new(0, 999) },
+								},
+								-- Threshold marker at 50% (100/200)
+								create("Frame") {
+									Name = "ThresholdMarker",
+									AnchorPoint = Vector2.new(0.5, 0),
+									Position = UDim2.new(0.5, 0, 0, 0),
+									Size = UDim2.new(0, 1, 1, 0),
+									BackgroundColor3 = theme.Red,
+									BorderSizePixel = 0,
+									ZIndex = 2,
+								},
+							},
+
+							-- "Curse Risk" label at threshold
+							create("Frame") {
+								Size = UDim2.new(1, 0, 0, 10),
+								BackgroundTransparency = 1,
+								create("TextLabel") {
+									AnchorPoint = Vector2.new(0.5, 0),
+									Position = UDim2.new(0.5, 0, 0, 0),
+									Size = UDim2.new(0, 70, 1, 0),
+									BackgroundTransparency = 1,
+									Text = "▲ CURSE RISK",
+									TextColor3 = theme.Red,
+									TextSize = 7,
+									Font = Enum.Font.GothamBold,
+									TextXAlignment = Enum.TextXAlignment.Center,
+								},
+							},
+						},
+
+						-- Optional rows (only rendered when value is relevant)
+						(function()
+							local rows = create("Frame") {
+								Name = "OptionalRows",
+								Size = UDim2.new(1, 0, 0, 0),
+								AutomaticSize = Enum.AutomaticSize.Y,
+								BackgroundTransparency = 1,
+								LayoutOrder = 2,
+								create("UIListLayout") { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 5) },
+
+								(function()
+									local row = DInfoRow("RCT Revives", function() return rctRevivesText() or "" end, theme.Green)
+									row.Visible = function() return rctRevivesText() ~= nil end
+									row.LayoutOrder = 1
+									return row
+								end)(),
+								(function()
+									local row = DInfoRow("Banked RCT", function() return rctPendingText() or "" end, theme.Green)
+									row.Visible = function() return rctPendingText() ~= nil end
+									row.LayoutOrder = 2
+									return row
+								end)(),
+								(function()
+									local row = DInfoRow("CE Trait", function() return ceTraitName() or "" end, theme.Purple)
+									row.Visible = function() return ceTraitName() ~= nil end
+									row.LayoutOrder = 3
+									return row
+								end)(),
+								(function()
+									local row = DInfoRow("Awakening", awakeningText, awakeningColor)
+									row.LayoutOrder = 4
+									return row
+								end)(),
+								(function()
+									local row = DInfoRow("Times Exorcised", function() return timesExorcisedText() or "" end, theme.Orange)
+									row.Visible = function() return timesExorcisedText() ~= nil end
+									row.LayoutOrder = 5
+									return row
+								end)(),
+								(function()
+									local row = DInfoRow("Binding Vow", function() return bindingVowText() or "" end, theme.Gold)
+									row.Visible = function() return bindingVowText() ~= nil end
+									row.LayoutOrder = 6
+									return row
+								end)(),
+								(function()
+									local row = DInfoRow("VoD RCT", function() return vodRCTText() or "" end, vodRCTColor)
+									row.Visible = function() return vodRCTText() ~= nil end
+									row.LayoutOrder = 7
+									return row
+								end)(),
+								(function()
+									local row = DInfoRow("RCT 2nd Chances", function() return rctSecondChancesText() or "" end, theme.Green)
+									row.Visible = function() return rctSecondChancesText() ~= nil end
+									row.LayoutOrder = 8
+									return row
+								end)(),
+							}
+							return rows
+						end)(),
+					},
 				},
 			},
 

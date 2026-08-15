@@ -13,6 +13,36 @@ local scroll: ScrollingFrame
 
 local sections = {
 	{
+		header = "Update 27 - Cursed Data Panel",
+		body = "• A new collapsible Cursed Data section in your Dossier shows hidden stats: Cursed Resentment, RCT Revives, CE Trait, Awakening status, binding vows, and more.\n• Resentment bar tracks your Cursed Resentment live with a threshold marker.\n• Awakening status shows whether you're eligible, not yet met, or triggered with what caused it.",
+		color = theme.Purple,
+	},
+	{
+		header = "Update 27 - Quick Reroll",
+		body = "• A new Quick Reroll button on the death screen lets you pick your next Cursed Technique and clan before starting a new life.\n• Browse all CTs sorted by rarity with drop rates, a short description, and clan info.\n• Random CT, Random Clan, and Random Everything options available.\n• Your last Quick Reroll pick is highlighted so you can see if you're repeating.",
+		color = theme.Gold,
+	},
+	{
+		header = "Update 26 - CE Traits & CE Potential",
+		body = "• Some sorcerers are born with a distinct quality to their CE: Lightning, Flame, Venom, Infinity, Serenity, or Pressure.\n• Every character now has a CE Potential ceiling, plus CE Output, CE Reinforcement, and CE Control that grow through training.",
+		color = theme.Purple,
+	},
+	{
+		header = "Update 26 - Vengeful Spirits & Cursed Tool Imbuement",
+		body = "• Bind the dead to you for a combat power boost. Hold up to 3 bound spirits and release them whenever.\n• Reach 75 affinity and 60 mastery with your tool to permanently bond your CE into it. The bond carries to the next life at half affinity.",
+		color = theme.Blue,
+	},
+	{
+		header = "Update 25 - Enemy Patterns",
+		body = "• Enemies now fight with a pattern based on their kind and grade. Some hit in steady combos, some build to a heavy strike, some overwhelm early and stall out. Learning the pattern matters.",
+		color = theme.Red,
+	},
+	{
+		header = "Update 24 - Multiplayer World System",
+		body = "• Public worlds where multiple players live out their lives side by side.\n• World events fire based on the collective Wanted level of all living souls.\n• A World History panel tracks every notable event, birth, and death across the world.",
+		color = theme.Blue,
+	},
+	{
 		header = "Update 23 - Kenjaku Clan: Death Paintings & Culling Games",
 		body = "• Kenjaku characters with Brain Transplant can now create Death Paintings, usable as a special attack in combat.\n• Recruit Notable Sorcerers into the Culling Games for a shot at big rewards.",
 		color = theme.Purple,

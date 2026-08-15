@@ -64,6 +64,45 @@ local TECHNIQUE_FLAVOR = {
 	["Cursed Spirit Manipulation"] = "You are learning to command curses as weapons. Higher mastery improves curse-control choices and mission domination.",
 }
 
+local TECHNIQUE_DESCRIPTION = {
+	["Limitless"] = "A technique inherited through the Gojo bloodline that manipulates space at the atomic level. The user applies cursed energy to the concept of distance itself, generating infinite convergence that makes direct contact nearly impossible. At its peak, this technique produces an autonomous barrier around the user that deflects anything without conscious thought.",
+	["Ten Shadows"] = "A technique that summons and controls up to ten shikigami through the medium of shadows. Each shikigami must be tamed through ritual combat before it can be commanded — a shikigami that defeats its user is lost forever. The technique's power scales with how many shikigami the user controls and how well each one has been mastered.",
+	["Blood Manipulation"] = "A technique that grants complete control over one's own blood. The user can alter blood viscosity, temperature, and trajectory, weaponizing it externally or reinforcing the body from within. Skilled use can stop blood loss entirely, making the user nearly immune to conventional injury in a prolonged fight.",
+	["Cursed Speech"] = "A technique that binds cursed energy to spoken commands, forcing reality to comply. The words themselves carry weight — a command delivered with sufficient force becomes physically unavoidable. The technique taxes the user's throat with every use, limiting how often commands can be issued before the body starts to break.",
+	["Boogie Woogie"] = "A technique that swaps the position of anything that has been touched with cursed energy. Targets can include people, objects, or the user themselves. The swap is instantaneous and requires no wind-up, making it one of the most unpredictable close-range techniques in practical combat.",
+	["Straw Doll"] = "A technique that creates cursed connections between the user's nails and a target, bypassing distance entirely. Attacks delivered to a nail or effigy transmit directly to the linked target. The connection persists as long as the cursed link remains active, making it effective against enemies who try to disengage.",
+	["Ratio Technique"] = "A technique that divides anything the user touches into a ratio of ten parts. The point that falls on the precise boundary becomes a guaranteed critical strike regardless of the target's defenses. Masters can identify this point on a moving target mid-combat.",
+	["Projection Sorcery"] = "A technique that locks movement into a sequence of pre-planned frames. The user projects their next second of movement across 24 frozen frames, executing it at high speed. Any target caught in the projection that doesn't follow a set path within that second is frozen for one second as a penalty.",
+	["Idle Transfiguration"] = "A technique that reshapes the soul directly. The user can alter the form of any soul they make contact with, transforming humans into transfigured constructs. The resulting forms obey no normal biological law and are controlled by the user at will.",
+	["Disaster Flames"] = "A technique that generates and controls cursed flames of extreme heat and destructive output. The user can produce flames from their body without external fuel, directing them with precision or releasing them in wide-area bursts.",
+	["Thread Manipulation"] = "A technique that creates and controls threads of condensed cursed energy. The threads are invisible to those without cursed energy sensitivity and strong enough to cut through flesh and bone at sufficient mastery.",
+	["Mirror Step"] = "A technique that allows the user to enter and travel through reflective surfaces, emerging from any other reflective surface within range. At higher mastery, the user can pull targets into mirror-space.",
+	["Grave Bloom"] = "A technique that generates cursed flowers from accumulated death energy. The blooms absorb cursed energy from their surroundings and can be detonated, releasing the stored energy as a purifying blast.",
+	["Static Binding"] = "A technique that generates cursed static — a field of disruptive energy that interferes with cursed technique output and motor control. At high mastery, the field can lock a target's technique entirely for a short window.",
+	["Glass Veil"] = "A technique that bends light and cursed perception, making the user difficult to track visually or sense with cursed energy. The user does not become truly invisible — they become inconsistent.",
+	["Paper Shikigami"] = "A technique that animates paper constructs into functional shikigami. Each construct is single-use and limited in durability, but the technique allows the user to mass-produce scouts, decoys, and support units rapidly.",
+	["Bone Forge"] = "A technique that hardens and shapes the user's own bone matter into weapons and tools. The extracted bone is denser than steel at peak output and can be regrown given enough cursed energy.",
+	["Shadow Stitch"] = "A technique that anchors a target through their shadow, restricting movement as long as the shadow-link holds. Breaking the stitch requires enough force to physically tear the cursed connection.",
+	["Echo Pulse"] = "A technique that reads cursed energy through vibration and sound. At high mastery, the user can send a pulse that temporarily disrupts technique activation in a short radius.",
+	["Crow Funeral"] = "A technique that controls cursed crows as scouting, combat, and intimidation instruments. A large enough flock creates an oppressive presence that degrades enemy morale and blocks line of sight.",
+	["Heavenly Restriction"] = "Not a cursed technique — an inborn contract that strips the body of cursed energy entirely in exchange for physical ability pushed beyond human limits. The restriction is permanent and cannot be undone.",
+	["Shrine"] = "A technique that generates two intersecting slashes of pure cursed energy at all times, forming a cross-shaped zone of destruction the user can focus or release. The slashes cut through anything regardless of conventional defense.",
+	["Brain Transplant"] = "A technique that allows the user to transfer their consciousness into a new host body through physical contact and cursed surgery. Over time, the user can accumulate techniques from previous hosts.",
+	["Pumpkin Control"] = "A technique that animates pumpkins and seasonal plant matter with cursed energy, using them as constructs for combat, defense, and field control.",
+	["Copy"] = "A technique that records and reproduces cursed techniques the user has observed. The copied technique is always weaker than the original and requires CE expenditure proportional to the original's complexity.",
+	["Rika Manifestation"] = "A technique born from cursed love — a contract sealed in grief that bound the spirit of a deceased loved one to the user as an immense cursed spirit. Control is imperfect at lower mastery.",
+	["Cursed Spirit Manipulation"] = "A technique that allows the user to consume and control cursed spirits, folding them into a personal army. Each consumed spirit retains its ability, which the user can then deploy.",
+}
+
+local CE_TRAIT_DISPLAY = {
+	lightning_ce      = "Lightning CE",
+	cursed_flame_ce   = "Cursed Flame CE",
+	infinity_pulse_ce = "Infinity Pulse CE",
+	venom_ce          = "Venom CE",
+	serene_ce         = "Serene CE",
+	cursed_pressure_ce= "Cursed Pressure CE",
+}
+
 local TIMELINE_DATA = {
 	{ Value = 0, Label = "Dormant", Note = "Technique barely awakened" },
 	{ Value = 10, Label = "Basic", Note = "Stable enough to use" },
@@ -75,7 +114,11 @@ local TIMELINE_DATA = {
 
 local function getTechniqueName(stats)
 	if not stats then return "None" end
-	return tostring(stats.CursedTechnique or "None")
+	local ct = tostring(stats.CursedTechnique or "None")
+	if ct == "None" or ct == "" then
+		ct = tostring(stats.InnateTechnique or "None")
+	end
+	return ct
 end
 
 local function getMastery(stats)
@@ -346,8 +389,64 @@ local function refresh()
 		order = 2,
 	})
 
+	-- CT Info card
+	local infoCard = mc.mobileCard({ parent = scroll, order = 4 })
+
+	mc.mobileLabel({
+		parent = infoCard,
+		text = "TECHNIQUE INFO",
+		size = 14,
+		color = theme.Text,
+		font = Enum.Font.GothamBlack,
+		order = 1,
+	})
+
+	local desc = TECHNIQUE_DESCRIPTION[technique]
+	mc.mobileLabel({
+		parent = infoCard,
+		text = desc or (technique == "None" and "Your technique has not manifested yet." or "Description not yet available."),
+		size = 12,
+		color = theme.SubText,
+		font = Enum.Font.GothamMedium,
+		order = 2,
+	})
+
+	local traitId = tostring(stats.CETrait or "")
+	local traitLabel = CE_TRAIT_DISPLAY[traitId] or "None"
+	mc.mobileLabel({
+		parent = infoCard,
+		text = "CE Trait: <b>" .. traitLabel .. "</b>",
+		size = 12,
+		color = traitId ~= "" and theme.Gold or theme.Muted,
+		font = Enum.Font.GothamMedium,
+		order = 3,
+	})
+
+	local awakeText, awakeColor
+	if stats.AwakeningTriggered == true then
+		local ctx = tostring(stats.AwakeningContext or "")
+		local ctxLabel = ctx == "near_death" and "near-death" or ctx == "domain_loss" and "domain loss" or ctx == "mission_survive" and "mission survival" or ctx == "age_threshold" and "age threshold" or "event"
+		awakeText = "Awakening: Triggered (" .. ctxLabel .. ")"
+		awakeColor = theme.Purple
+	elseif stats.AwakeningEligible == true then
+		awakeText = "Awakening: Eligible — conditions not yet met"
+		awakeColor = theme.Gold
+	else
+		awakeText = "Awakening: Not applicable"
+		awakeColor = theme.Muted
+	end
+
+	mc.mobileLabel({
+		parent = infoCard,
+		text = awakeText,
+		size = 12,
+		color = awakeColor,
+		font = Enum.Font.GothamMedium,
+		order = 4,
+	})
+
 	-- Timeline card
-	buildTimelineCard(scroll, mastery, 4)
+	buildTimelineCard(scroll, mastery, 5)
 end
 
 local function openPanel()

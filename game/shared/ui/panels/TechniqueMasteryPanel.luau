@@ -124,6 +124,45 @@ local TECHNIQUE_FLAVOR = {
 	["Cursed Spirit Manipulation"] = "You are learning to command curses as weapons. Higher mastery improves curse-control choices and mission domination.",
 }
 
+local TECHNIQUE_DESCRIPTION = {
+	["Limitless"] = "A technique inherited through the Gojo bloodline that manipulates space at the atomic level. The user applies cursed energy to the concept of distance itself, generating infinite convergence that makes direct contact nearly impossible. At its peak, this technique produces an autonomous barrier around the user that deflects anything without conscious thought.",
+	["Ten Shadows"] = "A technique that summons and controls up to ten shikigami through the medium of shadows. Each shikigami must be tamed through ritual combat before it can be commanded — a shikigami that defeats its user is lost forever. The technique's power scales with how many shikigami the user controls and how well each one has been mastered.",
+	["Blood Manipulation"] = "A technique that grants complete control over one's own blood. The user can alter blood viscosity, temperature, and trajectory, weaponizing it externally or reinforcing the body from within. Skilled use can stop blood loss entirely, making the user nearly immune to conventional injury in a prolonged fight.",
+	["Cursed Speech"] = "A technique that binds cursed energy to spoken commands, forcing reality to comply. The words themselves carry weight — a command delivered with sufficient force becomes physically unavoidable. The technique taxes the user's throat with every use, limiting how often commands can be issued before the body starts to break.",
+	["Boogie Woogie"] = "A technique that swaps the position of anything that has been touched with cursed energy. Targets can include people, objects, or the user themselves. The swap is instantaneous and requires no wind-up, making it one of the most unpredictable close-range techniques in practical combat.",
+	["Straw Doll"] = "A technique that creates cursed connections between the user's nails and a target, bypassing distance entirely. Attacks delivered to a nail or effigy transmit directly to the linked target. The connection persists as long as the cursed link remains active, making it effective against enemies who try to disengage.",
+	["Ratio Technique"] = "A technique that divides anything the user touches into a ratio of ten parts. The point that falls on the precise boundary — the exact 6:4 split — becomes a guaranteed critical strike regardless of the target's defenses. Masters can identify this point on a moving target mid-combat.",
+	["Projection Sorcery"] = "A technique that locks movement into a sequence of pre-planned frames. The user projects their next second of movement across 24 frozen frames, executing it at high speed. Any target caught in the projection is also locked into frames — and anything that doesn't follow a set path within that second is frozen for one second as a penalty.",
+	["Idle Transfiguration"] = "A technique that reshapes the soul directly. The user can alter the form of any soul they make contact with, transforming humans into transfigured humans or manipulating their structure entirely. The resulting constructs obey no normal biological law and are controlled by the user at will.",
+	["Disaster Flames"] = "A technique that generates and controls cursed flames of extreme heat and destructive output. The user can produce flames from their body without external fuel, directing them with precision or releasing them in wide-area bursts. The technique has a high CE cost per use but is among the most straightforwardly destructive in the jujutsu world.",
+	["Thread Manipulation"] = "A technique that creates and controls threads of condensed cursed energy. The threads are invisible to those without cursed energy sensitivity and strong enough to cut through flesh and bone at sufficient mastery. The user can set threads in advance, binding spaces and creating invisible traps that trigger on contact.",
+	["Mirror Step"] = "A technique that allows the user to enter and travel through reflective surfaces, emerging from any other reflective surface within range. At higher mastery, the user can pull targets into mirror-space and control what reflections show. The technique is nearly undetectable in environments with multiple reflective surfaces.",
+	["Grave Bloom"] = "A technique that generates cursed flowers from accumulated death energy. The blooms absorb cursed energy from their surroundings and can be detonated, releasing the stored energy as a purifying blast. The technique is passive in accumulation but devastating in release.",
+	["Static Binding"] = "A technique that generates cursed static — a field of disruptive energy that interferes with cursed technique output and motor control. Targets caught in the field find their technique activation delayed and their movements slightly desynchronized. At high mastery, the field can lock a target's technique entirely for a short window.",
+	["Glass Veil"] = "A technique that bends light and cursed perception, making the user difficult to track visually or sense with cursed energy. The user does not become truly invisible — they become inconsistent, appearing in the wrong position or failing to register entirely for a split second. That gap is enough.",
+	["Paper Shikigami"] = "A technique that animates paper constructs into functional shikigami. Each construct is single-use and limited in durability, but the technique allows the user to mass-produce scouts, decoys, and support units rapidly. Paper shikigami can carry messages, relay scouting data, or detonate on contact.",
+	["Bone Forge"] = "A technique that hardens and shapes the user's own bone matter into weapons and tools. The extracted bone is denser than steel at peak output and can be regrown given enough cursed energy. The technique's biggest strength is speed — a weapon can be produced in under a second and replaced just as fast.",
+	["Shadow Stitch"] = "A technique that anchors a target through their shadow, restricting movement as long as the shadow-link holds. If the target's shadow touches the user's or a surface the user has marked, the stitch can be applied from a distance. Breaking the stitch requires enough force to physically tear the cursed connection.",
+	["Echo Pulse"] = "A technique that reads cursed energy through vibration and sound. The user can detect active techniques in a wide radius and distinguish their signatures, functioning as a living cursed energy scanner. At high mastery, the user can send a pulse that temporarily disrupts technique activation in a short radius.",
+	["Crow Funeral"] = "A technique that controls cursed crows as scouting, combat, and intimidation instruments. The crows function as extensions of the user's senses and can apply cursed energy directly on contact. A large enough flock creates an oppressive presence that degrades enemy morale and blocks line of sight.",
+	["Heavenly Restriction"] = "Not a cursed technique — an inborn contract that strips the body of cursed energy entirely in exchange for physical ability pushed beyond human limits. Speed, strength, and durability reach levels that rival or exceed cursed technique output. The restriction is permanent and cannot be undone.",
+	["Shrine"] = "A technique that generates two intersecting slashes of pure cursed energy at all times, forming a cross-shaped zone of destruction the user can focus or release. The slashes cut through anything they contact regardless of conventional defense, making direct blocking ineffective. The technique's power scales directly with the user's cursed output.",
+	["Brain Transplant"] = "A technique that allows the user to transfer their consciousness into a new host body through physical contact and cursed surgery. The technique preserves memories, skills, and cursed energy between transfers. Over time, the user can accumulate techniques from previous hosts, though full integration requires years of use in each body.",
+	["Pumpkin Control"] = "A technique that animates pumpkins and seasonal plant matter with cursed energy, using them as constructs for combat, defense, and field control. The constructs are durable relative to their size and can absorb significant damage before breaking. The technique's ceiling is limited by how many constructs the user can maintain simultaneously.",
+	["Copy"] = "A technique that records and reproduces cursed techniques the user has observed. The copied technique is always weaker than the original and degrades further with each copy-of-a-copy. The user can maintain a limited number of active copies at once, and each copy requires CE expenditure proportional to the original's complexity.",
+	["Rika Manifestation"] = "A technique born from cursed love — a contract sealed in grief that bound the spirit of a deceased loved one to the user as an immense cursed spirit. The spirit's power dwarfs most conventional techniques, but control is imperfect. At lower mastery, the spirit acts on the user's emotion as much as their intent.",
+	["Cursed Spirit Manipulation"] = "A technique that allows the user to consume and control cursed spirits, folding them into a personal army. Each consumed spirit retains its ability, which the user can then deploy. The technique requires actually defeating the spirit first — they cannot be captured at range. A skilled user maintains dozens of spirits simultaneously.",
+}
+
+local CE_TRAIT_DISPLAY = {
+	lightning_ce     = { Label = "Lightning CE",      Color = Color3.fromRGB(245, 222, 60) },
+	cursed_flame_ce  = { Label = "Cursed Flame CE",   Color = Color3.fromRGB(232, 82, 60) },
+	infinity_pulse_ce= { Label = "Infinity Pulse CE", Color = Color3.fromRGB(118, 180, 255) },
+	venom_ce         = { Label = "Venom CE",           Color = Color3.fromRGB(112, 236, 153) },
+	serene_ce        = { Label = "Serene CE",          Color = Color3.fromRGB(174, 121, 255) },
+	cursed_pressure_ce={ Label = "Cursed Pressure CE",Color = Color3.fromRGB(255, 207, 105) },
+}
+
 local BUTTON_SIZE = 18
 local BUTTON_FIXED_X = 155
 local BUTTON_RIGHT_PADDING = 2
@@ -160,7 +199,11 @@ end
 
 local function getTechniqueName(stats)
 	if not stats then return "None" end
-	return tostring(stats.CursedTechnique or "None")
+	local ct = tostring(stats.CursedTechnique or "None")
+	if ct == "None" or ct == "" then
+		ct = tostring(stats.InnateTechnique or "None")
+	end
+	return ct
 end
 
 local function getMastery(stats)
@@ -404,6 +447,24 @@ local techniqueNameLabel = createLabel(
 )
 techniqueNameLabel.TextWrapped = false
 techniqueNameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+
+local ctInfoButton = Instance.new("TextButton")
+ctInfoButton.Name = "CTInfoButton"
+ctInfoButton.Size = UDim2.new(0, 24, 0, 24)
+ctInfoButton.Position = UDim2.new(1, -36, 0, 17)
+ctInfoButton.AnchorPoint = Vector2.new(0, 0)
+ctInfoButton.BackgroundColor3 = Color3.fromRGB(30, 25, 45)
+ctInfoButton.BorderSizePixel = 0
+ctInfoButton.TextColor3 = THEME.Purple
+ctInfoButton.TextSize = 13
+ctInfoButton.Font = Enum.Font.GothamBlack
+ctInfoButton.Text = "?"
+ctInfoButton.AutoButtonColor = false
+ctInfoButton.ZIndex = 656
+ctInfoButton.Parent = abilityCard
+addCorner(ctInfoButton, 999)
+addStroke(ctInfoButton, THEME.PurpleSoft, 1)
+makeButtonAnimation(ctInfoButton)
 
 -- Tag Row
 
@@ -712,6 +773,159 @@ local function refresh()
 	}):Play()
 end
 
+-- CT Info Modal
+
+local infoModal = Instance.new("Frame")
+infoModal.Name = "CTInfoModal"
+infoModal.Size = UDim2.new(1, -24, 1, -24)
+infoModal.Position = UDim2.new(0, 12, 0, 12)
+infoModal.BackgroundColor3 = Color3.fromRGB(12, 10, 20)
+infoModal.BorderSizePixel = 0
+infoModal.ZIndex = 700
+infoModal.Visible = false
+infoModal.Parent = window
+addCorner(infoModal, 14)
+addStroke(infoModal, THEME.PurpleSoft, 1, 0.1)
+
+local infoAccent = Instance.new("Frame")
+infoAccent.Name = "Accent"
+infoAccent.Size = UDim2.new(1, 0, 0, 4)
+infoAccent.Position = UDim2.new(0, 0, 0, 0)
+infoAccent.BackgroundColor3 = THEME.Purple
+infoAccent.BorderSizePixel = 0
+infoAccent.ZIndex = 701
+infoAccent.Parent = infoModal
+addCorner(infoAccent, 999)
+setGradient(infoAccent, THEME.Purple, THEME.Blue, 0)
+
+local infoCloseBtn = Instance.new("TextButton")
+infoCloseBtn.Name = "CloseBtn"
+infoCloseBtn.Size = UDim2.new(0, 28, 0, 28)
+infoCloseBtn.Position = UDim2.new(1, -38, 0, 12)
+infoCloseBtn.BackgroundColor3 = Color3.fromRGB(30, 25, 45)
+infoCloseBtn.BorderSizePixel = 0
+infoCloseBtn.TextColor3 = THEME.SubText
+infoCloseBtn.TextSize = 14
+infoCloseBtn.Font = Enum.Font.GothamBlack
+infoCloseBtn.Text = "✕"
+infoCloseBtn.AutoButtonColor = false
+infoCloseBtn.ZIndex = 702
+infoCloseBtn.Parent = infoModal
+addCorner(infoCloseBtn, 999)
+makeButtonAnimation(infoCloseBtn)
+
+local infoTechName = createLabel(
+	infoModal, "TechName",
+	UDim2.new(1, -80, 0, 32), UDim2.new(0, 20, 0, 14),
+	"", THEME.Purple, 20, Enum.Font.GothamBlack, 701
+)
+infoTechName.TextWrapped = false
+infoTechName.TextTruncate = Enum.TextTruncate.AtEnd
+
+local infoDivider = Instance.new("Frame")
+infoDivider.Name = "Divider"
+infoDivider.Size = UDim2.new(1, -40, 0, 1)
+infoDivider.Position = UDim2.new(0, 20, 0, 52)
+infoDivider.BackgroundColor3 = THEME.StrokeSoft
+infoDivider.BorderSizePixel = 0
+infoDivider.ZIndex = 701
+infoDivider.Parent = infoModal
+
+local infoDescLabel = createLabel(
+	infoModal, "Description",
+	UDim2.new(1, -40, 0, 120), UDim2.new(0, 20, 0, 62),
+	"", THEME.SubText, 12, Enum.Font.GothamMedium, 701
+)
+infoDescLabel.TextWrapped = true
+infoDescLabel.TextYAlignment = Enum.TextYAlignment.Top
+
+local infoTraitRow = Instance.new("Frame")
+infoTraitRow.Name = "TraitRow"
+infoTraitRow.Size = UDim2.new(1, -40, 0, 28)
+infoTraitRow.Position = UDim2.new(0, 20, 0, 192)
+infoTraitRow.BackgroundTransparency = 1
+infoTraitRow.ZIndex = 701
+infoTraitRow.Parent = infoModal
+
+local infoTraitIcon = createLabel(infoTraitRow, "Icon", UDim2.new(0, 80, 1, 0), UDim2.new(0, 0, 0, 0), "CE TRAIT", THEME.Muted, 10, Enum.Font.GothamBlack, 702)
+local infoTraitValue = createLabel(infoTraitRow, "Value", UDim2.new(1, -88, 1, 0), UDim2.new(0, 88, 0, 0), "None", THEME.Text, 12, Enum.Font.GothamBold, 702)
+
+local infoAwakeRow = Instance.new("Frame")
+infoAwakeRow.Name = "AwakeRow"
+infoAwakeRow.Size = UDim2.new(1, -40, 0, 28)
+infoAwakeRow.Position = UDim2.new(0, 20, 0, 226)
+infoAwakeRow.BackgroundTransparency = 1
+infoAwakeRow.ZIndex = 701
+infoAwakeRow.Parent = infoModal
+
+local infoAwakeIcon = createLabel(infoAwakeRow, "Icon", UDim2.new(0, 80, 1, 0), UDim2.new(0, 0, 0, 0), "AWAKENING", THEME.Muted, 10, Enum.Font.GothamBlack, 702)
+local infoAwakeValue = createLabel(infoAwakeRow, "Value", UDim2.new(1, -88, 1, 0), UDim2.new(0, 88, 0, 0), "Not yet", THEME.Text, 12, Enum.Font.GothamBold, 702)
+
+local infoIsOpen = false
+
+local function openInfoModal()
+	if infoIsOpen then return end
+	infoIsOpen = true
+	local stats = currentStats or playerState.stats() or {}
+	local technique = getTechniqueName(stats)
+
+	infoTechName.Text = string.upper(technique == "None" and "No Technique" or technique)
+
+	local desc = TECHNIQUE_DESCRIPTION[technique]
+	if desc then
+		infoDescLabel.Text = desc
+	elseif technique == "None" then
+		infoDescLabel.Text = "Your cursed technique has not manifested yet. Train your cursed energy, survive long enough, and it will take shape on its own."
+	else
+		infoDescLabel.Text = "Description not yet available."
+	end
+
+	local traitId = tostring(stats.CETrait or "")
+	local traitData = CE_TRAIT_DISPLAY[traitId]
+	if traitData then
+		infoTraitValue.Text = traitData.Label
+		infoTraitValue.TextColor3 = traitData.Color
+	else
+		infoTraitValue.Text = "None"
+		infoTraitValue.TextColor3 = THEME.Muted
+	end
+
+	if stats.AwakeningTriggered == true then
+		local ctx = tostring(stats.AwakeningContext or "")
+		local ctxLabel = ctx == "near_death" and "Near-death" or ctx == "domain_loss" and "Domain loss" or ctx == "mission_survive" and "Mission survival" or ctx == "age_threshold" and "Age threshold" or "Triggered"
+		infoAwakeValue.Text = "Triggered — " .. ctxLabel
+		infoAwakeValue.TextColor3 = THEME.Purple
+	elseif stats.AwakeningEligible == true then
+		infoAwakeValue.Text = "Eligible — conditions not yet met"
+		infoAwakeValue.TextColor3 = THEME.Gold
+	else
+		infoAwakeValue.Text = "Not applicable"
+		infoAwakeValue.TextColor3 = THEME.Muted
+	end
+
+	infoModal.Visible = true
+	infoModal.BackgroundTransparency = 1
+	TweenService:Create(infoModal, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		BackgroundTransparency = 0,
+	}):Play()
+end
+
+local function closeInfoModal()
+	if not infoIsOpen then return end
+	infoIsOpen = false
+	TweenService:Create(infoModal, TweenInfo.new(0.14), {
+		BackgroundTransparency = 1,
+	}):Play()
+	task.delay(0.15, function()
+		if not infoIsOpen then
+			infoModal.Visible = false
+		end
+	end)
+end
+
+ctInfoButton.MouseButton1Click:Connect(openInfoModal)
+infoCloseBtn.MouseButton1Click:Connect(closeInfoModal)
+
 -- Open / Close
 
 local function openPanel()
@@ -738,6 +952,8 @@ end
 local function closePanel()
 	if not isOpen then return end
 	isOpen = false
+
+	closeInfoModal()
 
 	TweenService:Create(overlay, TweenInfo.new(0.18), {
 		BackgroundTransparency = 1,

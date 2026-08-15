@@ -104,12 +104,12 @@ padding.PaddingLeft = UDim.new(0, 16)
 padding.PaddingRight = UDim.new(0, 16)
 padding.Parent = panel
 
-local title = makeText(panel, "Title", "UPDATE 23", 22, true)
+local title = makeText(panel, "Title", "UPDATE 27", 22, true)
 title.Size = UDim2.new(1, -48, 0, 34)
 title.Position = UDim2.new(0, 0, 0, 0)
 title.TextColor3 = Color3.fromRGB(255, 220, 139)
 
-local subtitle = makeText(panel, "Subtitle", "Kenjaku's Death Paintings, Surgery, and a big bug fix pass", 14, false)
+local subtitle = makeText(panel, "Subtitle", "Cursed Data Panel & Quick Reroll", 14, false)
 subtitle.Size = UDim2.new(1, -48, 0, 22)
 subtitle.Position = UDim2.new(0, 0, 0, 34)
 subtitle.TextColor3 = Color3.fromRGB(198, 186, 164)
@@ -187,6 +187,20 @@ local function addSection(headerText, bodyText, headerColor)
 	body.AutomaticSize = Enum.AutomaticSize.Y
 	body.TextColor3 = Color3.fromRGB(232, 223, 205)
 end
+
+addSection("Update 27 - Cursed Data Panel", "• A new collapsible <b>Cursed Data</b> section in your Dossier shows hidden stats: Cursed Resentment, RCT Revives, CE Trait, Awakening status, binding vows, and more.\n• <b>Resentment bar</b> tracks your Cursed Resentment live, with a threshold marker at the point where things get dangerous.\n• <b>Awakening status</b> shows whether you're eligible, not yet met, or triggered with what caused it.\n", Color3.fromRGB(179, 136, 255))
+
+addSection("Update 27 - Quick Reroll", "• A new <b>Quick Reroll</b> button on the death screen lets you pick your next Cursed Technique and clan before starting a new life.\n• Browse all CTs sorted by rarity with drop rates, a short description, and a <b>?</b> button for full details.\n• Once you pick a CT, only clans that carry it are shown. Every combination shown is valid.\n• <b>Random CT</b>, <b>Random Clan</b>, and <b>Random Everything</b> options available.\n• Your last Quick Reroll pick is highlighted so you can see if you're repeating.\n", Color3.fromRGB(255, 220, 139))
+
+addSection("Update 26 - CE Traits", "• Some sorcerers are born with a distinct quality to their CE: Lightning, Flame, Venom, Infinity, Serenity, or Pressure. Rare, passive, and yours for life.\n", Color3.fromRGB(179, 136, 255))
+
+addSection("Update 26 - CE Potential System", "• Every character now has a personal ceiling that defines how far their cursed energy can develop.\n• <b>CE Output</b> grows through training and adds power to every fight.\n• <b>CE Reinforcement</b> expands your max CE pool during combat.\n• <b>CE Control</b> reduces technique cost per use.\n", Color3.fromRGB(255, 220, 139))
+
+addSection("Update 26 - Vengeful Spirits & Cursed Tool Imbuement", "• <b>Vengeful Spirits</b>: bind the dead to you for a combat power boost. Hold up to 3 bound spirits and release them whenever you choose.\n• <b>Cursed Tool Imbuement</b>: reach 75 affinity and 60 mastery with your tool to permanently bond your CE into it. The bond carries to the next life at half affinity.\n", Color3.fromRGB(120, 190, 255))
+
+addSection("Update 25 - Enemy Patterns", "• Enemies now fight with a pattern based on their kind and grade. Some hit in steady combos, some build to a heavy strike, some overwhelm early and stall out. Learning the pattern matters.\n", Color3.fromRGB(255, 90, 125))
+
+addSection("Update 24 - Multiplayer World System", "• Public worlds where multiple players live out their lives side by side.\n• World events fire based on the collective Wanted level of all living souls.\n• A <b>World History</b> panel tracks every notable event, birth, and death across the world's lifespan.\n", Color3.fromRGB(120, 190, 255))
 
 addSection("Update 23 - Kenjaku Clan: Death Paintings & Culling Games", "• Kenjaku characters with Brain Transplant can now create <b>Death Paintings</b>, usable as a special attack in combat.\n• Recruit Notable Sorcerers into the <b>Culling Games</b> for a shot at big rewards.\n", Color3.fromRGB(179, 136, 255))
 

@@ -100,6 +100,8 @@ local getClanWar = BK_Remotes.Get("GetClanWar")
 local clanWarAction = BK_Remotes.Get("ClanWarAction")
 getCultWar = BK_Remotes.Get("GetCultWar")
 cultWarAction = BK_Remotes.Get("CultWarAction")
+vodRCTPrompt = BK_Remotes.Get("VoDRCTPrompt")
+vodRCTResponse = BK_Remotes.Get("VoDRCTResponse")
 local getDomain = BK_Remotes.Get("GetDomain")
 local domainAction = BK_Remotes.Get("DomainAction")
 local getGodMode = BK_Remotes.Get("GetGodMode")
@@ -1483,6 +1485,317 @@ function getNaturalOldAgeDeathChance(age)
 	return math.clamp(5 + ((age - 80) * 3), 5, 100)
 end
 
+-- ─────────────────────────────────────────────────────────────────
+-- Feature: Trait Combat Modifiers (Update 27)
+-- ─────────────────────────────────────────────────────────────────
+
+TRAIT_COMBAT_MODIFIERS = {
+	-- Body: Speed / Evasion
+	-- DodgeChance is a new mechanic; ok to stack with CombatGainMult traits.
+	fast_reflexes     = { DodgeChance = 0.10 },
+	explosive_speed   = { DodgeChance = 0.08 },
+	natural_balance   = { DodgeChance = 0.05 },
+	quiet_footsteps   = { DodgeChance = 0.04 },
+	flexible_body     = { DodgeChance = 0.04, DamageReceived = -0.04 },
+	athletic_build    = { DodgeChance = 0.03 },
+
+	-- Body: Durability
+	-- DamageReceived is a new layer (direct HP multiplier); ok to stack with CombatGainMult traits.
+	pain_tolerant     = { DamageReceived = -0.08 },
+	high_stamina      = { DamageReceived = -0.05 },
+	healthy_body      = { DamageReceived = -0.04, HealPerTurn = 2 },
+	quick_recovery    = { DamageReceived = -0.04, HealPerTurn = 3 },
+	brittle_bones     = { DamageReceived = 0.10 },
+	low_pain_tolerance = { DamageReceived = 0.08 },
+	weak_stamina      = { DamageReceived = 0.05 },
+
+	-- Sorcerer: Defense / Evasion
+	ambush_reader     = { DodgeChance = 0.08 },
+	defensive_genius  = { DodgeChance = 0.08, DamageDealt = -0.03 },
+	tactical_coward   = { DodgeChance = 0.12 },
+	curse_resistant   = { DamageReceived = -0.10 },
+	iron_will         = { DamageReceived = -0.06 },
+	fragile_body      = { DamageReceived = 0.12, MaxDamageReceived = 0.70 },
+
+	-- Sorcerer: Offense penalty (no CombatGainMult in these traits)
+	sloppy_output     = { DamageDealt = -0.08 },
+
+	-- Sorcerer: Healing
+	reverse_curse_spark = { HealPerTurn = 5 },
+
+	-- Sorcerer: Pattern detection (Update 26 system)
+	technique_analyst = { PatternDetect = 0.15 },
+	domain_sense      = { PatternDetect = 0.12 },
+	sharp_mind        = { PatternDetect = 0.08 },
+
+	-- Personality: Combat expression
+	-- DamageDealt omitted for traits with CombatGainMult (already boosted in GetCombatPower).
+	-- DamageReceived kept as a new layer (extra recklessness = more hits taken).
+	hot_headed        = { DamageReceived = 0.06 },
+	reckless          = { DamageReceived = 0.06 },
+	battle_addict     = { DamageReceived = 0.06 },
+	brave             = { DodgeChance = 0.02 },
+	stoic             = { DamageReceived = -0.04 },
+	careful           = { DodgeChance = 0.04, DamageDealt = -0.03 },
+}
+
+MODIFIER_CAPS = {
+	DamageDealt    = 0.20,
+	DamageReceived = -0.20,
+	DodgeChance    = 0.20,
+}
+
+function getTraitCombatModifiers(stats)
+	local mods = {
+		DamageDealt       = 0,
+		DamageReceived    = 0,
+		DodgeChance       = 0,
+		PatternDetect     = 0,
+		HealPerTurn       = 0,
+		MaxDamageReceived = nil,
+	}
+	for _, traitId in ipairs(stats.Traits or {}) do
+		local entry = TRAIT_COMBAT_MODIFIERS[tostring(traitId)]
+		if entry then
+			for key, value in pairs(entry) do
+				if key == "MaxDamageReceived" then
+					if mods.MaxDamageReceived == nil or value < mods.MaxDamageReceived then
+						mods.MaxDamageReceived = value
+					end
+				elseif mods[key] ~= nil then
+					mods[key] = mods[key] + value
+				end
+			end
+		end
+	end
+	for key, cap in pairs(MODIFIER_CAPS) do
+		if cap > 0 then
+			mods[key] = math.min(mods[key], cap)
+		else
+			mods[key] = math.max(mods[key], cap)
+		end
+	end
+	return mods
+end
+
+-- ─────────────────────────────────────────────────────────────────
+-- Feature: Cursed Energy Traits
+-- ─────────────────────────────────────────────────────────────────
+
+CE_TRAITS = {
+	{
+		Id = "lightning_ce",
+		Name = "Lightning CE",
+		Color = "#f5e642",
+		Description = "Your cursed energy carries a natural electric charge.",
+		CombatEffect = "shock",
+		PassiveEffect = "ce_gain",
+		PassiveValue = 5,
+	},
+	{
+		Id = "cursed_flame_ce",
+		Name = "Cursed Flame CE",
+		Color = "#e53935",
+		Description = "Your cursed energy burns with residual heat.",
+		CombatEffect = "burn_damage",
+		PassiveEffect = nil,
+		PassiveValue = 0,
+	},
+	{
+		Id = "infinity_pulse_ce",
+		Name = "Infinity Pulse CE",
+		Color = "#78beff",
+		Description = "Your cursed energy naturally repels incoming force.",
+		CombatEffect = "deflect",
+		PassiveEffect = "ce_drain",
+		PassiveValue = -3,
+	},
+	{
+		Id = "venom_ce",
+		Name = "Venom CE",
+		Color = "#a782ff",
+		Description = "Your cursed energy is corrosive to others.",
+		CombatEffect = "ce_drain_enemy",
+		PassiveEffect = nil,
+		PassiveValue = 0,
+	},
+	{
+		Id = "serene_ce",
+		Name = "Serene CE",
+		Color = "#c8f0a0",
+		Description = "Your cursed energy flows with unusual calm.",
+		CombatEffect = "ce_regen",
+		PassiveEffect = "happiness",
+		PassiveValue = 2,
+	},
+	{
+		Id = "cursed_pressure_ce",
+		Name = "Cursed Pressure CE",
+		Color = "#ff9800",
+		Description = "Your cursed energy overwhelms weaker presences.",
+		CombatEffect = "pressure_bonus",
+		PassiveEffect = nil,
+		PassiveValue = 0,
+	},
+}
+
+CE_TRAIT_MAP = {}
+for _, t in ipairs(CE_TRAITS) do
+	CE_TRAIT_MAP[t.Id] = t
+end
+
+function getCETraitById(id)
+	return CE_TRAIT_MAP[tostring(id or "")]
+end
+
+function assignCETrait(stats)
+	if stats.CETrait ~= nil then return end
+	if math.random(1, 100) <= 10 then
+		local trait = CE_TRAITS[math.random(1, #CE_TRAITS)]
+		stats.CETrait = trait.Id
+	end
+end
+
+function applyCETraitCombatEffect(stats, combatResult)
+	local trait = getCETraitById(stats.CETrait)
+	if not trait then return combatResult end
+
+	local effect = trait.CombatEffect
+	local note = ""
+	local color = trait.Color or "#ffffff"
+	local label = "<font color='" .. color .. "'><b>[ " .. trait.Name:upper() .. " ]</b></font>"
+
+	if effect == "shock" then
+		combatResult.HealthDamage = math.max(0, math.floor((combatResult.HealthDamage or 0) * 0.75))
+		note = label .. " Your cursed energy crackled through the strike — the enemy was momentarily stunned."
+
+	elseif effect == "burn_damage" then
+		if tostring(stats.CursedTechnique or "None") ~= "None" then
+			combatResult.HealthDamage = math.max(0, math.floor((combatResult.HealthDamage or 0) * 0.85))
+			note = label .. " Your cursed energy burned through your technique, intensifying the exchange."
+		end
+
+	elseif effect == "deflect" then
+		if math.random(1, 100) <= 10 then
+			combatResult.HealthDamage = 0
+			note = label .. " Your cursed energy repelled the attack entirely."
+		end
+
+	elseif effect == "ce_drain_enemy" then
+		combatResult.HealthDamage = math.max(0, math.floor((combatResult.HealthDamage or 0) * 0.85))
+		note = label .. " Your corrosive cursed energy drained the enemy's reserves mid-fight."
+
+	elseif effect == "ce_regen" then
+		combatResult.CETrait_PostCERegen = 8
+		note = label .. " Your serene cursed energy steadied itself during the fight."
+
+	elseif effect == "pressure_bonus" then
+		local playerCE = tonumber(stats.CursedEnergy) or 0
+		local enemyPowerThreshold = (combatResult.EnemyPower or 0) * 0.6
+		if playerCE > enemyPowerThreshold then
+			combatResult.HealthDamage = math.max(0, math.floor((combatResult.HealthDamage or 0) * 0.90))
+			note = label .. " Your superior cursed pressure overwhelmed the enemy's resistance."
+		end
+	end
+
+	if note ~= "" then
+		combatResult.Summary = (combatResult.Summary or "") .. "\n" .. note
+	end
+
+	return combatResult
+end
+
+function applyCETraitPassive(stats, sixMonthNotes)
+	local trait = getCETraitById(stats.CETrait)
+	if not trait or not trait.PassiveEffect then return "" end
+
+	local effect = trait.PassiveEffect
+	local value = tonumber(trait.PassiveValue) or 0
+	local color = trait.Color or "#ffffff"
+	local noteText = ""
+
+	if effect == "ce_gain" then
+		stats.CursedEnergy = math.max(0, (tonumber(stats.CursedEnergy) or 0) + value)
+		noteText = "<font color='" .. color .. "'>" .. (value >= 0 and "+" or "") .. tostring(value) .. " CE (" .. trait.Name .. ")</font>"
+	elseif effect == "ce_drain" then
+		stats.CursedEnergy = math.max(0, (tonumber(stats.CursedEnergy) or 0) + value)
+		noteText = "<font color='" .. color .. "'>" .. tostring(value) .. " CE (" .. trait.Name .. ")</font>"
+	elseif effect == "happiness" then
+		stats.Happiness = math.clamp((tonumber(stats.Happiness) or 100) + value, 0, 100)
+		noteText = "<font color='" .. color .. "'>" .. (value >= 0 and "+" or "") .. tostring(value) .. " Happiness (" .. trait.Name .. ")</font>"
+	end
+
+	if noteText ~= "" then
+		if sixMonthNotes then
+			table.insert(sixMonthNotes, noteText)
+		else
+			return "\n<b>CE Trait:</b> " .. noteText
+		end
+	end
+	return ""
+end
+
+-- ─────────────────────────────────────────────────────────────────
+
+pendingVoDRCT = {}
+vodRCTLocked = {}
+
+function tryVoDRCT(player, stats, onDeath)
+	local ce = tonumber(stats.CursedEnergy) or 0
+	if ce < 50 or stats.VoDRCTUsed == true then
+		onDeath()
+		return
+	end
+
+	local userId = player.UserId
+	vodRCTLocked[userId] = true
+	local signal = Instance.new("BindableEvent")
+	pendingVoDRCT[userId] = signal
+
+	vodRCTPrompt:FireClient(player, {
+		CE = ce,
+		TechniqueMastery = tonumber(stats.TechniqueMastery) or 0,
+		CursedTechnique = tostring(stats.CursedTechnique or "None"),
+	})
+
+	local done = false
+	task.delay(10, function()
+		if not done then
+			done = true
+			if pendingVoDRCT[userId] == signal then
+				pendingVoDRCT[userId] = nil
+			end
+			signal:Fire(false)
+		end
+	end)
+
+	local accepted = signal.Event:Wait()
+	signal:Destroy()
+	done = true
+	vodRCTLocked[userId] = nil
+
+	if accepted then
+		stats.Health = math.clamp(math.floor(ce * 0.15), 8, 25)
+		stats.CursedEnergy = 0
+		stats.VoDRCTUsed = true
+		stats.VoDRCTActivations = (tonumber(stats.VoDRCTActivations) or 0) + 1
+		fireLifeUpdate(player, stats, "<font color='#a782ff'><b>[ VERGE OF DEATH RCT ]</b></font> You activated Reverse Cursed Technique at the brink of death. All CE drained. You survived — barely.")
+		fireMajorPopup(player, "VERGE OF DEATH RCT", "You forced Reverse Cursed Technique at the last possible moment.", "CE FULLY DRAINED", "You survived — but you cannot use this again this life.")
+		saveStats(player)
+	else
+		onDeath()
+	end
+end
+
+vodRCTResponse.OnServerEvent:Connect(function(player, accepted)
+	local userId = player.UserId
+	local signal = pendingVoDRCT[userId]
+	if signal then
+		pendingVoDRCT[userId] = nil
+		signal:Fire(accepted == true)
+	end
+end)
+
 function applyOldAgeMortality(stats)
 	if not stats or stats.Alive == false or isCurseLife(stats) then
 		return ""
@@ -1953,16 +2266,7 @@ function ensureTraitState(stats)
 		stats.Traits = BitKaisenTraits.RollBirthTraits(stats)
 		BitKaisenTraits.ApplyStartingBonuses(stats)
 		stats.TraitsRolled = true
-		if not stats.CETrait or stats.CETrait == "" then
-			local CE_TRAITS = {
-				"Lightning CE", "Cursed Flame CE", "Infinity Pulse CE",
-				"Venom CE", "Serene CE", "Cursed Pressure CE",
-			}
-			local threshold = math.random(8, 12)
-			if math.random(1, 100) <= threshold then
-				stats.CETrait = CE_TRAITS[math.random(1, #CE_TRAITS)]
-			end
-		end
+		assignCETrait(stats)
 	else
 		stats.TraitSummary = BitKaisenTraits.GetTraitDisplay(stats)
 	end
@@ -2734,6 +3038,15 @@ function ensureExtraStats(stats)
 	stats.RCTReviveMaxPerLife = RCT_REVIVE_MAX_PER_LIFE
 	stats.RCTSecondChances = math.max(0, tonumber(stats.RCTSecondChances) or 0)
 	stats.RCTPendingRevive = math.max(0, tonumber(stats.RCTPendingRevive) or 0)
+	stats.VoDRCTUsed = stats.VoDRCTUsed == true
+	stats.VoDRCTActivations = math.max(0, tonumber(stats.VoDRCTActivations) or 0)
+	-- CETrait: nil = no trait, valid Id string = has trait
+	-- Clear if not a string, empty, or not a recognized Id (migrates corrupt old data)
+	if stats.CETrait ~= nil then
+		if type(stats.CETrait) ~= "string" or stats.CETrait == "" or not getCETraitById(stats.CETrait) then
+			stats.CETrait = nil
+		end
+	end
 	stats.RCTOldAgeYearsRemaining = math.max(0, tonumber(stats.RCTOldAgeYearsRemaining) or 0)
 	stats.LastRCTOldAgeExtensionYears = math.max(0, tonumber(stats.LastRCTOldAgeExtensionYears) or 0)
 	stats.InnateTechnique = stats.InnateTechnique or "None"
@@ -3759,6 +4072,7 @@ function startAsCurseRebirth(player)
 	end
 	BitKaisenTraits.ApplyStartingBonuses(newStats)
 	newStats.TraitsRolled = true
+	assignCETrait(newStats)
 	local curseStartBoostMessage = BK_GodModeService.ApplyStartBoost(newStats)
 
 	local priorChildren = {}
@@ -3883,7 +4197,7 @@ function enforcePublicLegendaryExclusivity(stats, player)
 	stats.Traits = kept
 end
 
-function startNewLife(player, mode)
+function startNewLife(player, mode, preferences)
 	local oldStats = playerLives[player.UserId]
 	local preservedSettings = nil
 	local preservedMetaProgress = nil
@@ -3973,7 +4287,26 @@ function startNewLife(player, mode)
 		newStats.TutorialFlags = preservedTutorialFlags
 	end
 
-	local rolledOrigin = rollBirthOriginForPlayer(player)
+	local quickRerollValidated = nil
+	if preferences and typeof(preferences.PreferredOriginId) == "string" and typeof(preferences.PreferredCT) == "string" then
+		local reqId = preferences.PreferredOriginId
+		local reqCT = preferences.PreferredCT
+		for _, origin in ipairs(BitKaisenStats.Origins) do
+			if origin.Id == reqId and (origin.Chance or 0) > 0 then
+				if typeof(origin.InnatePool) == "table" then
+					for _, poolEntry in ipairs(origin.InnatePool) do
+						if poolEntry.Name == reqCT then
+							quickRerollValidated = { origin = origin, ct = reqCT }
+							break
+						end
+					end
+				end
+				break
+			end
+		end
+	end
+
+	local rolledOrigin = quickRerollValidated and quickRerollValidated.origin or rollBirthOriginForPlayer(player)
 	local rolledGender = math.random(1, 2) == 1 and "Male" or "Female"
 	local identity = BitKaisenStats.GenerateRandomIdentity(rolledOrigin, rolledGender)
 
@@ -3998,6 +4331,18 @@ function startNewLife(player, mode)
 	newStats.CEControl        = math.max(1, math.floor(math.random(3, 10) * (birthPotential / 100) + 0.5))
 
 	BitKaisenStats.ApplyBirthTechnique(newStats, rolledOrigin, ownsLuckyBirthPass(player))
+	if quickRerollValidated then
+		newStats.InnateTechnique  = quickRerollValidated.ct
+		newStats.CursedTechnique  = "None"
+		newStats.TechniqueType    = "Innate"
+		newStats.TechniqueKnown   = true
+		newStats.TechniqueUsable  = false
+		newStats.TechniqueAwakened = false
+		newStats.InnateDormant    = true
+		newStats.TechniqueMastery = 0
+		newStats.LastQuickRerollClan = quickRerollValidated.origin.Id
+		newStats.LastQuickRerollCT   = quickRerollValidated.ct
+	end
 	applySecretBirthEasterEggs(player, newStats)
 	applyLuckyBirthBonuses(player, newStats)
 
@@ -4057,6 +4402,7 @@ function startNewLife(player, mode)
 	end
 	BitKaisenTraits.ApplyStartingBonuses(newStats)
 	newStats.TraitsRolled = true
+	assignCETrait(newStats)
 	local godModeStartBoostMessage = BK_GodModeService.ApplyStartBoost(newStats)
 	syncFamilyStatus(newStats)
 	ensureSorcererRegistrationState(newStats)
@@ -4080,6 +4426,13 @@ function startNewLife(player, mode)
 	birthMessage = birthMessage .. "\nYour name is <b>" .. newStats.Name .. "</b>."
 	birthMessage = birthMessage .. "\nGender: <b>" .. tostring(newStats.Gender or "Unknown") .. "</b>."
 	birthMessage = birthMessage .. "\n" .. BitKaisenTraits.BuildBirthMessage(newStats)
+
+	if newStats.CETrait then
+		local ceTraitData = getCETraitById(newStats.CETrait)
+		if ceTraitData then
+			birthMessage = birthMessage .. "\n<font color='" .. ceTraitData.Color .. "'><b>[ CE TRAIT: " .. ceTraitData.Name:upper() .. " ]</b></font> " .. ceTraitData.Description
+		end
+	end
 
 	if publicCatchUpMoney and publicCatchUpMoney > 0 then
 		birthMessage = birthMessage .. "\n<font color='#a782ff'><b>[ EL MUNDO YA AVANZÓ ]</b></font> Este mundo lleva años corriendo sin vos. Arrancás con <b>+$" .. tostring(publicCatchUpMoney) .. "</b> y <b>+" .. tostring(publicCatchUpCE or 0) .. " CE</b> para ponerte a la par."
@@ -8816,9 +9169,11 @@ function resolveVesselEscortDialogue(player, stats, option)
 		resultText = opening .. "\n\nThe assassin broke through your guard. You survived, but the escort collapsed and the higher-ups lost confidence in you.\nPenalties: -8 Reputation, Health damage, +1 Mission Failed."
 
 		if stats.Health <= 0 then
-			stats.Alive = false
-			stats.CauseOfDeath = stats.CauseOfDeath or "Killed during a mission"
-			resultText = resultText .. "\nYour body gave out after the mission."
+			tryVoDRCT(player, stats, function()
+				stats.Alive = false
+				stats.CauseOfDeath = stats.CauseOfDeath or "Killed during a mission"
+				resultText = resultText .. "\nYour body gave out after the mission."
+			end)
 		end
 	end
 
@@ -9935,6 +10290,10 @@ function ageUp(player)
 			table.insert(sixMonthNotes, "+1 Clan Reputation")
 		end
 
+		if completedFullYear then
+			applyCETraitPassive(stats, sixMonthNotes)
+		end
+
 		if #sixMonthNotes > 0 then
 			logMessage = logMessage .. "\n<b>Six-month progress:</b> " .. table.concat(sixMonthNotes, ", ") .. "."
 		end
@@ -10368,6 +10727,11 @@ function ageUp(player)
 
 	maybeBeginHigherUpsInvitation(player, stats)
 
+	local cePassiveNote = applyCETraitPassive(stats, nil)
+	if cePassiveNote ~= "" then
+		logMessage = logMessage .. cePassiveNote
+	end
+
 	fireLifeUpdate(player, stats, logMessage .. jjhEventText .. npcMissionText)
 	saveStats(player)
 end
@@ -10647,26 +11011,26 @@ function advancePublicWorldYear(worldId, livingPlayers)
 			local firedPulseEvent = false
 			if averageWanted >= publicRepique.CRACKDOWN_WANTED_THRESHOLD then
 				firedPulseEvent = true
-				BK_WorldStateService.AddEvent(worldId, worldState.Year, "La Sociedad Jujutsu lanzó una Represión ante el creciente desorden.")
+				BK_WorldStateService.AddEvent(worldId, worldState.Year, "The Jujutsu Society launched a Crackdown in response to rising disorder.")
 				for _, p in ipairs(livingPlayers) do
 					fireMajorPopup(
 						p,
-						"REPRESIÓN",
-						"La Sociedad Jujutsu endureció su vigilancia sobre este mundo.",
-						"Patrullas reforzadas para todos.",
-						"El desorden colectivo tiene consecuencias."
+						"CRACKDOWN",
+						"The Jujutsu Society tightened its grip on this world.",
+						"Reinforced patrols for everyone.",
+						"Collective disorder has consequences."
 					)
 				end
 			elseif averageWanted <= publicRepique.GOLDEN_PEACE_WANTED_THRESHOLD then
 				firedPulseEvent = true
-				BK_WorldStateService.AddEvent(worldId, worldState.Year, "Una Paz Dorada se asentó sobre este mundo.")
+				BK_WorldStateService.AddEvent(worldId, worldState.Year, "A Golden Peace settled over this world.")
 				for _, p in ipairs(livingPlayers) do
 					fireMajorPopup(
 						p,
-						"PAZ DORADA",
-						"La calma sostenida trajo prosperidad a este mundo.",
-						"Todas las almas presentes lo sienten.",
-						"La paz colectiva también tiene sus frutos."
+						"GOLDEN PEACE",
+						"Sustained calm brought prosperity to this world.",
+						"All living souls feel it.",
+						"Collective peace has its rewards."
 					)
 				end
 			end
@@ -10859,14 +11223,18 @@ function resolveMission(player, stats, missionData, choiceOption)
 		end
 
 		if stats.Health <= 0 then
-			stats.Alive = false
-			stats.CauseOfDeath = stats.CauseOfDeath or "Died on a mission"
-			stats.MissionsFailed += 1
-			adjustKarma(stats, -3)
-			logMessage = logMessage .. "\nYou died on the mission."
-			fireLifeUpdate(player, stats, logMessage)
-			saveStats(player)
-			return
+			tryVoDRCT(player, stats, function()
+				stats.Alive = false
+				stats.CauseOfDeath = stats.CauseOfDeath or "Died on a mission"
+				stats.MissionsFailed += 1
+				adjustKarma(stats, -3)
+				logMessage = logMessage .. "\nYou died on the mission."
+				fireLifeUpdate(player, stats, logMessage)
+				saveStats(player)
+			end)
+			if stats.Alive == false then
+				return
+			end
 		end
 	end
 
@@ -10892,7 +11260,26 @@ function resolveMission(player, stats, missionData, choiceOption)
 		combatResult.Outcome = "Forced Failure"
 		combatResult.Summary = "Combat: <b>Forced Failure</b>. Your choice put the mission beyond recovery."
 	else
-		combatResult = BitKaisenCombat.ResolveMissionCombat(stats, missionData, { PowerBonus = powerBonus })
+		local traitMods = getTraitCombatModifiers(stats)
+		local traitPowerBonus = math.floor(traitMods.DamageDealt * 100)
+		combatResult = BitKaisenCombat.ResolveMissionCombat(stats, missionData, { PowerBonus = powerBonus + traitPowerBonus })
+		combatResult = applyCETraitCombatEffect(stats, combatResult)
+		local incomingDamage = combatResult.HealthDamage or 0
+		if incomingDamage > 0 then
+			if traitMods.DodgeChance > 0 and math.random() < traitMods.DodgeChance then
+				combatResult.HealthDamage = 0
+				combatResult.Summary = (combatResult.Summary or "") .. "\n<font color='#78ff9e'>Your reflexes let you avoid taking damage.</font>"
+			else
+				if traitMods.DamageReceived ~= 0 then
+					incomingDamage = math.max(0, math.floor(incomingDamage * (1 + traitMods.DamageReceived)))
+				end
+				if traitMods.MaxDamageReceived then
+					incomingDamage = math.min(incomingDamage, math.floor((tonumber(stats.Health) or 100) * traitMods.MaxDamageReceived))
+				end
+				combatResult.HealthDamage = incomingDamage
+			end
+		end
+		combatResult.TraitHealPerTurn = traitMods.HealPerTurn
 		success = combatResult.Success == true
 	end
 
@@ -10903,6 +11290,9 @@ function resolveMission(player, stats, missionData, choiceOption)
 		local vipMoneyMult = ownsVIPSorcererPass(player) and 1.5 or 1
 
 		local baseMissionCE = (missionData.RewardCE or 0) + (combatResult.CursedEnergyBonus or 0)
+		if (combatResult.CETrait_PostCERegen or 0) > 0 then
+			baseMissionCE += combatResult.CETrait_PostCERegen
+		end
 		local missionCEGain, missionCEBonus, missionCETool = BitKaisenCursedTools.ApplyCEGain(stats, baseMissionCE * missionInvestorMult)
 		stats.CursedEnergy += missionCEGain
 		stats.Money += math.floor((missionData.RewardMoney or 0) * smartBonus * ((combatResult and combatResult.RewardMoneyMult) or 1) * missionInvestorMult * doubleMoneyMult * vipMoneyMult)
@@ -10934,6 +11324,10 @@ function resolveMission(player, stats, missionData, choiceOption)
 		stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + (combatResult.MasteryGain or 0), 0, 100)
 		if (combatResult.HealthDamage or 0) > 0 then
 			stats.Health = math.clamp((stats.Health or 100) - combatResult.HealthDamage, 0, 100)
+		end
+		local traitHeal = math.floor(tonumber(combatResult.TraitHealPerTurn) or 0)
+		if traitHeal > 0 then
+			stats.Health = math.clamp((stats.Health or 100) + traitHeal, 0, 100)
 		end
 
 		if stats.ClanFounded then
@@ -11061,9 +11455,11 @@ function resolveMission(player, stats, missionData, choiceOption)
 		end
 
 		if stats.Health <= 0 then
-			stats.Alive = false
-			stats.CauseOfDeath = stats.CauseOfDeath or "Killed in action"
-			logMessage = logMessage .. "\nYou were killed in action."
+			tryVoDRCT(player, stats, function()
+				stats.Alive = false
+				stats.CauseOfDeath = stats.CauseOfDeath or "Killed in action"
+				logMessage = logMessage .. "\nYou were killed in action."
+			end)
 		end
 	end
 
@@ -11419,7 +11815,7 @@ updateLifeEvent.OnServerEvent:Connect(function(player, action, data)
 			return
 		end
 
-		startNewLife(player)
+		startNewLife(player, nil, typeof(data) == "table" and data or nil)
 		return
 	end
 
@@ -11457,6 +11853,9 @@ updateLifeEvent.OnServerEvent:Connect(function(player, action, data)
 		if not checkRateLimit(player, "AgeUp") then
 			return
 		end
+		if vodRCTLocked[player.UserId] then
+			return
+		end
 
 		-- HOTFIX: Clear stuck pending choices before aging, no matter where they came from.
 		pendingMissions[player.UserId] = nil
@@ -11474,12 +11873,17 @@ updateLifeEvent.OnServerEvent:Connect(function(player, action, data)
 			return
 		end
 
+		if vodRCTLocked[player.UserId] then
+			return
+		end
 		processMission(player, data)
 	elseif action == "DoActivity" then
 		if not checkRateLimit(player, "DoActivity") then
 			return
 		end
-
+		if vodRCTLocked[player.UserId] then
+			return
+		end
 		processActivity(player, data)
 	end
 end)
@@ -11495,6 +11899,9 @@ missionChoice.OnServerEvent:Connect(function(player, optionIndex)
 	end
 
 	local userId = player.UserId
+	if vodRCTLocked[userId] then
+		return
+	end
 	local pending = pendingMissions[userId]
 	local stats = playerLives[userId]
 

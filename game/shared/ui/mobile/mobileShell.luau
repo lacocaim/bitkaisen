@@ -202,6 +202,14 @@ local function MobileProfileHeader()
 	local techVal   = derive(function() local s = stats() return tostring(s and s.CursedTechnique or "None") end)
 	local traitVal  = derive(function() local s = stats() return tostring(s and s.TraitSummary or "None") end)
 	local ceVal     = derive(function() local s = stats() return tostring(s and s.CursedEnergy or 0) end)
+	local cePotVal  = derive(function() local s = stats() return tostring(s and s.CEPotential or 0) end)
+	local ceOutVal  = derive(function() local s = stats() return tostring(s and s.CEOutput or 0) end)
+	local ceReinVal = derive(function() local s = stats() return tostring(s and s.CEReinforcement or 0) end)
+	local ceCtrlVal = derive(function() local s = stats() return tostring(s and s.CEControl or 0) end)
+	local cePotVisible = derive(function()
+		local s = stats()
+		return s ~= nil and ((tonumber(s.CEPotential) or 0) > 0 or (tonumber(s.CEOutput) or 0) > 0)
+	end)
 	local moneyVal  = derive(function() local s = stats() return "$" .. helpers.formatMoneyAmount(s and s.Money or 0) end)
 	local repVal    = derive(function() local s = stats() return tostring(s and s.Reputation or 0) end)
 	local repColor  = derive(function() local s = stats() return (tonumber(s and s.Reputation) or 0) < 0 and theme.Red or theme.Gold end)
@@ -553,6 +561,21 @@ local function MobileProfileHeader()
 					LayoutOrder = 2,
 					create("UIListLayout") { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 4) },
 					DInfoRow(_ui("dossier_ce",        "CE"),        ceVal,     theme.Purple),
+					(function()
+						local frame = create("Frame") {
+							Name = "CEPotentialRows",
+							Size = UDim2.new(1, 0, 0, 0),
+							AutomaticSize = Enum.AutomaticSize.Y,
+							BackgroundTransparency = 1,
+							Visible = cePotVisible,
+							create("UIListLayout") { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 4) },
+							DInfoRow(_ui("dossier_cepot",  "CE Potential"), cePotVal,  theme.Purple),
+							DInfoRow(_ui("dossier_ceout",  "CE Output"),    ceOutVal,  theme.Purple),
+							DInfoRow(_ui("dossier_cerein", "CE Reinf."),    ceReinVal, theme.Purple),
+							DInfoRow(_ui("dossier_cectrl", "CE Control"),   ceCtrlVal, theme.Purple),
+						}
+						return frame
+					end)(),
 					DInfoRow(_ui("dossier_money",     "Money"),     moneyVal,  theme.Green),
 					DInfoRow(_ui("dossier_rep",       "Rep"),       repVal,    repColor),
 					(function()
@@ -601,11 +624,20 @@ local function MobileProfileHeader()
 end
 
 local function MobileLifeLog()
+	local LOG_CHAR_LIMIT = 12000
 	local logContent = derive(function()
 		local _ = playerState.logVersion()
 		local lines = playerState.lifeLog()
 		if #lines == 0 then return "Loading into the Jujutsu world..." end
-		return table.concat(lines, "\n")
+		local kept = {}
+		local total = 0
+		for i = #lines, 1, -1 do
+			local len = #lines[i] + 1
+			if total + len > LOG_CHAR_LIMIT then break end
+			table.insert(kept, 1, lines[i])
+			total += len
+		end
+		return table.concat(kept, "\n")
 	end)
 
 	local logCount = derive(function()

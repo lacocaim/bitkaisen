@@ -15,13 +15,25 @@ local effect = vide.effect
 local DIMLO = Color3.fromRGB(60, 58, 78)
 
 local function LifeLog()
+	local LOG_CHAR_LIMIT = 12000
 	local logContent = derive(function()
 		local _ = playerState.logVersion()
 		local lines = playerState.lifeLog()
 		if #lines == 0 then
 			return "Loading into the Jujutsu world..."
 		end
-		return table.concat(lines, "\n")
+		-- Build from the end so the most recent lines always show in full.
+		-- Roblox's RichText parser silently truncates very long strings,
+		-- so we cap total characters before joining.
+		local kept = {}
+		local total = 0
+		for i = #lines, 1, -1 do
+			local len = #lines[i] + 1  -- +1 for the \n
+			if total + len > LOG_CHAR_LIMIT then break end
+			table.insert(kept, 1, lines[i])
+			total += len
+		end
+		return table.concat(kept, "\n")
 	end)
 
 	local logCount = derive(function()

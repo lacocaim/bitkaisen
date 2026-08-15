@@ -144,6 +144,10 @@ local REMOTE_DEFINITIONS = {
 	DuelInvite = "RemoteEvent",
 	-- Multiplayer Fase 7: player cells (clans), wars, territory
 	CellAction = "RemoteEvent",
+
+	-- Update 27: Verge of Death RCT
+	VoDRCTPrompt = "RemoteEvent",
+	VoDRCTResponse = "RemoteEvent",
 }
 
 local remoteCache = {}

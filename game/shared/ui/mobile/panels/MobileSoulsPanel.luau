@@ -240,7 +240,7 @@ refresh = function()
 			table.insert(allyNames, tostring(ally.Name))
 		end
 		mobileLabel({ parent = cellCard, text = "🚩 " .. (#(yourCell.Territories or {}) > 0 and table.concat(yourCell.Territories, ", ") or _g("no_territory", "no territory yet")) .. (#allyNames > 0 and ("   🤝 " .. table.concat(allyNames, ", ")) or ""), size = 12, color = theme.SubText, order = 3 })
-		mobileLabel({ parent = cellCard, text = "📜 " .. _g("oath", "Juramento de Era") .. ": " .. tostring(yourCell.EraDuelWins) .. "/" .. tostring(yourCell.OathGoal) .. " " .. _g("oath_body", "duel wins this era for") .. " +$" .. tostring(yourCell.OathReward), size = 12, color = theme.Purple, order = 4 })
+		mobileLabel({ parent = cellCard, text = "📜 " .. _g("oath", "Era Oath") .. ": " .. tostring(yourCell.EraDuelWins) .. "/" .. tostring(yourCell.OathGoal) .. " " .. _g("oath_body", "duel wins this era for") .. " +$" .. tostring(yourCell.OathReward), size = 12, color = theme.Purple, order = 4 })
 
 		local amountBox = Instance.new("TextBox")
 		amountBox.Size = UDim2.new(1, 0, 0, 36)
@@ -517,7 +517,7 @@ refresh = function()
 			})
 			-- Fase 6B: challenge to a live duel (REVANCHA if you hold a
 			-- rematch marker against this soul; dimmed while they duel).
-			local duelText = soul.RematchAvailable and ("🔥 " .. _g("action_rematch", "REVANCHA")) or ("⚔ " .. _g("action_duel", "DUEL"))
+			local duelText = soul.RematchAvailable and ("🔥 " .. _g("action_rematch", "REMATCH")) or ("⚔ " .. _g("action_duel", "DUEL"))
 			mobileButton({
 				parent = actionRow,
 				text = soul.InDuel and ("⚔ " .. _g("action_dueling", "DUELING...")) or duelText,

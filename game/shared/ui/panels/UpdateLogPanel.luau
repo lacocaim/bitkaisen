@@ -104,12 +104,12 @@ padding.PaddingLeft = UDim.new(0, 16)
 padding.PaddingRight = UDim.new(0, 16)
 padding.Parent = panel
 
-local title = makeText(panel, "Title", "UPDATE 27", 22, true)
+local title = makeText(panel, "Title", "UPDATE 28", 22, true)
 title.Size = UDim2.new(1, -48, 0, 34)
 title.Position = UDim2.new(0, 0, 0, 0)
 title.TextColor3 = Color3.fromRGB(255, 220, 139)
 
-local subtitle = makeText(panel, "Subtitle", "Cursed Data Panel & Quick Reroll", 14, false)
+local subtitle = makeText(panel, "Subtitle", "Your bloodline decides the life you live", 14, false)
 subtitle.Size = UDim2.new(1, -48, 0, 22)
 subtitle.Position = UDim2.new(0, 0, 0, 34)
 subtitle.TextColor3 = Color3.fromRGB(198, 186, 164)
@@ -187,6 +187,12 @@ local function addSection(headerText, bodyText, headerColor)
 	body.AutomaticSize = Enum.AutomaticSize.Y
 	body.TextColor3 = Color3.fromRGB(232, 223, 205)
 end
+
+addSection("Update 28 - Your Bloodline Decides", "• All 37 clans and lineages now have their own life. Childhood, adolescence, adulthood and old age read differently depending on the name you were born into.\n• Being born a <b>Gojo</b> means elders measuring you and no children allowed near you. A <b>Zenin</b> is ranked by strength in front of the family. A <b>Death Painting</b> understands it was made, not born.\n• Every origin now has its own written birth line and its own ending, instead of one generic sentence for everyone.\n• Events caused by your bloodline are labelled in the system log, so you can see when your blood is what made something happen.\n", Color3.fromRGB(216, 164, 65))
+
+addSection("Update 28 - The Second Half of Life", "• Life after 40 now has content of its own: a body that stops answering while your technique stays sharp, outliving the people you trained beside, being asked to teach instead of deploy, and the reckoning that comes with it.\n• Clan-specific late life too. The Gojo with nobody left to correct them, the Zenin who is now the one ranking the next generation, the Kenjaku who starts thinking about the next body instead of the next year.\n", Color3.fromRGB(179, 136, 255))
+
+addSection("Update 28 - Bloodline Choices In Missions", "• Mission situations now offer options only your clan can take. A Zenin triages the way they were raised to, a Nanami separates the work from the grief, a Todo asks a rival what kind of person they like mid-fight.\n• More situations overall, and more technique-specific ways to solve them.\n• Everything new is fully translated into Spanish and Portuguese from day one.\n", Color3.fromRGB(115, 220, 150))
 
 addSection("Update 27 - Cursed Data Panel", "• A new collapsible <b>Cursed Data</b> section in your Dossier shows hidden stats: Cursed Resentment, RCT Revives, CE Trait, Awakening status, binding vows, and more.\n• <b>Resentment bar</b> tracks your Cursed Resentment live, with a threshold marker at the point where things get dangerous.\n• <b>Awakening status</b> shows whether you're eligible, not yet met, or triggered with what caused it.\n", Color3.fromRGB(179, 136, 255))
 

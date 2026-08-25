@@ -25,6 +25,13 @@ local BitKaisenCombat = require(ReplicatedStorage:WaitForChild("BitKaisenCombat"
 local BK_CombatService = require(script.Parent:WaitForChild("BK_CombatService"))
 -- Fase 7: finished duels feed cell-war scoreboards + the Juramento de Era.
 local BK_CellService = require(script.Parent:WaitForChild("BK_CellService"))
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+
+-- Footer tag on duel popups -- English in code, translated per player.
+local function soulsTag(player)
+	return BitKaisenLocale.tOrFallback(
+		BitKaisenLocale.getPlayerLocale(player.UserId), "souls.tag", nil, "Lives Gathering")
+end
 
 local BK_DuelService = {}
 
@@ -214,7 +221,7 @@ local function finishDuel(session, winnerUserId, reason)
 		winnerStats.DuelWins = (tonumber(winnerStats.DuelWins) or 0) + 1
 		winnerStats.DuelWinsVs = typeof(winnerStats.DuelWinsVs) == "table" and winnerStats.DuelWinsVs or {}
 		winnerStats.DuelWinsVs[tostring(loser.UserId)] = (tonumber(winnerStats.DuelWinsVs[tostring(loser.UserId)]) or 0) + 1
-		fireMajorPopup(winner.Player, "DUEL WON", "You defeated " .. loser.Name .. " in a live duel.", "+$" .. tostring(money) .. "  +" .. tostring(REWARD_REPUTATION) .. " Rep", "Reunión de Vidas", "success")
+		fireMajorPopup(winner.Player, "DUEL WON", "You defeated " .. loser.Name .. " in a live duel.", "+$" .. tostring(money) .. "  +" .. tostring(REWARD_REPUTATION) .. " Rep", soulsTag(winner.Player), "success")
 		fireLifeUpdate(winner.Player, winnerStats, "⚔ You won the duel against " .. loser.Name .. " (+$" .. tostring(money) .. ").")
 		if context.ForceSaveStats then
 			context.ForceSaveStats(winner.Player, "DuelWon")
@@ -227,8 +234,8 @@ local function finishDuel(session, winnerUserId, reason)
 		-- higher stakes. Never lethal, never costs the loser anything else.
 		loserStats.DuelRematch = typeof(loserStats.DuelRematch) == "table" and loserStats.DuelRematch or {}
 		loserStats.DuelRematch[tostring(winner.UserId)] = true
-		fireMajorPopup(loser.Player, "DUEL LOST", winner.Name .. " bested you this time. A Rematch marker is yours -- use it from the Lives tab.", "⚔ REVANCHA AVAILABLE", "Reunión de Vidas", "info")
-		fireLifeUpdate(loser.Player, loserStats, "⚔ You lost the duel against " .. winner.Name .. ". Revancha available.")
+		fireMajorPopup(loser.Player, "DUEL LOST", winner.Name .. " bested you this time. A Rematch marker is yours -- use it from the Lives tab.", "⚔ REMATCH AVAILABLE", soulsTag(loser.Player), "info")
+		fireLifeUpdate(loser.Player, loserStats, "⚔ You lost the duel against " .. winner.Name .. ". Rematch available.")
 		if context.ForceSaveStats then
 			context.ForceSaveStats(loser.Player, "DuelLost")
 		end
@@ -420,7 +427,7 @@ local function handleInvite(player, data)
 		IsRematch = isRematch,
 		ExpiresAt = os.time() + INVITE_SECONDS,
 	})
-	fireLifeUpdate(player, stats, "⚔ Duel challenge sent to " .. tostring(targetStats.Name or targetPlayer.Name) .. (isRematch and " (REVANCHA)." or "."))
+	fireLifeUpdate(player, stats, "⚔ Duel challenge sent to " .. tostring(targetStats.Name or targetPlayer.Name) .. (isRematch and " (REMATCH)." or "."))
 
 	task.delay(INVITE_SECONDS + 1, function()
 		local invite = invites[targetPlayer.UserId]
@@ -460,7 +467,7 @@ local function startDuel(challenger, challengerStats, target, targetStats, isRem
 		challengerStats.DuelRematch[tostring(target.UserId)] = nil
 	end
 
-	addLog(session, "⚔ The duel begins" .. (isRematch and " -- REVANCHA, stakes x" .. tostring(REMATCH_STAKES) .. "!" or "!"))
+	addLog(session, "⚔ The duel begins" .. (isRematch and " -- REMATCH, stakes x" .. tostring(REMATCH_STAKES) .. "!" or "!"))
 	startTurnClock(session)
 	broadcast(session)
 end

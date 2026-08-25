@@ -16,6 +16,13 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 -- service requires us back.
 local BK_DuelService = require(script.Parent:WaitForChild("BK_DuelService"))
 local BK_CellService = require(script.Parent:WaitForChild("BK_CellService"))
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+
+-- Footer tag on soul-interaction popups -- English in code, translated per player.
+local function soulsTag(player)
+	return BitKaisenLocale.tOrFallback(
+		BitKaisenLocale.getPlayerLocale(player.UserId), "souls.tag", nil, "Lives Gathering")
+end
 
 local BK_SoulsService = {}
 
@@ -184,7 +191,7 @@ local function handleSignal(player, targetPlayer, targetStats, stats)
 		"SIGNAL RECEIVED",
 		senderName .. " sends you a greeting across the world.",
 		"📡 " .. senderName,
-		"Reunión de Vidas",
+		soulsTag(targetPlayer),
 		"info"
 	)
 	fireLifeUpdate(targetPlayer, targetStats, "📡 " .. senderName .. " sent you a signal.")
@@ -215,7 +222,7 @@ local function handleGiftMoney(player, targetPlayer, targetStats, stats, data)
 		"A GIFT ARRIVES",
 		senderName .. " sent you money.",
 		"+$" .. tostring(amount),
-		"Reunión de Vidas",
+		soulsTag(targetPlayer),
 		"success"
 	)
 	fireLifeUpdate(targetPlayer, targetStats, "🎁 " .. senderName .. " gifted you $" .. tostring(amount) .. ".")

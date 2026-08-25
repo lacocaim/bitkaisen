@@ -7,6 +7,27 @@ local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
 local _L = BitKaisenLocale.getClientLocale()
 local function _h(key, fallback) return BitKaisenLocale.tOrFallback(_L, "history_ui." .. key, nil, fallback) end
 
+-- The public-world legend grade is stored on the save. Update 27 stored it in
+-- Spanish; from Update 28 on it is stored in English. Both spellings map to the
+-- same locale key so an already-sealed save still reads in the right language.
+local LEGEND_GRADE_KEY = {
+	Sovereign = "legend_sovereign", Soberano = "legend_sovereign",
+	Outstanding = "legend_outstanding", Sobresaliente = "legend_outstanding",
+	Notable = "legend_notable",
+	Forgotten = "legend_forgotten", Olvidado = "legend_forgotten",
+}
+local LEGEND_GRADE_EN = {
+	legend_sovereign = "Sovereign",
+	legend_outstanding = "Outstanding",
+	legend_notable = "Notable",
+	legend_forgotten = "Forgotten",
+}
+local function legendGradeText(grade)
+	local key = LEGEND_GRADE_KEY[tostring(grade or "")]
+	if not key then return tostring(grade or "?") end
+	return _h(key, LEGEND_GRADE_EN[key])
+end
+
 local theme = mc.theme
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -385,9 +406,9 @@ local function renderWorld()
 	if data.PublicSealed == true then
 		local sealCard = mc.mobileCard({ parent = scroll, order = order, accentColor = theme.Bad })
 		order += 1
-		mc.mobileLabel({ parent = sealCard, text = "🔒  " .. _h("world_sealed_title", "SELLO FINAL -- THIS WORLD IS SEALED"), size = 14, color = theme.Bad, font = Enum.Font.GothamBlack, order = 1 })
-		local legendText = data.PublicSoberano and ("👑  " .. _h("world_sovereign", "You were crowned Hechicero Soberano."))
-			or ("🏅  " .. _h("world_legend_prefix", "Your legend: ") .. tostring(data.PublicLegendGrade or "?"))
+		mc.mobileLabel({ parent = sealCard, text = "🔒  " .. _h("world_sealed_title", "FINAL SEAL -- THIS WORLD IS SEALED"), size = 14, color = theme.Bad, font = Enum.Font.GothamBlack, order = 1 })
+		local legendText = data.PublicSoberano and ("👑  " .. _h("world_sovereign", "You were crowned Sovereign Sorcerer."))
+			or ("🏅  " .. _h("world_legend_prefix", "Your legend: ") .. legendGradeText(data.PublicLegendGrade))
 		mc.mobileLabel({ parent = sealCard, text = legendText, size = 13, color = theme.Gold, order = 2 })
 	end
 

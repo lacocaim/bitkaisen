@@ -317,7 +317,7 @@ refresh = function()
 			table.insert(allyNames, tostring(ally.Name))
 		end
 		makeText(cellCard, "🚩 " .. (#(yourCell.Territories or {}) > 0 and table.concat(yourCell.Territories, ", ") or _g("no_territory", "no territory yet")) .. (#allyNames > 0 and ("   🤝 " .. table.concat(allyNames, ", ")) or ""), 11, COLORS.SubText, 62, false, 20)
-		makeText(cellCard, "📜 " .. _g("oath", "Juramento de Era") .. ": " .. tostring(yourCell.EraDuelWins) .. "/" .. tostring(yourCell.OathGoal) .. " " .. _g("oath_body", "duel wins this era for") .. " +$" .. tostring(yourCell.OathReward), 11, COLORS.Purple, 84, false, 20)
+		makeText(cellCard, "📜 " .. _g("oath", "Era Oath") .. ": " .. tostring(yourCell.EraDuelWins) .. "/" .. tostring(yourCell.OathGoal) .. " " .. _g("oath_body", "duel wins this era for") .. " +$" .. tostring(yourCell.OathReward), 11, COLORS.Purple, 84, false, 20)
 
 		local amountBox = Instance.new("TextBox")
 		amountBox.Position = UDim2.new(0, 14, 0, 108)
@@ -509,7 +509,7 @@ refresh = function()
 
 			-- Fase 6B: challenge to a live duel (REVANCHA if you hold a
 			-- rematch marker against this soul; dimmed while they duel).
-			local duelText = soul.RematchAvailable and ("🔥 " .. _g("action_rematch", "REVANCHA")) or ("⚔ " .. _g("action_duel", "DUEL"))
+			local duelText = soul.RematchAvailable and ("🔥 " .. _g("action_rematch", "REMATCH")) or ("⚔ " .. _g("action_duel", "DUEL"))
 			local duelBtn = actionButton(box, soul.InDuel and ("⚔ " .. _g("action_dueling", "DUELING...")) or duelText, 0.5, 130, 0.25, soul.InDuel and Color3.fromRGB(35, 35, 46) or COLORS.Red, function()
 				if not soul.InDuel then
 					duelAction:FireServer("invite", { TargetUserId = soul.UserId })

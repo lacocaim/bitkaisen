@@ -18,6 +18,7 @@ local BitKaisenTechniqueEvolution = require(ReplicatedStorage:WaitForChild("BitK
 local BitKaisenCurseEvolution = require(ReplicatedStorage:WaitForChild("BitKaisenCurseEvolution"))
 local BitKaisenCombat = require(ReplicatedStorage:WaitForChild("BitKaisenCombat"))
 local BitKaisenStats = require(ReplicatedStorage:WaitForChild("BitKaisenStats"))
+local BitKaisenCursedTools = require(ReplicatedStorage:WaitForChild("BitKaisenCursedTools"))
 
 local BK_ActivityService = {}
 local context = {}
@@ -25,7 +26,7 @@ local context = {}
 -- Short alias so each logMessage line stays readable
 local function tAct(player, key, params, fallback)
 	local locale = BitKaisenLocale.getPlayerLocale(player.UserId)
-	return BitKaisenLocale.tOrFallback(locale, "activities." .. key, params, fallback)
+	return BitKaisenLocale.tOrFallbackAny(locale, "activities." .. key, params, fallback)
 end
 local minigameSessions = {}
 local completeMinigameConnection = nil
@@ -2845,22 +2846,47 @@ local function processActivity(player, activityId)
 			fireLifeUpdate(player, stats, "You already requested a cursed tool this year. Wait until next age.")
 			return
 		end
+		-- The institution hands out basic allocations only, so cap the roll at
+		-- Uncommon. This used to invent a name from a hardcoded list and bump a
+		-- dead counter, so the tool never actually entered the inventory.
+		local rolledTool = BitKaisenCursedTools.RollDrop(BitKaisenCursedTools.RarityOrder.Uncommon)
+		if not rolledTool then
+			stats.ActivitiesDoneThisAge = math.max(0, (stats.ActivitiesDoneThisAge or 1) - 1)
+			fireLifeUpdate(player, stats, "The institution had no tools to allocate right now. Try again next age.")
+			return
+		end
+
 		stats.LastCursedToolRequestAge = tonumber(stats.Age) or 0
-		stats.CursedToolsOwned = (tonumber(stats.CursedToolsOwned) or 0) + 1
 		stats.Reputation = (tonumber(stats.Reputation) or 0) + math.random(2, 5)
 		stats.CursedEnergy = math.max(0, (tonumber(stats.CursedEnergy) or 0) + math.random(5, 15))
-		local toolNames = { "Iron Will Blade", "Binding Chain", "Residue Compass", "Spirit Cage Glove", "Hollow Edge" }
-		local toolName = toolNames[math.random(1, #toolNames)]
-		logMessage = tAct(player, "request_cursed_tool", { tool = toolName }, "The institution approved your request. You received a cursed tool: <b>" .. toolName .. "</b>.")
-		fireMajorPopup(player, "CURSED TOOL RECEIVED", "Your standing granted you a basic cursed tool.", toolName, "Grade 3+ privilege.")
+
+		local currentYear = (tonumber(stats.BirthYear) or 0) + (tonumber(stats.Age) or 0)
+		local toolDef, added = BitKaisenCursedTools.AddTool(stats, rolledTool.Id, "Institution Allocation", currentYear)
+		local toolName = tostring(toolDef and toolDef.Name or rolledTool.Name)
+
+		if added then
+			logMessage = tAct(player, "request_cursed_tool", { tool = toolName }, "The institution approved your request. You received a cursed tool: <b>" .. toolName .. "</b>.")
+			fireMajorPopup(player, "CURSED TOOL RECEIVED", "Your standing granted you a basic cursed tool.", toolName, "Grade 3+ privilege.")
+		else
+			-- Already owned: convert into the same duplicate payout missions use
+			-- instead of silently doing nothing.
+			local duplicateReward = BitKaisenCursedTools.GetDuplicateReward(toolDef or rolledTool)
+			local dupMoney = math.max(0, tonumber(duplicateReward and duplicateReward.Money) or 0)
+			local dupCE = math.max(0, tonumber(duplicateReward and duplicateReward.CursedEnergy) or 0)
+			stats.Money = (tonumber(stats.Money) or 0) + dupMoney
+			stats.CursedEnergy = math.max(0, (tonumber(stats.CursedEnergy) or 0) + dupCE)
+			logMessage = tAct(player, "request_cursed_tool_duplicate", { tool = toolName, money = dupMoney, ce = dupCE }, "The institution allocated another <b>" .. toolName .. "</b>. You already owned one, so it was signed over for <b>+$" .. tostring(dupMoney) .. "</b> and <b>+" .. tostring(dupCE) .. " CE</b>.")
+			fireMajorPopup(player, "DUPLICATE ALLOCATION", "You already owned that tool, so it was signed over.", toolName, "+$" .. tostring(dupMoney) .. " and +" .. tostring(dupCE) .. " CE")
+		end
 
 	elseif activityId == "recommend_promotion" then
-		stats.Reputation = (tonumber(stats.Reputation) or 0) + math.random(3, 8)
+		local repGain = math.random(3, 8)
+		stats.Reputation = (tonumber(stats.Reputation) or 0) + repGain
 		stats.TeacherRecommendations = (tonumber(stats.TeacherRecommendations) or 0) + 1
 		stats.AffiliationReputation = math.clamp((tonumber(stats.AffiliationReputation) or 0) + math.random(2, 5), 0, 100)
 		local npcNames = { "Yamada Koji", "Hoshino Ren", "Takagi Sora", "Murai Shin", "Aihara Yuki" }
 		local npcName = npcNames[math.random(1, #npcNames)]
-		logMessage = tAct(player, "recommend_promotion", { npc = npcName }, "You recommended <b>" .. npcName .. "</b> for grade advancement. The institution noted your authority. Reputation +" .. tostring(math.random(3, 8)) .. ".")
+		logMessage = tAct(player, "recommend_promotion", { npc = npcName, rep = repGain }, "You recommended <b>" .. npcName .. "</b> for grade advancement. The institution noted your authority. Reputation +" .. tostring(repGain) .. ".")
 
 	elseif activityId == "assign_npc_mission" then
 		local pendingMissions = tonumber(stats.NPCMissionsAssigned) or 0

@@ -8,6 +8,27 @@ local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
 local _L = BitKaisenLocale.getClientLocale()
 local function _wh(key, fallback) return BitKaisenLocale.tOrFallback(_L, "world_history." .. key, nil, fallback) end
 
+-- The public-world legend grade is stored on the save. Update 27 stored it in
+-- Spanish; from Update 28 on it is stored in English. Both spellings map to the
+-- same locale key so an already-sealed save still reads in the right language.
+local LEGEND_GRADE_KEY = {
+	Sovereign = "legend_sovereign", Soberano = "legend_sovereign",
+	Outstanding = "legend_outstanding", Sobresaliente = "legend_outstanding",
+	Notable = "legend_notable",
+	Forgotten = "legend_forgotten", Olvidado = "legend_forgotten",
+}
+local LEGEND_GRADE_EN = {
+	legend_sovereign = "Sovereign",
+	legend_outstanding = "Outstanding",
+	legend_notable = "Notable",
+	legend_forgotten = "Forgotten",
+}
+local function legendGradeText(grade)
+	local key = LEGEND_GRADE_KEY[tostring(grade or "")]
+	if not key then return tostring(grade or "?") end
+	return _wh(key, LEGEND_GRADE_EN[key])
+end
+
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local getWorldHistory = ReplicatedStorage:WaitForChild("GetWorldHistory")
@@ -651,9 +672,9 @@ local function renderWorld()
 
 	if data.PublicSealed == true then
 		local sealCard = card(84)
-		text(sealCard, "🔒  " .. _wh("world_sealed_title", "SELLO FINAL -- THIS WORLD IS SEALED"), 13, COLORS.Red, 12, true)
-		local legendText = data.PublicSoberano and ("👑  " .. _wh("world_sovereign", "You were crowned Hechicero Soberano."))
-			or ("🏅  " .. _wh("world_legend_prefix", "Your legend: ") .. tostring(data.PublicLegendGrade or "?"))
+		text(sealCard, "🔒  " .. _wh("world_sealed_title", "FINAL SEAL -- THIS WORLD IS SEALED"), 13, COLORS.Red, 12, true)
+		local legendText = data.PublicSoberano and ("👑  " .. _wh("world_sovereign", "You were crowned Sovereign Sorcerer."))
+			or ("🏅  " .. _wh("world_legend_prefix", "Your legend: ") .. legendGradeText(data.PublicLegendGrade))
 		text(sealCard, legendText, 12, COLORS.Gold, 40, false)
 	end
 

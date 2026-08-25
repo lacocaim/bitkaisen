@@ -4,12 +4,19 @@
 -- Purpose:
 -- Handles mission situation events and filters which choices the player can take.
 --
--- Supports:
+-- Supports (per option):
 -- RequiresTechnique = true
 -- RequiresSpecificTechnique = "Limitless"
 -- RequiresSmarts = 50
+-- RequiresOrigin = "Zenin Clan"          -- exact origin DisplayName
+-- RequiresOriginCategory = "Clan"        -- "Family" | "Clan" | "Lineage" | "Race"
 -- ForceSuccess = true
 -- ForceFail = true
+--
+-- Per situation: MinGrade / MaxGrade.
+-- NOTE: RollSituation only offers a situation when at least 2 of its options
+-- pass the filters, so every entry needs 3+ ungated options or it will simply
+-- never appear for most players.
 
 local BitKaisenSituations = {}
 local BitKaisenStats = require(game:GetService("ReplicatedStorage"):WaitForChild("BitKaisenStats"))
@@ -613,6 +620,782 @@ BitKaisenSituations.Database = {
 				RequiresSpecificTechnique = "Grave Bloom"
 			}
 		}
+	},
+
+	-- =====================================================================
+	-- Update 28: more situations, and bloodline choices inside them. Every
+	-- entry below keeps at least three ungated options so it stays reachable
+	-- for a civilian with no technique, then layers technique and clan
+	-- branches on top for players who have them.
+	-- =====================================================================
+
+	{
+		Id = "school_trapped_under",
+		Title = "Under the Gymnasium",
+		Body = "The floor of a school gym collapsed into an old cursed pit. Nine students are alive down there and the walls are still moving. You can hear them.",
+		MinGrade = "Grade 4",
+		MaxGrade = "Grade 1",
+		Options = {
+			{
+				Text = "Go down alone and start pulling them out",
+				Description = "You went down without waiting for backup and carried them up two at a time. All nine lived. Your shoulder did not.",
+				Effects = { Reputation = 14, Health = -20, Happiness = 6 },
+				PowerBonus = -8
+			},
+			{
+				Text = "Hold the entrance and let the rescue team work",
+				Description = "You held the mouth of the pit while the team extracted the students behind you. Slower, safer, and nobody died.",
+				Effects = { Reputation = 8, Health = -6 },
+				PowerBonus = 4
+			},
+			{
+				Text = "Collapse the pit and cut the curse off from them",
+				Description = "You brought the far wall down to seal the curse away. Two students were hurt in the fall. Seven walked out clean.",
+				Effects = { Reputation = 2, Happiness = -8 },
+				PowerBonus = 14
+			},
+			{
+				Text = "Study the pit before doing anything",
+				Description = "You read the structure before moving and found the one route that held. Everyone came out, and you learned what made the pit.",
+				Effects = { Reputation = 10, Smarts = 5 },
+				PowerBonus = 6,
+				RequiresSmarts = 55
+			},
+			{
+				Text = "[Limitless] Hold the ceiling apart from below",
+				Description = "You stood under the worst of it and simply did not let the distance close. The students walked out beneath you.",
+				Effects = { Reputation = 18, CursedEnergy = -16, Happiness = 5 },
+				PowerBonus = 12,
+				RequiresSpecificTechnique = "Limitless"
+			},
+			{
+				Text = "[Ten Shadows] Send the dogs down for the ones you cannot see",
+				Description = "The divine dogs found the two students nobody had counted. You would not have known they were there.",
+				Effects = { Reputation = 16, CursedEnergy = -11, Happiness = 4 },
+				PowerBonus = 9,
+				RequiresSpecificTechnique = "Ten Shadows"
+			},
+			{
+				Text = "[Barrier Technique] Curtain the pit before the parents arrive",
+				Description = "You raised a curtain over the whole yard first. The rescue was slower and no civilian ever learned what was underneath.",
+				Effects = { Reputation = 12, CursedEnergy = -10, SocietyAttention = -6 },
+				PowerBonus = 6,
+				RequiresSpecificTechnique = "Barrier Technique"
+			},
+			{
+				Text = "[Zenin] Handle it the way the clan taught you",
+				Description = "You triaged by survivability, exactly as you were raised to, and saved the most that could be saved. It worked. You did not enjoy how easy the arithmetic was.",
+				Effects = { Reputation = 11, ClanReputation = 6, Happiness = -6 },
+				PowerBonus = 10,
+				RequiresOrigin = "Zenin Clan"
+			},
+			{
+				Text = "[Kusakabe] Do the boring thing that keeps everyone alive",
+				Description = "You refused to go down until the anchors were set. Nobody praised it. Nobody died either.",
+				Effects = { Reputation = 7, Health = 4, Happiness = 4 },
+				PowerBonus = 5,
+				RequiresOrigin = "Kusakabe Lineage"
+			}
+		}
+	},
+
+	{
+		Id = "curse_wearing_child",
+		Title = "It Is Using a Child",
+		Body = "The curse has taken a child's body and is walking it toward you. The child is still inside. You can feel both of them.",
+		MinGrade = "Semi-Grade 3",
+		MaxGrade = "Special Grade",
+		Options = {
+			{
+				Text = "Restrain the body without striking",
+				Description = "You pinned the body and held on while it screamed in two voices. It took nineteen minutes. The child survived.",
+				Effects = { Reputation = 12, Health = -16, Happiness = 4 },
+				PowerBonus = -10
+			},
+			{
+				Text = "Strike fast and end it",
+				Description = "You ended the curse in one motion. The child stopped moving at the same time. Nobody blamed you out loud.",
+				Effects = { Reputation = -6, Happiness = -20, Fear = 8 },
+				PowerBonus = 16
+			},
+			{
+				Text = "Talk to the child, not the curse",
+				Description = "You spoke past the curse to whoever was still in there. Something answered. The grip loosened enough for you to work.",
+				Effects = { Reputation = 9, Happiness = 2, CursedEnergy = -5 },
+				PowerBonus = 2
+			},
+			{
+				Text = "[Idle Transfiguration] Separate them at the soul",
+				Description = "You reached past the body and pulled the two apart where they actually met. The child woke up whole. You did not explain the method to anyone.",
+				Effects = { Reputation = 15, CursedEnergy = -18, Happiness = 3, Fear = 6 },
+				PowerBonus = 14,
+				RequiresSpecificTechnique = "Idle Transfiguration"
+			},
+			{
+				Text = "[Cursed Speech] Order it out",
+				Description = "One word. The curse left the body because it had no choice. Your throat paid for it and the child lived.",
+				Effects = { Reputation = 16, Health = -9, CursedEnergy = -14 },
+				PowerBonus = 15,
+				RequiresSpecificTechnique = "Cursed Speech"
+			},
+			{
+				Text = "[Cursed Spirit Manipulation] Take it into your collection",
+				Description = "You pulled the curse out and swallowed it whole. The child dropped, breathing. You now carry whatever it was.",
+				Effects = { Reputation = 11, CursedEnergy = -12, CursedResentment = 5 },
+				PowerBonus = 13,
+				RequiresSpecificTechnique = "Cursed Spirit Manipulation"
+			},
+			{
+				Text = "[Kamo] Read the blood to find where the child ends",
+				Description = "You found the boundary by pulse alone and worked inside it. Clean, precise, and exactly the kind of thing people are afraid your family can do.",
+				Effects = { Reputation = 10, Fear = 6, CursedEnergy = -9 },
+				PowerBonus = 12,
+				RequiresOrigin = "Kamo Clan"
+			},
+			{
+				Text = "[Clan] Call for clan support and hold until it arrives",
+				Description = "You sent word up the family line and held the child still until people with more authority than you took over. The outcome was good. The credit was not yours.",
+				Effects = { ClanReputation = 8, Reputation = 3, Happiness = -3 },
+				PowerBonus = 3,
+				RequiresOriginCategory = "Clan"
+			}
+		}
+	},
+
+	{
+		Id = "civilian_witness",
+		Title = "Someone Saw Everything",
+		Body = "A civilian watched the whole exorcism from a stairwell. They are not screaming. They are looking at you, and they are not going to forget.",
+		MinGrade = "Grade 4",
+		MaxGrade = "Grade 1",
+		Options = {
+			{
+				Text = "Tell them the truth",
+				Description = "You explained what curses are and what you do about them. They took it better than expected. Somewhere, a form got filed about you.",
+				Effects = { Reputation = 4, SocietyAttention = 7, Happiness = 3 },
+				PowerBonus = 0
+			},
+			{
+				Text = "Say nothing and walk away",
+				Description = "You left without a word. They will decide for themselves what they saw, and you will never know what they decided.",
+				Effects = { SocietyAttention = 3, Happiness = -3 },
+				PowerBonus = 0
+			},
+			{
+				Text = "Report them and let the system handle it",
+				Description = "You filed it correctly. Someone else arrived to manage the witness. You did not ask what managing meant.",
+				Effects = { Reputation = 6, SocietyAttention = -5, Happiness = -6 },
+				PowerBonus = 0
+			},
+			{
+				Text = "Convince them they saw nothing",
+				Description = "You talked circles around them until they doubted themselves. It worked. You did not like how easily it worked.",
+				Effects = { SocietyAttention = -6, Happiness = -4, Smarts = 3 },
+				PowerBonus = 0,
+				RequiresSmarts = 60
+			},
+			{
+				Text = "[Barrier Technique] Curtain the stairwell and finish quietly",
+				Description = "The curtain went up around them mid-thought. When it dropped, the stairwell was empty of anything worth remembering.",
+				Effects = { SocietyAttention = -9, CursedEnergy = -8, Reputation = 3 },
+				PowerBonus = 0,
+				RequiresSpecificTechnique = "Barrier Technique"
+			},
+			{
+				Text = "[Civilian] Tell them the way you wish someone had told you",
+				Description = "You remembered being the one on the stairs, and being told you imagined it. So you sat down and explained it properly instead.",
+				Effects = { Happiness = 10, Reputation = 5, SocietyAttention = 5 },
+				PowerBonus = 0,
+				RequiresOrigin = "Civilian Family"
+			},
+			{
+				Text = "[Kenjaku] Note their face and move on",
+				Description = "You recorded them, the way your family records everything, and filed it against a use you have not thought of yet.",
+				Effects = { Smarts = 6, CursedResentment = 4, Happiness = -5 },
+				PowerBonus = 0,
+				RequiresOrigin = "Kenjaku Clan"
+			}
+		}
+	},
+
+	{
+		Id = "rival_sorcerer_claim",
+		Title = "Someone Else Wants The Kill",
+		Body = "Another sorcerer arrives mid-fight and makes it clear the curse is theirs. The curse is still standing. So are both of you.",
+		MinGrade = "Semi-Grade 3",
+		MaxGrade = "Special Grade",
+		Options = {
+			{
+				Text = "Let them have it",
+				Description = "You stepped back and watched them finish it. They took the credit and remembered that you let them.",
+				Effects = { Reputation = -3, Happiness = -2 },
+				PowerBonus = 0
+			},
+			{
+				Text = "Fight it together",
+				Description = "You worked around each other badly for the first minute and well after that. The curse fell fast, and you both signed the report.",
+				Effects = { Reputation = 8, Health = -7 },
+				PowerBonus = 10
+			},
+			{
+				Text = "Finish it before they can",
+				Description = "You ended it while they were still talking. They will not forget that either.",
+				Effects = { Reputation = 9, Fear = 6, Happiness = 2 },
+				PowerBonus = 8
+			},
+			{
+				Text = "[Todo] Ask what kind of person they like first",
+				Description = "You asked the only question that matters, mid-fight, and got an answer you respected. You have a friend now, whether they wanted one or not.",
+				Effects = { Reputation = 10, Happiness = 12, CursedEnergy = 4 },
+				PowerBonus = 12,
+				RequiresOrigin = "Todo Lineage"
+			},
+			{
+				Text = "[Mei Mei] Negotiate a split before either of you moves",
+				Description = "You settled the fee before the fight resumed. They agreed because you were right about the numbers.",
+				Effects = { Money = 3200, Reputation = -2, Smarts = 4 },
+				PowerBonus = 6,
+				RequiresOrigin = "Mei Mei Lineage"
+			},
+			{
+				Text = "[Gojo] Remind them who is standing here",
+				Description = "You did not have to say much. The name did the work, and you noticed how much you disliked that it did.",
+				Effects = { Reputation = 12, Fear = 8, Happiness = -4 },
+				PowerBonus = 14,
+				RequiresOrigin = "Gojo Clan"
+			}
+		}
+	},
+
+	{
+		Id = "colleague_will_not_make_it",
+		Title = "They Are Not Going To Make It",
+		Body = "A sorcerer from your team is bleeding out behind cover. The curse is still active. You have time for one of these things, not both.",
+		MinGrade = "Grade 3",
+		MaxGrade = "Special Grade",
+		Options = {
+			{
+				Text = "Stay with them",
+				Description = "You stayed. The curse got away and someone else dealt with it later. They were not alone at the end.",
+				Effects = { Reputation = -8, Happiness = -10, CursedResentment = 4 },
+				PowerBonus = -12
+			},
+			{
+				Text = "Finish the curse first",
+				Description = "You ended the curse and came back as fast as you could. It was not fast enough, and you did the correct thing.",
+				Effects = { Reputation = 10, Happiness = -16, Fear = 5 },
+				PowerBonus = 15
+			},
+			{
+				Text = "Drag them out under fire",
+				Description = "You carried them through the open with the curse at your back. You both made it to the door. Only one of you was still conscious.",
+				Effects = { Reputation = 12, Health = -24, Happiness = 6 },
+				PowerBonus = -6
+			},
+			{
+				Text = "[Nanami] Do the job, then grieve on your own time",
+				Description = "You separated the two tasks the way you have always separated them. It is the only reason you are still able to do this work.",
+				Effects = { Reputation = 11, Happiness = -12, Smarts = 4 },
+				PowerBonus = 12,
+				RequiresOrigin = "Nanami Lineage"
+			},
+			{
+				Text = "[Geto] Notice what you are being asked to trade",
+				Description = "You saved them, and afterwards you could not stop turning over how routinely people like you are spent on people who will never know your name.",
+				Effects = { Reputation = 9, CursedResentment = 9, Happiness = -8 },
+				PowerBonus = 8,
+				RequiresOrigin = "Geto Lineage"
+			}
+		}
+	},
+
+	{
+		Id = "cursed_tool_in_the_rubble",
+		Title = "Something Is Buried Here",
+		Body = "Under the collapsed shrine there is a blade nobody has touched in three hundred years. The curse you came for is dead. The blade is not.",
+		MinGrade = "Grade 3",
+		MaxGrade = "Special Grade",
+		Options = {
+			{
+				Text = "Take it",
+				Description = "You took it. Nobody logged it, and it has been warm ever since.",
+				Effects = { Reputation = 3, CursedEnergy = 6, CursedResentment = 5 },
+				PowerBonus = 10
+			},
+			{
+				Text = "Report it and leave it where it is",
+				Description = "You filed it correctly and a retrieval team came for it. You did not see where it went.",
+				Effects = { Reputation = 9, SocietyAttention = 4, Happiness = -2 },
+				PowerBonus = 0
+			},
+			{
+				Text = "Destroy it",
+				Description = "You broke it where it lay. Something screamed that was not the blade. You do not regret it.",
+				Effects = { Reputation = 4, Health = -10, Fear = 5 },
+				PowerBonus = 4
+			},
+			{
+				Text = "Study the seals before touching anything",
+				Description = "You read the seals first and found the one still holding. Whoever buried this wanted it to stay buried, and they had reasons.",
+				Effects = { Smarts = 6, Reputation = 7 },
+				PowerBonus = 6,
+				RequiresSmarts = 60
+			},
+			{
+				Text = "[Tool Manipulation] Test what it answers to",
+				Description = "You reached for it without moving and it came. That told you more about it than any inspection would have.",
+				Effects = { CursedEnergy = -8, Reputation = 6, Smarts = 4 },
+				PowerBonus = 12,
+				RequiresSpecificTechnique = "Tool Manipulation"
+			},
+			{
+				Text = "[Tsukigane] Read the forge marks",
+				Description = "You knew the smith's hand on sight. It was made by your family, and it was buried on purpose.",
+				Effects = { ClanReputation = 8, Smarts = 5, Happiness = -3 },
+				PowerBonus = 9,
+				RequiresOrigin = "Tsukigane Clan"
+			},
+			{
+				Text = "[Mei Mei] Price it before anyone else arrives",
+				Description = "You knew what it was worth before you knew what it did, and you moved accordingly.",
+				Effects = { Money = 4500, Reputation = -3 },
+				PowerBonus = 5,
+				RequiresOrigin = "Mei Mei Lineage"
+			}
+		}
+	},
+
+	{
+		Id = "student_froze",
+		Title = "The Student Froze",
+		Body = "The first year you were assigned to has stopped moving. The curse is eight metres away and closing, and they are looking at you instead of it.",
+		MinGrade = "Grade 2",
+		MaxGrade = "Special Grade",
+		Options = {
+			{
+				Text = "Put yourself between them and it",
+				Description = "You stepped in front. They watched you take it and something in them unlocked afterwards.",
+				Effects = { Reputation = 10, Health = -18, Happiness = 6 },
+				PowerBonus = -5
+			},
+			{
+				Text = "Order them to move",
+				Description = "You shouted. They moved. They also stopped trusting themselves for a long time afterwards.",
+				Effects = { Reputation = 6, Happiness = -5 },
+				PowerBonus = 6
+			},
+			{
+				Text = "Talk them through it",
+				Description = "You told them exactly what to do, one step at a time, while it closed. They did all of it. They will remember that they did.",
+				Effects = { Reputation = 12, Happiness = 9, Health = -8 },
+				PowerBonus = 2
+			},
+			{
+				Text = "[Kusakabe] Teach them the thing that keeps them alive",
+				Description = "You did not teach them to win. You taught them how to leave, and you made them practise it before the next assignment.",
+				Effects = { Reputation = 8, Happiness = 7, Smarts = 4 },
+				PowerBonus = 4,
+				RequiresOrigin = "Kusakabe Lineage"
+			},
+			{
+				Text = "[Zenin] Let them find out what they are",
+				Description = "You intervened at the last possible moment, exactly as the clan does it. They survived and they learned. They also flinched when you approached afterwards.",
+				Effects = { ClanReputation = 6, Reputation = 4, Happiness = -7 },
+				PowerBonus = 11,
+				RequiresOrigin = "Zenin Clan"
+			},
+			{
+				Text = "[Simple Domain] Give them ground to stand on",
+				Description = "You opened your circle around both of you. Inside it they stopped shaking, and that was enough.",
+				Effects = { Reputation = 11, CursedEnergy = -9, Happiness = 5 },
+				PowerBonus = 8,
+				RequiresSpecificTechnique = "Simple Domain"
+			}
+		}
+	},
+
+	{
+		Id = "special_grade_arrives",
+		Title = "That Is Not Its Grade",
+		Body = "The assessment said Grade 2. The thing unfolding out of the ceiling is not Grade 2, and the exit is behind it.",
+		MinGrade = "Grade 2",
+		MaxGrade = "Special Grade",
+		Options = {
+			{
+				Text = "Buy time and call it in",
+				Description = "You held it for six minutes until support arrived. Six minutes is a very long time.",
+				Effects = { Reputation = 11, Health = -22 },
+				PowerBonus = -6
+			},
+			{
+				Text = "Fight it",
+				Description = "You fought something well above your grade and lived, which is the only reason anyone praised the decision.",
+				Effects = { Reputation = 14, Health = -28, Fear = 8 },
+				PowerBonus = 12
+			},
+			{
+				Text = "Get the civilians out and abandon the site",
+				Description = "You emptied the building and let the site go. The paperwork called it a failure. Nobody died.",
+				Effects = { Reputation = -4, Happiness = 8 },
+				PowerBonus = 0
+			},
+			{
+				Text = "[Limitless] Refuse to let it reach you",
+				Description = "It came at you with everything and arrived at nothing. You walked out through where it had been standing.",
+				Effects = { Reputation = 18, CursedEnergy = -20, Fear = 10 },
+				PowerBonus = 18,
+				RequiresSpecificTechnique = "Limitless"
+			},
+			{
+				Text = "[Cursed Spirit Manipulation] Answer it with your own",
+				Description = "You emptied your collection into the room. What was left standing at the end was yours.",
+				Effects = { Reputation = 15, CursedEnergy = -18, CursedResentment = 4 },
+				PowerBonus = 16,
+				RequiresSpecificTechnique = "Cursed Spirit Manipulation"
+			},
+			{
+				Text = "[Kashimo] Finally",
+				Description = "You had been waiting your whole life for something that could actually hurt you. You did not stop smiling the entire fight.",
+				Effects = { Reputation = 12, Health = -26, Happiness = 15 },
+				PowerBonus = 17,
+				RequiresOrigin = "Kashimo Lineage"
+			}
+		}
+	},
+
+	{
+		Id = "clan_asks_a_favour",
+		Title = "The Family Would Like A Word",
+		Body = "Mid-assignment, a message reaches you from your own bloodline. They want something handled here, quietly, and they did not phrase it as a request.",
+		MinGrade = "Grade 3",
+		MaxGrade = "Special Grade",
+		Options = {
+			{
+				Text = "Do it",
+				Description = "You handled it and said nothing in the report. The family noticed. So did someone else.",
+				Effects = { ClanReputation = 10, Reputation = -4, SocietyAttention = 5 },
+				PowerBonus = 4
+			},
+			{
+				Text = "Refuse",
+				Description = "You told them no, in writing, which made it permanent. Something closed behind you that will not reopen.",
+				Effects = { ClanReputation = -12, Reputation = 6, Happiness = -5 },
+				PowerBonus = 0
+			},
+			{
+				Text = "Do the assignment and pretend the message never arrived",
+				Description = "You finished the job you were sent to do. Nobody can prove you read it, and everybody knows you did.",
+				Effects = { Reputation = 5, ClanReputation = -4, Smarts = 3 },
+				PowerBonus = 2
+			},
+			{
+				Text = "Find out who benefits first",
+				Description = "You traced the request back before answering it, and found out which branch of the family sent it and why. That was worth more than either answer.",
+				Effects = { Smarts = 7, ClanReputation = 4 },
+				PowerBonus = 3,
+				RequiresSmarts = 65
+			},
+			{
+				Text = "[Kenjaku] Agree, and start your own file on them",
+				Description = "You did what they asked and began recording what they wanted it for. Your family understands that arrangement perfectly.",
+				Effects = { ClanReputation = 8, Smarts = 6, CursedResentment = 3 },
+				PowerBonus = 4,
+				RequiresOrigin = "Kenjaku Clan"
+			},
+			{
+				Text = "[Branch] Do it, because branch families do not refuse",
+				Description = "There was never really a choice. You handled it, and the main house will never know your name was on it.",
+				Effects = { ClanReputation = 9, Happiness = -8 },
+				PowerBonus = 3,
+				RequiresOrigin = "Branch Sorcerer Family"
+			}
+		}
+	},
+
+	{
+		Id = "curse_that_talks",
+		Title = "It Wants To Talk",
+		Body = "The curse has stopped attacking. It is sitting in the middle of the room, and it is speaking in complete sentences.",
+		MinGrade = "Grade 2",
+		MaxGrade = "Special Grade",
+		Options = {
+			{
+				Text = "Listen",
+				Description = "You let it talk. Most of it was nonsense. One part of it was not, and you have not been able to forget that part.",
+				Effects = { Smarts = 6, Happiness = -8, CursedResentment = 4 },
+				PowerBonus = -4
+			},
+			{
+				Text = "Kill it mid-sentence",
+				Description = "You did not let it finish. You told yourself that was the professional decision.",
+				Effects = { Reputation = 7, Happiness = -4, Fear = 5 },
+				PowerBonus = 12
+			},
+			{
+				Text = "Ask it what it was made from",
+				Description = "It answered honestly. Someone you have never met was afraid of something for long enough to make this.",
+				Effects = { Smarts = 8, Happiness = -6 },
+				PowerBonus = 0
+			},
+			{
+				Text = "[Geto] Recognise what it is actually saying",
+				Description = "It described the people who made it, and you found that you agreed with it about them. You killed it anyway, and that bothered you more.",
+				Effects = { CursedResentment = 10, Smarts = 5, Happiness = -9 },
+				PowerBonus = 8,
+				RequiresOrigin = "Geto Lineage"
+			},
+			{
+				Text = "[Deadly Sentencing] Try it properly",
+				Description = "You held court on the floor of a ruined building. It made its case. You still returned a verdict.",
+				Effects = { Reputation = 12, CursedEnergy = -14, Smarts = 6 },
+				PowerBonus = 15,
+				RequiresSpecificTechnique = "Deadly Sentencing"
+			},
+			{
+				Text = "[Higuruma] Hear the whole case before deciding",
+				Description = "You could not bring yourself to end it without listening first. What it said was not a defence, but it was true.",
+				Effects = { Smarts = 8, Happiness = -7, Reputation = 5 },
+				PowerBonus = 6,
+				RequiresOrigin = "Higuruma Lineage"
+			}
+		}
+	},
+
+	{
+		Id = "assignment_was_wrong",
+		Title = "The Assignment Was Wrong",
+		Body = "There is no curse here. There is a sorcerer, and the people they were sent to protect are the ones lying on the floor.",
+		MinGrade = "Grade 2",
+		MaxGrade = "Special Grade",
+		Options = {
+			{
+				Text = "Detain them",
+				Description = "You brought them in alive. The hearing took months and you were called to it four times.",
+				Effects = { Reputation = 10, SocietyAttention = 8, Health = -12 },
+				PowerBonus = 4
+			},
+			{
+				Text = "Kill them",
+				Description = "You decided on the spot and acted. It was ruled justified. You still think about the ruling.",
+				Effects = { Reputation = 4, Happiness = -14, Fear = 9, WantedLevel = 3 },
+				PowerBonus = 14
+			},
+			{
+				Text = "Let them explain",
+				Description = "You listened to the whole thing before doing anything. Some of it turned out to be true, which made it worse.",
+				Effects = { Smarts = 6, Happiness = -8, Reputation = 3 },
+				PowerBonus = -3
+			},
+			{
+				Text = "Secure the scene and report it exactly as found",
+				Description = "You touched nothing and wrote down everything. The report was used at the hearing, word for word.",
+				Effects = { Reputation = 12, Smarts = 5, SocietyAttention = 5 },
+				PowerBonus = 0
+			},
+			{
+				Text = "[Nanami] Follow procedure to the letter",
+				Description = "You did the correct thing in the correct order and let the system carry it from there. It is the only way this job stays survivable.",
+				Effects = { Reputation = 11, Smarts = 4, Happiness = -6 },
+				PowerBonus = 5,
+				RequiresOrigin = "Nanami Lineage"
+			},
+			{
+				Text = "[Lineage] Handle it before it becomes a hearing",
+				Description = "Your name carries enough weight to close this quietly, and you used it. Nobody outside the family will ever read about this.",
+				Effects = { ClanReputation = 7, SocietyAttention = -8, Happiness = -5 },
+				PowerBonus = 3,
+				RequiresOriginCategory = "Lineage"
+			}
+		}
+	},
+
+	{
+		Id = "domain_opens_on_you",
+		Title = "The World Closes",
+		Body = "The air changes and the room stops being a room. Someone has opened a domain around you, and it is not going to miss.",
+		MinGrade = "Grade 1",
+		MaxGrade = "Special Grade",
+		Options = {
+			{
+				Text = "Endure it and counterattack",
+				Description = "You took the hit and kept moving through it. It should not have been survivable. It nearly was not.",
+				Effects = { Reputation = 12, Health = -30, Fear = 6 },
+				PowerBonus = 8
+			},
+			{
+				Text = "Break the barrier from inside",
+				Description = "You went for the walls instead of the caster. It collapsed badly, on both of you.",
+				Effects = { Reputation = 9, Health = -20, CursedEnergy = -12 },
+				PowerBonus = 10
+			},
+			{
+				Text = "Reach the caster before it completes",
+				Description = "You crossed the distance in the half second the technique needed and ended it at the source.",
+				Effects = { Reputation = 15, Health = -14 },
+				PowerBonus = 14
+			},
+			{
+				Text = "[Simple Domain] Refuse the sure hit",
+				Description = "Your circle came up and the guaranteed hit stopped being guaranteed. The caster's expression was worth the cursed energy.",
+				Effects = { Reputation = 14, CursedEnergy = -16, Health = -6 },
+				PowerBonus = 16,
+				RequiresSpecificTechnique = "Simple Domain"
+			},
+			{
+				Text = "[Barrier Technique] Answer with a barrier of your own",
+				Description = "You raised your own against theirs. Two barriers ground against each other until one gave, and it was not yours.",
+				Effects = { Reputation = 13, CursedEnergy = -18 },
+				PowerBonus = 15,
+				RequiresSpecificTechnique = "Barrier Technique"
+			},
+			{
+				Text = "[Yamashiro] Find the seam",
+				Description = "Your family builds these. You knew where the join would be before you looked, and you went straight to it.",
+				Effects = { ClanReputation = 9, Reputation = 12, CursedEnergy = -10 },
+				PowerBonus = 17,
+				RequiresOrigin = "Yamashiro Clan"
+			}
+		}
+	},
+
+	{
+		Id = "civilian_asks_for_help",
+		Title = "They Asked For You By Name",
+		Body = "A civilian tracked you down. Their family has been living with something for two years and no assignment was ever opened. It is not your case and it is not going to become one.",
+		MinGrade = "Grade 4",
+		MaxGrade = "Special Grade",
+		Options = {
+			{
+				Text = "Handle it off the books",
+				Description = "You went that night, unpaid and unlogged. The family sleeps now. You did not report any of it.",
+				Effects = { Happiness = 12, Reputation = -3, Health = -10 },
+				PowerBonus = 0
+			},
+			{
+				Text = "Escalate it properly and wait",
+				Description = "You pushed it up the chain and kept pushing. It took four months and it did eventually get assigned.",
+				Effects = { Reputation = 7, SocietyAttention = 4, Happiness = -3 },
+				PowerBonus = 0
+			},
+			{
+				Text = "Tell them you cannot",
+				Description = "You told them the truth about how the system works. They thanked you for being honest, which was worse.",
+				Effects = { Happiness = -11, Reputation = 2 },
+				PowerBonus = 0
+			},
+			{
+				Text = "[Civilian] Go, because you know exactly what two years feels like",
+				Description = "You grew up in a house nobody came to either. You did not have to think about the answer.",
+				Effects = { Happiness = 15, Health = -12, Reputation = -2 },
+				PowerBonus = 0,
+				RequiresOrigin = "Civilian Family"
+			},
+			{
+				Text = "[Mei Mei] Quote them a rate",
+				Description = "You named a price they could actually pay, then did the work properly. Both halves of that mattered to you.",
+				Effects = { Money = 1800, Happiness = 5, Reputation = -2 },
+				PowerBonus = 0,
+				RequiresOrigin = "Mei Mei Lineage"
+			}
+		}
+	},
+
+	{
+		Id = "old_sorcerer_dying",
+		Title = "The Old One Is Finishing",
+		Body = "A sorcerer three times your age is bleeding out against a wall, and they are trying to give you something before they stop.",
+		MinGrade = "Grade 3",
+		MaxGrade = "Special Grade",
+		Options = {
+			{
+				Text = "Take what they are offering",
+				Description = "You took it and they let go. Whatever it was, it is yours now and it came with a weight.",
+				Effects = { CursedEnergy = 12, Happiness = -8, Smarts = 4 },
+				PowerBonus = 8
+			},
+			{
+				Text = "Refuse and stay with them",
+				Description = "You told them to keep it and held their hand instead. They seemed relieved. You will never know what it was.",
+				Effects = { Happiness = 6, Reputation = 4, CursedResentment = -3 },
+				PowerBonus = 0
+			},
+			{
+				Text = "Get them to a medic first",
+				Description = "You carried them out instead of listening. They did not survive the trip, and they spent it trying to speak.",
+				Effects = { Health = -12, Happiness = -10, Reputation = 5 },
+				PowerBonus = -4
+			},
+			{
+				Text = "[Kamo] Try to hold them together long enough",
+				Description = "You worked on the bleeding directly and bought them nine more minutes. They used all nine of them talking.",
+				Effects = { Reputation = 10, Health = -8, Smarts = 6 },
+				PowerBonus = 6,
+				RequiresOrigin = "Kamo Clan"
+			},
+			{
+				Text = "[Brain Transplant] Consider what is being wasted here",
+				Description = "You caught yourself assessing them as a container instead of a person, and you were not sure when that had started.",
+				Effects = { Smarts = 8, CursedResentment = 6, Happiness = -10 },
+				PowerBonus = 5,
+				RequiresSpecificTechnique = "Brain Transplant"
+			},
+			{
+				Text = "[Morikage] Sit with them until it is done properly",
+				Description = "Your family knows how to be present for this. You did it the way you were taught, and it was not nothing.",
+				Effects = { Happiness = 8, ClanReputation = 5, CursedEnergy = 4 },
+				PowerBonus = 0,
+				RequiresOrigin = "Morikage Clan"
+			}
+		}
+	},
+
+	{
+		Id = "your_technique_failed",
+		Title = "It Did Not Work",
+		Body = "You did everything correctly and your technique did not activate. The curse noticed the pause. So did everyone watching.",
+		MinGrade = "Grade 4",
+		MaxGrade = "Special Grade",
+		Options = {
+			{
+				Text = "Finish it without the technique",
+				Description = "You put it down with your hands and a borrowed blade. It took much longer and nobody who saw it forgot.",
+				Effects = { Reputation = 11, Health = -20, Smarts = 3 },
+				PowerBonus = 6
+			},
+			{
+				Text = "Withdraw and reassess",
+				Description = "You pulled back and worked out what had gone wrong before returning. The delay cost you, and the second attempt held.",
+				Effects = { Reputation = 3, Smarts = 7 },
+				PowerBonus = 2
+			},
+			{
+				Text = "Force it",
+				Description = "You pushed until it fired. It fired. Something in your chest has not felt right since.",
+				Effects = { Reputation = 8, Health = -16, CursedEnergy = -14 },
+				PowerBonus = 11
+			},
+			{
+				Text = "[Heavenly Restriction] There was never a technique to fail",
+				Description = "You have never had one and you have never needed one. You closed the distance and finished it while people were still waiting for a flash of light.",
+				Effects = { Reputation = 14, Health = -8, Happiness = 5 },
+				PowerBonus = 15,
+				RequiresSpecificTechnique = "Heavenly Restriction"
+			},
+			{
+				Text = "[Kusakabe] Fall back on the thing that never fails",
+				Description = "Technique is optional. Footwork is not. You did what you have drilled ten thousand times and it worked, as always.",
+				Effects = { Reputation = 9, Smarts = 4, Health = -6 },
+				PowerBonus = 10,
+				RequiresOrigin = "Kusakabe Lineage"
+			},
+			{
+				Text = "[Minor Sorcerer Family] You were always going to need a second plan",
+				Description = "Nobody in your family ever had the luxury of relying on one thing. You had already prepared for this.",
+				Effects = { Smarts = 6, Reputation = 7, Health = -8 },
+				PowerBonus = 8,
+				RequiresOrigin = "Minor Sorcerer Family"
+			}
+		}
 	}
 }
 
@@ -750,7 +1533,7 @@ function BitKaisenSituations.GetOptionsForPlayer(situation, stats)
 	local playerTechnique = getPrimaryTechnique(stats)
 	local playerHasTechnique = hasAnyUsableTechnique(stats)
 
-	for _, option in ipairs(situation.Options) do
+	for _index, option in ipairs(situation.Options) do
 		local ok = true
 		local optionToInsert = option
 
@@ -785,8 +1568,31 @@ function BitKaisenSituations.GetOptionsForPlayer(situation, stats)
 			end
 		end
 
+		-- Update 28: bloodline choices. Options can now be gated on the exact
+		-- origin (a specific clan or lineage) or on its category, so who you
+		-- were born as changes what you are able to do in a situation, not
+		-- just what the flavour text says about you.
+		if ok and option.RequiresOrigin then
+			if tostring(stats.Origin or "") ~= option.RequiresOrigin then
+				ok = false
+			end
+		end
+
+		if ok and option.RequiresOriginCategory then
+			if tostring(stats.OriginCategory or "") ~= option.RequiresOriginCategory then
+				ok = false
+			end
+		end
+
 		if ok then
-			table.insert(available, optionToInsert)
+			-- Update 28: options are filtered, so position in `available` does not
+			-- match position in situation.Options. Carry the source index so the
+			-- locale layer can find the right translation for this exact option.
+			-- Shallow copy so we never write into the shared Database table.
+			local copy = {}
+			for k, v in pairs(optionToInsert) do copy[k] = v end
+			copy.SourceIndex = _index
+			table.insert(available, copy)
 		end
 	end
 

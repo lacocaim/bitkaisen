@@ -27,8 +27,16 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local BK_WorldStateService = require(script.Parent:WaitForChild("BK_WorldStateService"))
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
 
 local BK_CellService = {}
+
+-- Footer tag on every cell popup. Written in English here; the locale module
+-- swaps it per player so the tag matches the language they play in.
+local function cellsTag(player)
+	return BitKaisenLocale.tOrFallback(
+		BitKaisenLocale.getPlayerLocale(player.UserId), "cells.tag", nil, "Cells")
+end
 
 local MAX_MEMBERS = 5
 local CREATE_COST = 1000
@@ -132,7 +140,7 @@ local function notifyCellMembers(cell, title, body, highlight, style)
 	for uidStr in pairs(cell.Members or {}) do
 		local member = Players:GetPlayerByUserId(tonumber(uidStr) or 0)
 		if member then
-			fireMajorPopup(member, title, body, highlight, "Células", style or "info")
+			fireMajorPopup(member, title, body, highlight, cellsTag(member), style or "info")
 		end
 	end
 end
@@ -291,7 +299,7 @@ local function handleCreate(player, stats, worldId, data)
 	if created then
 		stats.Money = (tonumber(stats.Money) or 0) - CREATE_COST
 		player:SetAttribute("BKChatCell", name)
-		fireMajorPopup(player, "CELL FOUNDED", "Your cell '" .. name .. "' now exists in this world. Recruit up to " .. tostring(MAX_MEMBERS - 1) .. " more lives from the Lives tab.", "🏯 " .. name, "Células", "success")
+		fireMajorPopup(player, "CELL FOUNDED", "Your cell '" .. name .. "' now exists in this world. Recruit up to " .. tostring(MAX_MEMBERS - 1) .. " more lives from the Lives tab.", "🏯 " .. name, cellsTag(player), "success")
 		fireLifeUpdate(player, stats, "🏯 You founded the cell '" .. name .. "' (-$" .. tostring(CREATE_COST) .. ").")
 		if context.ForceSaveStats then
 			context.ForceSaveStats(player, "CellFounded")
@@ -332,7 +340,7 @@ local function handleInvite(player, stats, worldId, data)
 		FromName = tostring(stats.Name or player.Name),
 		ExpiresAt = os.time() + 120,
 	}
-	fireMajorPopup(targetPlayer, "CELL INVITATION", tostring(stats.Name or player.Name) .. " invites you to join the cell '" .. tostring(cell.Name) .. "'. Open the Lives tab to answer.", "🏯 " .. tostring(cell.Name), "Células", "info")
+	fireMajorPopup(targetPlayer, "CELL INVITATION", tostring(stats.Name or player.Name) .. " invites you to join the cell '" .. tostring(cell.Name) .. "'. Open the Lives tab to answer.", "🏯 " .. tostring(cell.Name), cellsTag(targetPlayer), "info")
 	fireLifeUpdate(player, stats, "🏯 Invitation sent to " .. tostring(targetStats.Name or targetPlayer.Name) .. ".")
 end
 
@@ -363,7 +371,7 @@ local function handleAcceptInvite(player, stats, worldId)
 
 	if joinedName then
 		player:SetAttribute("BKChatCell", joinedName)
-		fireMajorPopup(player, "CELL JOINED", "You are now part of '" .. joinedName .. "'.", "🏯 " .. joinedName, "Células", "success")
+		fireMajorPopup(player, "CELL JOINED", "You are now part of '" .. joinedName .. "'.", "🏯 " .. joinedName, cellsTag(player), "success")
 		local leader = Players:GetPlayerByUserId(invite.FromUserId)
 		if leader then
 			local leaderStats = getStats(leader)
@@ -528,7 +536,7 @@ local function handleClaim(player, stats, worldId, data)
 		local record = BK_WorldStateService.Get(worldId) or {}
 		local _, cell = findCellOf(record, player.UserId)
 		BK_WorldStateService.AddEvent(worldId, tonumber(stats.CurrentYear) or 0, "🚩 The cell '" .. tostring(cell and cell.Name) .. "' raised its banner over " .. territory .. ".")
-		fireMajorPopup(player, "TERRITORY CLAIMED", territory .. " now flies your cell's banner. Every year it feeds your treasury.", "🚩 " .. territory, "Células", "success")
+		fireMajorPopup(player, "TERRITORY CLAIMED", territory .. " now flies your cell's banner. Every year it feeds your treasury.", "🚩 " .. territory, cellsTag(player), "success")
 	else
 		fireLifeUpdate(player, stats, "🚩 Claim failed: leaders only, one free territory per cell, and it must be unclaimed. War wins more.")
 	end
@@ -775,7 +783,7 @@ function BK_CellService.OnEraChanged(worldId, newYear)
 			cell = table.clone(cell)
 			if (tonumber(cell.EraDuelWins) or 0) >= OATH_DUEL_WINS_GOAL then
 				cell.Treasury = (tonumber(cell.Treasury) or 0) + OATH_REWARD
-				table.insert(announcements, "📜 The cell '" .. tostring(cell.Name) .. "' fulfilled its Juramento de Era (+$" .. tostring(OATH_REWARD) .. " to its treasury).")
+				table.insert(announcements, "📜 The cell '" .. tostring(cell.Name) .. "' fulfilled its Era Oath (+$" .. tostring(OATH_REWARD) .. " to its treasury).")
 			end
 			cell.EraDuelWins = 0
 			cells[cellId] = cell

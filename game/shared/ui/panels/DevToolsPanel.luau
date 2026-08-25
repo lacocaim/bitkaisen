@@ -244,6 +244,12 @@ local function init()
 		end)
 	end
 
+	local diagCard = card("Multiplayer Diagnostic", 116)
+	makeText(diagCard, "Runs every step of the world create/join path except the teleport itself, and reports which one fails. Output goes to the system log and the server console.", 36, 11, COLORS.SubText, false)
+	makeButton(diagCard, "RUN DIAGNOSTIC", 14, 76, 150, COLORS.Gold, function()
+		devToolsAction:FireServer("diagnose_multiplayer")
+	end)
+
 	local warCard = card("Clan War Testing", 126)
 	makeText(warCard, "Start or force clan war states for Update 13 testing.", 36, 11, COLORS.SubText, false)
 	makeButton(warCard, "START WAR", 14, 68, 92, COLORS.Red, function()

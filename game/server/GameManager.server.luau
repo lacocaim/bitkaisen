@@ -7,7 +7,7 @@
 --   Do not blindly convert them back to local unless GameManager is split into modules.
 
 if _G.__GameManagerLoaded then
-	warn("[GameManager] Duplicate detected â€” skipping. Delete the old Studio copy.")
+	warn("[GameManager] Duplicate detected -- skipping. Delete the old Studio copy.")
 	return
 end
 _G.__GameManagerLoaded = true
@@ -165,6 +165,7 @@ end
 -- and will see hidden dev activities.
 local DEV_USER_IDS = {
 	[3575148423] = true,
+	[10869980933] = true, -- Luisa
 }
 
 local IS_DEBUG = RunService:IsStudio() or game.PlaceId == 104206065947170
@@ -824,6 +825,16 @@ local function tSys(player, key, params, fallback)
 	local locale = BitKaisenLocale.getPlayerLocale(player.UserId)
 	return BitKaisenLocale.tOrFallback(locale, "system." .. key, params, fallback)
 end
+
+-- Public-world legend grades are stored on the save in English (see
+-- sealPublicWorld). This maps the stored value to its system.* locale key so
+-- the grade the player reads follows their language, not the stored word.
+local PUBLIC_LEGEND_GRADE_KEY = {
+	Sovereign = "legend_sovereign",
+	Outstanding = "legend_outstanding",
+	Notable = "legend_notable",
+	Forgotten = "legend_forgotten",
+}
 
 
 local function getKarmaLevelLabel(karma)
@@ -1796,7 +1807,7 @@ vodRCTResponse.OnServerEvent:Connect(function(player, accepted)
 	end
 end)
 
-function applyOldAgeMortality(stats)
+function applyOldAgeMortality(stats, player)
 	if not stats or stats.Alive == false or isCurseLife(stats) then
 		return ""
 	end
@@ -1824,7 +1835,14 @@ function applyOldAgeMortality(stats)
 		stats.Alive = false
 		stats.CauseOfDeath = "Old age"
 		refreshCurseRebirthEligibility(stats)
-		return "\nYour life reached its final year."
+		local originId = tostring(stats.Origin or "")
+		local closing = ORIGIN_DEATH_LINES[originId]
+		if player then
+			local translated = BitKaisenLocale.getOriginLine(
+				BitKaisenLocale.getPlayerLocale(player.UserId), "death", originId)
+			if translated then closing = translated end
+		end
+		return "\n" .. (closing or "Your life reached its final year.")
 	end
 
 	return "\n<font color='#b8b8c8'><b>[ AGE ]</b></font> Your body felt the weight of age, but you endured another year. Old-age risk: <b>" .. tostring(deathChance) .. "%</b>."
@@ -3576,17 +3594,112 @@ function resolveOrphanRescueChoice(player, stats, missionData, choice)
 end
 
 
-function getBirthOriginMessage(stats)
+-- Update 28: the birth line is the first thing a player reads in every single
+-- life, and it used to be the same generic sentence for 33 of the 37 origins.
+-- One written line per origin so the roll you got lands immediately.
+-- Global rather than local: this file's main chunk is at Luau's 200-local cap.
+ORIGIN_BIRTH_LINES = {
+	["Gojo Clan"] = "You were born into the Gojo Clan. The room went quiet when they measured you, and nobody has treated you as a child since.",
+	["Zenin Clan"] = "You were born into the Zenin Clan. Your worth will be decided by results, and the family has already started counting.",
+	["Kamo Clan"] = "You were born into the Kamo Clan. Your blood was recorded before your name was.",
+	["Inumaki Clan"] = "You were born into the Inumaki Clan. You will learn which words you are never allowed to say before you learn to read.",
+	["Kenjaku Clan"] = "You were born into the Kenjaku Clan. Somewhere in the family archive there is a plan with your name already written into it.",
+	["Fushiguro Lineage"] = "You were born of the Fushiguro line. The shadows in your room are not empty, and they are not hostile either.",
+	["Okkotsu Lineage"] = "You were born of the Okkotsu line. Something is already attached to you, and it loves you.",
+	["Itadori Lineage"] = "You were born of the Itadori line. Your body will outperform every explanation anyone offers for it.",
+	["Hakari Lineage"] = "You were born of the Hakari line. Luck is not on your side so much as it is on your payroll.",
+	["Higuruma Lineage"] = "You were born of the Higuruma line. You will not be able to let an unfair thing go.",
+	["Todo Lineage"] = "You were born of the Todo line. You will judge people by their taste, and you will usually be right.",
+	["Nanami Lineage"] = "You were born of the Nanami line. You will do the work properly and it will cost you more than anyone sees.",
+	["Mei Mei Lineage"] = "You were born of the Mei Mei line. Everything has a price, and you were raised to know it exactly.",
+	["Kusakabe Lineage"] = "You were born of the Kusakabe line. Staying alive is a skill, and your family treats it as the only one that matters.",
+	["Geto Lineage"] = "You were born of the Geto line. You will save people who never learn your name, and it will start to wear on you.",
+	["Uraume Lineage"] = "You were born of the Uraume line. The cold has never bothered you, and it never will.",
+	["Kashimo Lineage"] = "You were born of the Kashimo line. Nothing will satisfy you except an opponent who can actually beat you.",
+	["Fujiwara Lineage"] = "You were born of the Fujiwara line. Your name has been opening doors for a thousand years, and it is still working.",
+	["Sugawara Lineage"] = "You were born of the Sugawara line. Your family was exiled for being right, and never stopped being right.",
+	["Death Painting Lineage"] = "You were not born. You were painted, and then you woke up.",
+	["Cursed Womb"] = "You were born as a Cursed Womb. People will be uncomfortable near you and none of them will be able to say why.",
+	["Kumiwado Clan"] = "You were born into the Kumiwado Clan. The family keeps a ledger of debts owed in blood, and you already have a page.",
+	["Mizukara Clan"] = "You were born into the Mizukara Clan. Every mirror in the house is covered after dark, and nobody will tell you why yet.",
+	["Amahara Clan"] = "You were born into the Amahara Clan. You will feel the storm turn hours before the sky admits it.",
+	["Tsukigane Clan"] = "You were born into the Tsukigane Clan. The forge has not gone cold in four generations and it will not go cold under you.",
+	["Kurogiri Clan"] = "You were born into the Kurogiri Clan. You will learn to move without sound before you learn to run.",
+	["Hoshinari Clan"] = "You were born into the Hoshinari Clan. Your birth was calculated, not merely timed.",
+	["Yamashiro Clan"] = "You were born into the Yamashiro Clan. Your family's work is invisible whenever it succeeds, and it usually succeeds.",
+	["Shinkawa Clan"] = "You were born into the Shinkawa Clan. You will be given thread long before you are given a blade.",
+	["Morikage Clan"] = "You were born into the Morikage Clan. The family buries its dead standing, in a grove you will one day be asked to tend.",
+	["Fushidori Clan"] = "You were born into the Fushidori Clan. The crows in the compound already answer to your family, and one day they will answer to you.",
+	["Civilian Family"] = "You were born to an ordinary family. Nobody around you knows curses exist, and for a while, neither will you.",
+	["Minor Sorcerer Family"] = "You were born into a minor sorcerer family. Your name will get you into the room, and no further than that.",
+	["Fallen Sorcerer Family"] = "You were born into a fallen sorcerer family. The stories about what your family used to be are told carefully.",
+	["Branch Sorcerer Family"] = "You were born into a branch family. You will do the work, and the main house will be given the credit.",
+	["Unknown Family"] = "You were born into a family with no record. Wherever your history should be, there is a gap.",
+	-- Chance = 0, so unreachable from a normal birth roll. Written anyway so
+	-- it never falls back to the generic line if it is ever enabled.
+	["Pumpkin King Clan"] = "You were born into the Pumpkin King Clan. The things your family makes are not supposed to be able to look back at you.",
+}
+
+-- Update 28: the closing line of a life. The old-age death returned one
+-- generic sentence for every bloodline, so eighty years of being a Gojo or
+-- a Cursed Womb ended identically. Bookends ORIGIN_BIRTH_LINES below.
+ORIGIN_DEATH_LINES = {
+	["Gojo Clan"] = "You died old, and the clan lost the only thing it had been arranging itself around for eighty years.",
+	["Zenin Clan"] = "You died old. The family recorded your results, closed the entry, and moved on to the next name.",
+	["Kamo Clan"] = "You died old. Your blood was taken one last time, for the record, before they let you go.",
+	["Inumaki Clan"] = "You died old, with a great deal left unsaid, most of it on purpose.",
+	["Kenjaku Clan"] = "You died old. Somewhere in the archive, the plan simply moved to the column after yours.",
+	["Fushiguro Lineage"] = "You died old, and the shadows that had waited under your bed since childhood finally came out to meet you.",
+	["Okkotsu Lineage"] = "You died old, and you were not alone. You never were.",
+	["Itadori Lineage"] = "You died old, which for a body like yours took a great deal of doing.",
+	["Hakari Lineage"] = "You died old. The run had to end eventually, and you always knew the odds on that one.",
+	["Higuruma Lineage"] = "You died old, still turning over a verdict you handed down decades ago.",
+	["Todo Lineage"] = "You died old, surrounded by people you had decided were your closest friends, most of whom agreed.",
+	["Nanami Lineage"] = "You died old, at the end of a working life, having never quite reached the retirement you described so precisely.",
+	["Mei Mei Lineage"] = "You died old and solvent. Both halves of that were deliberate.",
+	["Kusakabe Lineage"] = "You died old. In this profession that is the entire argument, and you made it just by lasting.",
+	["Geto Lineage"] = "You died old, and never did resolve the thing you had been carrying since you were young.",
+	["Uraume Lineage"] = "You died old. The room was cold, the way it always had been around you.",
+	["Kashimo Lineage"] = "You died old, of time, which is the one opponent you never wanted.",
+	["Fujiwara Lineage"] = "You died old, and the name carried on without needing you at all.",
+	["Sugawara Lineage"] = "You died old, and the archive took your notes the way it has taken a thousand years of them.",
+	["Death Painting Lineage"] = "You stopped. Whether that counts as dying was never settled, least of all by you.",
+	["Cursed Womb"] = "You died old, and the room was more comfortable afterwards. People noticed that, too.",
+	["Kumiwado Clan"] = "You died old. Your page in the ledger was closed, and the debts on it passed to someone else.",
+	["Mizukara Clan"] = "You died old, in a house where every mirror was still covered.",
+	["Amahara Clan"] = "You died old, on a still day, which the family read as its own kind of statement.",
+	["Tsukigane Clan"] = "You died old. The forge did not go cold, and your name went onto a tang somewhere.",
+	["Kurogiri Clan"] = "You died old, quietly, which is how your family does everything.",
+	["Hoshinari Clan"] = "You died old, on a date the family had calculated a long time ago and never told you.",
+	["Yamashiro Clan"] = "You died old. The barriers you raised are still standing, and nobody inside them knows your name.",
+	["Shinkawa Clan"] = "You died old, with every knot you were ever taught still in your hands.",
+	["Morikage Clan"] = "You died old, and they buried you standing, in the row that had been yours since birth.",
+	["Fushidori Clan"] = "You died old. The crows stayed at the compound for a week afterwards, and then they did not.",
+	["Civilian Family"] = "You died old, and the people who loved you first never did learn what you actually did with your life.",
+	["Minor Sorcerer Family"] = "You died old, having gotten further than the name you started with was ever supposed to carry you.",
+	["Fallen Sorcerer Family"] = "You died old. Whether you restored anything the family lost is a question you left to other people.",
+	["Branch Sorcerer Family"] = "You died old. The main house sent someone appropriate to the funeral.",
+	["Unknown Family"] = "You died old, and the gap where your family history should be never did get filled in.",
+	["Pumpkin King Clan"] = "You died old. The things your family made outlived you, and some of them noticed.",
+}
+
+function getBirthOriginMessage(stats, player)
 	local origin = stats.Origin or stats.Clan or "Minor Sorcerer Family"
 	local familyName = stats.FamilyName or "Unknown"
 	local familyType = stats.FamilyType or "Unknown"
 
-	if origin == "Cursed Womb" then
-		return "<font color='#a782ff'><b>[ ORIGIN ]</b></font> You were born as a Cursed Womb."
+	local written = ORIGIN_BIRTH_LINES[origin]
+	if written and player then
+		local translated = BitKaisenLocale.getOriginLine(
+			BitKaisenLocale.getPlayerLocale(player.UserId), "birth", origin)
+		if translated then written = translated end
 	end
-
-	if origin == "Zenin Clan" or origin == "Kamo Clan" or origin == "Gojo Clan" then
-		return "<font color='#a782ff'><b>[ CLAN ]</b></font> You were born into the " .. origin .. "."
+	if written then
+		local tag = (origin == "Cursed Womb" or origin == "Death Painting Lineage") and "ORIGIN"
+			or (string.find(origin, "Clan") and "CLAN")
+			or (string.find(origin, "Lineage") and "LINEAGE")
+			or "FAMILY"
+		return "<font color='#a782ff'><b>[ " .. tag .. " ]</b></font> " .. written
 	end
 
 	if familyType == "Sorcerer" then
@@ -4412,7 +4525,7 @@ function startNewLife(player, mode, preferences)
 	playerLives[player.UserId] = newStats
 
 	local birthMessage = "You were born with no recognized sorcerer grade."
-	birthMessage = birthMessage .. "\n" .. getBirthOriginMessage(newStats)
+	birthMessage = birthMessage .. "\n" .. getBirthOriginMessage(newStats, player)
 	if newStats.LuckyBirthActive == true then
 		birthMessage = birthMessage .. "\n<font color='#ffcd69'><b>[ LUCKY BIRTH ]</b></font> Your birth luck improved your starting path and early potential."
 	end
@@ -4435,7 +4548,10 @@ function startNewLife(player, mode, preferences)
 	end
 
 	if publicCatchUpMoney and publicCatchUpMoney > 0 then
-		birthMessage = birthMessage .. "\n<font color='#a782ff'><b>[ EL MUNDO YA AVANZÓ ]</b></font> Este mundo lleva años corriendo sin vos. Arrancás con <b>+$" .. tostring(publicCatchUpMoney) .. "</b> y <b>+" .. tostring(publicCatchUpCE or 0) .. " CE</b> para ponerte a la par."
+		birthMessage = birthMessage .. tSys(player, "public_catch_up", {
+			money = tostring(publicCatchUpMoney),
+			ce = tostring(publicCatchUpCE or 0),
+		}, "\n<font color='#a782ff'><b>[ THE WORLD MOVED ON ]</b></font> This world has been running for years without you. You start with <b>+$" .. tostring(publicCatchUpMoney) .. "</b> and <b>+" .. tostring(publicCatchUpCE or 0) .. " CE</b> to catch up.")
 	end
 
 	if tostring(newStats.InnateTechnique or "None") ~= "None" then
@@ -10335,7 +10451,7 @@ function ageUp(player)
 					player,
 					"ERA SHIFT",
 					"Your life has lasted long enough for history itself to change around you.",
-					tostring(stats.PreviousEra or "Unknown Era") .. " â†’ " .. tostring(stats.CurrentEra or stats.Era or "Modern Era"),
+					tostring(stats.PreviousEra or "Unknown Era") .. " -> " .. tostring(stats.CurrentEra or stats.Era or "Modern Era"),
 					"Era shifts can change future event flavor, society pressure, and long-term cursed history."
 				)
 			end
@@ -10458,7 +10574,7 @@ function ageUp(player)
 				end
 			end
 
-			logMessage = logMessage .. applyOldAgeMortality(stats)
+			logMessage = logMessage .. applyOldAgeMortality(stats, player)
 		end
 
 		if stats.Health <= 0 then
@@ -10584,7 +10700,7 @@ function ageUp(player)
 			player,
 			"ERA SHIFT",
 			"Your life has lasted long enough for history itself to change around you.",
-			tostring(stats.PreviousEra or "Unknown Era") .. " â†’ " .. tostring(stats.CurrentEra or stats.Era or "Modern Era"),
+			tostring(stats.PreviousEra or "Unknown Era") .. " -> " .. tostring(stats.CurrentEra or stats.Era or "Modern Era"),
 			"Era shifts can change future event flavor, society pressure, and long-term cursed history."
 		)
 	end
@@ -10708,7 +10824,7 @@ function ageUp(player)
 		end
 	end
 
-	logMessage = logMessage .. applyOldAgeMortality(stats)
+	logMessage = logMessage .. applyOldAgeMortality(stats, player)
 
 	if stats.Health <= 0 then
 		stats.Alive = false
@@ -10865,7 +10981,7 @@ end
 -- limitation as the ranking itself -- see the plan's notes).
 function sealPublicWorld(worldId, livingPlayers, worldState)
 	BK_WorldStateService.SealWorld(worldId)
-	BK_WorldStateService.AddEvent(worldId, worldState.Year, "EL SELLO FINAL ha caído sobre este mundo.")
+	BK_WorldStateService.AddEvent(worldId, worldState.Year, "THE FINAL SEAL has fallen over this world.")
 
 	local ranking = getPublicWorldRanking(worldId)
 	local rankPosition = {}
@@ -10880,24 +10996,31 @@ function sealPublicWorld(worldId, livingPlayers, worldState)
 			local position = rankPosition[p.UserId]
 			local legendGrade, isSoberano
 			if position == 1 then
-				legendGrade, isSoberano = "Soberano", true
+				legendGrade, isSoberano = "Sovereign", true
 			elseif position and rankedCount > 0 and position <= math.max(1, math.ceil(rankedCount * 0.2)) then
-				legendGrade, isSoberano = "Sobresaliente", false
+				legendGrade, isSoberano = "Outstanding", false
 			elseif position and rankedCount > 0 and position <= math.max(1, math.ceil(rankedCount * 0.8)) then
 				legendGrade, isSoberano = "Notable", false
 			else
-				legendGrade, isSoberano = "Olvidado", false
+				legendGrade, isSoberano = "Forgotten", false
 			end
 
 			stats.PublicLegendGrade = legendGrade
 			stats.PublicSoberano = isSoberano
 			stats.PublicWorldSealed = true
 
-			local sealMessage = "<font color='#a782ff'><b>[ SELLO FINAL ]</b></font> Este mundo ha llegado a su fin."
+			local sealMessage = tSys(p, "world_sealed_log", nil, "<font color='#a782ff'><b>[ FINAL SEAL ]</b></font> This world has reached its end.")
+			local sealTitle = tSys(p, "world_sealed_title", nil, "FINAL SEAL")
+			local sealBody = tSys(p, "world_sealed_body", nil, "This world has reached its end.")
 			if isSoberano then
-				fireMajorPopup(p, "SELLO FINAL", "Este mundo ha llegado a su fin.", "Fuiste coronado Hechicero Soberano.", "Ninguna alma en este mundo llegó más lejos que vos.")
+				fireMajorPopup(p, sealTitle, sealBody,
+					tSys(p, "world_sealed_sovereign", nil, "You were crowned Sovereign Sorcerer."),
+					tSys(p, "world_sealed_sovereign_footer", nil, "No soul in this world went further than you."))
 			else
-				fireMajorPopup(p, "SELLO FINAL", "Este mundo ha llegado a su fin.", "Tu leyenda: " .. legendGrade, "El ranking quedó congelado para siempre.")
+				local gradeText = tSys(p, PUBLIC_LEGEND_GRADE_KEY[legendGrade] or "legend_unknown", nil, legendGrade)
+				fireMajorPopup(p, sealTitle, sealBody,
+					tSys(p, "world_sealed_legend", { grade = gradeText }, "Your legend: " .. gradeText),
+					tSys(p, "world_sealed_legend_footer", nil, "The ranking is frozen forever."))
 			end
 			fireLifeUpdate(p, stats, sealMessage)
 			forceSaveStats(p, "SelloFinal")
@@ -10937,14 +11060,14 @@ function advancePublicWorldYear(worldId, livingPlayers)
 		-- Multiplayer Fase 7: the era closing settles cell wars (territory
 		-- transfers) and pays out the Juramento de Era.
 		BK_CellService.OnEraChanged(worldId, worldState.Year)
-		BK_WorldStateService.AddEvent(worldId, worldState.Year, "La era cambió a " .. tostring(worldState.Era) .. ".")
+		BK_WorldStateService.AddEvent(worldId, worldState.Year, "The era changed to " .. tostring(worldState.Era) .. ".")
 		for _, p in ipairs(livingPlayers) do
 			fireMajorPopup(
 				p,
-				"ERA SHIFT",
-				"El calendario compartido de este mundo cruzó a una nueva era.",
+				tSys(p, "era_shift_title", nil, "ERA SHIFT"),
+				tSys(p, "era_shift_body", nil, "This world's shared calendar crossed into a new era."),
 				tostring(previousEra) .. " -> " .. tostring(worldState.Era),
-				"Todas las almas presentes lo sienten a la vez."
+				tSys(p, "era_shift_footer", nil, "Every soul present feels it at the same time.")
 			)
 		end
 	end
@@ -10985,7 +11108,7 @@ function advancePublicWorldYear(worldId, livingPlayers)
 			end
 		end
 		if topSoul then
-			BK_WorldStateService.AddEvent(worldId, worldState.Year, "📰 Año " .. tostring(worldState.Year) .. ": " .. topSoul .. " lidera este mundo con " .. tostring(topCE) .. " de energía maldita.")
+			BK_WorldStateService.AddEvent(worldId, worldState.Year, "📰 Year " .. tostring(worldState.Year) .. ": " .. topSoul .. " leads this world with " .. tostring(topCE) .. " cursed energy.")
 		end
 	end
 
@@ -11677,6 +11800,105 @@ end
 
 devToolsAction.OnServerEvent:Connect(function(player, actionId, data)
 	if not checkRateLimit(player, "DevToolsAction") or not canUseDevTools(player) then return end
+
+	-- Multiplayer diagnostic. Runs every step of the world create/join path
+	-- except the teleport itself (that would move whoever ran it) and reports
+	-- exactly which one fails. Deliberately sits above the stats check so it
+	-- still works while sitting at the Public/Private gate with no life
+	-- loaded. Writes to a throwaway key that is never added to the index, so
+	-- it can't pollute the real world list.
+	if actionId == "diagnose_multiplayer" then
+		-- Gated on isDev, NOT canUseDevTools: the live place is in
+		-- TEST_PURCHASE_PLACE_IDS, so canUseDevTools is true for every player
+		-- there, and this action reserves servers and writes to DataStores.
+		if not isDev(player) then return end
+
+		local lines = { "===== MULTIPLAYER DIAGNOSTIC =====" }
+		local function add(label, ok, detail)
+			table.insert(lines, (ok and "[ OK   ] " or "[ FAIL ] ") .. label .. (detail and (" -- " .. tostring(detail)) or ""))
+		end
+
+		table.insert(lines, "PlaceId=" .. tostring(game.PlaceId)
+			.. " GameId=" .. tostring(game.GameId)
+			.. " Studio=" .. tostring(RunService:IsStudio()))
+
+		-- 1. ReserveServer: the very first thing CreateWorld does.
+		local reserveOk, accessCode, privateServerId = pcall(function()
+			return TeleportService:ReserveServer(game.PlaceId)
+		end)
+		if reserveOk and typeof(accessCode) == "string" and accessCode ~= "" then
+			add("ReserveServer", true, "code " .. #accessCode .. " chars, psid=" .. tostring(privateServerId))
+		else
+			add("ReserveServer", false, tostring(accessCode))
+		end
+
+		-- 2. Registry DataStore write + read-back roundtrip.
+		local diagKey = "diag_" .. tostring(player.UserId)
+		local writeOk, writeErr = pcall(function()
+			game:GetService("DataStoreService"):GetDataStore("BK_WorldRegistry"):SetAsync(diagKey, { At = os.time(), By = player.UserId })
+		end)
+		add("Registry SetAsync", writeOk, not writeOk and writeErr or nil)
+
+		local readOk, readVal = pcall(function()
+			return game:GetService("DataStoreService"):GetDataStore("BK_WorldRegistry"):GetAsync(diagKey)
+		end)
+		add("Registry GetAsync", readOk and typeof(readVal) == "table", readOk and ("type=" .. typeof(readVal)) or tostring(readVal))
+
+		-- 3. MemoryStore, used for live population.
+		local memOk, memErr = pcall(function()
+			game:GetService("MemoryStoreService"):GetSortedMap("BK_WorldPopulation"):SetAsync("diag_" .. tostring(player.UserId), { Count = 0, Souls = {} }, 60)
+		end)
+		add("MemoryStore SetAsync", memOk, not memOk and memErr or nil)
+
+		-- 4. How many worlds the browser would actually list right now.
+		local listOk, worlds = pcall(function()
+			return BK_WorldRegistryService.ListWorlds()
+		end)
+		if listOk and typeof(worlds) == "table" then
+			local shown, sealed, code, empty = 0, 0, 0, 0
+			for _, record in ipairs(worlds) do
+				local worldState = BK_WorldStateService.Get(record.WorldId)
+				if worldState and worldState.Sealed == true then sealed += 1
+				elseif record.Type == "Code" then code += 1
+				elseif (tonumber(record.Population) or 0) == 0 and record.EverPopulated ~= true then empty += 1
+				else shown += 1 end
+			end
+			add("ListWorlds", true, "total=" .. #worlds .. " listed~" .. shown .. " sealed=" .. sealed .. " codeOnly=" .. code .. " neverUsed=" .. empty)
+		else
+			add("ListWorlds", false, tostring(worlds))
+		end
+
+		-- 5. Whether a joinable target exists at all for Entrada Rápida.
+		local findOk, target = pcall(function()
+			return BK_WorldRegistryService.FindOpenWorld(function(candidateWorldId)
+				local candidateState = BK_WorldStateService.Get(candidateWorldId)
+				return not (candidateState and candidateState.Sealed)
+			end)
+		end)
+		if findOk and target then
+			add("FindOpenWorld", true, tostring(target.Name) .. " pop=" .. tostring(target.Population) .. " cap=" .. tostring(target.MaxCapacity)
+				.. " accessCode=" .. (target.AccessCode and (#tostring(target.AccessCode) .. " chars") or "NIL"))
+		else
+			add("FindOpenWorld", false, findOk and "no joinable open world found" or tostring(target))
+		end
+
+		table.insert(lines, "=================================")
+
+		local report = table.concat(lines, "\n")
+		-- Server console: always, so it lands in Creator Hub logs even if the
+		-- client-side log is unavailable.
+		print(report)
+
+		local diagStats = playerLives[player.UserId]
+		if diagStats then
+			-- The log renders as RichText, so a stray < or & in a DataStore
+			-- error message would swallow the rest of the report.
+			local safe = report:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;")
+			fireLifeUpdate(player, diagStats, "<font color='#78beff'><b>[ DEV ]</b></font>\n" .. safe)
+		end
+		return
+	end
+
 	local stats = playerLives[player.UserId]
 	if not stats then return end
 	ensureExtraStats(stats)
@@ -12340,7 +12562,7 @@ claimGroupJoinReward.OnServerEvent:Connect(function(player, membershipStatus)
 	end
 
 	if not verified then
-		warn("[GameManager] Group join reward denied for " .. tostring(player.Name) .. " â€” not in group.")
+		warn("[GameManager] Group join reward denied for " .. tostring(player.Name) .. " -- not in group.")
 		return
 	end
 
@@ -12445,6 +12667,58 @@ BK_Remotes.Get("MarkTutorialSeen").OnServerEvent:Connect(function(player, tutori
 	fireLifeUpdate(player, stats, nil)
 end)
 
+-- Single entry point for every reserved-server teleport.
+--
+-- This used to call TeleportService:TeleportToPrivateServer, which is
+-- deprecated AND, more importantly, only *queues* the teleport: it returns
+-- immediately, so the pcall around it reported success even when the teleport
+-- went on to fail. That is why joining could break for weeks while the client
+-- was told everything worked and just sat on "Teleporting..." forever.
+--
+-- TeleportAsync yields until Roblox actually accepts the request and raises a
+-- real error when it doesn't, so failures surface here instead of vanishing.
+-- Returns (true) on success, or (false, message) with the real reason.
+function teleportIntoWorld(player, accessCode, worldId)
+	if typeof(accessCode) ~= "string" or accessCode == "" then
+		return false, "this world has no reserved server on record"
+	end
+
+	-- Reserved-server teleports never work in Studio. Say so immediately
+	-- instead of burning three retries and ~6s of waiting on a guaranteed
+	-- failure every time someone tests locally.
+	if RunService:IsStudio() then
+		return false, "reserved-server teleports do not work in Studio (test in the published game)"
+	end
+
+	local lastError = "unknown error"
+	for attempt = 1, 3 do
+		local ok, err = pcall(function()
+			local options = Instance.new("TeleportOptions")
+			options.ReservedServerAccessCode = accessCode
+			options:SetTeleportData({ WorldId = worldId })
+			return TeleportService:TeleportAsync(game.PlaceId, { player }, options)
+		end)
+
+		if ok then
+			return true
+		end
+
+		lastError = tostring(err)
+		warn("[BitKaisen] TeleportAsync attempt " .. attempt .. " failed for "
+			.. tostring(player.Name) .. " -> world " .. tostring(worldId) .. ": " .. lastError)
+
+		-- Roblox rate-limits teleports per player, so a retry needs a real gap.
+		if attempt < 3 then
+			task.wait(attempt * 2)
+			if not player.Parent then
+				return false, "player left before the teleport completed"
+			end
+		end
+	end
+
+	return false, lastError
+end
+
 -- Multiplayer Fase 1: Private/Public world mode choice, made EVERY join
 -- (matches BitSeas -- confirmed by Luisa this is a per-session gate, not a
 -- one-time-per-life choice). PlayerAdded fires PromptWorldMode and waits
@@ -12491,17 +12765,14 @@ BK_Remotes.Get("ChooseWorldMode").OnServerEvent:Connect(function(player, mode)
 		end
 
 		if target then
-			local teleportOk = pcall(function()
-				-- 4th arg is spawnName (a string), NOT teleport data -- the
-				-- real payload is the 5th arg. Passing our data table into
-				-- the spawnName slot (as this used to) meant TeleportData
-				-- never actually arrived, so the receiving server always
-				-- fell back to PromptWorldMode instead of loading Public.
-				TeleportService:TeleportToPrivateServer(game.PlaceId, target.AccessCode, { player }, nil, { WorldId = target.WorldId })
-			end)
+			local teleportOk, teleportErr = teleportIntoWorld(player, target.AccessCode, target.WorldId)
 			if teleportOk then
 				return
 			end
+			-- Falling through to the local genesis flow below, but say why
+			-- instead of silently landing them somewhere they didn't pick.
+			warn("[BitKaisen] Entrada Rapida teleport failed for " .. tostring(player.Name)
+				.. ": " .. tostring(teleportErr))
 		end
 	end
 
@@ -12561,7 +12832,12 @@ local WORLD_BROWSER_CACHE_TTL = 15
 
 getWorldBrowser.OnServerInvoke = function(player)
 	if not checkRateLimit(player, "GetWorldBrowser") then
-		return { Worlds = {} }
+		-- Never answer with an empty list here: the client can't tell that
+		-- apart from "no worlds exist" and blanks the browser, leaving the
+		-- player with nothing to join at all. Serve the cache instead, and
+		-- flag it so the client keeps whatever it already had if there's no
+		-- cache yet.
+		return worldBrowserCache.result or { Worlds = {}, RateLimited = true }
 	end
 
 	-- Return cached result if fresh enough -- ListWorlds does N sequential
@@ -12613,6 +12889,12 @@ requestJoinWorld.OnServerInvoke = function(player, worldIdOrCode)
 		return { Success = false, Message = "World not found." }
 	end
 
+	-- Already standing in it: teleporting would bounce them through a loading
+	-- screen back to where they started, which looks like a failure.
+	if publicRepique.currentWorldId == record.WorldId then
+		return { Success = false, Message = "You are already in this world." }
+	end
+
 	local targetState = BK_WorldStateService.Get(record.WorldId)
 	if targetState and targetState.Sealed then
 		return { Success = false, Message = "That world has been sealed." }
@@ -12623,18 +12905,45 @@ requestJoinWorld.OnServerInvoke = function(player, worldIdOrCode)
 		return { Success = false, Message = "That world is full." }
 	end
 
-	local teleportOk = pcall(function()
-		-- 4th arg is spawnName (a string), NOT teleport data -- see the
-		-- comment on the Entrada Rápida call above for the full story.
-		TeleportService:TeleportToPrivateServer(game.PlaceId, record.AccessCode, { player }, nil, { WorldId = record.WorldId })
-	end)
-
+	local teleportOk, teleportErr = teleportIntoWorld(player, record.AccessCode, record.WorldId)
 	if not teleportOk then
-		return { Success = false, Message = "Could not join that world. Try again." }
+		return { Success = false, Message = "Could not join that world: " .. tostring(teleportErr) }
 	end
 
 	return { Success = true }
 end
+
+-- TeleportToPrivateServer only *starts* a teleport -- the pcall wrapping it
+-- returns as soon as the request is queued, long before the player actually
+-- lands. Every failure after that point (reserved server gone, place update
+-- mid-flight, Roblox-side rejection) used to be completely silent: the client
+-- had already been told Success, so it sat on "Teleporting..." forever with no
+-- error and no way back to the gate. This is the only place that failure is
+-- observable.
+TeleportService.TeleportInitFailed:Connect(function(player, teleportResult, errorMessage)
+	if not player or not player.Parent then
+		return
+	end
+
+	warn("[BitKaisen] Teleport failed for " .. tostring(player.Name)
+		.. ": " .. tostring(teleportResult) .. " -- " .. tostring(errorMessage))
+
+	fireMajorPopup(
+		player,
+		"COULD NOT JOIN",
+		"That world could not be reached, so you stayed where you are.",
+		"Teleport failed",
+		"Try again, or pick a different world."
+	)
+
+	-- Only re-open the gate if they never got a life loaded -- that means the
+	-- teleport fired while they were still choosing, so without this they'd be
+	-- left on an empty screen with nothing to interact with.
+	if not playerLives[player.UserId] then
+		pendingWorldModeChoice[player.UserId] = true
+		BK_Remotes.Get("PromptWorldMode"):FireClient(player)
+	end
+end)
 
 -- Multiplayer Fase 4: founds a brand-new world (reserves a real server,
 -- registers it, seeds its Era/Year via BK_WorldStateService.GetOrCreate),
@@ -12666,6 +12975,12 @@ requestCreateWorld.OnServerInvoke = function(player, config)
 	end
 
 	BK_WorldStateService.GetOrCreate(record.WorldId, startYear, startEra)
+
+	-- Drop the browser cache so the world the founder just made shows up on
+	-- the next refresh instead of being invisible for up to WORLD_BROWSER_CACHE_TTL
+	-- seconds, which reads as "creating it failed".
+	worldBrowserCache.result = nil
+	worldBrowserCache.at = 0
 
 	-- Per Luisa: don't teleport the founder away immediately -- they need a
 	-- moment to actually read/copy the real join code before losing this
@@ -12924,7 +13239,17 @@ initiateGift.OnServerEvent:Connect(function(player, productId, recipientUsername
 	BK_CommerceService.InitiateGift(player, productId, recipientUsername, promptGiftPurchase)
 end)
 
-Players.PlayerAdded:Connect(function(player)
+-- Global, not local: this file's main chunk is at Luau's 200-local ceiling.
+-- Tracks who has already run through onPlayerJoined so the catch-up loop
+-- below can't double-handle anyone.
+handledJoin = {}
+
+function onPlayerJoined(player)
+	if handledJoin[player.UserId] then
+		return
+	end
+	handledJoin[player.UserId] = true
+
 	BK_DevCommands.HookPlayer(player)
 	-- Grab locale early so translations are ready before any text fires
 	task.defer(function()
@@ -12965,6 +13290,32 @@ Players.PlayerAdded:Connect(function(player)
 	task.defer(function()
 		BK_CommerceService.ClaimGiftMailbox(player)
 	end)
+end
+
+Players.PlayerAdded:Connect(onPlayerJoined)
+
+-- A player can finish joining BEFORE this script reaches the line above, in
+-- which case PlayerAdded never fires for them and they get neither a life nor
+-- the Public/Private prompt -- a dead session on a blank screen.
+--
+-- That is the normal case for reserved worlds, not an edge case: the player
+-- who teleports in IS the first player, arriving while the server is still
+-- booting this 13k-line script. It also meant currentWorldId was never set
+-- from their TeleportData, so the population heartbeat reported to genesis
+-- instead of their world, which is why real worlds looked permanently empty.
+--
+-- Guarded per-player so nobody can be handled twice if PlayerAdded does fire.
+--
+-- Wrapped in task.spawn on purpose: this file's main chunk is at Luau's
+-- 200-local ceiling, so a bare `for _, p in ...` out here allocates two more
+-- registers in the chunk and the whole script dies with "Out of local
+-- registers". Inside the closure they belong to the function's own scope.
+task.spawn(function()
+	for _, existingPlayer in ipairs(Players:GetPlayers()) do
+		if not handledJoin[existingPlayer.UserId] then
+			task.spawn(onPlayerJoined, existingPlayer)
+		end
+	end
 end)
 
 Players.PlayerRemoving:Connect(function(player)
@@ -12978,6 +13329,7 @@ Players.PlayerRemoving:Connect(function(player)
 		autosaveLoops[player.UserId] = nil
 	end
 
+	handledJoin[player.UserId] = nil
 	playerLives[player.UserId] = nil
 	pendingMissions[player.UserId] = nil
 	pendingLegacy[player.UserId] = nil

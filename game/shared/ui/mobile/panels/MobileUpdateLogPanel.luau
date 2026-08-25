@@ -13,6 +13,21 @@ local scroll: ScrollingFrame
 
 local sections = {
 	{
+		header = "Update 28 - Your Bloodline Decides",
+		body = "• All 37 clans and lineages now have their own life. Childhood, adolescence, adulthood and old age read differently depending on the name you were born into.\n• Being born a Gojo means elders measuring you and no children near you. A Zenin is ranked by strength in front of the family. A Death Painting understands it was made, not born.\n• Every origin now has its own birth line and its own ending.\n• Bloodline events are labelled in the system log, so you can see when your blood caused something.",
+		color = theme.Gold,
+	},
+	{
+		header = "Update 28 - The Second Half of Life",
+		body = "• Life after 40 now has content of its own: a body that stops answering while your technique stays sharp, outliving the people you trained beside, and being asked to teach instead of deploy.\n• Clan-specific late life too, from the Gojo with nobody left to correct them to the Kenjaku thinking about the next body instead of the next year.",
+		color = theme.Purple,
+	},
+	{
+		header = "Update 28 - Bloodline Choices In Missions",
+		body = "• Mission situations now offer options only your clan can take.\n• More situations overall, and more technique-specific ways to solve them.\n• Everything new is fully translated into Spanish and Portuguese from day one.",
+		color = theme.Green,
+	},
+	{
 		header = "Update 27 - Cursed Data Panel",
 		body = "• A new collapsible Cursed Data section in your Dossier shows hidden stats: Cursed Resentment, RCT Revives, CE Trait, Awakening status, binding vows, and more.\n• Resentment bar tracks your Cursed Resentment live with a threshold marker.\n• Awakening status shows whether you're eligible, not yet met, or triggered with what caused it.",
 		color = theme.Purple,

@@ -97,6 +97,29 @@ function BitKaisenLocale.tOrFallback(locale: string, key: string, params: { [str
 	return result
 end
 
+-- Same contract as tOrFallback, except the entry may also be an array of
+-- interchangeable phrasings -- the English side of several activities picks one
+-- at random, and a single translated line would flatten that variety away.
+-- Returns a random variant for an array, the plain string for a string, and the
+-- English fallback whenever the key is missing or holds something else.
+function BitKaisenLocale.tOrFallbackAny(locale: string, key: string, params: { [string]: any }?, fallback: string): string
+	if locale == "en" then return fallback end
+
+	local value: any = loadLang(locale)
+	for segment in key:gmatch("[^%.]+") do
+		if type(value) ~= "table" then return fallback end
+		local n = tonumber(segment)
+		value = n and value[n] or value[segment]
+	end
+
+	if type(value) == "table" and #value > 0 then
+		value = value[math.random(1, #value)]
+	end
+	if type(value) ~= "string" then return fallback end
+
+	return interpolate(value, params)
+end
+
 -- Main translate function
 -- locale: "es", "pt_br", "en" etc
 -- key: dot-separated path like "life_events.child_curse_corner.1"
@@ -145,6 +168,27 @@ function BitKaisenLocale.getScenarioLocale(locale: string, scenarioId: string): 
 	if locale == "en" then return nil end
 	local lang = loadLang(locale)
 	return lang.scenarios and lang.scenarios[scenarioId] or nil
+end
+
+-- Update 28: mission situations (BitKaisenSituations) were never localized at
+-- all -- BK_MissionService did not even require this module. Returns the raw
+-- translation subtable for a situation id, or nil for English/missing.
+function BitKaisenLocale.getSituationLocale(locale: string, situationId: string): any
+	if locale == "en" then return nil end
+	local lang = loadLang(locale)
+	return lang.situations and lang.situations[situationId] or nil
+end
+
+-- Update 28: the birth and death lines live as plain tables in GameManager
+-- (ORIGIN_BIRTH_LINES / ORIGIN_DEATH_LINES) because they are built before any
+-- text pipeline runs. kind is "birth" or "death"; returns nil for English or
+-- for an origin with no translation, so the caller keeps its written default.
+function BitKaisenLocale.getOriginLine(locale: string, kind: string, origin: string): string?
+	if locale == "en" then return nil end
+	local lang = loadLang(locale)
+	local group = lang.origins and lang.origins[kind]
+	local line = group and group[origin]
+	return type(line) == "string" and line or nil
 end
 
 return BitKaisenLocale

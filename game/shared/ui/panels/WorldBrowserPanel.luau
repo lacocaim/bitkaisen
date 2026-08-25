@@ -550,7 +550,11 @@ local function refreshList()
 	end)
 	state.Loading = false
 	if ok and typeof(result) == "table" then
-		lastWorlds = result.Worlds or {}
+		-- RateLimited means the server had nothing fresh to give us, not that
+		-- the world list is genuinely empty -- keep what we already had.
+		if not (result.RateLimited and #lastWorlds > 0) then
+			lastWorlds = result.Worlds or {}
+		end
 		setStatus("", false)
 		renderWorldList(lastWorlds, searchBox.Text)
 	else

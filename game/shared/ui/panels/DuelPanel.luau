@@ -292,7 +292,7 @@ local function render(state)
 		isSpectating = true
 	end
 
-	titleLabel.Text = "⚔ " .. _g("title", "LIVE DUEL") .. (isSpectating and "  👁 " .. _g("spectating", "SPECTATING") or "") .. ((state.StakesMultiplier or 1) > 1 and "  🔥 REVANCHA" or "")
+	titleLabel.Text = "⚔ " .. _g("title", "LIVE DUEL") .. (isSpectating and "  👁 " .. _g("spectating", "SPECTATING") or "") .. ((state.StakesMultiplier or 1) > 1 and ("  🔥 " .. _g("rematch_tag", "REMATCH")) or "")
 
 	local function fillBox(box, side, prefix)
 		box.Name.Text = prefix .. side.Name
@@ -363,7 +363,7 @@ duelInvite.OnClientEvent:Connect(function(invite)
 	if typeof(invite) ~= "table" then
 		return
 	end
-	inviteBody.Text = tostring(invite.FromName) .. " (" .. tostring(invite.FromGrade) .. ") " .. _g("invite_body", "challenges you to a live duel.") .. (invite.IsRematch and "  🔥 REVANCHA -- " .. _g("invite_stakes", "higher stakes!") or "")
+	inviteBody.Text = tostring(invite.FromName) .. " (" .. tostring(invite.FromGrade) .. ") " .. _g("invite_body", "challenges you to a live duel.") .. (invite.IsRematch and ("  🔥 " .. _g("rematch_tag", "REMATCH") .. " -- ") .. _g("invite_stakes", "higher stakes!") or "")
 	inviteExpiresAt = tonumber(invite.ExpiresAt) or (os.time() + 30)
 	inviteOverlay.Visible = true
 	gui.Enabled = true

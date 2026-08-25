@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local BitKaisenMissions = require(ReplicatedStorage:WaitForChild("BitKaisenMissions"))
 local BitKaisenSituations = require(ReplicatedStorage:WaitForChild("BitKaisenSituations"))
+local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
 
 local BK_MissionService = {}
 local context = {}
@@ -284,6 +285,26 @@ function BK_MissionService.ProcessMission(player, missionId)
 		return
 	end
 
+	-- Update 28: localize title, body, and each surviving option. The options
+	-- stored in pendingMissions are the localized copies, so the Description
+	-- shown after the player chooses is translated too, not just the button.
+	local sLoc = BitKaisenLocale.getSituationLocale(BitKaisenLocale.getPlayerLocale(player.UserId), situation.Id)
+	local sTitle = situation.Title
+	local sBody = situation.Body
+	if sLoc then
+		if sLoc.title then sTitle = sLoc.title end
+		if sLoc.body then sBody = sLoc.body end
+		if sLoc.options then
+			for i, option in ipairs(availableOptions) do
+				local tr = sLoc.options[option.SourceIndex or i]
+				if tr then
+					if tr.text then option.Text = tr.text end
+					if tr.desc then option.Description = tr.desc end
+				end
+			end
+		end
+	end
+
 	local optionDisplay = {}
 
 	for i, option in ipairs(availableOptions) do
@@ -301,8 +322,8 @@ function BK_MissionService.ProcessMission(player, missionId)
 
 	showMissionSituation(player, {
 		MissionTitle = missionData.Title,
-		Title = situation.Title,
-		Body = situation.Body,
+		Title = sTitle,
+		Body = sBody,
 		Options = optionDisplay
 	})
 end

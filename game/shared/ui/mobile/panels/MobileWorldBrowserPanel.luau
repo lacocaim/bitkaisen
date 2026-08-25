@@ -26,7 +26,8 @@ local CAPACITY_OPTIONS = { 10, 20, 30 }
 
 local state = {
 	IsOpen = false,
-	Busy = false,
+	Busy = false,    -- join/create/quickstart in flight
+	Loading = false, -- world list fetch in flight
 	OnBack = nil,
 	ShowingCreate = false,
 	CodeRowOpen = false,
@@ -470,7 +471,7 @@ end
 
 local lastWorlds = {}
 local function refreshList()
-	if state.Busy then
+	if state.Loading then
 		return
 	end
 	local getWorldBrowser = remotes.get("GetWorldBrowser")
@@ -478,13 +479,19 @@ local function refreshList()
 		setStatus(_g("err_no_remote", "Could not reach the server."), true)
 		return
 	end
-	state.Busy = true
+	state.Loading = true
+	setStatus(_g("loading_worlds", "Loading worlds..."), false)
 	local ok, result = pcall(function()
 		return getWorldBrowser:InvokeServer()
 	end)
-	state.Busy = false
+	state.Loading = false
 	if ok and typeof(result) == "table" then
-		lastWorlds = result.Worlds or {}
+		-- See WorldBrowserPanel.luau (PC): a RateLimited answer isn't an empty
+		-- world list, so don't blank what we already showed.
+		if not (result.RateLimited and #lastWorlds > 0) then
+			lastWorlds = result.Worlds or {}
+		end
+		setStatus("", false)
 		renderWorldList(lastWorlds, searchBox.Text)
 	else
 		setStatus(_g("err_search_failed", "Could not load the world list."), true)

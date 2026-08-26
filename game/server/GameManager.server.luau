@@ -829,7 +829,12 @@ end
 -- Public-world legend grades are stored on the save in English (see
 -- sealPublicWorld). This maps the stored value to its system.* locale key so
 -- the grade the player reads follows their language, not the stored word.
-local PUBLIC_LEGEND_GRADE_KEY = {
+--
+-- NOT a `local` on purpose. This file sits at Luau's 200 top-level register limit,
+-- and declaring this one as a local was the 201st: GameManager stopped compiling
+-- entirely with "Out of local registers", which took the whole game down with it.
+-- Guarded by tests/gamemanager_registers.test.luau.
+PUBLIC_LEGEND_GRADE_KEY = {
 	Sovereign = "legend_sovereign",
 	Outstanding = "legend_outstanding",
 	Notable = "legend_notable",

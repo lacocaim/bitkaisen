@@ -31,3 +31,7 @@ check name="game":
 # ---------- UTIL ----------
 alias alias path:
 	zune run Zune/alias.lua {{alias}} {{path}}
+
+# ---------- TEST ----------
+test:
+	$failed = 0; Get-ChildItem tests -Filter *.test.luau | ForEach-Object { Write-Host ""; Write-Host "=== $($_.Name) ===" -ForegroundColor Cyan; zune run "tests/$($_.Name)"; if (-not $?) { $failed = 1 } }; if ($failed -ne 0) { Write-Host ""; Write-Host "TESTS FAILED" -ForegroundColor Red; exit 1 } else { Write-Host ""; Write-Host "all test files passed" -ForegroundColor Green }

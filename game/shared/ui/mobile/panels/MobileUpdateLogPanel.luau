@@ -13,6 +13,36 @@ local scroll: ScrollingFrame
 
 local sections = {
 	{
+		header = "Update 29 - Combat Is Yours Now",
+		body = "• Chant: spend a turn building your technique. The next one hits 1.5x harder and breaks the normal damage cap.\n• Blitz is no longer automatic. Arm it when your Speed clears the gap and choose the moment it fires.\n• Brace: a Durability move. Plant your feet, eat the combo, absorb a slice of it, and return everything you soaked on your next hit.\n• CE Output now raises your technique damage cap from 35% up to 43%.\n• Every combat button now tells you why it is locked and what stat unlocks it.",
+		color = theme.Bad,
+	},
+	{
+		header = "Update 29 - Shikigami Postures",
+		body = "• Your tamed shikigami finally fight beside you. Command them into Assault, Guard, or Support postures mid-fight.\n• Every shikigami you tamed feeds a specific posture: Divine Dogs guard you, Nue strikes with you, Round Deer closes your wounds.\n• Ten Shadows and shikigami-technique lives only. The collection you built decides how strong the postures are.",
+		color = theme.Purple,
+	},
+	{
+		header = "Update 29 - The Vessel",
+		body = "• Death is a beginning now. Become a cursed object when you die and return by choosing one of three living hosts.\n• Each host is a real person with their own name, technique, and life already in motion. What you keep and what you take is decided by who you pick.\n• Your echo's technique carries over when the host has none worth keeping.",
+		color = theme.Gold,
+	},
+	{
+		header = "Update 29 - New Gamepasses",
+		body = "• Shikigami Master: hold two postures at once instead of one, and command them for half the cursed energy.\n• Dojo Expansion: +2 Grand Dojo capacity and a wider recruit board - 15 candidates per refresh instead of 10.",
+		color = theme.Gold,
+	},
+	{
+		header = "Update 29 - The World Pushes Back",
+		body = "• Six Eyes now cuts both ways: +28% reputation gains, but assassins come for those eyes three times as often.\n• Permanent limb loss: a defeat you barely survive can now cost an arm or a leg, forever. Knowing RCT lets you knit it back at the moment of loss.\n• Depression: happiness this low has weight. Combat output and relationship gains drop until you recover.\n• Traumatic curse exposure at creation now means what it says: your family already paid for it.\n• Dojo students with a full promotion bar now actually rank up, every time.",
+		color = theme.Green,
+	},
+	{
+		header = "Update 29 - Quality of Life",
+		body = "• God Mode trait editor is now a full trait picker: browse and filter every trait instead of typing names blind, with your owned traits highlighted.\n• God Mode trait edits raised from 2 to 4 adds and 4 removes per life.\n• Notable Sorcerer cards in Affiliations now show gender.\n• Achievement popups no longer cover the screen mid-fight; they wait for the fight to end.",
+		color = theme.Blue,
+	},
+	{
 		header = "Update 28 - Your Bloodline Decides",
 		body = "• All 37 clans and lineages now have their own life. Childhood, adolescence, adulthood and old age read differently depending on the name you were born into.\n• Being born a Gojo means elders measuring you and no children near you. A Zenin is ranked by strength in front of the family. A Death Painting understands it was made, not born.\n• Every origin now has its own birth line and its own ending.\n• Bloodline events are labelled in the system log, so you can see when your blood caused something.",
 		color = theme.Gold,
@@ -476,7 +506,7 @@ local function renderSections()
 	local subtitleCard = mc.mobileCard({ parent = scroll, order = 0, accentColor = theme.Gold })
 	mc.mobileLabel({
 		parent = subtitleCard,
-		text = "UPDATE 23: Kenjaku's Death Paintings, Surgery, and a big bug fix pass",
+		text = "UPDATE 29: Combat rework, shikigami postures, and the Vessel",
 		size = 13,
 		color = theme.SubText,
 		order = 1,

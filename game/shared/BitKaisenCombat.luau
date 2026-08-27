@@ -177,6 +177,14 @@ function BitKaisenCombat.GetCombatPower(stats, options)
 	power += BitKaisenTraits.GetModifier(stats, "MissionSuccessBonus", 0)
 	power += tonumber(options.PowerBonus) or 0
 
+	-- Update 29: permanent limb loss. Each limb taken by a defeat the body could not
+	-- recover from costs 8% of everything above. Applied last so no later bonus can
+	-- quietly buy the arm back; only RCT at the moment of loss prevents this.
+	local lostLimbs = typeof(stats.LostLimbs) == "table" and #stats.LostLimbs or 0
+	if lostLimbs > 0 then
+		power *= math.max(0.6, 1 - (lostLimbs * 0.08))
+	end
+
 	return math.max(0, math.floor(power + 0.5))
 end
 

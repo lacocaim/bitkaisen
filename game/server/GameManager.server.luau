@@ -3019,6 +3019,18 @@ function applyCharacterCustomization(player, payload)
 	applyUpbringingStartModifiers(stats)
 	ensureEraYearState(stats, true)
 
+	-- Update 29: Traumatic exposure has a body count. This runs here and not in
+	-- startNewLife because the birth path only lands on stats at this point -
+	-- during startNewLife the exposure is still the Moderate default. Guarded so
+	-- resubmitting the popup cannot kill a second relative in the same life.
+	if stats.TraumaticExposureApplied ~= true then
+		local traumaticLine = BitKaisenRelationships.ApplyTraumaticExposure(stats)
+		if traumaticLine then
+			stats.TraumaticExposureApplied = true
+			fireLifeUpdate(player, stats, "<font color='#e05f5f'><b>[ TRAUMATIC ]</b></font> " .. traumaticLine)
+		end
+	end
+
 	local familyName = tostring(stats.FamilyName or "")
 	if familyName ~= "" and familyName ~= "Unknown" and familyName ~= "None" then
 		stats.Name = firstName .. " " .. familyName
@@ -5861,7 +5873,7 @@ do
 		end
 
 		if effects.Reputation then
-			local val = effects.Reputation
+			local val = applyReputationGainTraits(stats, effects.Reputation)
 			stats.Reputation = (tonumber(stats.Reputation) or 0) + (val < 0 and math.floor(val * negReduction) or val)
 		end
 
@@ -6504,7 +6516,7 @@ do
 		end
 
 		if effects.Reputation then
-			stats.Reputation = (tonumber(stats.Reputation) or 0) + effects.Reputation
+			stats.Reputation = (tonumber(stats.Reputation) or 0) + applyReputationGainTraits(stats, effects.Reputation)
 		end
 
 		if effects.ClanReputation then
@@ -7559,9 +7571,35 @@ function rememberLifeScenario(stats, scenarioId)
 	end
 end
 
+-- Six Eyes (Update 29): the eyes read every current of cursed energy, and the whole
+-- jujutsu world knows what that is worth. Positive reputation gains are amplified
+-- through the ReputationGainMult trait modifier (six_eyes carries 1.28), and in
+-- exchange the assassination-attempt scenario weighs far heavier for the bearer.
+-- Losses are never amplified; fame cuts one way here.
+function applyReputationGainTraits(stats, amount)
+	amount = tonumber(amount) or 0
+	if amount <= 0 then
+		return amount
+	end
+	return math.floor(BitKaisenTraits.ApplyNumberModifier(stats, "ReputationGainMult", amount) + 0.5)
+end
+
+function getSixEyesTargetWeightBonus(stats, scenario)
+	if typeof(scenario) ~= "table" or scenario.Id ~= "high_rep_assassination_attempt" then
+		return 0
+	end
+	if not BitKaisenTraits.HasTrait(stats, "six_eyes") then
+		return 0
+	end
+	-- Base weight is 3; +6 makes an attempt three times as likely for Six Eyes bearers.
+	return 6
+end
+
 local function getCurseExposureWeightBonus(stats, scenario)
 	local exposure = tostring(stats and stats.EarlyCurseExposure or "Moderate")
-	local exposureBonus = ({ Low = 0, Moderate = 2, High = 5, Extreme = 8 })[exposure] or 2
+	-- The top tier is named "Traumatic" in CHARACTER_CUSTOMIZATION_OPTIONS; this map
+	-- said "Extreme", so Traumatic silently fell through to the Moderate default.
+	local exposureBonus = ({ Low = 0, Moderate = 2, High = 5, Traumatic = 8 })[exposure] or 2
 	if exposureBonus <= 0 or typeof(scenario) ~= "table" then
 		return 0
 	end
@@ -7579,7 +7617,9 @@ function rollRandomLifeScenario(stats, ignoreRecent)
 	for _, scenario in ipairs(RANDOM_LIFE_SCENARIOS) do
 		if scenarioRequirementMet(stats, scenario) then
 			if ignoreRecent or not recentlyUsedLifeScenario(stats, scenario.Id) then
-				local weight = math.max(1, tonumber(scenario.Weight) or 5) + getCurseExposureWeightBonus(stats, scenario)
+				local weight = math.max(1, tonumber(scenario.Weight) or 5)
+					+ getCurseExposureWeightBonus(stats, scenario)
+					+ getSixEyesTargetWeightBonus(stats, scenario)
 				totalWeight += weight
 				table.insert(possible, { Data = scenario, Weight = weight })
 			end
@@ -7713,7 +7753,7 @@ function applyRandomLifeScenarioEffects(stats, effects)
 	if effects.CursedObjectAnchors then stats.CursedObjectAnchors = math.max(0, (tonumber(stats.CursedObjectAnchors) or 0) + effects.CursedObjectAnchors) end
 	if effects.ReincarnationAnchor then stats.ReincarnationAnchor = tostring(effects.ReincarnationAnchor) end
 	if effects.Money then stats.Money = math.max(0, (tonumber(stats.Money) or 0) + effects.Money) end
-	if effects.Reputation then stats.Reputation = (tonumber(stats.Reputation) or 0) + effects.Reputation end
+	if effects.Reputation then stats.Reputation = (tonumber(stats.Reputation) or 0) + applyReputationGainTraits(stats, effects.Reputation) end
 	if effects.TechniqueMastery and hasTechnique(stats) then stats.TechniqueMastery = math.clamp((tonumber(stats.TechniqueMastery) or 0) + effects.TechniqueMastery, 0, 100) end
 	if effects.ClanReputation then stats.ClanReputation = math.max(0, (tonumber(stats.ClanReputation) or 0) + effects.ClanReputation) end
 	if effects.DojoPrestige then stats.DojoPrestige = math.max(0, (tonumber(stats.DojoPrestige) or 0) + effects.DojoPrestige) end
@@ -8746,7 +8786,7 @@ function applyEncounterEffects(stats, effects)
 	end
 
 	if effects.Reputation then
-		stats.Reputation = (stats.Reputation or 0) + effects.Reputation
+		stats.Reputation = (stats.Reputation or 0) + applyReputationGainTraits(stats, effects.Reputation)
 	end
 
 	if effects.TeacherRecommendations then
@@ -10806,6 +10846,17 @@ function ageUp(player)
 	logMessage = logMessage .. BK_CultWarService.AdvanceYear(player, stats)
 	logMessage = logMessage .. applyYearlyWorldReputation(stats)
 
+	-- Update 29: depression. Announced only when the state flips, so the log line
+	-- lands twice per episode - once going under, once coming back - not every year.
+	local isDepressedNow = BitKaisenStats.IsDepressed(stats)
+	if isDepressedNow and stats.DepressionAnnounced ~= true then
+		stats.DepressionAnnounced = true
+		logMessage = logMessage .. "\n<font color='#7a8bb5'><b>[ DEPRESSION ]</b></font> Happiness this low has weight. Your combat output and relationship gains are reduced until you feel like yourself again."
+	elseif not isDepressedNow and stats.DepressionAnnounced == true then
+		stats.DepressionAnnounced = nil
+		logMessage = logMessage .. "\n<font color='#8fd0a0'><b>[ DEPRESSION ]</b></font> The weight lifted. You are yourself again."
+	end
+
 	local schoolText = BK_SchoolService.AdvanceSchoolYear(stats)
 	if schoolText ~= "" then
 		logMessage = logMessage .. "\n" .. schoolText
@@ -11393,7 +11444,7 @@ function applyChoiceEffects(stats, choiceOption)
 	end
 
 	if effects.Reputation then
-		stats.Reputation = (stats.Reputation or 0) + effects.Reputation
+		stats.Reputation = (stats.Reputation or 0) + applyReputationGainTraits(stats, effects.Reputation)
 	end
 
 	if effects.TechniqueMastery and hasTechnique(stats) then

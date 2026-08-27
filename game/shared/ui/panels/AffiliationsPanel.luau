@@ -394,6 +394,10 @@ function refresh()
 					local progressing = rel.Progressing == false and "Not progressing" or "Progressing"
 					local summaryText = role .. " | Age " .. age .. " | " .. grade
 					if role == "Notable Sorcerer" then
+						local gender = tostring(rel.Gender or "")
+						if gender == "Male" or gender == "Female" then
+							summaryText = summaryText .. " | " .. gender
+						end
 						summaryText = summaryText .. " | CE " .. tostring(rel.CursedEnergy or 0) .. " | Power " .. tostring(rel.Power or 0)
 					end
 					makeText(card, summaryText, portraitCard and 9 or (mobileCard and 10 or 12), COLORS.SubText, UDim2.new(0, 18, 0, 40), UDim2.new(1, -36, 0, portraitCard and 46 or (mobileCard and 34 or 22)), false)

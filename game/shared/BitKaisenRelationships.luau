@@ -705,6 +705,46 @@ local function killRelationship(relationship, cause, text)
 	return true
 end
 
+-- Update 29: a "Traumatic" Early Curse Exposure has teeth now. The player chose a
+-- childhood marked by curses, so the family they are born into already carries the
+-- scar: one parent (or a sibling, when the upbringing removed the parents) did not
+-- survive the incident that shaped them. Called once from startNewLife, right after
+-- the starting relationships are generated. Returns the birth line, or nil when
+-- there was nobody to lose.
+function BitKaisenRelationships.ApplyTraumaticExposure(stats)
+	if tostring(stats and stats.EarlyCurseExposure or "") ~= "Traumatic" then
+		return nil
+	end
+	BitKaisenRelationships.EnsureRelationships(stats)
+
+	local candidates = {}
+	for _, relationship in ipairs(stats.Relationships) do
+		local role = tostring(relationship.Role or "")
+		if relationship.Alive ~= false and (role == "Mother" or role == "Father") then
+			table.insert(candidates, relationship)
+		end
+	end
+	if #candidates == 0 then
+		for _, relationship in ipairs(stats.Relationships) do
+			if relationship.Alive ~= false and tostring(relationship.Role or "") == "Sibling" then
+				table.insert(candidates, relationship)
+			end
+		end
+	end
+	if #candidates == 0 then
+		return nil
+	end
+
+	local victim = candidates[math.random(#candidates)]
+	local role = string.lower(tostring(victim.Role or "family"))
+	local text = "Your " .. role .. ", " .. tostring(victim.Name)
+		.. ", was killed by a curse while protecting you. You were too young to remember their face. You remember the fear."
+	killRelationship(victim, "Killed by a curse", text)
+	victim.DiedAtPlayerAge = 0
+	markRelationshipsDirty(stats)
+	return text
+end
+
 local NPC_TRAIT_RARITY_VALUE = {
 	Common = 1,
 	Uncommon = 2,

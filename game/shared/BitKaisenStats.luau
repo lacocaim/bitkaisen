@@ -557,6 +557,27 @@ function BitKaisenStats.GetDefaultStats()
 	}
 end
 
+-- Update 29: God Mode trait edits allowed per life. Single source of truth for the
+-- limit - BK_GodModeService enforces it and the stats normalization clamps with it.
+BitKaisenStats.GOD_MODE_TRAIT_EDIT_MAX = 4
+
+-- Update 29: depression. Below this happiness the life stops being merely sad and
+-- starts fighting back: combat damage drops (BK_CombatService) and relationship
+-- gains slow down (BK_RelationshipService). Derived, never stored - the moment
+-- happiness climbs back over the line, the state lifts on its own.
+BitKaisenStats.DEPRESSION_HAPPINESS_THRESHOLD = 25
+
+function BitKaisenStats.IsDepressed(stats)
+	if not stats or stats.Alive == false then
+		return false
+	end
+	local happiness = tonumber(stats.Happiness)
+	if happiness == nil then
+		return false
+	end
+	return happiness < BitKaisenStats.DEPRESSION_HAPPINESS_THRESHOLD
+end
+
 function BitKaisenStats.IsCurseLife(stats)
 	if not stats then
 		return false
@@ -748,8 +769,12 @@ function BitKaisenStats.NormalizeCursedSocietyStats(stats)
 		stats.GodModeSettings.StartBoost = "None"
 	end
 	stats.GodModeSettings.GuaranteedLegacyTraits = stats.GodModeSettings.GuaranteedLegacyTraits == true or stats.GodModeGuaranteedLegacyTraits == true
-	stats.GodModeTraitAddsUsed = math.clamp(tonumber(stats.GodModeTraitAddsUsed) or 0, 0, 2)
-	stats.GodModeTraitRemovesUsed = math.clamp(tonumber(stats.GodModeTraitRemovesUsed) or 0, 0, 2)
+	-- Keep in sync through the shared constant: this clamp had 2 hardcoded while
+	-- BK_GodModeService owned its own MAX, and the drift silently reset the counter
+	-- on every stats pass once the service raised its limit - which made trait adds
+	-- effectively unlimited. The service now reads this same constant.
+	stats.GodModeTraitAddsUsed = math.clamp(tonumber(stats.GodModeTraitAddsUsed) or 0, 0, BitKaisenStats.GOD_MODE_TRAIT_EDIT_MAX)
+	stats.GodModeTraitRemovesUsed = math.clamp(tonumber(stats.GodModeTraitRemovesUsed) or 0, 0, BitKaisenStats.GOD_MODE_TRAIT_EDIT_MAX)
 	stats.GodModeClanRerollsUsed = math.clamp(tonumber(stats.GodModeClanRerollsUsed) or 0, 0, 3)
 	stats.GodModeStartBoostChoice = stats.GodModeSettings.StartBoost
 	stats.GodModeStartBoostApplied = stats.GodModeStartBoostApplied == true

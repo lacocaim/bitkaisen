@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local BitKaisenCombat = require(ReplicatedStorage:WaitForChild("BitKaisenCombat"))
+local BitKaisenStats = require(ReplicatedStorage:WaitForChild("BitKaisenStats"))
 local BitKaisenCursedTools = require(ReplicatedStorage:WaitForChild("BitKaisenCursedTools"))
 local BitKaisenDomains = require(ReplicatedStorage:WaitForChild("BitKaisenDomains"))
 local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
@@ -627,6 +628,35 @@ local function finishCombat(player, session, winner, reason)
 				stats.Looks = math.clamp((tonumber(stats.Looks) or 50) - looksLoss, 0, 100)
 				scarText = " The fight left a lasting mark. Looks -" .. tostring(looksLoss) .. "."
 			end
+			-- Update 29: permanent limb loss. A survived defeat has a 10% chance of
+			-- costing a limb outright. RCT is the mitigation the suggestion asked for:
+			-- knowing it turns the amputation into an expensive save (-25 CE), because
+			-- reattaching flesh mid-collapse is exactly what the technique is for.
+			-- Without it the loss is forever: -8% combat power per limb, applied in
+			-- BitKaisenCombat.GetCombatPower.
+			if stats.Alive ~= false and math.random(1, 100) <= 10 then
+				stats.LostLimbs = typeof(stats.LostLimbs) == "table" and stats.LostLimbs or {}
+				local remaining = {}
+				for _, limb in ipairs({ "left arm", "right arm", "left leg", "right leg" }) do
+					local taken = false
+					for _, lost in ipairs(stats.LostLimbs) do
+						if lost == limb then taken = true break end
+					end
+					if not taken then table.insert(remaining, limb) end
+				end
+				if #remaining > 0 then
+					local limb = remaining[math.random(#remaining)]
+					if stats.HasRCT == true or stats.RCT == true then
+						stats.CursedEnergy = math.max(0, (tonumber(stats.CursedEnergy) or 0) - 25)
+						scarText = scarText .. " Your " .. limb .. " was nearly severed. Reverse Cursed Technique knit it back before the damage set. CE -25."
+					else
+						table.insert(stats.LostLimbs, limb)
+						local strengthLoss = math.random(5, 9)
+						stats.Strength = math.clamp((tonumber(stats.Strength) or 0) - strengthLoss, 0, 100)
+						scarText = scarText .. " You lost your " .. limb .. ". Permanently. Strength -" .. tostring(strengthLoss) .. ", and your combat power carries the absence from here on."
+					end
+				end
+			end
 			addLog(session, _cl(session, "log_defeat", {reason = tostring(reason or _ct(session, "log_defeat_default", "You were overwhelmed."))}, "Defeat. " .. tostring(reason or "You were overwhelmed.") .. scarText))
 			fireLifeUpdate(player, stats, "<font color='#e53935'><b>[ COMBAT ]</b></font> You were defeated by <b>" .. session.Enemy.Name .. "</b>. " .. tostring(reason or "Your health collapsed.") .. scarText)
 		elseif winner == "fled" then
@@ -989,7 +1019,7 @@ function resolveAttack(player, session, accuracy, sweet)
 		elseif quality >= 0.7 then
 			damage = math.floor(damage * 1.3)
 		elseif quality < 0.35 then
-			-- penalización por fallar Black Flash: CE extra perdida y el enemigo gana ventaja
+			-- Failed Black Flash penalty: extra CE lost and the enemy gains an advantage.
 			session.PlayerCE = math.max(0, session.PlayerCE - 15)
 			local pfStats = getStats(player)
 			if pfStats then pfStats.CursedEnergy = math.floor(session.PlayerCE + 0.5) end
@@ -1012,6 +1042,11 @@ function resolveAttack(player, session, accuracy, sweet)
 	end
 	if session.VowDamageBonus and session.VowDamageBonus > 0 then
 		damage = math.floor(damage * (1 + session.VowDamageBonus))
+	end
+	-- Update 29: depression. Snapshotted at fight start; the weight does not lift
+	-- mid-fight just because a number moved.
+	if session.Depressed then
+		damage = math.max(1, math.floor(damage * 0.88))
 	end
 	if (tonumber(session.BracedDamage) or 0) > 0 then
 		local banked = math.floor(session.BracedDamage)
@@ -1158,6 +1193,12 @@ function BK_CombatService.StartCombat(player, source, enemyConfig)
 	}
 	sessions[player.UserId] = session
 	addLog(session, _cl(session, "log_engaged", {enemy = enemy.Name}, enemy.Name .. " engaged you in combat."))
+	-- Update 29: depression follows you into the fight. Snapshotted here so the
+	-- whole session reads one consistent state; resolveAttack applies the malus.
+	if BitKaisenStats.IsDepressed(stats) then
+		session.Depressed = true
+		addLog(session, _ct(session, "log_depressed_fight", "Your body showed up to the fight. The rest of you is somewhere darker. Damage output reduced."))
+	end
 
 	local playerSpeed = tonumber(stats.Speed) or 0
 	local enemySpeed = session.Enemy.Speed or 0

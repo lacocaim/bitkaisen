@@ -8,6 +8,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local BitKaisenRelationships = require(ReplicatedStorage:WaitForChild("BitKaisenRelationships"))
+local BitKaisenStats = require(ReplicatedStorage:WaitForChild("BitKaisenStats"))
 local BitKaisenTraits = require(ReplicatedStorage:WaitForChild("BitKaisenTraits"))
 local BK_WorldHistoryService = require(script.Parent:WaitForChild("BK_WorldHistoryService"))
 
@@ -31,7 +32,9 @@ local function AdjustRelationship(relationship, changes)
 	if activeGainMult ~= 1 and typeof(changes) == "table" then
 		local scaled = {}
 		for key, value in pairs(changes) do
-			if (key == "Bond" or key == "Trust" or key == "Romance") and typeof(value) == "number" then
+			-- Positive gains only: this multiplier documents itself as a gain modifier
+			-- (High Society boost, depression malus), and neither should touch losses.
+			if (key == "Bond" or key == "Trust" or key == "Romance") and typeof(value) == "number" and value > 0 then
 				scaled[key] = value * activeGainMult
 			else
 				scaled[key] = value
@@ -505,6 +508,11 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 	end
 
 	activeGainMult = ownsHighSocietyPass(player) and 1.25 or 1
+	-- Update 29: depression. People notice you are not really there. Positive
+	-- Bond/Trust/Romance gains slow down until happiness recovers.
+	if BitKaisenStats.IsDepressed(stats) then
+		activeGainMult *= 0.75
+	end
 	ensureExtraStats(stats)
 	data = typeof(data) == "table" and data or {}
 

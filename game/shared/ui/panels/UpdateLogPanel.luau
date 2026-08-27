@@ -104,12 +104,12 @@ padding.PaddingLeft = UDim.new(0, 16)
 padding.PaddingRight = UDim.new(0, 16)
 padding.Parent = panel
 
-local title = makeText(panel, "Title", "UPDATE 28", 22, true)
+local title = makeText(panel, "Title", "UPDATE 29", 22, true)
 title.Size = UDim2.new(1, -48, 0, 34)
 title.Position = UDim2.new(0, 0, 0, 0)
 title.TextColor3 = Color3.fromRGB(255, 220, 139)
 
-local subtitle = makeText(panel, "Subtitle", "Your bloodline decides the life you live", 14, false)
+local subtitle = makeText(panel, "Subtitle", "Fight like you choose to, die like it matters", 14, false)
 subtitle.Size = UDim2.new(1, -48, 0, 22)
 subtitle.Position = UDim2.new(0, 0, 0, 34)
 subtitle.TextColor3 = Color3.fromRGB(198, 186, 164)
@@ -188,7 +188,19 @@ local function addSection(headerText, bodyText, headerColor)
 	body.TextColor3 = Color3.fromRGB(232, 223, 205)
 end
 
-addSection("Update 28 - Your Bloodline Decides", "• All 37 clans and lineages now have their own life. Childhood, adolescence, adulthood and old age read differently depending on the name you were born into.\n• Being born a <b>Gojo</b> means elders measuring you and no children allowed near you. A <b>Zenin</b> is ranked by strength in front of the family. A <b>Death Painting</b> understands it was made, not born.\n• Every origin now has its own written birth line and its own ending, instead of one generic sentence for everyone.\n• Events caused by your bloodline are labelled in the system log, so you can see when your blood is what made something happen.\n", Color3.fromRGB(216, 164, 65))
+addSection("Update 29 - Combat Is Yours Now", "• <b>Chant</b>: spend a turn building your technique. The next one hits 1.5x harder and breaks the normal damage cap.\n• <b>Blitz</b> is no longer automatic. Arm it when your Speed clears the gap and choose the moment it fires.\n• <b>Brace</b>: a Durability move. Plant your feet, eat the combo, absorb a slice of it, and return everything you soaked on your next hit.\n• <b>CE Output</b> now raises your technique damage cap from 35% up to 43%.\n• Every combat button now tells you why it is locked and what stat unlocks it.\n", Color3.fromRGB(229, 57, 53))
+
+addSection("Update 29 - Shikigami Postures", "• Your tamed shikigami finally fight beside you. Command them into <b>Assault</b>, <b>Guard</b>, or <b>Support</b> postures mid-fight.\n• Every shikigami you tamed feeds a specific posture: Divine Dogs guard you, Nue strikes with you, Round Deer closes your wounds.\n• Ten Shadows and shikigami-technique lives only. The collection you built decides how strong the postures are.\n", Color3.fromRGB(179, 136, 255))
+
+addSection("Update 29 - The Vessel", "• Death is a beginning now. Become a cursed object when you die and return by choosing one of three living hosts.\n• Each host is a real person with their own name, technique, and life already in motion. What you keep and what you take is decided by who you pick.\n• Your echo's technique carries over when the host has none worth keeping.\n", Color3.fromRGB(216, 164, 65))
+
+addSection("Update 29 - New Gamepasses", "• <b>Shikigami Master</b>: hold two postures at once instead of one, and command them for half the cursed energy.\n• <b>Dojo Expansion</b>: +2 Grand Dojo capacity and a wider recruit board - 15 candidates per refresh instead of 10.\n", Color3.fromRGB(255, 220, 139))
+
+addSection("Update 29 - The World Pushes Back", "• <b>Six Eyes</b> now cuts both ways: +28% reputation gains, but assassins come for those eyes three times as often.\n• <b>Permanent limb loss</b>: a defeat you barely survive can now cost an arm or a leg, forever. Knowing RCT lets you knit it back at the moment of loss.\n• <b>Depression</b>: happiness this low has weight. Combat output and relationship gains drop until you recover.\n• <b>Traumatic curse exposure</b> at creation now means what it says: your family already paid for it.\n• Dojo students with a full promotion bar now actually rank up, every time.\n", Color3.fromRGB(115, 220, 150))
+
+addSection("Update 29 - Quality of Life", "• God Mode trait editor is now a full trait picker: browse and filter every trait instead of typing names blind, with your owned traits highlighted.\n• God Mode trait edits raised from 2 to 4 adds and 4 removes per life.\n• Notable Sorcerer cards in Affiliations now show gender.\n• Achievement popups no longer cover the screen mid-fight; they wait for the fight to end.\n", Color3.fromRGB(120, 190, 255))
+
+addSection("Update 28 - Your Bloodline Decides","• All 37 clans and lineages now have their own life. Childhood, adolescence, adulthood and old age read differently depending on the name you were born into.\n• Being born a <b>Gojo</b> means elders measuring you and no children allowed near you. A <b>Zenin</b> is ranked by strength in front of the family. A <b>Death Painting</b> understands it was made, not born.\n• Every origin now has its own written birth line and its own ending, instead of one generic sentence for everyone.\n• Events caused by your bloodline are labelled in the system log, so you can see when your blood is what made something happen.\n", Color3.fromRGB(216, 164, 65))
 
 addSection("Update 28 - The Second Half of Life", "• Life after 40 now has content of its own: a body that stops answering while your technique stays sharp, outliving the people you trained beside, being asked to teach instead of deploy, and the reckoning that comes with it.\n• Clan-specific late life too. The Gojo with nobody left to correct them, the Zenin who is now the one ranking the next generation, the Kenjaku who starts thinking about the next body instead of the next year.\n", Color3.fromRGB(179, 136, 255))
 

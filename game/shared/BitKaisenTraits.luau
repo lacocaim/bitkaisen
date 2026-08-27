@@ -1360,8 +1360,12 @@ BitKaisenTraits.Definitions = {
 		Modifiers = { StartingCEBonus = 30, CEGainMult = 1.28, CombatGainMult = 1.15, RiskMult = 0.92 } },
 
 	-- Six Eyes: Gojo bloodline trait, not a cursed technique.
+	-- Update 29: fame cuts both ways. ReputationGainMult amplifies positive reputation
+	-- gains from missions and life events (applyReputationGainTraits in GameManager),
+	-- and in exchange the assassination-attempt scenario weighs three times heavier
+	-- for the bearer (getSixEyesTargetWeightBonus).
 	{ Id = "six_eyes", Name = "Six Eyes", Category = "Bloodline", Rarity = "Legendary", Weight = 1,
-		Description = "a rare Gojo bloodline trait that reads cursed energy with unnatural precision. Six Eyes is a trait, not a cursed technique.",
+		Description = "a rare Gojo bloodline trait that reads cursed energy with unnatural precision. The jujutsu world knows exactly what those eyes are worth: reputation comes faster, and so do the assassins. Six Eyes is a trait, not a cursed technique.",
 		OriginWhitelist = { "Gojo Clan", "Gojo", "Sugawara Lineage" },
 		Modifiers = {
 			StartingCEBonus = 25,
@@ -1369,7 +1373,8 @@ BitKaisenTraits.Definitions = {
 			MasteryGainMult = 1.22,
 			SmartsGainMult = 1.12,
 			MissionSuccessBonus = 8,
-			RiskMult = 0.94
+			RiskMult = 0.94,
+			ReputationGainMult = 1.28
 		} },
 
 

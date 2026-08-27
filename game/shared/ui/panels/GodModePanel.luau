@@ -184,6 +184,10 @@ local function makeButton(parent, text, x, y, w, h, color, callback)
 	return button
 end
 
+-- Update 29: the trait editor filter survives re-renders (every fire() call
+-- re-renders the whole panel, and losing the search text on each add felt broken).
+local traitFilterText = ""
+
 local function fetchPayload()
 	local ok, result = pcall(function()
 		return getGodMode:InvokeServer()
@@ -322,17 +326,21 @@ render = function()
 		end
 	end
 
-	local traitCard = makeCard(202)
+	-- Update 29: trait selector. The old editor was a bare TextBox that expected the
+	-- player to already know internal trait names; the picker below lists the full
+	-- catalog the server was sending all along, filterable, with owned traits
+	-- highlighted. One tap adds, tapping an owned trait removes.
+	local traitCard = makeCard(348)
 	makeLabel(traitCard, "Trait Editor", 10, 20, THEME.Gold, 15, true)
-	makeLabel(traitCard, "Add " .. tostring(data.TraitAddsUsed or 0) .. "/" .. tostring(data.TraitAddsMax or 2) .. " • Remove " .. tostring(data.TraitRemovesUsed or 0) .. "/" .. tostring(data.TraitRemovesMax or 2), 34, 22, THEME.Muted, 12, false)
+	makeLabel(traitCard, "Add " .. tostring(data.TraitAddsUsed or 0) .. "/" .. tostring(data.TraitAddsMax or 4) .. " • Remove " .. tostring(data.TraitRemovesUsed or 0) .. "/" .. tostring(data.TraitRemovesMax or 4) .. " • Tap to add, tap an owned trait to remove", 34, 22, THEME.Muted, 12, false)
 
 	local traitBox = Instance.new("TextBox")
 	traitBox.Position = UDim2.fromOffset(12, 62)
-	traitBox.Size = UDim2.new(1, -24, 0, 34)
+	traitBox.Size = UDim2.new(1, -24, 0, 30)
 	traitBox.BackgroundColor3 = THEME.Panel2
 	traitBox.BorderSizePixel = 0
-	traitBox.PlaceholderText = "Type trait name or id"
-	traitBox.Text = ""
+	traitBox.PlaceholderText = "Filter traits..."
+	traitBox.Text = traitFilterText
 	traitBox.TextColor3 = THEME.Text
 	traitBox.PlaceholderColor3 = THEME.Muted
 	traitBox.Font = Enum.Font.GothamBold
@@ -341,18 +349,84 @@ render = function()
 	traitBox.Parent = traitCard
 	Instance.new("UICorner", traitBox).CornerRadius = UDim.new(0, 7)
 
-	makeButton(traitCard, "ADD", 12, 106, 124, 32, THEME.Green, function()
-		fire("add_trait", { TraitName = traitBox.Text })
+	local traitList = Instance.new("ScrollingFrame")
+	traitList.Position = UDim2.fromOffset(12, 100)
+	traitList.Size = UDim2.new(1, -24, 0, 196)
+	traitList.BackgroundColor3 = THEME.Panel2
+	traitList.BorderSizePixel = 0
+	traitList.ScrollBarThickness = 5
+	traitList.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	traitList.CanvasSize = UDim2.new(0, 0, 0, 0)
+	traitList.Parent = traitCard
+	Instance.new("UICorner", traitList).CornerRadius = UDim.new(0, 7)
+	local traitListLayout = Instance.new("UIListLayout")
+	traitListLayout.Padding = UDim.new(0, 3)
+	traitListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	traitListLayout.Parent = traitList
+	local traitListPad = Instance.new("UIPadding")
+	traitListPad.PaddingTop = UDim.new(0, 4)
+	traitListPad.PaddingBottom = UDim.new(0, 4)
+	traitListPad.PaddingLeft = UDim.new(0, 4)
+	traitListPad.PaddingRight = UDim.new(0, 4)
+	traitListPad.Parent = traitList
+
+	local ownedById = {}
+	for _, trait in ipairs(data.CurrentTraits or {}) do
+		ownedById[tostring(trait.Id)] = true
+	end
+
+	local RARITY_COLORS = {
+		Legendary = Color3.fromRGB(255, 168, 76),
+		Epic = Color3.fromRGB(190, 120, 255),
+		Rare = Color3.fromRGB(90, 160, 255),
+		Uncommon = Color3.fromRGB(120, 220, 150),
+		Common = Color3.fromRGB(170, 172, 200),
+	}
+
+	local function rebuildTraitList()
+		for _, child in ipairs(traitList:GetChildren()) do
+			if child:IsA("TextButton") then child:Destroy() end
+		end
+		local filter = string.lower(traitFilterText)
+		for order, trait in ipairs(data.Traits or {}) do
+			local haystack = string.lower(tostring(trait.Name) .. " " .. tostring(trait.Rarity) .. " " .. tostring(trait.Category or ""))
+			if filter == "" or string.find(haystack, filter, 1, true) then
+				local isOwned = ownedById[tostring(trait.Id)] == true
+				local row = Instance.new("TextButton")
+				row.Name = tostring(trait.Id)
+				row.LayoutOrder = order
+				row.Size = UDim2.new(1, 0, 0, 26)
+				row.BackgroundColor3 = isOwned and Color3.fromRGB(58, 52, 96) or THEME.Panel
+				row.BorderSizePixel = 0
+				row.Text = (isOwned and "✓ " or "") .. tostring(trait.Name) .. "  [" .. tostring(trait.Rarity) .. "]"
+				row.TextColor3 = RARITY_COLORS[tostring(trait.Rarity)] or THEME.Text
+				row.Font = isOwned and Enum.Font.GothamBlack or Enum.Font.GothamMedium
+				row.TextSize = 11
+				row.TextXAlignment = Enum.TextXAlignment.Left
+				row.TextTruncate = Enum.TextTruncate.AtEnd
+				row.Parent = traitList
+				Instance.new("UICorner", row).CornerRadius = UDim.new(0, 5)
+				local rowPad = Instance.new("UIPadding")
+				rowPad.PaddingLeft = UDim.new(0, 8)
+				rowPad.Parent = row
+				row.Activated:Connect(function()
+					fire(isOwned and "remove_trait" or "add_trait", { TraitId = trait.Id })
+				end)
+			end
+		end
+	end
+
+	traitBox:GetPropertyChangedSignal("Text"):Connect(function()
+		traitFilterText = traitBox.Text
+		rebuildTraitList()
 	end)
-	makeButton(traitCard, "REMOVE", 144, 106, 124, 32, THEME.Red, function()
-		fire("remove_trait", { TraitName = traitBox.Text })
-	end)
+	rebuildTraitList()
 
 	local ownedNames = {}
 	for _, trait in ipairs(data.CurrentTraits or {}) do
 		table.insert(ownedNames, trait.Name .. " [" .. trait.Rarity .. "]")
 	end
-	makeLabel(traitCard, "Current: " .. (#ownedNames > 0 and table.concat(ownedNames, ", ") or "None"), 148, 42, THEME.Muted, 11, false)
+	makeLabel(traitCard, "Current: " .. (#ownedNames > 0 and table.concat(ownedNames, ", ") or "None"), 302, 42, THEME.Muted, 11, false)
 
 	local resetCard = makeCard(92)
 	makeLabel(resetCard, "Reset Life", 10, 20, THEME.Gold, 15, true)

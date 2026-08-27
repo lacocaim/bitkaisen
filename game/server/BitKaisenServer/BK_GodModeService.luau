@@ -10,8 +10,13 @@ local BitKaisenTraits = require(ReplicatedStorage:WaitForChild("BitKaisenTraits"
 local BK_GodModeService = {}
 local context = {}
 
-local MAX_TRAIT_ADDS = 2
-local MAX_TRAIT_REMOVES = 2
+-- Update 29: raised from 2 after the trait editor became a picker. Typing trait
+-- names blind made even two edits feel like work; choosing from a list does not.
+-- The value lives in BitKaisenStats because its normalization clamps the same
+-- counters: two hardcoded copies of this number is exactly how the old counter
+-- reset itself and allowed unlimited adds.
+local MAX_TRAIT_ADDS = BitKaisenStats.GOD_MODE_TRAIT_EDIT_MAX
+local MAX_TRAIT_REMOVES = BitKaisenStats.GOD_MODE_TRAIT_EDIT_MAX
 local MAX_CLAN_REROLLS = 3
 
 local RARITY_RANK = {

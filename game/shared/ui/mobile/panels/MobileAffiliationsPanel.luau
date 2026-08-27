@@ -316,6 +316,12 @@ function refresh()
 
 					local summaryText = role .. " | " .. _a("age_label", "Age") .. " " .. age .. " | " .. grade
 					if role == "Notable Sorcerer" then
+						local gender = tostring(rel.Gender or "")
+						if gender == "Male" then
+							summaryText ..= " | " .. _a("gender_male", "Male")
+						elseif gender == "Female" then
+							summaryText ..= " | " .. _a("gender_female", "Female")
+						end
 						summaryText ..= " | " .. _a("ce_label", "CE") .. " " .. tostring(rel.CursedEnergy or 0) .. " | " .. _a("power_label", "Power") .. " " .. tostring(rel.Power or 0)
 					end
 

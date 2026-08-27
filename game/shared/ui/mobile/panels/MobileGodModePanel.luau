@@ -14,6 +14,7 @@ local function _gmp(key, params, fallback)
 end
 
 local theme = mc.theme
+local bindTap = mc.bindTap
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
@@ -272,11 +273,14 @@ render = function()
 		order = 2,
 	})
 
+	-- Update 29: trait selector. The TextBox is now a filter over the full catalog
+	-- the server already sends; tapping a trait adds it, tapping an owned one
+	-- removes it. Nobody should have to type "six_eyes" on a phone keyboard.
 	local traitBox = Instance.new("TextBox")
 	traitBox.Size = UDim2.new(1, 0, 0, 44)
 	traitBox.BackgroundColor3 = theme.Card
 	traitBox.BorderSizePixel = 0
-	traitBox.PlaceholderText = _gm("trait_placeholder", "Type trait name or id")
+	traitBox.PlaceholderText = _gm("trait_filter", "Filter traits...")
 	traitBox.Text = ""
 	traitBox.TextColor3 = theme.Text
 	traitBox.PlaceholderColor3 = theme.Muted
@@ -287,25 +291,75 @@ render = function()
 	traitBox.Parent = traitCard
 	mc.corner(traitBox, 10)
 
-	mc.mobileButton({
-		parent = traitCard,
-		text = _gm("btn_add_trait", "ADD TRAIT"),
-		color = theme.Green,
-		textColor = theme.Bg,
-		order = 4,
-		callback = function()
-			fire("add_trait", { TraitName = traitBox.Text })
-		end,
-	})
-	mc.mobileButton({
-		parent = traitCard,
-		text = _gm("btn_remove_trait", "REMOVE TRAIT"),
-		color = theme.Bad,
-		order = 5,
-		callback = function()
-			fire("remove_trait", { TraitName = traitBox.Text })
-		end,
-	})
+	local traitList = Instance.new("ScrollingFrame")
+	traitList.Size = UDim2.new(1, 0, 0, 220)
+	traitList.BackgroundColor3 = theme.Card
+	traitList.BorderSizePixel = 0
+	traitList.ScrollBarThickness = 6
+	traitList.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	traitList.CanvasSize = UDim2.new(0, 0, 0, 0)
+	traitList.LayoutOrder = 4
+	traitList.Parent = traitCard
+	mc.corner(traitList, 10)
+	local traitListLayout = Instance.new("UIListLayout")
+	traitListLayout.Padding = UDim.new(0, 4)
+	traitListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	traitListLayout.Parent = traitList
+	local traitListPad = Instance.new("UIPadding")
+	traitListPad.PaddingTop = UDim.new(0, 5)
+	traitListPad.PaddingBottom = UDim.new(0, 5)
+	traitListPad.PaddingLeft = UDim.new(0, 5)
+	traitListPad.PaddingRight = UDim.new(0, 5)
+	traitListPad.Parent = traitList
+
+	local ownedById = {}
+	for _, trait in ipairs(data.CurrentTraits or {}) do
+		ownedById[tostring(trait.Id)] = true
+	end
+
+	local RARITY_COLORS = {
+		Legendary = Color3.fromRGB(255, 168, 76),
+		Epic = Color3.fromRGB(190, 120, 255),
+		Rare = Color3.fromRGB(90, 160, 255),
+		Uncommon = Color3.fromRGB(120, 220, 150),
+		Common = Color3.fromRGB(170, 172, 200),
+	}
+
+	local function rebuildTraitList()
+		for _, child in ipairs(traitList:GetChildren()) do
+			if child:IsA("TextButton") then child:Destroy() end
+		end
+		local filter = string.lower(traitBox.Text)
+		for order, trait in ipairs(data.Traits or {}) do
+			local haystack = string.lower(tostring(trait.Name) .. " " .. tostring(trait.Rarity) .. " " .. tostring(trait.Category or ""))
+			if filter == "" or string.find(haystack, filter, 1, true) then
+				local isOwned = ownedById[tostring(trait.Id)] == true
+				local row = Instance.new("TextButton")
+				row.Name = tostring(trait.Id)
+				row.LayoutOrder = order
+				row.Size = UDim2.new(1, 0, 0, 38)
+				row.BackgroundColor3 = isOwned and Color3.fromRGB(58, 52, 96) or theme.Bg
+				row.BorderSizePixel = 0
+				row.Text = (isOwned and "✓ " or "") .. tostring(trait.Name) .. "  [" .. tostring(trait.Rarity) .. "]"
+				row.TextColor3 = RARITY_COLORS[tostring(trait.Rarity)] or theme.Text
+				row.Font = isOwned and Enum.Font.GothamBlack or Enum.Font.GothamMedium
+				row.TextSize = 13
+				row.TextXAlignment = Enum.TextXAlignment.Left
+				row.TextTruncate = Enum.TextTruncate.AtEnd
+				row.Parent = traitList
+				mc.corner(row, 8)
+				local rowPad = Instance.new("UIPadding")
+				rowPad.PaddingLeft = UDim.new(0, 10)
+				rowPad.Parent = row
+				bindTap(row, function()
+					fire(isOwned and "remove_trait" or "add_trait", { TraitId = trait.Id })
+				end)
+			end
+		end
+	end
+
+	traitBox:GetPropertyChangedSignal("Text"):Connect(rebuildTraitList)
+	rebuildTraitList()
 
 	local ownedNames = {}
 	for _, trait in ipairs(data.CurrentTraits or {}) do

@@ -62,7 +62,8 @@ local LUCKY_SORCERER_PASS_ID = 1863476467
 local TRAINING_PRODIGY_PASS_ID = 1863314699
 local MISSION_INVESTOR_PASS_ID = 1863458434
 local LEGACY_BLESSING_PASS_ID = 1865683126
-local DOJO_EXPANSION_PASS_ID = 0
+local DOJO_EXPANSION_PASS_ID = 1962348345
+local SHIKIGAMI_MASTER_PASS_ID = 1963614326
 local FOCUSED_TRAINING_PASS_ID = 1847591321
 
 ----------------------------------------------------------------
@@ -2160,6 +2161,7 @@ function BK_CommerceService.Init(ctx)
 			and purchasedPassId ~= MISSION_INVESTOR_PASS_ID
 			and purchasedPassId ~= LEGACY_BLESSING_PASS_ID
 			and purchasedPassId ~= DOJO_EXPANSION_PASS_ID
+			and purchasedPassId ~= SHIKIGAMI_MASTER_PASS_ID
 			and purchasedPassId ~= AFK_STABILIZATION_GAMEPASS_ID
 			and purchasedPassId ~= GOD_MODE_PASS_ID
 			and purchasedPassId ~= GO_ROGUE_PASS_ID
@@ -2225,6 +2227,11 @@ function BK_CommerceService.Init(ctx)
 			elseif purchasedPassId == DOJO_EXPANSION_PASS_ID then
 				fireMajorPopup(player, "DOJO EXPANSION ACTIVE", "Your dojo recruiting options expanded.", "Dojo Expansion", "You can recruit more starter students at your Grand Dojo.")
 				fireLifeUpdate(player, stats, "<font color='#ffcd69'><b>[ GAMEPASS ]</b></font> Dojo Expansion active. Your dojo starter recruit options increased.")
+
+			elseif purchasedPassId == SHIKIGAMI_MASTER_PASS_ID then
+				fireMajorPopup(player, "SHIKIGAMI MASTER ACTIVE", "Your shadow can hold two postures at once.", "Shikigami Master", "Commanding a posture in combat now costs half the cursed energy.")
+				fireLifeUpdate(player, stats, "<font color='#b388ff'><b>[ GAMEPASS ]</b></font> Shikigami Master active. Hold <b>2</b> shikigami postures at once for <b>half</b> the cursed energy.")
+
 			elseif purchasedPassId == AFK_STABILIZATION_GAMEPASS_ID then
 				grantAFKStabilization(player, stats)
 

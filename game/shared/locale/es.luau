@@ -1886,6 +1886,7 @@ return {
 		log_shikigami_guard   = "Tus shikigami reciben el golpe que iba para ti. {n} de daño bloqueado.",
 		log_shikigami_support = "Tus shikigami te devuelven energía maldita. +{n} de EM.",
 		log_shikigami_heal    = "Ciervo Redondo te cierra las heridas. +{n} de salud.",
+		log_shikigami_drop    = "La postura {posture} se rompe mientras tu sombra se reordena.",
 		log_vow_overtime_early = "Voto Vinculante: sigues dentro de tu horario restringido. Menos rendimiento.",
 		log_vow_overtime_late  = "Voto Vinculante: horas extra. Sale todo lo que te guardaste.",
 		log_blitz_locked   = "Blitz necesita {n} de Speed más que el enemigo, y solo una vez por combate.",

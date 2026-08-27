@@ -69,6 +69,10 @@ local function init(playerGui: Instance)
 	local testPurchase = ReplicatedStorage:WaitForChild("TestPurchase")
 	local getSuccessorOptions = ReplicatedStorage:WaitForChild("GetSuccessorOptions")
 	local chooseSuccessor = ReplicatedStorage:WaitForChild("ChooseSuccessor")
+	-- Update 29 vessel system: same picker, different source and destination.
+	local getVesselOptions = ReplicatedStorage:WaitForChild("GetVesselOptions")
+	local chooseVessel = ReplicatedStorage:WaitForChild("ChooseVessel")
+	local pickerMode = "successor"
 
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "BitKaisenDeathGui"
@@ -1567,7 +1571,11 @@ local function init(playerGui: Instance)
 			end
 			pickerBusy = true
 			chooseButton.Text = _d("starting", "STARTING...")
-			chooseSuccessor:FireServer(successor.Id)
+			if pickerMode == "vessel" then
+				chooseVessel:FireServer(successor.Id)
+			else
+				chooseSuccessor:FireServer(successor.Id)
+			end
 		end)
 	end
 
@@ -1701,7 +1709,8 @@ local function init(playerGui: Instance)
 		overlay.Visible = false
 	end
 
-	local function showPicker()
+	local function showPicker(mode)
+		pickerMode = mode == "vessel" and "vessel" or "successor"
 		if isShowingPicker then
 			return
 		end
@@ -1712,13 +1721,20 @@ local function init(playerGui: Instance)
 		clearPickerCards()
 
 		local ok, successors = pcall(function()
+			if pickerMode == "vessel" then
+				return getVesselOptions:InvokeServer()
+			end
 			return getSuccessorOptions:InvokeServer()
 		end)
 
 		if not ok then
-			createEmptyPickerCard("Could not load successor options.\nTry again.")
+			createEmptyPickerCard(pickerMode == "vessel"
+				and "Could not reach any body.\nTry again."
+				or "Could not load successor options.\nTry again.")
 		elseif typeof(successors) ~= "table" or #successors <= 0 then
-			createEmptyPickerCard("You have no eligible children to continue your bloodline.\nStart a new life instead.")
+			createEmptyPickerCard(pickerMode == "vessel"
+				and "No body is close enough to your cursed object.\nStart a new life instead."
+				or "You have no eligible children to continue your bloodline.\nStart a new life instead.")
 		else
 			for _, successor in ipairs(successors) do
 				createSuccessorCard(successor)
@@ -1807,12 +1823,7 @@ local function init(playerGui: Instance)
 	end)
 
 	reincarnateButton.MouseButton1Click:Connect(function()
-		reincarnateButton.Text = _d("reincarnating", "REINCARNATING...")
-		updateLifeEvent:FireServer("Reincarnate")
-
-		task.delay(0.45, function()
-			reincarnateButton.Text = _d("reincarnate", "REINCARNATE")
-		end)
+		showPicker("vessel")
 	end)
 
 	successorButton.MouseButton1Click:Connect(function()

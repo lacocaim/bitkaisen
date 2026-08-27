@@ -97,6 +97,52 @@ local function canCommandShikigami(stats)
 	return isCommander and getTamedShikigami(stats) >= 1
 end
 
+-- SHIKIGAMI MASTER PASS (Update 29)
+--
+-- Everything the pass touches lives in these two functions, so the base rules read
+-- the same whether you own it or not: one posture, full price. The pass raises the
+-- limit to two and halves the command cost. It never adds power that a non-owner
+-- cannot reach - the postures themselves are identical - it only lets you hold two
+-- of them at once and pay less to rotate.
+local SHIKIGAMI_POSTURE_LIMIT = 1
+local SHIKIGAMI_MASTER_POSTURE_LIMIT = 2
+
+local function getShikigamiPostureLimit(stats)
+	if stats and stats.HasShikigamiMasterPass == true then
+		return SHIKIGAMI_MASTER_POSTURE_LIMIT
+	end
+	return SHIKIGAMI_POSTURE_LIMIT
+end
+
+local function getShikigamiPostureCost(stats, posture)
+	local cost = tonumber(posture and posture.CECost) or 0
+	if stats and stats.HasShikigamiMasterPass == true then
+		return math.max(1, math.ceil(cost / 2))
+	end
+	return cost
+end
+
+-- Held postures live in session.ShikigamiHeld, oldest first, so the limit can evict
+-- by age. session.ShikigamiPosture stays as the most recent one: the state payload
+-- and every pre-pass call site still read a single id from it.
+local function getHeldPostures(session)
+	if type(session.ShikigamiHeld) ~= "table" then
+		session.ShikigamiHeld = {}
+		-- Sessions that started before the pass existed only carry the single field.
+		if session.ShikigamiPosture then
+			table.insert(session.ShikigamiHeld, session.ShikigamiPosture)
+		end
+	end
+	return session.ShikigamiHeld
+end
+
+local function isPostureHeld(session, postureId)
+	for _, id in ipairs(getHeldPostures(session)) do
+		if id == postureId then return true end
+	end
+	return false
+end
+
 -- SHIKIGAMI ROSTER (Update 29, shikigami pt1 part 2)
 --
 -- pt1 scaled every posture off the raw count of tamed shikigami, which made the
@@ -160,7 +206,9 @@ end
 
 -- Sent to the client so the posture picker can name the shadows behind each option
 -- instead of showing three anonymous buttons.
-local function buildShikigamiPayload(stats)
+-- Active and CECost are resolved here rather than on the client so the picker never
+-- has to know the pass exists: it draws whatever price and highlight it is handed.
+local function buildShikigamiPayload(stats, session)
 	local payload = {}
 	for _, posture in ipairs(SHIKIGAMI_POSTURES) do
 		local names = {}
@@ -170,10 +218,11 @@ local function buildShikigamiPayload(stats)
 		table.insert(payload, {
 			Id = posture.Id,
 			Name = posture.Name,
-			CECost = posture.CECost,
+			CECost = getShikigamiPostureCost(stats, posture),
 			Desc = posture.Desc,
 			Contributors = table.concat(names, ", "),
 			Count = #names,
+			Active = session ~= nil and isPostureHeld(session, posture.Id),
 		})
 	end
 	return payload
@@ -445,7 +494,8 @@ local function publicState(session)
 		ShikigamiAvailable = canCommandShikigami(getStats(session.Player)),
 		ShikigamiTamed = getTamedShikigami(getStats(session.Player)),
 		ShikigamiPosture = session.ShikigamiPosture,
-		ShikigamiPostures = buildShikigamiPayload(getStats(session.Player)),
+		ShikigamiPostureLimit = getShikigamiPostureLimit(getStats(session.Player)),
+		ShikigamiPostures = buildShikigamiPayload(getStats(session.Player), session),
 		EnemyName = session.Enemy.Name,
 		EnemyGrade = session.Enemy.Grade,
 		EnemyKind = session.Enemy.Kind,
@@ -745,7 +795,7 @@ function resolveEnemyCombo(player, session, accuracy, perfectHits)
 		addLog(session, _cl(session, "log_perception_blitz", {n = perceptionBlitzDamage}, "You read their movement before they struck. Perception Blitz. Counter: {n} damage."))
 		session.Enemy.HP = math.clamp(session.Enemy.HP - perceptionBlitzDamage, 0, session.Enemy.MaxHP)
 	end
-	if session.ShikigamiPosture == "posture_guard" and damage > 0 then
+	if isPostureHeld(session, "posture_guard") and damage > 0 then
 		local blocked = math.floor(damage * getShikigamiPower(getStats(player), "posture_guard"))
 		if blocked > 0 then
 			damage = math.max(0, damage - blocked)
@@ -969,13 +1019,16 @@ function resolveAttack(player, session, accuracy, sweet)
 		session.BracedDamage = 0
 		addLog(session, _cl(session, "log_brace_release", {n = banked}, "Everything you absorbed goes back. +{n} damage."))
 	end
-	if session.ShikigamiPosture == "posture_assault" then
+	-- Two separate ifs, not if/elseif: with Shikigami Master a player can hold Assault
+	-- and Support at the same time, and both have to pay out on the same hit.
+	if isPostureHeld(session, "posture_assault") then
 		local share = math.floor(damage * getShikigamiPower(stats, "posture_assault"))
 		if share > 0 then
 			damage += share
 			addLog(session, _cl(session, "log_shikigami_assault", {n = share}, "Your shikigami strike through the same opening. +{n} damage."))
 		end
-	elseif session.ShikigamiPosture == "posture_support" then
+	end
+	if isPostureHeld(session, "posture_support") then
 		local regen = math.floor(getShikigamiPower(stats, "posture_support"))
 		if regen > 0 and session.PlayerCE < session.PlayerMaxCE then
 			session.PlayerCE = math.min(session.PlayerMaxCE, session.PlayerCE + regen)
@@ -1492,18 +1545,33 @@ local function handleAction(player, action, payload)
 			sendState(player, session)
 			return
 		end
-		if session.ShikigamiPosture == posture.Id then
+		if isPostureHeld(session, posture.Id) then
 			addLog(session, _cl(session, "log_shikigami_same", {posture = posture.Name}, "Your shikigami already hold the {posture} posture."))
 			sendState(player, session)
 			return
 		end
-		if session.PlayerCE < posture.CECost then
-			addLog(session, _cl(session, "log_shikigami_no_ce", {cost = posture.CECost}, "Commanding them costs {cost} cursed energy. You do not have it."))
+		local postureCost = getShikigamiPostureCost(shikiStats, posture)
+		if session.PlayerCE < postureCost then
+			addLog(session, _cl(session, "log_shikigami_no_ce", {cost = postureCost}, "Commanding them costs {cost} cursed energy. You do not have it."))
 			sendState(player, session)
 			return
 		end
-		session.PlayerCE = math.max(0, session.PlayerCE - posture.CECost)
+		session.PlayerCE = math.max(0, session.PlayerCE - postureCost)
+
+		-- Held postures are oldest-first, so going over the limit drops the one that has
+		-- been up longest. Without the pass the limit is 1 and this is the old behaviour:
+		-- the new posture simply replaces the previous one.
+		local held = getHeldPostures(session)
+		table.insert(held, posture.Id)
+		while #held > getShikigamiPostureLimit(shikiStats) do
+			local dropped = getShikigamiPosture(table.remove(held, 1))
+			if dropped then
+				addLog(session, _cl(session, "log_shikigami_drop", {posture = dropped.Name},
+					"The {posture} posture breaks as your shadow reshapes itself."))
+			end
+		end
 		session.ShikigamiPosture = posture.Id
+
 		addLog(session, _cl(session, "log_shikigami_set", {posture = posture.Name, n = getTamedShikigami(shikiStats)},
 			"{n} shikigami rise from your shadow and take the {posture} posture."))
 		sendState(player, session)

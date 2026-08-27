@@ -69,6 +69,9 @@ local REMOTE_DEFINITIONS = {
 	RivalAction = "RemoteEvent",
 
 	GetSuccessorOptions = "RemoteFunction",
+	-- Update 29: vessel system. Same shape as the successor picker.
+	GetVesselOptions = "RemoteFunction",
+	ChooseVessel = "RemoteEvent",
 	ChooseSuccessor = "RemoteEvent",
 
 	UpdateSettingsEvent = "RemoteEvent",

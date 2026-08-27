@@ -1128,11 +1128,13 @@ local function init(playerGui: Instance)
 		if not shikiReady then
 			shikigamiButton.Text = _cb("btn_shikigami", "SHIKIGAMI") .. " 0"
 		else
-			local active = nil
+			-- A list, not a single name: Shikigami Master holds two postures at once.
+			local active = {}
 			for _, posture in ipairs(state.ShikigamiPostures or {}) do
-				if posture.Id == state.ShikigamiPosture then active = posture.Name end
+				if posture.Active == true then table.insert(active, string.upper(posture.Name)) end
 			end
-			shikigamiButton.Text = active and string.upper(active) or (_cb("btn_shikigami", "SHIKIGAMI") .. " " .. tostring(state.ShikigamiTamed or 0))
+			shikigamiButton.Text = #active > 0 and table.concat(active, "+")
+				or (_cb("btn_shikigami", "SHIKIGAMI") .. " " .. tostring(state.ShikigamiTamed or 0))
 		end
 		setButtonEnabled(shikigamiButton, playerTurn and shikiReady)
 		local braceReady = state.BraceAvailable == true
@@ -1365,7 +1367,7 @@ local function init(playerGui: Instance)
 		pad.PaddingRight = UDim.new(0, 6)
 		pad.Parent = popup
 		for i, posture in ipairs(postures) do
-			local active = posture.Id == state.ShikigamiPosture
+			local active = posture.Active == true
 			local btn = Instance.new("TextButton")
 			btn.Name = posture.Id
 			btn.Size = UDim2.new(1, 0, 0, 38)

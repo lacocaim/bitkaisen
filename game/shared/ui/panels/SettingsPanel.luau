@@ -69,6 +69,8 @@ local PREMIUM_ORIGINS_GAMEPASS_ID = 1902804677
 local HIGH_SOCIETY_GAMEPASS_ID = 1903626636
 local KARMA_PASS_GAMEPASS_ID = 1933136291
 local CURSED_BLOODLINE_GAMEPASS_ID = 1932518576
+local DOJO_EXPANSION_GAMEPASS_ID = 1962348345
+local SHIKIGAMI_MASTER_GAMEPASS_ID = 1963614326
 
 local STARTER_SORCERER_PACK_PRODUCT_ID = 3595826857
 local FOCUSED_TRAINING_PRODUCT_ID = 3595838153
@@ -224,6 +226,7 @@ local SHOP_CATEGORIES = {
 			{ Id = "recruit_reroll", Name = "Student Reroll", Subtitle = "Reroll your Grand Dojo recruit board.", Kind = "Product", RobloxId = RECRUIT_REROLL_PRODUCT_ID, PriceText = "R$ 49", Accent = THEME.Orange },
 			{ Id = "dojo_funding_pack", Name = "Dojo Funding Pack", Subtitle = "Funds your clan dojo with money, reputation, repairs, capacity support, and recruit help.", Kind = "Product", RobloxId = DOJO_FUNDING_PACK_PRODUCT_ID, PriceText = "R$ 499", Accent = THEME.Gold },
 			{ Id = "extra_dojo_students", Name = "Extra Dojo Students", Subtitle = "Permanently increases Grand Dojo student capacity by +3.", Kind = "GamePass", RobloxId = EXTRA_DOJO_STUDENTS_GAMEPASS_ID, PriceText = "R$ 99", SalePriceText = "R$ 79", Accent = THEME.Purple },
+			{ Id = "dojo_expansion", Name = "Dojo Expansion", Subtitle = "+2 more Grand Dojo capacity and a wider recruit board: 15 candidates per refresh instead of 10.", Kind = "GamePass", RobloxId = DOJO_EXPANSION_GAMEPASS_ID, PriceText = "R$ 129", SalePriceText = "R$ 99", Accent = THEME.Purple },
 		},
 	},
 	{
@@ -248,6 +251,7 @@ local SHOP_CATEGORIES = {
 			{ Id = "high_society", Name = "High Society", Subtitle = "4 relationship actions per age, 1.25x relationship gains, better odds of meeting notable sorcerers, and an exclusive profile badge.", Kind = "GamePass", RobloxId = HIGH_SOCIETY_GAMEPASS_ID, PriceText = "R$ 249", SalePriceText = "R$ 199", Accent = THEME.Purple },
 			{ Id = "karma_pass", Name = "Karma Pass", Subtitle = "Reveals your hidden karma level in the profile card and grants a passive 5% bonus to favorable events.", Kind = "GamePass", RobloxId = KARMA_PASS_GAMEPASS_ID, PriceText = "R$ 199", SalePriceText = "R$ 149", Accent = THEME.Gold },
 			{ Id = "cursed_bloodline", Name = "Cursed Bloodline", Subtitle = "Guarantees Rare or higher cursed techniques on every new life and reroll. Common and Uncommon are permanently filtered out.", Kind = "GamePass", RobloxId = CURSED_BLOODLINE_GAMEPASS_ID, PriceText = "R$ 549", SalePriceText = "R$ 449", Accent = THEME.Red },
+			{ Id = "shikigami_master", Name = "Shikigami Master", Subtitle = "Hold 2 shikigami postures at once instead of 1, and command them for half the cursed energy. Ten Shadows lives only.", Kind = "GamePass", RobloxId = SHIKIGAMI_MASTER_GAMEPASS_ID, PriceText = "R$ 199", SalePriceText = "R$ 149", Accent = THEME.Purple },
 		},
 	},
 }

@@ -110,6 +110,8 @@ local getRivals = BK_Remotes.Get("GetRivals")
 local rivalAction = BK_Remotes.Get("RivalAction")
 local getSuccessorOptions = BK_Remotes.Get("GetSuccessorOptions")
 local chooseSuccessor = BK_Remotes.Get("ChooseSuccessor")
+getVesselOptions = BK_Remotes.Get("GetVesselOptions")
+chooseVessel = BK_Remotes.Get("ChooseVessel")
 local updateSettingsEvent = BK_Remotes.Get("UpdateSettingsEvent")
 local getMentor = BK_Remotes.Get("GetMentor")
 local mentorAction = BK_Remotes.Get("MentorAction")
@@ -195,7 +197,8 @@ local NEW_PASS_IDS = {
 	TrainingProdigy = 1863314699,
 	MissionInvestor = 1863458434,
 	LegacyBlessing = 1865683126,
-	DojoExpansion = 0,
+	DojoExpansion = 1962348345,
+	ShikigamiMaster = 1963614326,
 	FocusedTraining = 1847591321,
 	AFKPass = 1879156343,
 	BindingVowSpecialist = 1863380690,
@@ -242,6 +245,7 @@ local ownershipCaches = {
 	missionInvestor = {},
 	legacyBlessing = {},
 	dojoExpansion = {},
+	shikigamiMaster = {},
 	focusedTraining = {},
 	afkPass = {},
 	bindingVowSpecialist = {},
@@ -514,6 +518,10 @@ function ownsDojoExpansionPass(player)
 	return checkCachedGamePassOwnership(player, NEW_PASS_IDS.DojoExpansion, ownershipCaches.dojoExpansion, "Dojo Expansion")
 end
 
+function ownsShikigamiMasterPass(player)
+	return checkCachedGamePassOwnership(player, NEW_PASS_IDS.ShikigamiMaster, ownershipCaches.shikigamiMaster, "Shikigami Master")
+end
+
 function ownsFocusedTrainingPass(player)
 	return checkCachedGamePassOwnership(player, NEW_PASS_IDS.FocusedTraining, ownershipCaches.focusedTraining, "Focused Training")
 end
@@ -611,6 +619,7 @@ function syncMonetizationEntitlements(player, stats)
 	stats.HasBindingVowSpecialistPass = ownsBindingVowSpecialistPass(player)
 	stats.HasLegacyBlessingPass = ownsLegacyBlessingPass(player)
 	stats.HasDojoExpansionPass = ownsDojoExpansionPass(player)
+	stats.HasShikigamiMasterPass = ownsShikigamiMasterPass(player)
 	stats.HasPremiumOriginsPass = ownsPremiumOriginsPass(player)
 	stats.HasHighSocietyPass = ownsHighSocietyPass(player)
 	if ownsVIPSorcererPass(player) then
@@ -4013,6 +4022,143 @@ function startAsReincarnation(player)
 	newStats.CursedObjectAnchorProgress = 0
 	fireLifeUpdate(player, newStats, "<font color='#a782ff'><b>[ REINCARNATION ]</b></font> Your cursed-object anchor pulled your soul into a new life. CE, clan, and technique persisted.", true)
 	saveStats(player, "reincarnation")
+	return true
+end
+
+----------------------------------------------------------------
+-- VESSEL SYSTEM (Update 29)
+--
+-- startAsReincarnation already pulls a cursed-object anchor into a new life, but
+-- it drops you into a RANDOM one and pastes your technique on top. The most-voted
+-- suggestion on Discord (29 votes, 52 comments) asked for the other half: pick the
+-- body, and see its stats and technique before you commit.
+--
+-- Deliberately globals, not locals: this file sits on Luau's 200 top-level register
+-- ceiling and one more `local` out here stops the whole script compiling.
+----------------------------------------------------------------
+VESSEL_HOST_COUNT = 3
+
+-- "None" is a real stored value, not an absence. Anything that treats it as a
+-- technique will happily hand you a body you cannot use.
+function vesselUsableTechnique(name)
+	local technique = tostring(name or "None")
+	if technique == "" or technique == "None" then
+		return nil
+	end
+	return technique
+end
+
+-- One candidate body, built from the same origin and technique rolls a new life uses.
+function buildVesselHost(index)
+	local originData = BitKaisenStats.RollOrigin()
+	local gender = math.random(1, 2) == 1 and "Female" or "Male"
+	local identity = BitKaisenStats.GenerateRandomIdentity(originData, gender)
+	local technique = BitKaisenStats.RollInnateTechniqueForOrigin(originData) or "None"
+	local age = math.random(12, 26)
+	local ce = math.random(20, 95) + math.floor((tonumber(originData.BonusCE) or 0))
+
+	return {
+		Id = "vessel_" .. tostring(index) .. "_" .. tostring(math.random(1000, 9999)),
+		Name = identity.FullName,
+		FirstName = identity.FirstName,
+		FamilyName = identity.FamilyName,
+		FamilyType = identity.FamilyType,
+		Gender = gender,
+		Age = age,
+		Origin = originData.DisplayName,
+		OriginId = originData.Id,
+		OriginCategory = originData.Category,
+		CursedTechnique = technique,
+		CursedEnergy = ce,
+		Smarts = math.random(25, 85),
+		Looks = math.random(20, 90),
+		Grade = ce >= 80 and "Grade 3" or (ce >= 45 and "Grade 4" or "Non-Sorcerer"),
+		HasInheritedTechnique = technique ~= "None",
+	}
+end
+
+-- Held on the stats table so the list the player is looking at is the list the
+-- server will honour, and so a rejoin mid-death-screen does not reroll it.
+function getVesselHostOptions(player)
+	local stats = playerLives[player.UserId]
+	if not stats or stats.Alive ~= false then
+		return {}
+	end
+	if not canReincarnateFromCursedAnchor(stats) then
+		return {}
+	end
+	if typeof(stats.PendingVesselHosts) ~= "table" or #stats.PendingVesselHosts <= 0 then
+		stats.PendingVesselHosts = {}
+		for index = 1, VESSEL_HOST_COUNT do
+			table.insert(stats.PendingVesselHosts, buildVesselHost(index))
+		end
+	end
+	return stats.PendingVesselHosts
+end
+
+-- Takes over the chosen body. The echo of the old life -- cursed energy, technique,
+-- clan -- rides in on top of whatever the host already was, which is the point: you
+-- are the thing wearing them, not a fresh roll.
+function startAsVessel(player, hostId)
+	local oldStats = playerLives[player.UserId]
+	if not canReincarnateFromCursedAnchor(oldStats) then
+		return false, "Taking a vessel needs at least 120 CE and a cursed-object anchor."
+	end
+
+	local host = nil
+	for _, candidate in ipairs(oldStats.PendingVesselHosts or {}) do
+		if candidate.Id == hostId then host = candidate break end
+	end
+	if not host then
+		return false, "That body is no longer available."
+	end
+
+	local echo = {
+		CursedEnergy = math.max(0, math.floor((tonumber(oldStats.CursedEnergy) or 0) * 0.65)),
+		CursedTechnique = oldStats.CursedTechnique,
+		InnateTechnique = oldStats.InnateTechnique,
+		PreviousName = tostring(oldStats.Name or oldStats.FirstName or "Someone"),
+	}
+
+	startNewLife(player)
+	local newStats = playerLives[player.UserId]
+	if not newStats then
+		return false, "Could not take the vessel."
+	end
+
+	-- The host's own identity is what the world sees.
+	newStats.FirstName = host.FirstName
+	newStats.FamilyName = host.FamilyName
+	newStats.FamilyType = host.FamilyType
+	newStats.Name = host.Name
+	newStats.Gender = host.Gender
+	newStats.Age = host.Age
+	newStats.Origin = host.Origin
+	newStats.OriginCategory = host.OriginCategory
+	newStats.Smarts = host.Smarts
+	newStats.Looks = host.Looks
+
+	-- The echo overwrites the body's own cursed energy and technique -- but only if
+	-- there was one. A technique-less life leaving "None" behind used to overwrite the
+	-- host's own technique with nothing, so you woke up in a sorcerer's body unable to
+	-- use it. "None" is not something you can bring with you.
+	newStats.CursedEnergy = math.max(echo.CursedEnergy, tonumber(host.CursedEnergy) or 0)
+	newStats.CursedTechnique = vesselUsableTechnique(echo.CursedTechnique) or host.CursedTechnique
+	newStats.InnateTechnique = vesselUsableTechnique(echo.InnateTechnique) or host.CursedTechnique
+	newStats.VesselHostName = host.Name
+	newStats.VesselHostTechnique = host.CursedTechnique
+	newStats.PreviousLifeName = echo.PreviousName
+	newStats.Reincarnated = true
+	newStats.ReincarnationAnchor = "Vessel"
+	newStats.CursedObjectAnchors = 0
+	newStats.CursedObjectAnchorProgress = 0
+	newStats.PendingVesselHosts = nil
+
+	fireLifeUpdate(player, newStats,
+		"<font color='#a782ff'><b>[ VESSEL ]</b></font> Your cursed object was picked up by <b>"
+			.. tostring(host.Name) .. "</b>. What is left of <b>" .. tostring(echo.PreviousName)
+			.. "</b> is wearing them now.", true)
+	saveStats(player, "vessel")
 	return true
 end
 
@@ -11921,7 +12067,7 @@ devToolsAction.OnServerEvent:Connect(function(player, actionId, data)
 		-- Speed, Strength and Durability were missing, which made the combat moves that
 		-- gate on them (Blitz, Perception Blitz) impossible to test without grinding
 		-- training activities for several in-game years.
-		local map = { CE = "CursedEnergy", Reputation = "Reputation", Fame = "Fame", Fear = "Fear", Missions = "MissionsCompleted", Speed = "Speed", Strength = "Strength", Durability = "Durability", CEOutput = "CEOutput", CEControl = "CEControl", CEReinforcement = "CEReinforcement", TamedShikigami = "TamedShikigami" }
+		local map = { CE = "CursedEnergy", Reputation = "Reputation", Fame = "Fame", Fear = "Fear", Missions = "MissionsCompleted", Speed = "Speed", Strength = "Strength", Durability = "Durability", CEOutput = "CEOutput", CEControl = "CEControl", CEReinforcement = "CEReinforcement", TamedShikigami = "TamedShikigami", CursedObjectAnchors = "CursedObjectAnchors", CursedObjectAnchorProgress = "CursedObjectAnchorProgress", CursedResentment = "CursedResentment" }
 		local field = map[tostring(data.Stat or "")]
 		local amount = tonumber(data.Amount) or 0
 		if field then
@@ -12034,6 +12180,24 @@ getSuccessorOptions.OnServerInvoke = function(player)
 
 	return BitKaisenLegacy.GetEligibleSuccessors(stats)
 end
+
+-- Update 29 vessel system. Mirrors the successor picker above.
+getVesselOptions.OnServerInvoke = function(player)
+	return getVesselHostOptions(player)
+end
+
+chooseVessel.OnServerEvent:Connect(function(player, hostId)
+	if not checkRateLimit(player, "StartNewLife") then
+		return
+	end
+	local ok, errorMessage = startAsVessel(player, tostring(hostId or ""))
+	if not ok then
+		local stats = playerLives[player.UserId]
+		if stats then
+			fireLifeUpdate(player, stats, "<font color='#e53935'><b>[ SYSTEM ]</b></font> " .. tostring(errorMessage or "Could not take that vessel."))
+		end
+	end
+end)
 
 updateLifeEvent.OnServerEvent:Connect(function(player, action, data)
 	-- Multiplayer Fase 2: catch up on any year-advances this player missed

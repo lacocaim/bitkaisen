@@ -11921,7 +11921,7 @@ devToolsAction.OnServerEvent:Connect(function(player, actionId, data)
 		-- Speed, Strength and Durability were missing, which made the combat moves that
 		-- gate on them (Blitz, Perception Blitz) impossible to test without grinding
 		-- training activities for several in-game years.
-		local map = { CE = "CursedEnergy", Reputation = "Reputation", Fame = "Fame", Fear = "Fear", Missions = "MissionsCompleted", Speed = "Speed", Strength = "Strength", Durability = "Durability", CEOutput = "CEOutput", CEControl = "CEControl", CEReinforcement = "CEReinforcement" }
+		local map = { CE = "CursedEnergy", Reputation = "Reputation", Fame = "Fame", Fear = "Fear", Missions = "MissionsCompleted", Speed = "Speed", Strength = "Strength", Durability = "Durability", CEOutput = "CEOutput", CEControl = "CEControl", CEReinforcement = "CEReinforcement", TamedShikigami = "TamedShikigami" }
 		local field = map[tostring(data.Stat or "")]
 		local amount = tonumber(data.Amount) or 0
 		if field then

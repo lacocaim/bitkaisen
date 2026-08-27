@@ -349,6 +349,10 @@ local function init(playerGui: Instance)
 
 	local function makeButton(text, color)
 		local b = Instance.new("TextButton")
+		-- Named after the action, not left as the default "TextButton". Every button in
+		-- this row used to share one name, which makes them impossible to address from
+		-- a test or a script and hard to find in the explorer.
+		b.Name = (string.gsub(text, "[^%w]", "")) .. "Button"
 		b.Size = UDim2.new(1/6, -9, 1, 0)
 		b.BackgroundColor3 = color
 		b.BorderSizePixel = 0
@@ -367,6 +371,7 @@ local function init(playerGui: Instance)
 	local blitzButton = makeButton("BLITZ", Color3.fromRGB(40, 86, 96))
 	local chantButton = makeButton("CHANT", Color3.fromRGB(58, 70, 126))
 	local braceButton = makeButton("BRACE", Color3.fromRGB(52, 74, 62))
+	local shikigamiButton = makeButton("SHIKIGAMI", Color3.fromRGB(40, 40, 78))
 	local domainButton = makeButton("DOMAIN", Color3.fromRGB(91, 58, 145))
 	local blackFlashButton = makeButton("B.FLASH", Color3.fromRGB(48, 28, 90))
 	local invokeButton = makeButton("INVOKE", Color3.fromRGB(90, 20, 30))
@@ -1125,6 +1130,18 @@ local function init(playerGui: Instance)
 			blitzButton.Text = "BLITZ +" .. tostring(tonumber(state.BlitzThreshold) or 25) .. " SPD"
 		end
 		setButtonEnabled(blitzButton, playerTurn and blitzArmed)
+		-- The posture rides on the label, and the count says why it is locked.
+		local shikiReady = state.ShikigamiAvailable == true
+		if not shikiReady then
+			shikigamiButton.Text = "SHIKIGAMI 0"
+		else
+			local active = nil
+			for _, posture in ipairs(state.ShikigamiPostures or {}) do
+				if posture.Id == state.ShikigamiPosture then active = posture.Name end
+			end
+			shikigamiButton.Text = active and ("SHIKI: " .. string.upper(active)) or ("SHIKIGAMI " .. tostring(state.ShikigamiTamed or 0))
+		end
+		setButtonEnabled(shikigamiButton, playerTurn and shikiReady)
 		local braceReady = state.BraceAvailable == true
 		braceButton.Text = braceReady and "BRACE" or ("BRACE +" .. tostring(tonumber(state.BraceThreshold) or 20) .. " DUR")
 		setButtonEnabled(braceButton, playerTurn and braceReady)
@@ -1245,7 +1262,9 @@ local function init(playerGui: Instance)
 		{ Id = "vow_revelation", Name = "Revelation", Desc = "Lose CT surprise -> +35% damage" },
 		{ Id = "vow_blood", Name = "Blood Pact", Desc = "-20% HP -> +2 extra hits" },
 		{ Id = "vow_silence", Name = "Silence", Desc = "No CT this fight -> +50 CE now" },
-		{ Id = "vow_escape", Name = "Escape", Desc = "Can't pursue if win -> Dodge next attack" },
+		{ Id = "vow_escape", Name = "Escape", Desc = "Cant pursue if win -> Dodge next attack" },
+		{ Id = "vow_overtime", Name = "Overtime", Desc = "-20% output rounds 1-3 -> +20% from round 4" },
+		{ Id = "vow_revelation_hand", Name = "Revealing Hand", Desc = "-30% crit window -> +10% damage all fight" },
 	}
 	local function destroyVowPopup()
 		if vowPopup then vowPopup:Destroy() vowPopup = nil end
@@ -1295,6 +1314,61 @@ local function init(playerGui: Instance)
 			end)
 		end
 		vowPopup = popup
+	end)
+
+	-- Posture picker, same shape as the binding vow popup above.
+	local shikigamiPopup = nil
+	local function destroyShikigamiPopup()
+		if shikigamiPopup then shikigamiPopup:Destroy() shikigamiPopup = nil end
+	end
+	shikigamiButton.MouseButton1Click:Connect(function()
+		if state.Phase ~= "player_turn" or state.ShikigamiAvailable ~= true then return end
+		if shikigamiPopup then destroyShikigamiPopup() return end
+		local postures = state.ShikigamiPostures or {}
+		local popup = Instance.new("Frame")
+		popup.Name = "ShikigamiPostures"
+		popup.Size = UDim2.new(0, 280, 0, (#postures * 38) + 10)
+		popup.Position = UDim2.new(0.5, -140, 0, -((#postures * 38) + 14))
+		popup.BackgroundColor3 = Color3.fromRGB(20, 20, 38)
+		popup.BorderSizePixel = 0
+		popup.ZIndex = 750
+		popup.Parent = actionRow
+		corner(popup, 8)
+		local layout = Instance.new("UIListLayout")
+		layout.FillDirection = Enum.FillDirection.Vertical
+		layout.Padding = UDim.new(0, 4)
+		layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		layout.SortOrder = Enum.SortOrder.LayoutOrder
+		layout.Parent = popup
+		local pad = Instance.new("UIPadding")
+		pad.PaddingTop = UDim.new(0, 5)
+		pad.PaddingLeft = UDim.new(0, 5)
+		pad.PaddingRight = UDim.new(0, 5)
+		pad.Parent = popup
+		for i, posture in ipairs(postures) do
+			local active = posture.Id == state.ShikigamiPosture
+			local btn = Instance.new("TextButton")
+			btn.Name = posture.Id
+			btn.Size = UDim2.new(1, 0, 0, 34)
+			btn.BackgroundColor3 = active and Color3.fromRGB(58, 58, 110) or Color3.fromRGB(36, 36, 68)
+			btn.BorderSizePixel = 0
+			btn.Text = string.upper(posture.Name) .. "  " .. tostring(posture.CECost) .. " CE  |  "
+				.. ((tonumber(posture.Count) or 0) > 0 and tostring(posture.Contributors) or tostring(posture.Desc))
+			btn.TextColor3 = Color3.fromRGB(198, 200, 245)
+			btn.TextSize = 10
+			btn.Font = Enum.Font.GothamMedium
+			btn.TextTruncate = Enum.TextTruncate.AtEnd
+			btn.ZIndex = 751
+			btn.LayoutOrder = i
+			btn.AutoButtonColor = true
+			btn.Parent = popup
+			corner(btn, 6)
+			btn.MouseButton1Click:Connect(function()
+				destroyShikigamiPopup()
+				combatAction:FireServer("shikigami_posture", posture.Id)
+			end)
+		end
+		shikigamiPopup = popup
 	end)
 
 	defendButton.MouseButton1Click:Connect(function()

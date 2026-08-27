@@ -48,6 +48,136 @@ local function getTechniqueCap(stats)
 end
 
 local BLITZ_SPEED_THRESHOLD = 25
+-- SHIKIGAMI POSTURES (Update 29, shikigami pt1)
+--
+-- Until now the ten shadows were a collectible counter and nothing else: taming one
+-- bumped stats.TamedShikigami, which fed +5 into the aggregate combat power number
+-- and never appeared in a fight. A posture puts them on the field.
+--
+-- One posture at a time. Setting or switching one costs cursed energy but NOT the
+-- turn, otherwise nobody would ever pay for it. Every effect scales with how many
+-- shikigami you actually tamed, so the collection is what makes them strong.
+local SHIKIGAMI_POSTURES = {
+	{
+		Id = "posture_assault",
+		Name = "Assault",
+		CECost = 20,
+		Desc = "Your shikigami strike with you. Every hit you land carries theirs.",
+	},
+	{
+		Id = "posture_guard",
+		Name = "Guard",
+		CECost = 18,
+		Desc = "They put themselves between you and the enemy. Incoming combos land softer.",
+	},
+	{
+		Id = "posture_support",
+		Name = "Support",
+		CECost = 12,
+		Desc = "They feed cursed energy back to you every time you act.",
+	},
+}
+
+local function getShikigamiPosture(postureId)
+	for _, posture in ipairs(SHIKIGAMI_POSTURES) do
+		if posture.Id == postureId then return posture end
+	end
+	return nil
+end
+
+local function getTamedShikigami(stats)
+	return math.clamp(tonumber(stats and stats.TamedShikigami) or 0, 0, 10)
+end
+
+-- Ten Shadows and the lesser shikigami techniques can command them; nobody else can.
+local function canCommandShikigami(stats)
+	local technique = string.lower(tostring(stats and stats.CursedTechnique or stats and stats.InnateTechnique or ""))
+	local isCommander = string.find(technique, "ten shadows", 1, true) ~= nil
+		or string.find(technique, "shikigami", 1, true) ~= nil
+	return isCommander and getTamedShikigami(stats) >= 1
+end
+
+-- SHIKIGAMI ROSTER (Update 29, shikigami pt1 part 2)
+--
+-- pt1 scaled every posture off the raw count of tamed shikigami, which made the
+-- ten interchangeable. Each one now carries its own contribution to exactly one
+-- posture, so WHICH shadows you bound decides what your postures are good at.
+--
+-- Order matches TEN_SHADOWS_SHIKIGAMI in BK_ActivityService, because taming walks
+-- that list in order: index N here is the Nth shikigami a player tames. The first
+-- three deliberately land on three different postures so an early Ten Shadows user
+-- gets something out of all of them.
+local SHIKIGAMI_ROSTER = {
+	{ Name = "Divine Dogs",   Posture = "posture_guard",   Value = 0.07 },
+	{ Name = "Nue",           Posture = "posture_assault", Value = 0.04 },
+	{ Name = "Toad",          Posture = "posture_support", Value = 5 },
+	{ Name = "Great Serpent", Posture = "posture_assault", Value = 0.05 },
+	{ Name = "Max Elephant",  Posture = "posture_guard",   Value = 0.09 },
+	{ Name = "Rabbit Escape", Posture = "posture_support", Value = 5 },
+	{ Name = "Round Deer",    Posture = "posture_support", Value = 0, HealPct = 0.04 },
+	{ Name = "Piercing Ox",   Posture = "posture_assault", Value = 0.06 },
+	{ Name = "Tiger Funeral", Posture = "posture_guard",   Value = 0.12 },
+	{ Name = "Mahoraga",      Posture = "posture_assault", Value = 0.10 },
+}
+
+-- What a posture is worth before any shikigami are counted.
+local SHIKIGAMI_POSTURE_BASE = {
+	posture_assault = 0.05,
+	posture_guard = 0.05,
+	posture_support = 4,
+}
+
+-- The shikigami this player has bound that feed the given posture.
+local function getShikigamiContributors(stats, postureId)
+	local tamed = getTamedShikigami(stats)
+	local list = {}
+	for index, entry in ipairs(SHIKIGAMI_ROSTER) do
+		if index <= tamed and entry.Posture == postureId then
+			table.insert(list, entry)
+		end
+	end
+	return list
+end
+
+-- Base plus every contribution from the shikigami actually bound to the shadow.
+-- Fractions for assault and guard, flat cursed energy for support.
+local function getShikigamiPower(stats, postureId)
+	local total = SHIKIGAMI_POSTURE_BASE[postureId] or 0
+	for _, entry in ipairs(getShikigamiContributors(stats, postureId)) do
+		total += entry.Value
+	end
+	return total
+end
+
+-- Round Deer mends instead of feeding energy, so it is read separately.
+local function getShikigamiHealPct(stats, postureId)
+	local heal = 0
+	for _, entry in ipairs(getShikigamiContributors(stats, postureId)) do
+		heal += (entry.HealPct or 0)
+	end
+	return heal
+end
+
+-- Sent to the client so the posture picker can name the shadows behind each option
+-- instead of showing three anonymous buttons.
+local function buildShikigamiPayload(stats)
+	local payload = {}
+	for _, posture in ipairs(SHIKIGAMI_POSTURES) do
+		local names = {}
+		for _, entry in ipairs(getShikigamiContributors(stats, posture.Id)) do
+			table.insert(names, entry.Name)
+		end
+		table.insert(payload, {
+			Id = posture.Id,
+			Name = posture.Name,
+			CECost = posture.CECost,
+			Desc = posture.Desc,
+			Contributors = table.concat(names, ", "),
+			Count = #names,
+		})
+	end
+	return payload
+end
 
 local COMBAT_BINDING_VOWS = {
 	{
@@ -127,6 +257,38 @@ local COMBAT_BINDING_VOWS = {
 		ReceiveTrigger = "immediate",
 		ApplyReceive = function(session)
 			session.VowGuaranteedDodge = true
+		end,
+	},
+	-- Two vows from noobeh's suggestion dump (#content-suggestions). Both last the
+	-- whole fight instead of resolving in one turn, which is what the existing five
+	-- were missing: every one of them was a single-beat trade.
+	{
+		Id = "vow_overtime",
+		Name = "Overtime",
+		OfferDesc = "-20% output for the first 3 rounds",
+		ReceiveDesc = "+20% output from round 4 onward",
+		Validate = function(session)
+			return session.Round <= 2
+		end,
+		ApplyOffer = function(session)
+			session.VowOvertime = true
+		end,
+		ReceiveTrigger = "per_attack",
+	},
+	{
+		Id = "vow_revelation_hand",
+		Name = "Revealing One's Hand",
+		OfferDesc = "-30% of your critical window",
+		ReceiveDesc = "+10% damage for the rest of the fight",
+		Validate = function(session)
+			return true
+		end,
+		ApplyOffer = function(session)
+			session.VowCritPenalty = 0.30
+		end,
+		ReceiveTrigger = "immediate",
+		ApplyReceive = function(session)
+			session.VowDamageBonus = (tonumber(session.VowDamageBonus) or 0) + 0.10
 		end,
 	},
 }
@@ -280,6 +442,10 @@ local function publicState(session)
 		BracePending = session.BracePending == true,
 		BracedDamage = session.BracedDamage or 0,
 		TechniqueCapPct = math.floor(getTechniqueCap(getStats(session.Player)) * 100 + 0.5),
+		ShikigamiAvailable = canCommandShikigami(getStats(session.Player)),
+		ShikigamiTamed = getTamedShikigami(getStats(session.Player)),
+		ShikigamiPosture = session.ShikigamiPosture,
+		ShikigamiPostures = buildShikigamiPayload(getStats(session.Player)),
 		EnemyName = session.Enemy.Name,
 		EnemyGrade = session.Enemy.Grade,
 		EnemyKind = session.Enemy.Kind,
@@ -579,6 +745,13 @@ function resolveEnemyCombo(player, session, accuracy, perfectHits)
 		addLog(session, _cl(session, "log_perception_blitz", {n = perceptionBlitzDamage}, "You read their movement before they struck. Perception Blitz. Counter: {n} damage."))
 		session.Enemy.HP = math.clamp(session.Enemy.HP - perceptionBlitzDamage, 0, session.Enemy.MaxHP)
 	end
+	if session.ShikigamiPosture == "posture_guard" and damage > 0 then
+		local blocked = math.floor(damage * getShikigamiPower(getStats(player), "posture_guard"))
+		if blocked > 0 then
+			damage = math.max(0, damage - blocked)
+			addLog(session, _cl(session, "log_shikigami_guard", {n = blocked}, "Your shikigami take the hit meant for you. {n} damage blocked."))
+		end
+	end
 	if session.BracePending then
 		session.BracePending = false
 		local durability = math.max(0, tonumber((getStats(player) or {}).Durability) or 0)
@@ -712,6 +885,9 @@ function resolveAttack(player, session, accuracy, sweet)
 	local isBlackFlash = session.BlackFlashPending == true
 	if isBlackFlash then session.BlackFlashPending = nil end
 	local critChance = isTechnique and 0 or getStrengthCritChance(stats)
+	if session.VowCritPenalty then
+		critChance = math.floor(critChance * (1 - session.VowCritPenalty))
+	end
 	if not isTechnique and quality >= 0.7 and math.random(1, 100) <= critChance then
 		isSweet = true
 	end
@@ -777,6 +953,13 @@ function resolveAttack(player, session, accuracy, sweet)
 		local ceRefund = math.floor((tonumber(stats and stats.CEControl) or 0) * 0.2)
 		session.PlayerCE = math.min(session.PlayerMaxCE, math.max(0, session.PlayerCE - ceCost + ceRefund))
 	end
+	if session.VowOvertime then
+		local early = (tonumber(session.Round) or 1) <= 3
+		damage = math.max(1, math.floor(damage * (early and 0.8 or 1.2)))
+		addLog(session, early
+			and _ct(session, "log_vow_overtime_early", "Binding Vow: still inside your restricted hours. Output down.")
+			or _ct(session, "log_vow_overtime_late", "Binding Vow: overtime. Everything you held back comes out."))
+	end
 	if session.VowDamageBonus and session.VowDamageBonus > 0 then
 		damage = math.floor(damage * (1 + session.VowDamageBonus))
 	end
@@ -785,6 +968,25 @@ function resolveAttack(player, session, accuracy, sweet)
 		damage += banked
 		session.BracedDamage = 0
 		addLog(session, _cl(session, "log_brace_release", {n = banked}, "Everything you absorbed goes back. +{n} damage."))
+	end
+	if session.ShikigamiPosture == "posture_assault" then
+		local share = math.floor(damage * getShikigamiPower(stats, "posture_assault"))
+		if share > 0 then
+			damage += share
+			addLog(session, _cl(session, "log_shikigami_assault", {n = share}, "Your shikigami strike through the same opening. +{n} damage."))
+		end
+	elseif session.ShikigamiPosture == "posture_support" then
+		local regen = math.floor(getShikigamiPower(stats, "posture_support"))
+		if regen > 0 and session.PlayerCE < session.PlayerMaxCE then
+			session.PlayerCE = math.min(session.PlayerMaxCE, session.PlayerCE + regen)
+			addLog(session, _cl(session, "log_shikigami_support", {n = regen}, "Your shikigami feed cursed energy back into you. +{n} CE."))
+		end
+		local healPct = getShikigamiHealPct(stats, "posture_support")
+		if healPct > 0 and session.PlayerHP < session.PlayerMaxHP then
+			local healed = math.max(1, math.floor(session.PlayerMaxHP * healPct))
+			session.PlayerHP = math.min(session.PlayerMaxHP, session.PlayerHP + healed)
+			addLog(session, _cl(session, "log_shikigami_heal", {n = healed}, "Round Deer closes your wounds. +{n} health."))
+		end
 	end
 	local totalDamage = damage
 	if session.VowExtraHits and session.VowExtraHits > 0 then
@@ -1277,6 +1479,34 @@ local function handleAction(player, action, payload)
 			end
 			beginEnemyCombo(player, session, false)
 		end
+	elseif action == "shikigami_posture" and session.Phase == "player_turn" then
+		local shikiStats = getStats(player)
+		if not canCommandShikigami(shikiStats) then
+			addLog(session, _ct(session, "log_shikigami_none", "You have no shikigami bound to your shadow."))
+			sendState(player, session)
+			return
+		end
+		local posture = getShikigamiPosture(tostring(payload or ""))
+		if not posture then
+			addLog(session, _ct(session, "log_shikigami_invalid", "That is not a posture you know."))
+			sendState(player, session)
+			return
+		end
+		if session.ShikigamiPosture == posture.Id then
+			addLog(session, _cl(session, "log_shikigami_same", {posture = posture.Name}, "Your shikigami already hold the {posture} posture."))
+			sendState(player, session)
+			return
+		end
+		if session.PlayerCE < posture.CECost then
+			addLog(session, _cl(session, "log_shikigami_no_ce", {cost = posture.CECost}, "Commanding them costs {cost} cursed energy. You do not have it."))
+			sendState(player, session)
+			return
+		end
+		session.PlayerCE = math.max(0, session.PlayerCE - posture.CECost)
+		session.ShikigamiPosture = posture.Id
+		addLog(session, _cl(session, "log_shikigami_set", {posture = posture.Name, n = getTamedShikigami(shikiStats)},
+			"{n} shikigami rise from your shadow and take the {posture} posture."))
+		sendState(player, session)
 	elseif action == "brace" and session.Phase == "player_turn" then
 		-- Durability's move: plant instead of dodging. You still eat the combo, but a
 		-- slice of it is absorbed and banked into your next attack.

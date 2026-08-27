@@ -30,6 +30,23 @@ local initialized = false
 local TECHNIQUE_MAX_USES = 3
 local TECHNIQUE_CE_COST = 18
 local BF_CE_COST = 35
+-- Chant trades your whole turn for a stronger technique on the next one.
+local CHANT_TECHNIQUE_BONUS = 1.5
+local CHANT_TECHNIQUE_CAP = 0.5
+-- Brace gives Durability a job: plant, eat the combo softened, and bank what you
+-- absorbed into your next hit. Until now Durability only fed the aggregate power number.
+local BRACE_DURABILITY_MIN = 20
+-- CE Output was another stat the player trains and sees on the dossier that did
+-- nothing in a fight. It now raises the ceiling on how hard a technique can land:
+-- 35% of enemy max HP at 0, up to 43% at 100. Chant still stacks on top of this.
+local TECHNIQUE_CAP_BASE = 0.35
+local TECHNIQUE_CAP_FROM_OUTPUT = 0.08
+
+local function getTechniqueCap(stats)
+	local output = math.clamp(tonumber(stats and stats.CEOutput) or 0, 0, 100)
+	return TECHNIQUE_CAP_BASE + (output / 100) * TECHNIQUE_CAP_FROM_OUTPUT
+end
+
 local BLITZ_SPEED_THRESHOLD = 25
 
 local COMBAT_BINDING_VOWS = {
@@ -252,6 +269,17 @@ local function publicState(session)
 		TechniqueUses = session.TechniqueUses or 0,
 		TechniqueMaxUses = session.TechniqueMaxUses or TECHNIQUE_MAX_USES,
 		TechniqueCECost = session.TechniqueCECost or TECHNIQUE_CE_COST,
+		ChantActive = session.ChantActive == true,
+		SpeedGap = session.SpeedGap or 0,
+		BlitzThreshold = BLITZ_SPEED_THRESHOLD,
+		BlitzArmed = session.BlitzArmed == true,
+		BlitzUsed = session.BlitzUsed == true,
+		PerceptionBlitzArmed = session.PerceptionBlitzPending == true,
+		BraceThreshold = BRACE_DURABILITY_MIN,
+		BraceAvailable = session.BraceAvailable == true,
+		BracePending = session.BracePending == true,
+		BracedDamage = session.BracedDamage or 0,
+		TechniqueCapPct = math.floor(getTechniqueCap(getStats(session.Player)) * 100 + 0.5),
 		EnemyName = session.Enemy.Name,
 		EnemyGrade = session.Enemy.Grade,
 		EnemyKind = session.Enemy.Kind,
@@ -548,8 +576,17 @@ function resolveEnemyCombo(player, session, accuracy, perfectHits)
 	if session.PerceptionBlitzPending and damage > 0 then
 		perceptionBlitzDamage = math.floor(damage * 0.75)
 		session.PerceptionBlitzPending = false
-		addLog(session, "You read their movement before they struck. Perception Blitz. Counter: " .. tostring(perceptionBlitzDamage) .. " damage.")
+		addLog(session, _cl(session, "log_perception_blitz", {n = perceptionBlitzDamage}, "You read their movement before they struck. Perception Blitz. Counter: {n} damage."))
 		session.Enemy.HP = math.clamp(session.Enemy.HP - perceptionBlitzDamage, 0, session.Enemy.MaxHP)
+	end
+	if session.BracePending then
+		session.BracePending = false
+		local durability = math.max(0, tonumber((getStats(player) or {}).Durability) or 0)
+		local soak = math.clamp(0.25 + (durability / 200), 0.25, 0.7)
+		local absorbed = math.floor(damage * soak)
+		damage = math.max(0, damage - absorbed)
+		session.BracedDamage = (tonumber(session.BracedDamage) or 0) + absorbed
+		addLog(session, _cl(session, "log_brace_absorb", {n = absorbed}, "You planted and took it. {n} damage absorbed, and it is going back into your next hit."))
 	end
 	session.PlayerHP = math.clamp(session.PlayerHP - damage, 0, session.PlayerMaxHP)
 	session.PendingDefense = nil
@@ -687,7 +724,14 @@ function resolveAttack(player, session, accuracy, sweet)
 		elseif quality >= 0.35 then
 			damage = math.max(damage, math.floor(session.Enemy.MaxHP * 0.12))
 		end
-		damage = math.min(damage, math.floor(session.Enemy.MaxHP * 0.35))
+		local techniqueCap = getTechniqueCap(stats)
+		if session.ChantActive then
+			damage = math.floor(damage * CHANT_TECHNIQUE_BONUS)
+			techniqueCap += (CHANT_TECHNIQUE_CAP - TECHNIQUE_CAP_BASE)
+			session.ChantActive = false
+			addLog(session, _ct(session, "log_chant_release", "The chant breaks and the technique lands with everything you built into it."))
+		end
+		damage = math.min(damage, math.floor(session.Enemy.MaxHP * techniqueCap))
 	elseif isSweet then
 		damage = math.floor(baseDamage * 1.85)
 		damage = math.min(damage, math.floor(session.Enemy.MaxHP * 0.24))
@@ -735,6 +779,12 @@ function resolveAttack(player, session, accuracy, sweet)
 	end
 	if session.VowDamageBonus and session.VowDamageBonus > 0 then
 		damage = math.floor(damage * (1 + session.VowDamageBonus))
+	end
+	if (tonumber(session.BracedDamage) or 0) > 0 then
+		local banked = math.floor(session.BracedDamage)
+		damage += banked
+		session.BracedDamage = 0
+		addLog(session, _cl(session, "log_brace_release", {n = banked}, "Everything you absorbed goes back. +{n} damage."))
 	end
 	local totalDamage = damage
 	if session.VowExtraHits and session.VowExtraHits > 0 then
@@ -857,16 +907,17 @@ function BK_CombatService.StartCombat(player, source, enemyConfig)
 	local playerSpeed = tonumber(stats.Speed) or 0
 	local enemySpeed = session.Enemy.Speed or 0
 	local speedDiff = playerSpeed - enemySpeed
+	session.SpeedGap = speedDiff
+	session.BraceAvailable = (tonumber(stats.Durability) or 0) >= BRACE_DURABILITY_MIN
 	if speedDiff >= BLITZ_SPEED_THRESHOLD then
-		local playerPower = BitKaisenCombat.GetCombatPower(stats)
-		local blitzBaseDamage = math.max(7, math.floor(math.min(playerPower, 260) * 0.13))
-		local blitzDamage = math.max(3, math.floor(blitzBaseDamage * 0.5))
-		session.Enemy.HP = math.clamp(session.Enemy.HP - blitzDamage, 0, session.Enemy.MaxHP)
-		session.BlitzUsed = true
-		addLog(session, "Your speed advantage opened a gap before they could react. Blitz. " .. tostring(blitzDamage) .. " damage.")
+		-- Used to fire here on its own, before the player had done anything. Now it is
+		-- armed and the player spends it when they want it.
+		session.BlitzArmed = true
+		addLog(session, _ct(session, "log_blitz_armed", "You are faster than they are. There is an opening here if you take it."))
 	elseif speedDiff <= -BLITZ_SPEED_THRESHOLD then
 		session.PerceptionBlitzPending = true
 		session.PerceptionBlitzUsed = true
+		addLog(session, _ct(session, "log_perception_armed", "They are faster than you. Watch their movement instead of matching it."))
 	end
 
 	fireMajorPopup(player, _ct(session, "log_combat_started", "COMBAT STARTED"), _cl(session, "log_combat_forced", {enemy = enemy.Name}, enemy.Name .. " has forced a fight."), enemy.Grade, _ct(session, "log_combat_hint", "Attack, defend, or flee."))
@@ -1205,6 +1256,48 @@ local function handleAction(player, action, payload)
 			else
 				startAttackCheck(player, session, true)
 			end
+		end
+	elseif action == "blitz" and session.Phase == "player_turn" then
+		-- Armed at the start of the fight from the speed gap. It used to fire on its own
+		-- before the player had touched anything; now they spend it when they want it.
+		if session.BlitzUsed or not session.BlitzArmed then
+			addLog(session, _cl(session, "log_blitz_locked", {n = BLITZ_SPEED_THRESHOLD}, "Blitz needs {n} more Speed than the enemy, and only once per fight."))
+			sendState(player, session)
+		else
+			local blitzStats = getStats(player)
+			local blitzPower = BitKaisenCombat.GetCombatPower(blitzStats)
+			local blitzDamage = math.max(6, math.floor(math.min(blitzPower, 260) * 0.13))
+			session.Enemy.HP = math.clamp(session.Enemy.HP - blitzDamage, 0, session.Enemy.MaxHP)
+			session.BlitzUsed = true
+			session.BlitzArmed = false
+			addLog(session, _cl(session, "log_blitz", {n = blitzDamage}, "You closed the gap before they could react. Blitz. {n} damage."))
+			if session.Enemy.HP <= 0 then
+				finishCombat(player, session, "player")
+				return
+			end
+			beginEnemyCombo(player, session, false)
+		end
+	elseif action == "brace" and session.Phase == "player_turn" then
+		-- Durability's move: plant instead of dodging. You still eat the combo, but a
+		-- slice of it is absorbed and banked into your next attack.
+		if not session.BraceAvailable then
+			addLog(session, _cl(session, "log_brace_locked", {n = BRACE_DURABILITY_MIN}, "Bracing needs at least {n} Durability. Your frame will not hold."))
+			sendState(player, session)
+		else
+			session.BracePending = true
+			addLog(session, _ct(session, "log_brace_start", "You stop moving and set your feet. Let it land."))
+			beginEnemyCombo(player, session, true)
+		end
+	elseif action == "chant" and session.Phase == "player_turn" then
+		-- Chant buys a stronger technique with the whole turn: the enemy gets a free
+		-- combo while you build it. The charge holds until you actually land a technique.
+		if session.ChantActive then
+			addLog(session, _ct(session, "log_chant_already", "You are already mid-chant. Land the technique."))
+			sendState(player, session)
+		else
+			session.ChantActive = true
+			addLog(session, _ct(session, "log_chant_start", "You begin the chant. It costs you this turn, but the next technique carries it."))
+			beginEnemyCombo(player, session, false)
 		end
 	elseif action == "black_flash" and session.Phase == "player_turn" then
 		if session.PlayerCE < BF_CE_COST then

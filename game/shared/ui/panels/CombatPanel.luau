@@ -364,6 +364,9 @@ local function init(playerGui: Instance)
 
 	local attackButton = makeButton("ATTACK", Color3.fromRGB(119, 43, 53))
 	local techniqueButton = makeButton("TECHNIQUE", Color3.fromRGB(73, 52, 126))
+	local blitzButton = makeButton("BLITZ", Color3.fromRGB(40, 86, 96))
+	local chantButton = makeButton("CHANT", Color3.fromRGB(58, 70, 126))
+	local braceButton = makeButton("BRACE", Color3.fromRGB(52, 74, 62))
 	local domainButton = makeButton("DOMAIN", Color3.fromRGB(91, 58, 145))
 	local blackFlashButton = makeButton("B.FLASH", Color3.fromRGB(48, 28, 90))
 	local invokeButton = makeButton("INVOKE", Color3.fromRGB(90, 20, 30))
@@ -1047,8 +1050,12 @@ local function init(playerGui: Instance)
 		state = newState or { Active = false }
 		overlay.Visible = state.Active == true
 		gui.Enabled = state.Active == true
+		-- Full-screen popups (achievement unlocks and the like) are held while this is
+		-- true, so they cannot cover the dodge button mid-fight.
+		_G.BitKaisenCombatActive = state.Active == true
 		if not state.Active then
 			destroyMinigame()
+			if _G.BitKaisenFlushMajorPopups then _G.BitKaisenFlushMajorPopups() end
 			return
 		end
 		enemyNameLabel.Text = tostring(state.EnemyName or "Enemy")
@@ -1084,7 +1091,9 @@ local function init(playerGui: Instance)
 		local techniqueUses = tonumber(state.TechniqueUses) or 0
 		local techniqueMaxUses = tonumber(state.TechniqueMaxUses) or 3
 		local techniqueRemaining = math.max(0, techniqueMaxUses - techniqueUses)
+		-- The cap rides on the button so CE Output is visibly doing something.
 		techniqueButton.Text = "TECH " .. tostring(techniqueRemaining) .. "/" .. tostring(techniqueMaxUses)
+			.. " " .. tostring(tonumber(state.TechniqueCapPct) or 35) .. "%"
 		local domain = state.Domain or {}
 		local domainCost = tonumber(domain.Cost) or 0
 		local domainUses = tonumber(state.DomainUses) or 0
@@ -1106,6 +1115,21 @@ local function init(playerGui: Instance)
 		vowButton.Visible = not defeated and not state.ActiveVow
 		setButtonEnabled(attackButton, playerTurn)
 		setButtonEnabled(techniqueButton, playerTurn and techniqueRemaining > 0 and (tonumber(state.PlayerCE) or 0) >= (tonumber(state.TechniqueCECost) or 0))
+		-- The label carries the reason, so the speed gap is legible instead of invisible.
+		local blitzArmed = state.BlitzArmed == true and state.BlitzUsed ~= true
+		if state.BlitzUsed == true then
+			blitzButton.Text = "BLITZ USED"
+		elseif blitzArmed then
+			blitzButton.Text = "BLITZ"
+		else
+			blitzButton.Text = "BLITZ +" .. tostring(tonumber(state.BlitzThreshold) or 25) .. " SPD"
+		end
+		setButtonEnabled(blitzButton, playerTurn and blitzArmed)
+		local braceReady = state.BraceAvailable == true
+		braceButton.Text = braceReady and "BRACE" or ("BRACE +" .. tostring(tonumber(state.BraceThreshold) or 20) .. " DUR")
+		setButtonEnabled(braceButton, playerTurn and braceReady)
+		chantButton.Text = state.ChantActive == true and "CHANTING" or "CHANT"
+		setButtonEnabled(chantButton, playerTurn and state.ChantActive ~= true)
 		setButtonEnabled(domainButton, playerTurn and domainReady)
 		setButtonEnabled(blackFlashButton, bfReady)
 		setButtonEnabled(invokeButton, playerTurn and deathPaintingsAvailable > 0)
@@ -1186,6 +1210,15 @@ local function init(playerGui: Instance)
 	end)
 	techniqueButton.MouseButton1Click:Connect(function()
 		if state.Phase == "player_turn" then combatAction:FireServer("technique") end
+	end)
+	blitzButton.MouseButton1Click:Connect(function()
+		if state.Phase == "player_turn" then combatAction:FireServer("blitz") end
+	end)
+	braceButton.MouseButton1Click:Connect(function()
+		if state.Phase == "player_turn" then combatAction:FireServer("brace") end
+	end)
+	chantButton.MouseButton1Click:Connect(function()
+		if state.Phase == "player_turn" then combatAction:FireServer("chant") end
 	end)
 	domainButton.MouseButton1Click:Connect(function()
 		if state.Phase == "player_turn" then combatAction:FireServer("domain") end

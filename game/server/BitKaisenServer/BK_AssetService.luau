@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local BitKaisenAssets = require(ReplicatedStorage:WaitForChild("BitKaisenAssets"))
 local BitKaisenCursedTools = require(ReplicatedStorage:WaitForChild("BitKaisenCursedTools"))
 local BitKaisenRelationships = require(ReplicatedStorage:WaitForChild("BitKaisenRelationships"))
+local BitKaisenDojoStudents = require(ReplicatedStorage:WaitForChild("BitKaisenDojoStudents"))
 
 local BK_AssetService = {}
 local context = {}
@@ -906,51 +907,10 @@ local function askJoinedSenseiAdvice(player, stats)
 	saveStats(player, "joined dojo sensei advice")
 end
 
-local STUDENT_GRADE_ORDER = {
-	"Non-Sorcerer",
-	"Grade 4",
-	"Semi-Grade 3",
-	"Grade 3",
-	"Semi-Grade 2",
-	"Grade 2",
-	"Semi-Grade 1",
-	"Grade 1",
-	"Special Grade"
-}
-
-local STUDENT_GRADE_INDEX = {}
-for index, grade in ipairs(STUDENT_GRADE_ORDER) do
-	STUDENT_GRADE_INDEX[grade] = index
-end
-
-local function getStudentPotentialScore(student)
-	local potential = tostring(student and student.DojoPotential or "Average")
-	if potential == "Hidden" then return 6 end
-	if potential == "Special" then return 6 end
-	if potential == "Rare" then return 5 end
-	if potential == "High" then return 4 end
-	if potential == "Average" then return 3 end
-	if potential == "Low" then return 2 end
-	return 3
-end
-
-local function getStudentGradeIndex(grade)
-	return STUDENT_GRADE_INDEX[tostring(grade or "Non-Sorcerer")] or 1
-end
-
-local function getNextStudentGrade(grade)
-	local index = getStudentGradeIndex(grade)
-	return STUDENT_GRADE_ORDER[math.clamp(index + 1, 1, #STUDENT_GRADE_ORDER)]
-end
-
-local function getStudentPower(student)
-	local gradePower = (getStudentGradeIndex(student.Grade) - 1) * 20
-	local ce = tonumber(student.CursedEnergy) or 0
-	local mastery = tonumber(student.TechniqueMastery) or 0
-	local potential = getStudentPotentialScore(student) * 5
-	local techniqueBonus = tostring(student.CursedTechnique or "None") ~= "None" and 18 or 0
-	return gradePower + math.floor(ce * 0.55) + math.floor(mastery * 1.4) + potential + techniqueBonus
-end
+-- Delegated to ReplicatedStorage.BitKaisenDojoStudents. The grade table, the power
+-- formula and the promotion rule used to be copy-pasted here, in BK_ActivityService
+-- and in BK_DojoService; see that module for why they were merged.
+local getStudentPotentialScore = BitKaisenDojoStudents.GetPotentialScore
 
 local function processAssetAction(player, actionId, assetId)
 	local stats = getStats(player)
@@ -1558,7 +1518,6 @@ local function processAssetAction(player, actionId, assetId)
 			if relationship.Alive ~= false and relationship.Role == "Student" then
 				trained += 1
 				local potentialScore = getStudentPotentialScore(relationship)
-				local gradeIndex = getStudentGradeIndex(relationship.Grade)
 				local bondGain = math.random(1, 4)
 				local trustGain = math.random(1, 3)
 				local respectGain = math.random(2, 6)
@@ -1595,20 +1554,10 @@ local function processAssetAction(player, actionId, assetId)
 				totalMastery += masteryGain
 				totalProgress += progressGain
 
-				if relationship.Grade == "Non-Sorcerer" and relationship.CursedEnergy >= 35 and math.random(1, 100) <= 35 + (potentialScore * 5) then
-					relationship.Grade = "Grade 4"
-					table.insert(promoted, tostring(relationship.Name) .. " reached Grade 4")
-				else
-					local needed = 45 + (gradeIndex * 18)
-					if gradeIndex < #STUDENT_GRADE_ORDER and (relationship.DojoProgress or 0) >= needed and getStudentPower(relationship) >= needed then
-						local chance = math.clamp(20 + (potentialScore * 8) + math.floor(getStudentPower(relationship) / 24), 10, 78)
-						if math.random(1, 100) <= chance then
-							relationship.Grade = getNextStudentGrade(relationship.Grade)
-							relationship.DojoProgress = math.max(0, math.floor((relationship.DojoProgress or 0) * 0.25))
-							table.insert(promoted, tostring(relationship.Name) .. " reached " .. tostring(relationship.Grade))
-						end
+					local didPromote, newGrade = BitKaisenDojoStudents.TryPromote(relationship)
+					if didPromote then
+						table.insert(promoted, tostring(relationship.Name) .. " reached " .. tostring(newGrade))
 					end
-				end
 			end
 		end
 
@@ -1822,6 +1771,11 @@ local function processAssetAction(player, actionId, assetId)
 			end
 		end
 
+		-- This path used to add DojoProgress and then never check the promotion, so the
+		-- bar could fill up and stay full forever.
+		local rivalPromoted = BitKaisenDojoStudents.PromoteReadyStudents(stats)
+		local rivalPromotedSuffix = #rivalPromoted > 0 and (" " .. table.concat(rivalPromoted, ", ") .. ".") or ""
+
 		if win then
 			local repGain = math.random(5, 11)
 			local prestigeGain = math.random(4, 9)
@@ -1841,6 +1795,7 @@ local function processAssetAction(player, actionId, assetId)
 			if rivalDefeated then
 				rivalMessage ..= "\n<b>" .. defeatedName .. "</b> collapsed as a rival. <b>" .. tostring(newRivalName) .. "</b> has started watching your clan."
 			end
+			rivalMessage ..= rivalPromotedSuffix
 			fireLifeUpdate(player, stats, rivalMessage)
 		else
 			local repLoss = math.random(1, 4)
@@ -1848,7 +1803,7 @@ local function processAssetAction(player, actionId, assetId)
 			stats.RivalDojoWins = (tonumber(stats.RivalDojoWins) or 0) + 1
 			stats.RivalDojoReputation = math.max(0, (tonumber(stats.RivalDojoReputation) or 0) + math.random(2, 6))
 			adjustDojoCondition(stats, -math.random(6, 12))
-			fireLifeUpdate(player, stats, "<b>" .. tostring(stats.RivalDojoName) .. "</b> outperformed your students. Clan reputation <b>-" .. tostring(repLoss) .. "</b>, but students gained <b>+" .. tostring(progressGain) .. "</b> progress from the loss.")
+			fireLifeUpdate(player, stats, "<b>" .. tostring(stats.RivalDojoName) .. "</b> outperformed your students. Clan reputation <b>-" .. tostring(repLoss) .. "</b>, but students gained <b>+" .. tostring(progressGain) .. "</b> progress from the loss." .. rivalPromotedSuffix)
 		end
 
 	elseif actionId == "ResolveDojoEvent" then
@@ -1909,11 +1864,15 @@ local function processAssetAction(player, actionId, assetId)
 			end
 		end
 
+		-- Same here: student progress went up and nothing ever promoted them.
+		local eventPromoted = BitKaisenDojoStudents.PromoteReadyStudents(stats)
+		local eventPromotedSuffix = #eventPromoted > 0 and (" " .. table.concat(eventPromoted, ", ") .. ".") or ""
+
 		stats.ClanReputation = math.max(0, (stats.ClanReputation or 0) + reputationGain)
 		stats.DojoPrestige = math.max(0, (stats.DojoPrestige or 0) + prestigeGain)
 		adjustDojoCondition(stats, -conditionLoss)
 
-		fireLifeUpdate(player, stats, "<b>" .. tostring(eventState.Title) .. "</b> finished. Clan reputation <b>+" .. tostring(reputationGain) .. "</b>, dojo prestige <b>+" .. tostring(prestigeGain) .. "</b>, student progress <b>+" .. tostring(studentProgress) .. "</b>.")
+		fireLifeUpdate(player, stats, "<b>" .. tostring(eventState.Title) .. "</b> finished. Clan reputation <b>+" .. tostring(reputationGain) .. "</b>, dojo prestige <b>+" .. tostring(prestigeGain) .. "</b>, student progress <b>+" .. tostring(studentProgress) .. "</b>." .. eventPromotedSuffix)
 
 	elseif actionId == "Use" then
 		local owned, ownedAsset = ownsAsset()

@@ -330,18 +330,21 @@ local function init(playerGui: Instance)
 
 	local attackButton = makeActionButton(_cb("btn_attack", "ATTACK"), Color3.fromRGB(119, 43, 53), 1)
 	local techniqueButton = makeActionButton(_cb("btn_technique", "TECHNIQUE"), Color3.fromRGB(73, 52, 126), 2)
-	local domainButton = makeActionButton(_cb("btn_domain", "DOMAIN"), Color3.fromRGB(91, 58, 145), 3)
-	local defendButton = makeActionButton(_cb("btn_defend", "DEFEND"), Color3.fromRGB(48, 91, 112), 4)
-	local fleeButton = makeActionButton(_cb("btn_flee", "FLEE"), Color3.fromRGB(64, 64, 75), 5)
-	local resetButton = makeActionButton(_cb("btn_reset", "RESET"), Color3.fromRGB(90, 61, 31), 6)
+	local blitzButton = makeActionButton(_cb("btn_blitz", "BLITZ"), Color3.fromRGB(40, 86, 96), 3)
+	local chantButton = makeActionButton(_cb("btn_chant", "CHANT"), Color3.fromRGB(58, 70, 126), 4)
+	local braceButton = makeActionButton(_cb("btn_brace", "BRACE"), Color3.fromRGB(52, 74, 62), 5)
+	local domainButton = makeActionButton(_cb("btn_domain", "DOMAIN"), Color3.fromRGB(91, 58, 145), 6)
+	local defendButton = makeActionButton(_cb("btn_defend", "DEFEND"), Color3.fromRGB(48, 91, 112), 7)
+	local fleeButton = makeActionButton(_cb("btn_flee", "FLEE"), Color3.fromRGB(64, 64, 75), 8)
+	local resetButton = makeActionButton(_cb("btn_reset", "RESET"), Color3.fromRGB(90, 61, 31), 9)
 	resetButton.Visible = false
-	local blackFlashButton = makeActionButton(_cb("btn_bflash", "B.FLASH"), Color3.fromRGB(48, 28, 90), 7)
+	local blackFlashButton = makeActionButton(_cb("btn_bflash", "B.FLASH"), Color3.fromRGB(48, 28, 90), 10)
 	blackFlashButton.Visible = false
-	local invokeButton = makeActionButton(_cb("btn_invoke", "INVOKE"), Color3.fromRGB(90, 20, 30), 8)
+	local invokeButton = makeActionButton(_cb("btn_invoke", "INVOKE"), Color3.fromRGB(90, 20, 30), 11)
 	invokeButton.Visible = false
-	local vowButton = makeActionButton("VOW", Color3.fromRGB(180, 130, 40), 9)
+	local vowButton = makeActionButton("VOW", Color3.fromRGB(180, 130, 40), 12)
 	vowButton.Visible = true
-	local encoreButton = makeActionButton(_cb("btn_encore", "ENCORE"), Color3.fromRGB(58, 40, 100), 9)
+	local encoreButton = makeActionButton(_cb("btn_encore", "ENCORE"), Color3.fromRGB(58, 40, 100), 13)
 	encoreButton.Visible = false
 
 	-- Combat log
@@ -1046,12 +1049,16 @@ local function init(playerGui: Instance)
 		state = newState or { Active = false }
 		overlay.Visible = state.Active == true
 		gui.Enabled = state.Active == true
+		-- Full-screen popups (achievement unlocks and the like) are held while this is
+		-- true, so they cannot cover the dodge button mid-fight.
+		_G.BitKaisenCombatActive = state.Active == true
 		if state.Active then
 			overlayManager.closeAll()
 			uiState.closeRoute()
 		end
 		if not state.Active then
 			destroyMinigame()
+			if _G.BitKaisenFlushMajorPopups then _G.BitKaisenFlushMajorPopups() end
 			return
 		end
 
@@ -1096,7 +1103,9 @@ local function init(playerGui: Instance)
 		local techniqueUses = tonumber(state.TechniqueUses) or 0
 		local techniqueMaxUses = tonumber(state.TechniqueMaxUses) or 3
 		local techniqueRemaining = math.max(0, techniqueMaxUses - techniqueUses)
+		-- The cap rides on the button so CE Output is visibly doing something.
 		techniqueButton.Text = _cb("tech_count", "TECH {r}/{m}"):gsub("{r}", techniqueRemaining):gsub("{m}", techniqueMaxUses)
+			.. " " .. tostring(tonumber(state.TechniqueCapPct) or 35) .. "%"
 
 		local domain = state.Domain or {}
 		local domainCost = tonumber(domain.Cost) or 0
@@ -1110,6 +1119,21 @@ local function init(playerGui: Instance)
 
 		setButtonEnabled(attackButton, playerTurn)
 		setButtonEnabled(techniqueButton, playerTurn and techniqueRemaining > 0 and (tonumber(state.PlayerCE) or 0) >= (tonumber(state.TechniqueCECost) or 0))
+		-- The label carries the reason, so the speed gap is legible instead of invisible.
+		local braceReady = state.BraceAvailable == true
+		braceButton.Text = braceReady and _cb("btn_brace", "BRACE") or (_cb("btn_brace", "BRACE") .. " +" .. tostring(tonumber(state.BraceThreshold) or 20))
+		setButtonEnabled(braceButton, playerTurn and braceReady)
+		local blitzArmed = state.BlitzArmed == true and state.BlitzUsed ~= true
+		if state.BlitzUsed == true then
+			blitzButton.Text = _cb("btn_blitz_used", "BLITZ USED")
+		elseif blitzArmed then
+			blitzButton.Text = _cb("btn_blitz", "BLITZ")
+		else
+			blitzButton.Text = _cb("btn_blitz", "BLITZ") .. " +" .. tostring(tonumber(state.BlitzThreshold) or 25)
+		end
+		setButtonEnabled(blitzButton, playerTurn and blitzArmed)
+		chantButton.Text = state.ChantActive == true and _cb("btn_chanting", "CHANTING") or _cb("btn_chant", "CHANT")
+		setButtonEnabled(chantButton, playerTurn and state.ChantActive ~= true)
 		setButtonEnabled(domainButton, playerTurn and domainReady)
 		local encoreProductId = tonumber(state.DomainEncoreProductId) or 0
 		encoreButton.Visible = not defeated and domain.Unlocked == true and domainExhausted and encoreProductId > 0
@@ -1207,6 +1231,15 @@ local function init(playerGui: Instance)
 	end)
 	bindTap(techniqueButton, function()
 		if state.Phase == "player_turn" then combatAction:FireServer("technique") end
+	end)
+	bindTap(blitzButton, function()
+		if state.Phase == "player_turn" then combatAction:FireServer("blitz") end
+	end)
+	bindTap(braceButton, function()
+		if state.Phase == "player_turn" then combatAction:FireServer("brace") end
+	end)
+	bindTap(chantButton, function()
+		if state.Phase == "player_turn" then combatAction:FireServer("chant") end
 	end)
 	bindTap(domainButton, function()
 		if state.Phase == "player_turn" then combatAction:FireServer("domain") end

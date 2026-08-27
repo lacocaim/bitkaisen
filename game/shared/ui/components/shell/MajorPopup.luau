@@ -77,7 +77,18 @@ end
 
 local function queueMajorPopup(data: { [string]: any })
 	table.insert(popupQueue, data)
+	-- A major popup is a full-screen overlay, and it covers the dodge button. Players
+	-- were losing fights to an achievement unlocking mid-combat, so hold the queue
+	-- while a fight is running and flush it when the fight ends.
+	if _G.BitKaisenCombatActive then return end
 	if not isShowing() then
+		showNextPopup()
+	end
+end
+
+-- Called by CombatPanel / MobileCombatPanel when a fight ends.
+_G.BitKaisenFlushMajorPopups = function()
+	if not isShowing() and #popupQueue > 0 then
 		showNextPopup()
 	end
 end

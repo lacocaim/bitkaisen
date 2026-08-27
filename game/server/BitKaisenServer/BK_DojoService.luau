@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local BitKaisenStats = require(ReplicatedStorage:WaitForChild("BitKaisenStats"))
 local BitKaisenRelationships = require(ReplicatedStorage:WaitForChild("BitKaisenRelationships"))
+local BitKaisenDojoStudents = require(ReplicatedStorage:WaitForChild("BitKaisenDojoStudents"))
 
 local BK_DojoService = {}
 local context = {}
@@ -346,92 +347,11 @@ local function removeRecruitCandidate(stats, candidateId)
 	end
 end
 
-local STUDENT_GRADE_ORDER = {
-	"Non-Sorcerer",
-	"Grade 4",
-	"Semi-Grade 3",
-	"Grade 3",
-	"Semi-Grade 2",
-	"Grade 2",
-	"Semi-Grade 1",
-	"Grade 1",
-	"Special Grade",
-}
-
-local STUDENT_GRADE_INDEX = {}
-for index, grade in ipairs(STUDENT_GRADE_ORDER) do
-	STUDENT_GRADE_INDEX[grade] = index
-end
-
-local function getStudentPotentialScore(student)
-	local potential = tostring(student and student.DojoPotential or "Average")
-	if potential == "Hidden" then return 6 end
-	if potential == "Special" then return 6 end
-	if potential == "Rare" then return 5 end
-	if potential == "High" then return 4 end
-	if potential == "Average" then return 3 end
-	if potential == "Low" then return 2 end
-	return 3
-end
-
-local function getStudentGradeIndex(grade)
-	return STUDENT_GRADE_INDEX[tostring(grade or "Non-Sorcerer")] or 1
-end
-
-local function getNextStudentGrade(grade)
-	local index = getStudentGradeIndex(grade)
-	return STUDENT_GRADE_ORDER[math.clamp(index + 1, 1, #STUDENT_GRADE_ORDER)]
-end
-
-local function getStudentPower(student)
-	local gradePower = (getStudentGradeIndex(student.Grade) - 1) * 20
-	local ce = tonumber(student.CursedEnergy) or 0
-	local mastery = tonumber(student.TechniqueMastery) or 0
-	local potential = getStudentPotentialScore(student) * 5
-	local techniqueBonus = tostring(student.CursedTechnique or "None") ~= "None" and 18 or 0
-	return gradePower + math.floor(ce * 0.55) + math.floor(mastery * 1.4) + potential + techniqueBonus
-end
-
-local function getStudentPromotionInfo(student)
-	local grade = tostring(student and student.Grade or "Non-Sorcerer")
-	local gradeIndex = getStudentGradeIndex(grade)
-	local progress = math.max(0, tonumber(student and student.DojoProgress) or 0)
-	local power = getStudentPower(student or {})
-
-	if gradeIndex >= #STUDENT_GRADE_ORDER then
-		return {
-			NextGrade = "Max",
-			Progress = progress,
-			Needed = 0,
-			Power = power,
-			Ready = false,
-			Text = "Peak grade reached",
-		}
-	end
-
-	if grade == "Non-Sorcerer" then
-		local needed = 35
-		local ce = math.max(0, tonumber(student and student.CursedEnergy) or 0)
-		return {
-			NextGrade = "Grade 4",
-			Progress = math.min(needed, ce),
-			Needed = needed,
-			Power = power,
-			Ready = ce >= needed,
-			Text = "Needs CE 35 for Grade 4",
-		}
-	end
-
-	local needed = 45 + (gradeIndex * 18)
-	return {
-		NextGrade = getNextStudentGrade(grade),
-		Progress = progress,
-		Needed = needed,
-		Power = power,
-		Ready = progress >= needed and power >= needed,
-		Text = "Needs " .. tostring(needed) .. " progress and power",
-	}
-end
+-- Student grades, power and promotion now live in ReplicatedStorage.BitKaisenDojoStudents.
+-- They used to be copy-pasted here, in BK_ActivityService and in BK_AssetService: this copy
+-- only fed the "Ready for <grade>" card while the copies that actually promoted lived
+-- elsewhere, which is how a student could sit at 253/189 and never rank up.
+local getStudentPromotionInfo = BitKaisenDojoStudents.GetPromotionInfo
 
 local function getDojoStudentsForPayload(stats)
 	ensureExtraStats(stats)

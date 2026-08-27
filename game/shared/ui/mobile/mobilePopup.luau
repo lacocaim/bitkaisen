@@ -235,11 +235,18 @@ local function init(playerGui: PlayerGui)
 		smp.OnClientEvent:Connect(function(data)
 			if typeof(data) == "table" then
 				table.insert(popupQueue, data)
+				-- Held while a fight is running: this overlay covers the dodge button.
+				if _G.BitKaisenCombatActive then return end
 				if not isShowing then
 					showNextPopup()
 				end
 			end
 		end)
+	end
+	_G.BitKaisenFlushMajorPopups = function()
+		if not isShowing and #popupQueue > 0 then
+			showNextPopup()
+		end
 	end
 end
 

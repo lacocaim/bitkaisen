@@ -1714,27 +1714,31 @@ local function buildStudentCard(index, student)
 	makeLabel(readCard, flavorLine .. " " .. planLine,
 		mobile and 10 or 11, COLORS.SubText, UDim2.new(0, 12, 0, 21), UDim2.new(1, -24, 0, portrait and 30 or 17), false)
 
+	-- TRAIN runs the session, FOCUS opens the page where the focus is picked. They used to
+	-- be the other way round: TRAIN only navigated and the button labelled MISSION was the
+	-- one that actually ran the training, which is what the "I train them and nothing
+	-- happens" reports were about. There is no student mission action on the server.
 	if mobile then
 		local buttonY = portrait and 342 or 290
-		local trainButton = makeButton(card, "TRAIN", COLORS.Purple, 0, buttonY, 96, 32, function() setDojoPage("Training") end)
+		local trainButton = makeButton(card, "TRAIN", COLORS.Purple, 0, buttonY, 96, 32, function()
+			preserveScrollOnNextRefresh = true
+			fireAssetAction("TrainStudents", "grand_dojo")
+		end)
 		trainButton.Size = UDim2.new(0.29, 0, 0, 32)
 		trainButton.Position = UDim2.new(0.06, 0, 0, buttonY)
 		local profileButton = makeButton(card, "PROFILE", COLORS.Blue, 0, buttonY, 96, 32, function() showExamine(student) end)
 		profileButton.Size = UDim2.new(0.29, 0, 0, 32)
 		profileButton.Position = UDim2.new(0.355, 0, 0, buttonY)
-		local missionButton = makeButton(card, "MISSION", COLORS.Button, 0, buttonY, 96, 32, function()
-			preserveScrollOnNextRefresh = true
-			fireAssetAction("TrainStudents", "grand_dojo")
-		end)
-		missionButton.Size = UDim2.new(0.29, 0, 0, 32)
-		missionButton.Position = UDim2.new(0.65, 0, 0, buttonY)
+		local focusButton = makeButton(card, "FOCUS", COLORS.Button, 0, buttonY, 96, 32, function() setDojoPage("Training") end)
+		focusButton.Size = UDim2.new(0.29, 0, 0, 32)
+		focusButton.Position = UDim2.new(0.65, 0, 0, buttonY)
 	else
-		makeButton(card, "TRAIN", COLORS.Purple, 0, 28, 142, 32, function() setDojoPage("Training") end).Position = UDim2.new(1, -162, 0, 28)
-		makeButton(card, "PROFILE", COLORS.Blue, 0, 70, 142, 32, function() showExamine(student) end).Position = UDim2.new(1, -162, 0, 70)
-		makeButton(card, "MISSION", COLORS.Button, 0, 112, 142, 32, function()
+		makeButton(card, "TRAIN", COLORS.Purple, 0, 28, 142, 32, function()
 			preserveScrollOnNextRefresh = true
 			fireAssetAction("TrainStudents", "grand_dojo")
-		end).Position = UDim2.new(1, -162, 0, 112)
+		end).Position = UDim2.new(1, -162, 0, 28)
+		makeButton(card, "PROFILE", COLORS.Blue, 0, 70, 142, 32, function() showExamine(student) end).Position = UDim2.new(1, -162, 0, 70)
+		makeButton(card, "FOCUS", COLORS.Button, 0, 112, 142, 32, function() setDojoPage("Training") end).Position = UDim2.new(1, -162, 0, 112)
 	end
 end
 

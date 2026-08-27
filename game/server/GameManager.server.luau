@@ -833,7 +833,7 @@ end
 -- NOT a `local` on purpose. This file sits at Luau's 200 top-level register limit,
 -- and declaring this one as a local was the 201st: GameManager stopped compiling
 -- entirely with "Out of local registers", which took the whole game down with it.
--- Guarded by tests/gamemanager_registers.test.luau.
+-- Guarded by tests/compiles.test.luau.
 PUBLIC_LEGEND_GRADE_KEY = {
 	Sovereign = "legend_sovereign",
 	Outstanding = "legend_outstanding",
@@ -11918,7 +11918,10 @@ devToolsAction.OnServerEvent:Connect(function(player, actionId, data)
 			fireLifeUpdate(player, stats, "<font color='#78beff'><b>[ DEV ]</b></font> Clan set to <b>" .. clan .. "</b>.")
 		end
 	elseif actionId == "stat_delta" then
-		local map = { CE = "CursedEnergy", Reputation = "Reputation", Fame = "Fame", Fear = "Fear", Missions = "MissionsCompleted" }
+		-- Speed, Strength and Durability were missing, which made the combat moves that
+		-- gate on them (Blitz, Perception Blitz) impossible to test without grinding
+		-- training activities for several in-game years.
+		local map = { CE = "CursedEnergy", Reputation = "Reputation", Fame = "Fame", Fear = "Fear", Missions = "MissionsCompleted", Speed = "Speed", Strength = "Strength", Durability = "Durability", CEOutput = "CEOutput", CEControl = "CEControl", CEReinforcement = "CEReinforcement" }
 		local field = map[tostring(data.Stat or "")]
 		local amount = tonumber(data.Amount) or 0
 		if field then

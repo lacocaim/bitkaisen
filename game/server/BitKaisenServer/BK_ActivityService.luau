@@ -12,6 +12,7 @@ local BitKaisenActivities = require(ReplicatedStorage:WaitForChild("BitKaisenAct
 local BK_CultService = require(ServerScriptService:WaitForChild("BitKaisenServer"):WaitForChild("BK_CultService"))
 local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
 local BitKaisenRelationships = require(ReplicatedStorage:WaitForChild("BitKaisenRelationships"))
+local BitKaisenDojoStudents = require(ReplicatedStorage:WaitForChild("BitKaisenDojoStudents"))
 local BitKaisenAssets = require(ReplicatedStorage:WaitForChild("BitKaisenAssets"))
 local BitKaisenTraits = require(ReplicatedStorage:WaitForChild("BitKaisenTraits"))
 local BitKaisenTechniqueEvolution = require(ReplicatedStorage:WaitForChild("BitKaisenTechniqueEvolution"))
@@ -1280,22 +1281,6 @@ local function getTechniqueBranchName(stats, nextStage)
 	return stage
 end
 
-local STUDENT_GRADE_ORDER = {
-	"Non-Sorcerer",
-	"Grade 4",
-	"Semi-Grade 3",
-	"Grade 3",
-	"Semi-Grade 2",
-	"Grade 2",
-	"Semi-Grade 1",
-	"Grade 1",
-	"Special Grade"
-}
-
-local STUDENT_GRADE_INDEX = {}
-for index, grade in ipairs(STUDENT_GRADE_ORDER) do
-	STUDENT_GRADE_INDEX[grade] = index
-end
 
 local function ownsAssetById(stats, assetId)
 	for _, asset in ipairs(stats and stats.Assets or {}) do
@@ -1526,34 +1511,10 @@ local function getDojoStudentList(stats)
 	return list
 end
 
-local function getPotentialScore(student)
-	local potential = tostring(student and student.DojoPotential or "Average")
-	if potential == "Hidden" then return 6 end
-	if potential == "Special" then return 6 end
-	if potential == "Rare" then return 5 end
-	if potential == "High" then return 4 end
-	if potential == "Average" then return 3 end
-	if potential == "Low" then return 2 end
-	return 3
-end
-
-local function getGradeIndex(grade)
-	return STUDENT_GRADE_INDEX[tostring(grade or "Non-Sorcerer")] or 1
-end
-
-local function getNextGrade(grade)
-	local current = getGradeIndex(grade)
-	return STUDENT_GRADE_ORDER[math.clamp(current + 1, 1, #STUDENT_GRADE_ORDER)]
-end
-
-local function getStudentPower(student)
-	local gradePower = (getGradeIndex(student.Grade) - 1) * 20
-	local ce = tonumber(student.CursedEnergy) or 0
-	local mastery = tonumber(student.TechniqueMastery) or 0
-	local potential = getPotentialScore(student) * 5
-	local techniqueBonus = tostring(student.CursedTechnique or "None") ~= "None" and 18 or 0
-	return gradePower + math.floor(ce * 0.55) + math.floor(mastery * 1.4) + potential + techniqueBonus
-end
+-- Delegated to ReplicatedStorage.BitKaisenDojoStudents so the grade table, the power
+-- formula and the promotion rule have one definition instead of three drifting copies.
+local getPotentialScore = BitKaisenDojoStudents.GetPotentialScore
+local getStudentPower = BitKaisenDojoStudents.GetPower
 
 local function trainStudent(student, focus, intensity)
 	intensity = tonumber(intensity) or 1
@@ -1587,19 +1548,9 @@ local function trainStudent(student, focus, intensity)
 	student.DojoProgress = math.max(0, (tonumber(student.DojoProgress) or 0) + progressGain)
 	student.Respect = math.clamp((tonumber(student.Respect) or 0) + math.random(1, 4), 0, 100)
 
-	local promoted = false
-	local gradeIndex = getGradeIndex(student.Grade)
-	local needed = 45 + (gradeIndex * 18)
-	local power = getStudentPower(student)
-
-	if gradeIndex < #STUDENT_GRADE_ORDER and student.DojoProgress >= needed and power >= needed then
-		local promoteChance = math.clamp(20 + (potential * 8) + math.floor(power / 20), 10, 80)
-		if math.random(1, 100) <= promoteChance then
-			student.Grade = getNextGrade(student.Grade)
-			student.DojoProgress = math.max(0, math.floor(student.DojoProgress * 0.25))
-			promoted = true
-		end
-	end
+	-- Deterministic: the student card already promises "Ready for <grade>", so the old
+	-- dice roll behind that label just read as the promotion being broken.
+	local promoted = BitKaisenDojoStudents.TryPromote(student)
 
 	return {
 		CEGain = ceGain,
@@ -3344,7 +3295,16 @@ local function processActivity(player, activityId)
 		end
 		stats.AssistantSkill = math.clamp((tonumber(stats.AssistantSkill) or 0) + math.random(3, 7), 0, 100)
 		stats.AssistantTrust = math.clamp((tonumber(stats.AssistantTrust) or 0) + math.random(1, 4), 0, 100)
+		-- This path used to add DojoProgress and never check the promotion, so the bar
+		-- could fill and stay full forever.
+		local assistantPromoted = BitKaisenDojoStudents.PromoteReadyStudents(stats, function(relationship)
+			local role = tostring(relationship and relationship.Role or "")
+			return role == "Student" or role == "Ward" or role == "Child"
+		end)
 		logMessage = "<b>" .. tostring(stats.AssistantName) .. "</b> trained <b>" .. tostring(trained) .. "</b> connected NPC(s). Student progress <b>+" .. tostring(progressGain) .. "</b>."
+		if #assistantPromoted > 0 then
+			logMessage ..= " " .. table.concat(assistantPromoted, ", ") .. "."
+		end
 
 	elseif activityId == "assistant_field_support" then
 		if not stats.AssistantName then

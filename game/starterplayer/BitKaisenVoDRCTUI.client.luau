@@ -12,7 +12,21 @@ local playerGui = player:WaitForChild("PlayerGui")
 local vodRCTPrompt = ReplicatedStorage:WaitForChild("VoDRCTPrompt")
 local vodRCTResponse = ReplicatedStorage:WaitForChild("VoDRCTResponse")
 
-local bitKaisenGui = playerGui:WaitForChild("BitKaisenGui")
+-- Update 29: this used to be `playerGui:WaitForChild("BitKaisenGui")`, a ScreenGui
+-- only the desktop shell creates. The mobile shell makes "MobileGui" instead, so on
+-- phones this script yielded forever and the Verge of Death prompt never appeared:
+-- the server still locked the player for the full 10 seconds and then killed them,
+-- with the one-per-life RCT save silently unreachable. Hosting our own ScreenGui
+-- makes the prompt shell-agnostic and keeps it above both UIs.
+local vodGui = Instance.new("ScreenGui")
+vodGui.Name = "BitKaisenVoDRCTGui"
+vodGui.ResetOnSpawn = false
+vodGui.IgnoreGuiInset = true
+vodGui.DisplayOrder = 900
+vodGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+vodGui.Parent = playerGui
+
+local bitKaisenGui = vodGui
 
 local ACCENT_COLOR = Color3.fromRGB(167, 130, 255)
 local BG_COLOR = Color3.fromRGB(12, 12, 18)
@@ -71,6 +85,11 @@ window.ZIndex = 851
 window.Parent = overlay
 addCorner(window, 12)
 addStroke(window, ACCENT_COLOR, 2)
+
+-- Driven by applyResponsiveLayout so a short screen shrinks the window whole.
+local windowScale = Instance.new("UIScale")
+windowScale.Scale = 1
+windowScale.Parent = window
 
 local accentBar = Instance.new("Frame")
 accentBar.Size = UDim2.new(1, 0, 0, 4)
@@ -174,8 +193,9 @@ countdownLabel.Parent = window
 
 -- Buttons
 local forceBtn = Instance.new("TextButton")
+forceBtn.AnchorPoint = Vector2.new(0.5, 0)
 forceBtn.Size = UDim2.new(0, 200, 0, 48)
-forceBtn.Position = UDim2.new(0.5, -210, 0, 288)
+forceBtn.Position = UDim2.new(0.5, -105, 0, 288)
 forceBtn.BackgroundColor3 = FORCE_COLOR
 forceBtn.BorderSizePixel = 0
 forceBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -189,8 +209,9 @@ addStroke(forceBtn, ACCENT_COLOR, 1.5)
 setHover(forceBtn, FORCE_HOVER)
 
 local acceptBtn = Instance.new("TextButton")
+acceptBtn.AnchorPoint = Vector2.new(0.5, 0)
 acceptBtn.Size = UDim2.new(0, 200, 0, 48)
-acceptBtn.Position = UDim2.new(0.5, 10, 0, 288)
+acceptBtn.Position = UDim2.new(0.5, 105, 0, 288)
 acceptBtn.BackgroundColor3 = ACCEPT_COLOR
 acceptBtn.BorderSizePixel = 0
 acceptBtn.TextColor3 = Color3.fromRGB(200, 150, 150)
@@ -203,15 +224,64 @@ addCorner(acceptBtn, 8)
 addStroke(acceptBtn, Color3.fromRGB(80, 40, 40), 1.5)
 setHover(acceptBtn, ACCEPT_HOVER)
 
+-- The window is 500x360, which overflows a phone in portrait and pushed both buttons
+-- off-screen. Narrow viewports get a stacked button layout, and short ones get the
+-- window scaled down so it cannot spill past the top edge.
+--
+-- Measured from the ScreenGui rather than workspace.CurrentCamera.ViewportSize: under
+-- Studio's device emulator the camera reports 1x1 while the GUI correctly reports the
+-- emulated screen, so reading the camera skipped the whole layout.
+local BASE_WIDTH, BASE_HEIGHT = 500, 360
+local NARROW_HEIGHT = 400
+
+local function applyResponsiveLayout()
+	local viewport = vodGui.AbsoluteSize
+	if viewport.X < 2 or viewport.Y < 2 then
+		return
+	end
+
+	local width, height
+	if viewport.X < 560 then
+		width = math.clamp(viewport.X - 40, 260, 440)
+		height = NARROW_HEIGHT
+		local buttonWidth = width - 60
+		forceBtn.Size = UDim2.new(0, buttonWidth, 0, 46)
+		forceBtn.Position = UDim2.new(0.5, 0, 0, 276)
+		acceptBtn.Size = UDim2.new(0, buttonWidth, 0, 46)
+		acceptBtn.Position = UDim2.new(0.5, 0, 0, 332)
+	else
+		width, height = BASE_WIDTH, BASE_HEIGHT
+		forceBtn.Size = UDim2.new(0, 200, 0, 48)
+		forceBtn.Position = UDim2.new(0.5, -105, 0, 288)
+		acceptBtn.Size = UDim2.new(0, 200, 0, 48)
+		acceptBtn.Position = UDim2.new(0.5, 105, 0, 288)
+	end
+
+	window.Size = UDim2.new(0, width, 0, height)
+
+	-- Everything inside the window is laid out at absolute offsets, so a short screen
+	-- is handled by scaling the whole window instead of reflowing it.
+	local scale = math.min(1, (viewport.Y - 24) / height)
+	windowScale.Scale = math.max(0.55, scale)
+end
+
+applyResponsiveLayout()
+vodGui:GetPropertyChangedSignal("AbsoluteSize"):Connect(applyResponsiveLayout)
+
 local TOTAL_SECONDS = 10
 local active = false
 local countdownThread = nil
 
 local function closeOverlay()
 	active = false
-	if countdownThread then
-		task.cancel(countdownThread)
-		countdownThread = nil
+	-- The timeout path calls this from inside countdownThread itself. Cancelling the
+	-- running thread killed closeOverlay mid-execution, so the overlay never hid and
+	-- the caller never reached its FireServer(false): the prompt stayed frozen on
+	-- screen over the death screen and the server only cleared via its own timeout.
+	local thread = countdownThread
+	countdownThread = nil
+	if thread and thread ~= coroutine.running() then
+		task.cancel(thread)
 	end
 	TweenService:Create(overlay, TweenInfo.new(0.2), { BackgroundTransparency = 1 }):Play()
 	TweenService:Create(window, TweenInfo.new(0.2), { Position = UDim2.new(0.5, 0, 0.52, 0) }):Play()
@@ -223,6 +293,9 @@ end
 
 local function openOverlay(data)
 	active = true
+	-- Re-measure on open: the camera can report a 1x1 viewport during boot, which is
+	-- exactly when the layout above first runs.
+	applyResponsiveLayout()
 	local ce = tonumber(data and data.CE) or 0
 	local ct = tostring(data and data.CursedTechnique or "None")
 

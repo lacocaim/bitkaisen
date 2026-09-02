@@ -672,7 +672,7 @@ local function renderWorld()
 
 	if data.PublicSealed == true then
 		local sealCard = card(84)
-		text(sealCard, "🔒  " .. _wh("world_sealed_title", "FINAL SEAL -- THIS WORLD IS SEALED"), 13, COLORS.Red, 12, true)
+		text(sealCard, "🔒  " .. _wh("world_sealed_title", "FINAL SEAL: THIS WORLD IS SEALED"), 13, COLORS.Red, 12, true)
 		local legendText = data.PublicSoberano and ("👑  " .. _wh("world_sovereign", "You were crowned Sovereign Sorcerer."))
 			or ("🏅  " .. _wh("world_legend_prefix", "Your legend: ") .. legendGradeText(data.PublicLegendGrade))
 		text(sealCard, legendText, 12, COLORS.Gold, 40, false)
@@ -686,7 +686,7 @@ local function renderWorld()
 	else
 		for i, entry in ipairs(data.PublicRanking) do
 			local marker = RANK_MEDALS[i] or ("#" .. tostring(i))
-			text(rankingCard, marker .. "  " .. tostring(entry.Name) .. "  --  " .. tostring(entry.Grade) .. "  (CE " .. tostring(entry.CursedEnergy) .. ")", 12, COLORS.Text, 12 + (i * 26), false)
+			text(rankingCard, marker .. "  " .. tostring(entry.Name) .. "  -  " .. tostring(entry.Grade) .. "  (CE " .. tostring(entry.CursedEnergy) .. ")", 12, COLORS.Text, 12 + (i * 26), false)
 		end
 	end
 
@@ -695,7 +695,7 @@ local function renderWorld()
 		local legendaryCard = card(40 + (#legendaryOwners * 22))
 		text(legendaryCard, "✨  " .. _wh("world_legendary_title", "LEGENDARY TRAITS CLAIMED"), 13, COLORS.Purple, 12, true)
 		for i, owner in ipairs(legendaryOwners) do
-			text(legendaryCard, tostring(owner.TraitName) .. "  --  " .. tostring(owner.CharacterName), 11, COLORS.SubText, 10 + (i * 22), false)
+			text(legendaryCard, tostring(owner.TraitName) .. "  -  " .. tostring(owner.CharacterName), 11, COLORS.SubText, 10 + (i * 22), false)
 		end
 	end
 

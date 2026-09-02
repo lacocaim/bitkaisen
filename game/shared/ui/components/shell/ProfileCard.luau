@@ -7,6 +7,7 @@ local uiState = require("@ui-state/uiState")
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local BitKaisenCombat = require(ReplicatedStorage:WaitForChild("BitKaisenCombat"))
 local _pcL = BitKaisenLocale.getClientLocale()
 local function _pc(key, fallback) return BitKaisenLocale.tOrFallback(_pcL, "ui." .. key, nil, fallback) end
 
@@ -18,9 +19,21 @@ local DIM    = Color3.fromRGB(100, 98, 120)
 local DIMLO  = Color3.fromRGB(60, 58, 78)
 local LABEL  = Color3.fromRGB(130, 128, 158)
 
-local function DossierBar(title: string, color: Color3, getValue: () -> number)
+-- powerKey is the stat's name in BitKaisenCombat.STAT_POWER_WEIGHTS. When it is given,
+-- the row also shows what that stat is contributing to combat power right now.
+-- Requested twice in content-suggestions by noobeh: "currently speed strength and
+-- durability's bonuses are unknown". They were: the number lived on the server and the
+-- bar only ever showed a value out of 100. Stats with no combat weight, like Looks,
+-- pass nothing and the row stays as it was.
+local function DossierBar(title: string, color: Color3, getValue: () -> number, powerKey: string?)
 	local frac = derive(function() return math.clamp((getValue() or 0) / 100, 0, 1) end)
-	local val  = derive(function() return tostring(math.floor(getValue() or 0)) .. " / 100" end)
+	local val  = derive(function()
+		local base = tostring(math.floor(getValue() or 0)) .. " / 100"
+		if not powerKey then
+			return base
+		end
+		return base .. "   +" .. tostring(BitKaisenCombat.GetStatPower(powerKey, getValue() or 0))
+	end)
 	return create("Frame") {
 		Name = "DB_" .. title,
 		Size = UDim2.new(1, 0, 0, 20),
@@ -47,7 +60,7 @@ local function DossierBar(title: string, color: Color3, getValue: () -> number)
 		create("Frame") {
 			Name = "Track",
 			Position = UDim2.new(0, 110, 0.5, -3),
-			Size = UDim2.new(1, -170, 0, 6),
+			Size = UDim2.new(1, -212, 0, 6),
 			BackgroundColor3 = Color3.fromRGB(22, 20, 32),
 			BorderSizePixel = 0,
 			create("UICorner") { CornerRadius = UDim.new(0, 999) },
@@ -61,7 +74,7 @@ local function DossierBar(title: string, color: Color3, getValue: () -> number)
 		create("TextLabel") {
 			AnchorPoint = Vector2.new(1, 0.5),
 			Position = UDim2.new(1, 0, 0.5, 0),
-			Size = UDim2.new(0, 56, 1, 0),
+			Size = UDim2.new(0, 98, 1, 0),
 			BackgroundTransparency = 1,
 			Text = val,
 			TextColor3 = DIMLO,
@@ -171,7 +184,7 @@ local function ProfileCard()
 		return technique
 	end)
 	local traitVal    = derive(function() local s = stats() return tostring(s and s.TraitSummary or "None") end)
-	local ceTraitVal  = derive(function() local s = stats() local t = s and tostring(s.CETrait or "") return (t and t ~= "") and ("Cursed Energy — " .. t) or "None" end)
+	local ceTraitVal  = derive(function() local s = stats() local t = s and tostring(s.CETrait or "") return (t and t ~= "") and ("Cursed Energy: " .. t) or "None" end)
 	local assistantVal = derive(function()
 		local s = stats()
 		if not s then return "None" end
@@ -257,9 +270,9 @@ local function ProfileCard()
 				or ctx == "mission_survive" and "Mission survival"
 				or ctx == "age_threshold" and "Age threshold"
 				or "Triggered"
-			return "Triggered — " .. label
+			return "Triggered: " .. label
 		elseif s.AwakeningEligible == true then
-			return "Eligible — not yet met"
+			return "Eligible, not yet met"
 		else
 			return "Not yet"
 		end
@@ -388,13 +401,13 @@ local function ProfileCard()
 				LayoutOrder = 2,
 				create("UIPadding") { PaddingTop = UDim.new(0, 10), PaddingBottom = UDim.new(0, 6), PaddingLeft = UDim.new(0, 14), PaddingRight = UDim.new(0, 14) },
 				create("UIListLayout") { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 3) },
-				DossierBar(_pc("stat_health",     "Health"),     theme.Bad,                    function() local s = stats() return s and s.Health     or 100 end),
+				DossierBar(_pc("stat_health",     "Health"),     theme.Bad,                    function() local s = stats() return s and s.Health     or 100 end, "Health"),
 				DossierBar(_pc("stat_happiness",  "Happiness"),  theme.Green,                  function() local s = stats() return s and s.Happiness  or 100 end),
-				DossierBar(_pc("stat_smarts",     "Smarts"),     theme.Gold,                   function() local s = stats() return s and s.Smarts     or 50  end),
+				DossierBar(_pc("stat_smarts",     "Smarts"),     theme.Gold,                   function() local s = stats() return s and s.Smarts     or 50  end, "Smarts"),
 				DossierBar(_pc("stat_looks",      "Looks"),      Color3.fromRGB(96, 170, 255), function() local s = stats() return s and s.Looks      or 50  end),
-				DossierBar(_pc("stat_strength",   "Strength"),   Color3.fromRGB(236, 116, 76), function() local s = stats() return s and s.Strength   or 0   end),
-				DossierBar(_pc("stat_speed",      "Speed"),      Color3.fromRGB(96, 220, 200), function() local s = stats() return s and s.Speed      or 0   end),
-				DossierBar(_pc("stat_durability", "Durability"), Color3.fromRGB(150, 150, 160), function() local s = stats() return s and s.Durability or 0  end),
+				DossierBar(_pc("stat_strength",   "Strength"),   Color3.fromRGB(236, 116, 76), function() local s = stats() return s and s.Strength   or 0   end, "Strength"),
+				DossierBar(_pc("stat_speed",      "Speed"),      Color3.fromRGB(96, 220, 200), function() local s = stats() return s and s.Speed      or 0   end, "Speed"),
+				DossierBar(_pc("stat_durability", "Durability"), Color3.fromRGB(150, 150, 160), function() local s = stats() return s and s.Durability or 0  end, "Durability"),
 			},
 
 			create("Frame") { Size = UDim2.new(1, 0, 0, 2), BackgroundColor3 = Color3.fromRGB(55, 50, 75), BorderSizePixel = 0, LayoutOrder = 3 },

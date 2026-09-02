@@ -23,6 +23,7 @@ local MajorPopup = require("@ui-components/shell/MajorPopup")
 local WeeklyChallengesPanel = require("@ui-panels/WeeklyChallengesPanel")
 local MissionsPanel = require("@ui-panels/MissionsPanel")
 local ActivitiesPanel = require("@ui-panels/ActivitiesPanel")
+local NavMorePanel = require("@ui-panels/NavMorePanel")
 local BlackMarketPanel = require("@ui-panels/BlackMarketPanel")
 local CultPanel = require("@ui-panels/CultPanel")
 local RelationshipsPanel = require("@ui-panels/RelationshipsPanel")
@@ -112,6 +113,7 @@ navRegistry.registerBatch({
 	{ id = "technique_mastery", label = navT("nav_mastery",        "MASTERY"),        order = 12, color = Color3.fromRGB(180, 130, 255) },
 	{ id = "souls",             label = navT("nav_souls",          "LIVES"),          order = 13, color = Color3.fromRGB(120, 200, 255) },
 	{ id = "incident_map",       label = navT("nav_incident_map",  "INCIDENT MAP"),   order = 14, color = Color3.fromRGB(200, 75, 120) },
+	{ id = "nav_more",           label = navT("nav_more",           "MORE"),          order = 99, color = Color3.fromRGB(150, 150, 172) },
 })
 
 local function isMobile()
@@ -258,6 +260,7 @@ loadingScreen.bump("Preparing panels...")
 safeInit("WeeklyChallengesPanel", WeeklyChallengesPanel.init)
 safeInit("MissionsPanel", MissionsPanel.init)
 safeInit("ActivitiesPanel", ActivitiesPanel.init)
+safeInit("NavMorePanel", NavMorePanel.init)
 safeInit("BlackMarketPanel", BlackMarketPanel.init)
 safeInit("CultPanel", CultPanel.init)
 safeInit("RelationshipsPanel", RelationshipsPanel.init)

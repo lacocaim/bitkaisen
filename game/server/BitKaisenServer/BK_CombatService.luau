@@ -699,23 +699,23 @@ local resolveCounter
 
 local PATTERN_LOGS = {
 	aggressive = {
-		"They came in fast — no hesitation.",
+		"They came in fast, no hesitation.",
 		"No opening. They're going all in.",
 		"Full pressure. They're not holding back.",
 	},
 	defensive = {
 		"They're waiting for you to overextend.",
 		"Measured. They strike only when certain.",
-		"Calculated pressure — they know what they're doing.",
+		"Calculated pressure. They know what they're doing.",
 	},
 	heavy = {
 		"The air shifts. Something massive is coming.",
-		"They're charging — this one will hurt.",
+		"They're charging. This one will hurt.",
 		"Full force. Brace yourself.",
 	},
 	erratic = {
 		"Unpredictable. You can't read the next move.",
-		"Wild swings — no pattern to follow.",
+		"Wild swings, no pattern to follow.",
 		"Their cursed energy is unstable. Anything could happen.",
 	},
 	standard = {},
@@ -937,10 +937,10 @@ local function startAttackCheck(player, session, isTechnique, autoResolve, isBla
 end
 
 local CE_TRAIT_LOGS = {
-	["Lightning CE"]       = "Your cursed energy crackles — sharp, electric, unpredictable.",
+	["Lightning CE"]       = "Your cursed energy crackles. Sharp, electric, unpredictable.",
 	["Cursed Flame CE"]    = "Cursed energy burns at the edges. The air smells like scorched fate.",
 	["Infinity Pulse CE"]  = "A wave of reversed cursed energy pulses outward, then snaps inward.",
-	["Venom CE"]           = "Your cursed energy carries something corrosive — it lingers.",
+	["Venom CE"]           = "Your cursed energy carries something corrosive, and it lingers.",
 	["Serene CE"]          = "Perfectly composed. Your cursed energy flows without a single ripple.",
 	["Cursed Pressure CE"] = "The weight of your cursed energy is felt before it's seen.",
 }

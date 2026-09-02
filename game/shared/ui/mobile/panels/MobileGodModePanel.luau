@@ -80,7 +80,7 @@ render = function()
 		if data.IsPublic then
 			mc.mobileLabel({
 				parent = summaryCard,
-				text = _gm("locked_desc_public", "This unlock applies ONLY to the Public world you're in right now -- not your account, not any other world. Buy it again separately for each Public world you want it in."),
+				text = _gm("locked_desc_public", "This unlock applies ONLY to the Public world you're in right now, not your account and not any other world. Buy it again separately for each Public world you want it in."),
 				size = 13,
 				color = theme.SubText,
 				order = 2,

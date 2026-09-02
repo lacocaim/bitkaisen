@@ -406,7 +406,7 @@ local function renderWorld()
 	if data.PublicSealed == true then
 		local sealCard = mc.mobileCard({ parent = scroll, order = order, accentColor = theme.Bad })
 		order += 1
-		mc.mobileLabel({ parent = sealCard, text = "🔒  " .. _h("world_sealed_title", "FINAL SEAL -- THIS WORLD IS SEALED"), size = 14, color = theme.Bad, font = Enum.Font.GothamBlack, order = 1 })
+		mc.mobileLabel({ parent = sealCard, text = "🔒  " .. _h("world_sealed_title", "FINAL SEAL: THIS WORLD IS SEALED"), size = 14, color = theme.Bad, font = Enum.Font.GothamBlack, order = 1 })
 		local legendText = data.PublicSoberano and ("👑  " .. _h("world_sovereign", "You were crowned Sovereign Sorcerer."))
 			or ("🏅  " .. _h("world_legend_prefix", "Your legend: ") .. legendGradeText(data.PublicLegendGrade))
 		mc.mobileLabel({ parent = sealCard, text = legendText, size = 13, color = theme.Gold, order = 2 })
@@ -424,7 +424,7 @@ local function renderWorld()
 			local marker = RANK_MEDALS[i] or ("#" .. tostring(i))
 			mc.mobileLabel({
 				parent = rankingCard,
-				text = marker .. "  " .. tostring(entry.Name) .. "  --  " .. tostring(entry.Grade) .. "  (CE " .. tostring(entry.CursedEnergy) .. ")",
+				text = marker .. "  " .. tostring(entry.Name) .. "  -  " .. tostring(entry.Grade) .. "  (CE " .. tostring(entry.CursedEnergy) .. ")",
 				size = 13,
 				color = theme.Text,
 				order = i + 1,
@@ -440,7 +440,7 @@ local function renderWorld()
 		for i, owner in ipairs(legendaryOwners) do
 			mc.mobileLabel({
 				parent = legendaryCard,
-				text = tostring(owner.TraitName) .. "  --  " .. tostring(owner.CharacterName),
+				text = tostring(owner.TraitName) .. "  -  " .. tostring(owner.CharacterName),
 				size = 12,
 				color = theme.SubText,
 				order = i + 1,

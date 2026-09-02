@@ -224,7 +224,7 @@ render = function()
 			makeLabel(summaryCard, "Tune traits, clan rerolls, start boosts, legacy inheritance, and reset the current life while keeping God Mode settings.", 36, 50, THEME.Muted, 12, false)
 			-- fall through to the rest of the panel below
 		else
-			makeLabel(summaryCard, "This unlock applies ONLY to the Public world you're in right now -- not your account, not any other world. Buy it again separately for each Public world you want it in.", 36, 60, THEME.Muted, 12, false)
+			makeLabel(summaryCard, "This unlock applies ONLY to the Public world you're in right now, not your account and not any other world. Buy it again separately for each Public world you want it in.", 36, 60, THEME.Muted, 12, false)
 			makeButton(summaryCard, "UNLOCK FOR THIS WORLD", 12, 100, 220, 34, THEME.Purple, function()
 				if tonumber(data.GodModeThisWorldProductId) and data.GodModeThisWorldProductId > 0 then
 					MarketplaceService:PromptProductPurchase(player, data.GodModeThisWorldProductId)

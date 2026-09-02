@@ -579,7 +579,7 @@ local function handleDeclareWar(player, stats, worldId, data)
 		local record = BK_WorldStateService.Get(worldId) or {}
 		local foeCell = (record.Cells or {})[targetCellId]
 		if foeCell then
-			notifyCellMembers(foeCell, "WAR DECLARED", "The cell of " .. tostring(stats.Name or player.Name) .. " declared war on '" .. tostring(foeName) .. "'. Duels between your cells now feed the war score -- the era's end settles it.", "⚔ WAR", "warning")
+			notifyCellMembers(foeCell, "WAR DECLARED", "The cell of " .. tostring(stats.Name or player.Name) .. " declared war on '" .. tostring(foeName) .. "'. Duels between your cells now feed the war score, and the era's end settles it.", "⚔ WAR", "warning")
 		end
 		fireMajorPopup(player, "WAR DECLARED", "Your cell is now at war with '" .. tostring(foeName) .. "'. Win duels against their lives; when the Era turns, the leader takes a territory.", "⚔ WAR", "warning")
 	else
@@ -618,7 +618,7 @@ local function handleTruce(player, stats, worldId, data, isAccept)
 
 	if resolved then
 		if isAccept then
-			BK_WorldStateService.AddEvent(worldId, tonumber(stats.CurrentYear) or 0, "🕊 A truce was signed -- a cell war ends without a victor.")
+			BK_WorldStateService.AddEvent(worldId, tonumber(stats.CurrentYear) or 0, "🕊 A truce was signed. A cell war ends without a victor.")
 			fireLifeUpdate(player, stats, "🕊 Truce accepted. The war is over.")
 		else
 			fireLifeUpdate(player, stats, "🕊 Truce offered. The other leader must accept it from the Lives tab.")
@@ -773,7 +773,7 @@ function BK_CellService.OnEraChanged(worldId, newYear)
 					table.insert(announcements, "⚔ The era closes a war: '" .. tostring(winnerCell.Name) .. "' defeats '" .. tostring(loserCell.Name) .. "'" .. (taken and (" and takes " .. taken .. ".") or "."))
 				end
 			else
-				table.insert(announcements, "⚔ A cell war ends the era in a dead heat -- no territory changes hands.")
+				table.insert(announcements, "⚔ A cell war ends the era in a dead heat. No territory changes hands.")
 			end
 		end
 		record.Wars = {}

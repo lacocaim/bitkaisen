@@ -267,6 +267,101 @@ function BitKaisenIncidentMap.IsActionAvailable(stats, actionId)
 	return true
 end
 
+-- Update 30 -- shikigami on the map.
+-- The Ten Shadows roster already assigns each shikigami a combat posture (see
+-- SHIKIGAMI_POSTURES in BK_CombatService), and those three postures translate straight
+-- into three jobs a shikigami can do while it is standing on a site instead of standing
+-- next to you. Guard suppresses, Hunt sharpens exorcism, Scout reveals.
+local SHIKIGAMI_ROLES = {
+	["Divine Dogs"]   = { Role = "Guard", Effect = "Holds the site. Threat falls while it stands there." },
+	["Max Elephant"]  = { Role = "Guard", Effect = "Holds the site. Threat falls while it stands there." },
+	["Nue"]           = { Role = "Hunt",  Effect = "Hunts the site. Exorcism bites harder here." },
+	["Great Serpent"] = { Role = "Hunt",  Effect = "Hunts the site. Exorcism bites harder here." },
+	["Piercing Ox"]   = { Role = "Hunt",  Effect = "Hunts the site. Exorcism bites harder here." },
+	["Tiger Funeral"] = { Role = "Hunt",  Effect = "Hunts the site. Exorcism bites harder here." },
+	["Toad"]          = { Role = "Scout", Effect = "Watches the site. Residue and rumors surface faster." },
+	["Rabbit Escape"] = { Role = "Scout", Effect = "Watches the site. Residue and rumors surface faster." },
+	["Round Deer"]    = { Role = "Scout", Effect = "Watches the site. Residue and rumors surface faster." },
+	["Mahoraga"]      = { Role = "Guard", Effect = "Adapts to the site. Threat collapses, and so does everything near it." },
+}
+
+function BitKaisenIncidentMap.GetShikigamiRole(name)
+	local entry = SHIKIGAMI_ROLES[tostring(name or "")]
+	if not entry then
+		return "Scout", "Watches the site."
+	end
+	return entry.Role, entry.Effect
+end
+
+function BitKaisenIncidentMap.GetTamedNames(stats)
+	if typeof(stats) ~= "table" or typeof(stats.TamedShikigamiNames) ~= "table" then
+		return {}
+	end
+	return stats.TamedShikigamiNames
+end
+
+-- Keyed by shikigami name so one shadow can only ever stand in one place.
+function BitKaisenIncidentMap.EnsureShikigamiState(stats)
+	if typeof(stats) ~= "table" then
+		return {}
+	end
+	if typeof(stats.ShikigamiDeployments) ~= "table" then
+		stats.ShikigamiDeployments = {}
+	end
+
+	-- A save can outlive the thing it points at: the life may have lost the shikigami, or
+	-- the location id may no longer exist. Drop those rather than pinning a ghost.
+	local owned = {}
+	for _, name in ipairs(BitKaisenIncidentMap.GetTamedNames(stats)) do
+		owned[tostring(name)] = true
+	end
+	for name, locationId in pairs(stats.ShikigamiDeployments) do
+		if not owned[tostring(name)] or not LOCATION_BY_ID[tostring(locationId)] then
+			stats.ShikigamiDeployments[name] = nil
+		end
+	end
+
+	return stats.ShikigamiDeployments
+end
+
+function BitKaisenIncidentMap.CountDeployed(stats)
+	local deployments = BitKaisenIncidentMap.EnsureShikigamiState(stats)
+	local count = 0
+	for _ in pairs(deployments) do
+		count += 1
+	end
+	return count
+end
+
+-- Shikigami Master (Update 29) already means "hold two postures at once" in combat. On
+-- the map it means the same promise: two shadows out instead of one.
+function BitKaisenIncidentMap.GetDeployLimit(stats)
+	return (stats and stats.HasShikigamiMasterPass == true) and 2 or 1
+end
+
+-- The Incident Map is a modern institution: a jujutsu-society case board over present-day
+-- Tokyo, with a closed shopping mall and a construction site on it. A Heian life has no
+-- business opening it, and now that the map is actually drawn the anachronism shows.
+-- Modern activities are already era-blocked the same way (see BK_ActivityService).
+-- The fallback chain has to match getCurrentEra in BK_ActivityService exactly. Reading
+-- only CurrentEra and Era looked right and passed on a normal life, but a life that
+-- carries its era in BirthEra or BirthPath.Era fell through to "Modern Era" and opened
+-- present-day Tokyo on a Heian character, while activities blocked it correctly.
+function BitKaisenIncidentMap.IsEraBlocked(stats)
+	if typeof(stats) ~= "table" then
+		return false
+	end
+	local birthPath = typeof(stats.BirthPath) == "table" and stats.BirthPath or nil
+	local era = tostring(
+		stats.CurrentEra
+			or stats.Era
+			or stats.BirthEra
+			or (birthPath and birthPath.Era)
+			or "Modern Era"
+	)
+	return era == "Heian Era"
+end
+
 function BitKaisenIncidentMap.BuildPayload(stats)
 	local map = BitKaisenIncidentMap.EnsureMapState(stats)
 	if not map then
@@ -277,7 +372,22 @@ function BitKaisenIncidentMap.BuildPayload(stats)
 		}
 	end
 
+	if BitKaisenIncidentMap.IsEraBlocked(stats) then
+		return {
+			Error = "The Incident Map does not exist in this era. Jujutsu society keeps no case board yet.",
+			Locations = {},
+			Actions = {},
+		}
+	end
+
 	local isCursedSpirit = BitKaisenIncidentMap.IsCursedSpirit(stats)
+
+	local deployments = BitKaisenIncidentMap.EnsureShikigamiState(stats)
+	local shikigamiAt = {}
+	for name, locationId in pairs(deployments) do
+		shikigamiAt[tostring(locationId)] = tostring(name)
+	end
+
 	local locations = {}
 	for _, definition in ipairs(LOCATIONS) do
 		local state = map.Locations[definition.Id]
@@ -295,6 +405,7 @@ function BitKaisenIncidentMap.BuildPayload(stats)
 			Rumor = state.Rumor,
 			ActiveIncident = state.ActiveIncident,
 			LastResult = state.LastResult,
+			Shikigami = shikigamiAt[definition.Id],
 		})
 	end
 
@@ -313,6 +424,22 @@ function BitKaisenIncidentMap.BuildPayload(stats)
 		})
 	end
 
+	-- Cursed spirits do not command the Ten Shadows, so they simply get an empty roster and
+	-- the client draws no rail at all.
+	local roster = {}
+	if not isCursedSpirit then
+		for _, rawName in ipairs(BitKaisenIncidentMap.GetTamedNames(stats)) do
+			local name = tostring(rawName)
+			local role, effect = BitKaisenIncidentMap.GetShikigamiRole(name)
+			table.insert(roster, {
+				Name = name,
+				Role = role,
+				Effect = effect,
+				DeployedTo = deployments[name],
+			})
+		end
+	end
+
 	return {
 		Role = isCursedSpirit and "CursedSpirit" or "Sorcerer",
 		RoleLabel = isCursedSpirit and "Cursed Spirit" or "Sorcerer",
@@ -321,6 +448,9 @@ function BitKaisenIncidentMap.BuildPayload(stats)
 		ActionsTaken = map.ActionsTaken,
 		Locations = locations,
 		Actions = actions,
+		Shikigami = roster,
+		DeployLimit = BitKaisenIncidentMap.GetDeployLimit(stats),
+		DeployedCount = BitKaisenIncidentMap.CountDeployed(stats),
 	}
 end
 

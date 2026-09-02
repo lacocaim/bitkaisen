@@ -108,7 +108,7 @@ local MONETIZATION_RULES = {
 	{
 		id = "GuideDangerTip",
 		labelKey = "guide_danger_tip",
-		fallback = "Shop -- Recovery",
+		fallback = "Shop: Recovery",
 		check = function(stats)
 			local health = tonumber(stats.Health)
 			return stats.Alive ~= false and health ~= nil and health <= 20
@@ -117,7 +117,7 @@ local MONETIZATION_RULES = {
 	{
 		id = "GuideBrokeTip",
 		labelKey = "guide_broke_tip",
-		fallback = "Shop -- Money",
+		fallback = "Shop: Money",
 		check = function(stats)
 			local money = tonumber(stats.Money)
 			return money ~= nil and money < 500
@@ -126,7 +126,7 @@ local MONETIZATION_RULES = {
 	{
 		id = "GuideLosingStreakTip",
 		labelKey = "guide_losing_streak_tip",
-		fallback = "Shop -- Recovery Kit",
+		fallback = "Shop: Recovery Kit",
 		check = function(stats)
 			local losses = tonumber(stats.CombatLosses) or 0
 			local wins = tonumber(stats.CombatWins) or 0

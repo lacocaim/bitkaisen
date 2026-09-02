@@ -256,19 +256,19 @@ local function open(stats)
 				if not state.IsOpen then return end
 				local ranking = ok and typeof(payload) == "table" and payload.PublicRanking or {}
 				if typeof(ranking) == "table" and #ranking > 0 then
-					body.Text = _g("public_body_established", "You arrive as this era already unfolds. This world has a history -- make your place in it.")
+					body.Text = _g("public_body_established", "You arrive as this era already unfolds. This world has a history. Make your place in it.")
 					rankingLabel.Visible = true
 					rankingScroll.Visible = true
 					for i, entry in ipairs(ranking) do
 						local medal = RANK_MEDALS[i] or ("#" .. tostring(i))
-						addRankingRow(i, medal .. "  " .. tostring(entry.Name) .. "  --  " .. tostring(entry.Grade))
+						addRankingRow(i, medal .. "  " .. tostring(entry.Name) .. "  -  " .. tostring(entry.Grade))
 					end
 				else
-					body.Text = _g("public_body_founding", "You are among the first to arrive. This world barely stirs awake -- your story may be the one that defines it.")
+					body.Text = _g("public_body_founding", "You are among the first to arrive. This world barely stirs awake, and your story may be the one that defines it.")
 				end
 			end)
 		else
-			body.Text = _g("public_body_founding", "You are among the first to arrive. This world barely stirs awake -- your story may be the one that defines it.")
+			body.Text = _g("public_body_founding", "You are among the first to arrive. This world barely stirs awake, and your story may be the one that defines it.")
 		end
 
 		continueLabel.Text = "⚔ " .. _g("public_button", "ENTER THE WORLD")
@@ -276,7 +276,7 @@ local function open(stats)
 		eyebrow.Text = _g("private_eyebrow", "YOUR OWN ERA")
 		title.Text = _g("private_title", "A NEW CHAPTER BEGINS")
 		subtitle.Text = era ~= "" and (era .. " · " .. year) or year
-		body.Text = _g("private_body", "No one else lives this story. Every choice, every fall, every legacy -- yours alone, for as long as you carry it.")
+		body.Text = _g("private_body", "No one else lives this story. Every choice, every fall, every legacy: yours alone, for as long as you carry it.")
 		rankingLabel.Visible = false
 		rankingScroll.Visible = false
 		continueLabel.Text = "📜 " .. _g("private_button", "BEGIN YOUR STORY")

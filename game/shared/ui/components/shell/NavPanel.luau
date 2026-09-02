@@ -74,12 +74,20 @@ end
 -- applyResponsiveLayout in BitKaisenClient, which runs post-layout).
 local function fitButtonsToWidth(navPanelObj: Instance, padding: number?)
 	local pad = padding or PADDING
-	local entries = navRegistry.getEntries()
-	local count = math.max(#entries, 1)
+	-- Counts the buttons actually on screen rather than the registered entries: in
+	-- simple mode most of them are hidden, and sizing for all fifteen left the row
+	-- two thirds empty.
+	local count = 0
+	for _, child in ipairs(navPanelObj:GetChildren()) do
+		if child:IsA("GuiButton") and child.Visible then
+			count += 1
+		end
+	end
+	count = math.max(count, 1)
 	local totalPadding = pad * (count - 1)
 	local w = math.max((navPanelObj.AbsoluteSize.X - totalPadding) / count, 40)
 	for _, child in ipairs(navPanelObj:GetChildren()) do
-		if child:IsA("GuiButton") then
+		if child:IsA("GuiButton") and child.Visible then
 			child.Size = UDim2.new(0, w, 0, child.Size.Y.Offset)
 		end
 	end
@@ -126,10 +134,26 @@ local function NavPanel()
 	-- changes removes the timing guess entirely: this always re-fits against
 	-- whatever size the frame actually ends up with, however many times or
 	-- whenever that happens.
+	-- Simple mode hides the non-core entries and shows MORE in their place. The buttons
+	-- are all built once above and only toggled here, so switching modes never rebuilds
+	-- the row -- which is what the eager-array comment above is protecting.
+	local function applyNavMode()
+		for _, child in ipairs(frame:GetChildren()) do
+			if child:IsA("GuiButton") then
+				local id = (string.gsub(child.Name, "Button$", ""))
+				child.Visible = navRegistry.isEntryVisible(id)
+			end
+		end
+		fitButtonsToWidth(frame)
+	end
+
+	applyNavMode()
+	navRegistry.onModeChanged(applyNavMode)
+
 	frame:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
 		fitButtonsToWidth(frame)
 	end)
-	task.defer(fitButtonsToWidth, frame)
+	task.defer(applyNavMode)
 
 	return frame
 end

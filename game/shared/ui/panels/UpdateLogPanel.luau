@@ -104,12 +104,12 @@ padding.PaddingLeft = UDim.new(0, 16)
 padding.PaddingRight = UDim.new(0, 16)
 padding.Parent = panel
 
-local title = makeText(panel, "Title", "UPDATE 29", 22, true)
+local title = makeText(panel, "Title", "UPDATE 30", 22, true)
 title.Size = UDim2.new(1, -48, 0, 34)
 title.Position = UDim2.new(0, 0, 0, 0)
 title.TextColor3 = Color3.fromRGB(255, 220, 139)
 
-local subtitle = makeText(panel, "Subtitle", "Fight like you choose to, die like it matters", 14, false)
+local subtitle = makeText(panel, "Subtitle", "Tokyo is a map now, and your shadows can hold it", 14, false)
 subtitle.Size = UDim2.new(1, -48, 0, 22)
 subtitle.Position = UDim2.new(0, 0, 0, 34)
 subtitle.TextColor3 = Color3.fromRGB(198, 186, 164)
@@ -187,6 +187,18 @@ local function addSection(headerText, bodyText, headerColor)
 	body.AutomaticSize = Enum.AutomaticSize.Y
 	body.TextColor3 = Color3.fromRGB(232, 223, 205)
 end
+
+addSection("Update 30 - The Incident Map", "• The Incident Map is no longer a list. It is a full-screen map of <b>Tokyo Metropolis</b>, and the twelve incidents are pins on it.\n• Every pin reads its own threat: colour tells you how bad it is, and an active incident pulses faster the worse it gets.\n• The mountains of Okutama sit west, the wards and the bay east. The further you travel from the city, the uglier the site.\n• Cursed energy drifts across the map while you read it.\n• Select a site to open its dossier: threat, fear, society attention, residue and control.\n", Color3.fromRGB(178, 122, 255))
+
+addSection("Update 30 - Shikigami Hold the Map", "• Send a tamed shikigami to stand on an incident. Its <b>combat posture decides its job</b>: Guard suppresses the threat, Hunt sharpens your exorcism, Scout drags residue and rumors into the light.\n• Divine Dogs and Max Elephant guard. Nue, Great Serpent, Piercing Ox and Tiger Funeral hunt. Toad, Rabbit Escape and Round Deer scout.\n• It costs you. A shadow standing on the map is a shadow not standing next to you, so <b>it stops counting toward your combat power</b> until you recall it.\n• <b>Shikigami Master</b> holds two on the map at once instead of one.\n• The Incident Map does not exist in the Heian era. Jujutsu society keeps no case board yet.\n", Color3.fromRGB(150, 110, 255))
+
+addSection("Update 30 - Simple Menu", "• The menu bar carried fifteen categories. It now starts with six: Missions, Activities, Relationships, Assets and Jobs, and folds the rest behind <b>MORE</b>.\n• Nothing was removed. Every category is one click away.\n• Toggle <b>Simple Menu</b> in Settings to bring all fifteen back.\n• Players who already had a save keep the full bar they learned. New players start simple.\n", Color3.fromRGB(120, 190, 255))
+
+addSection("Update 30 - You Asked For These", "• <b>Prosthetic limb.</b> Losing a limb was permanent with no way back unless Reverse Cursed Technique caught it as it happened. From age 16, in the Modern and Collapse eras, a surgeon will fit a prosthetic for $9,000. It gives back most of the strength, never all of it. Suggested by plaZa.\n• <b>Your stats now say what they are worth.</b> Every bar in the dossier shows the combat power that stat is contributing right now. Speed, Strength and Durability were doing real work and never said how much. Suggested by noobeh.\n• <b>Perception Blitz is visible.</b> When the enemy is the faster one you counter for 75 percent of the damage they land. That has been true since Update 29 and nothing ever told you. The Blitz button now reads COUNTER READY when it is armed.\n", Color3.fromRGB(255, 200, 90))
+
+addSection("Update 30 - Fixes", "• The combat action row no longer spills outside the window. It wraps onto two lines and the labels shrink to fit instead of clipping.\n• The shikigami and binding vow popups render properly again. They were being dragged into the button row.\n• Activities opens instantly on repeat visits instead of tearing itself down and rebuilding every time.\n• <b>Reputation now actually changes.</b> Twelve places awarded or removed reputation and silently did nothing.\n• Surviving with Verge of Death RCT no longer throws away the rest of the result and fails to save.\n• High Society no longer amplifies relationship <b>losses</b>. Only gains, as intended.\n", Color3.fromRGB(120, 240, 160))
+
+addSection("Update 30 - New Codes", "Redeem in Settings > Codes:\n\n• <b>Tokyo30</b> - +$20,000, +70 CE, +8 Mastery\n• <b>Shikigami</b> - +$12,000, +50 CE, +6 Speed, +5 Durability\n• <b>WeAreBack</b> - +$25,000, +10 Reputation, +5 Smarts\n", Color3.fromRGB(255, 160, 210))
 
 addSection("Update 29 - Combat Is Yours Now", "• <b>Chant</b>: spend a turn building your technique. The next one hits 1.5x harder and breaks the normal damage cap.\n• <b>Blitz</b> is no longer automatic. Arm it when your Speed clears the gap and choose the moment it fires.\n• <b>Brace</b>: a Durability move. Plant your feet, eat the combo, absorb a slice of it, and return everything you soaked on your next hit.\n• <b>CE Output</b> now raises your technique damage cap from 35% up to 43%.\n• Every combat button now tells you why it is locked and what stat unlocks it.\n", Color3.fromRGB(229, 57, 53))
 

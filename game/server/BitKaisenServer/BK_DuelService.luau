@@ -208,7 +208,7 @@ local function finishDuel(session, winnerUserId, reason)
 	session.TurnToken = (session.TurnToken or 0) + 1
 
 	local winner, loser = sideOf(session, winnerUserId)
-	addLog(session, "🏆 " .. winner.Name .. " wins the duel" .. (reason == "flee" and " -- " .. loser.Name .. " conceded." or (reason == "disconnect" and " -- " .. loser.Name .. " vanished." or "!")))
+	addLog(session, "🏆 " .. winner.Name .. " wins the duel" .. (reason == "flee" and " - " .. loser.Name .. " conceded." or (reason == "disconnect" and " - " .. loser.Name .. " vanished." or "!")))
 
 	local winnerStats = winner.Player and getStats(winner.Player) or nil
 	local loserStats = loser.Player and getStats(loser.Player) or nil
@@ -234,7 +234,7 @@ local function finishDuel(session, winnerUserId, reason)
 		-- higher stakes. Never lethal, never costs the loser anything else.
 		loserStats.DuelRematch = typeof(loserStats.DuelRematch) == "table" and loserStats.DuelRematch or {}
 		loserStats.DuelRematch[tostring(winner.UserId)] = true
-		fireMajorPopup(loser.Player, "DUEL LOST", winner.Name .. " bested you this time. A Rematch marker is yours -- use it from the Lives tab.", "⚔ REMATCH AVAILABLE", soulsTag(loser.Player), "info")
+		fireMajorPopup(loser.Player, "DUEL LOST", winner.Name .. " bested you this time. A Rematch marker is yours. Use it from the Lives tab.", "⚔ REMATCH AVAILABLE", soulsTag(loser.Player), "info")
 		fireLifeUpdate(loser.Player, loserStats, "⚔ You lost the duel against " .. winner.Name .. ". Rematch available.")
 		if context.ForceSaveStats then
 			context.ForceSaveStats(loser.Player, "DuelLost")
@@ -467,7 +467,7 @@ local function startDuel(challenger, challengerStats, target, targetStats, isRem
 		challengerStats.DuelRematch[tostring(target.UserId)] = nil
 	end
 
-	addLog(session, "⚔ The duel begins" .. (isRematch and " -- REMATCH, stakes x" .. tostring(REMATCH_STAKES) .. "!" or "!"))
+	addLog(session, "⚔ The duel begins" .. (isRematch and " - REMATCH, stakes x" .. tostring(REMATCH_STAKES) .. "!" or "!"))
 	startTurnClock(session)
 	broadcast(session)
 end

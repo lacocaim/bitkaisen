@@ -244,7 +244,7 @@ refresh = function()
 		if soul.IsYou then
 			local target = byCE[i - 1]
 			pursuitText = "🎯 #" .. tostring(i) .. " " .. _g("pursuit_of", "of") .. " " .. tostring(#byCE) .. " " .. _g("pursuit_souls", "lives")
-				.. (target and (" -- " .. _g("pursuit_chasing", "chasing") .. " " .. tostring(target.Name)) or " -- " .. _g("pursuit_top", "you lead this world"))
+				.. (target and (" - " .. _g("pursuit_chasing", "chasing") .. " " .. tostring(target.Name)) or " - " .. _g("pursuit_top", "you lead this world"))
 			break
 		end
 	end
@@ -439,7 +439,7 @@ refresh = function()
 		local throneCard = card(34 + #thrones * 22, COLORS.Card2)
 		makeText(throneCard, "👑 " .. _g("thrones_title", "LOS TRONOS"), 13, COLORS.Gold, 8, true)
 		for i, seat in ipairs(thrones) do
-			makeText(throneCard, (seat.IsSovereignSeat and "👑 " or tostring(i) .. ". ") .. tostring(seat.Name) .. "  --  ⭐ " .. tostring(seat.Fame) .. " Fame", 12, seat.IsSovereignSeat and COLORS.Gold or COLORS.SubText, 28 + (i - 1) * 22, false, 20)
+			makeText(throneCard, (seat.IsSovereignSeat and "👑 " or tostring(i) .. ". ") .. tostring(seat.Name) .. "  -  ⭐ " .. tostring(seat.Fame) .. " Fame", 12, seat.IsSovereignSeat and COLORS.Gold or COLORS.SubText, 28 + (i - 1) * 22, false, 20)
 		end
 	end
 

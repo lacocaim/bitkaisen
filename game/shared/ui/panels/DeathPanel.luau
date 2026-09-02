@@ -376,7 +376,7 @@ local function init(playerGui: Instance)
 	quickRerollButton.TextColor3 = Color3.fromRGB(200, 170, 255)
 	quickRerollButton.TextSize = 13
 	quickRerollButton.Font = Enum.Font.GothamBlack
-	quickRerollButton.Text = "QUICK REROLL  — Pick CT & Clan"
+	quickRerollButton.Text = "QUICK REROLL - Pick CT & Clan"
 	quickRerollButton.AutoButtonColor = false
 	quickRerollButton.ZIndex = 903
 	quickRerollButton.Parent = buttonsHolder
@@ -633,7 +633,7 @@ local function init(playerGui: Instance)
 	rerollBreadcrumb.TextSize = 10
 	rerollBreadcrumb.Font = Enum.Font.GothamBold
 	rerollBreadcrumb.TextXAlignment = Enum.TextXAlignment.Left
-	rerollBreadcrumb.Text = "Step 1 of 3  —  Select Cursed Technique"
+	rerollBreadcrumb.Text = "Step 1 of 3: Select Cursed Technique"
 	rerollBreadcrumb.ZIndex = 962
 	rerollBreadcrumb.Parent = rerollWindow
 
@@ -819,13 +819,13 @@ local function init(playerGui: Instance)
 		ctInfoNameLabel.Text = ctName
 		ctInfoNameLabel.TextColor3 = QR_CT_COLORS[ctName] or QR_DEFAULT_COLOR
 		local prob = (QR_CT_PROB[ctName] or 0) * 100
-		ctInfoRarityLabel.Text = rarity .. "  —  " .. string.format("%.2f%%", prob) .. " natural rate"
+		ctInfoRarityLabel.Text = rarity .. "  -  " .. string.format("%.2f%%", prob) .. " natural rate"
 		ctInfoRarityLabel.TextColor3 = rarityColor
 		ctInfoDescLabel.Text = QR_CT_DESCS[ctName] or "A clan-exclusive cursed technique."
 		local clans = QR_CT_CLANS[ctName] or {}
 		local names = {}
 		for _, clan in ipairs(clans) do table.insert(names, clan.DisplayName) end
-		ctInfoClansLabel.Text = "Available from: " .. (#names > 0 and table.concat(names, ", ") or "—")
+		ctInfoClansLabel.Text = "Available from: " .. (#names > 0 and table.concat(names, ", ") or "-")
 		ctInfoModal.Visible = true
 	end
 
@@ -1056,7 +1056,7 @@ local function init(playerGui: Instance)
 		ctPage.Visible = true
 		clanPage.Visible = false
 		summaryPage.Visible = false
-		rerollBreadcrumb.Text = "Step 1 of 3  —  Select Cursed Technique"
+		rerollBreadcrumb.Text = "Step 1 of 3: Select Cursed Technique"
 	end
 
 	local function populateClanPage(forCT)
@@ -1140,11 +1140,11 @@ local function init(playerGui: Instance)
 	goToClanPage = function(ctName)
 		rerollCurrentCT = ctName
 		populateClanPage(ctName)
-		clanCTLabel.Text = "CT selected: " .. ctName .. "  —  " .. #(QR_CT_CLANS[ctName] or {}) .. " origin(s) available"
+		clanCTLabel.Text = "CT selected: " .. ctName .. "  -  " .. #(QR_CT_CLANS[ctName] or {}) .. " origin(s) available"
 		ctPage.Visible = false
 		clanPage.Visible = true
 		summaryPage.Visible = false
-		rerollBreadcrumb.Text = "Step 2 of 3  —  Select Clan  (" .. ctName .. ")"
+		rerollBreadcrumb.Text = "Step 2 of 3: Select Clan  (" .. ctName .. ")"
 	end
 
 	goToSummaryPage = function(ctName, clanId, clanDisplayName)
@@ -1166,7 +1166,7 @@ local function init(playerGui: Instance)
 		ctPage.Visible = false
 		clanPage.Visible = false
 		summaryPage.Visible = true
-		rerollBreadcrumb.Text = "Step 3 of 3  —  Confirm"
+		rerollBreadcrumb.Text = "Step 3 of 3: Confirm"
 	end
 
 	local function showReroll()

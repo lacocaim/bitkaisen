@@ -363,7 +363,7 @@ duelInvite.OnClientEvent:Connect(function(invite)
 	if typeof(invite) ~= "table" then
 		return
 	end
-	inviteBody.Text = tostring(invite.FromName) .. " (" .. tostring(invite.FromGrade) .. ") " .. _g("invite_body", "challenges you to a live duel.") .. (invite.IsRematch and ("  🔥 " .. _g("rematch_tag", "REMATCH") .. " -- ") .. _g("invite_stakes", "higher stakes!") or "")
+	inviteBody.Text = tostring(invite.FromName) .. " (" .. tostring(invite.FromGrade) .. ") " .. _g("invite_body", "challenges you to a live duel.") .. (invite.IsRematch and ("  🔥 " .. _g("rematch_tag", "REMATCH") .. " - ") .. _g("invite_stakes", "higher stakes!") or "")
 	inviteExpiresAt = tonumber(invite.ExpiresAt) or (os.time() + 30)
 	inviteOverlay.Visible = true
 	gui.Enabled = true
@@ -374,7 +374,7 @@ RunService.Heartbeat:Connect(function()
 	if overlay.Visible and currentState and currentState.Phase == "active" then
 		local left = math.max(0, math.ceil(turnDeadlineClock - os.clock()))
 		local turnName = (currentState.TurnUserId == currentState.A.UserId) and currentState.A.Name or currentState.B.Name
-		turnLabel.Text = "⏱ " .. turnName .. " -- " .. tostring(left) .. "s"
+		turnLabel.Text = "⏱ " .. turnName .. " - " .. tostring(left) .. "s"
 	end
 	if inviteOverlay.Visible then
 		local left = inviteExpiresAt - os.time()

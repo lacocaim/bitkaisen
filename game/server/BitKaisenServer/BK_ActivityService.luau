@@ -1952,6 +1952,41 @@ local function processActivity(player, activityId)
 			logMessage = tAct(player, "rest", nil, "You rested and recovered.")
 		end
 
+	elseif activityId == "prosthetic_limb" then
+		-- Era gated on purpose: a prosthetic that gives back most of a limb is modern surgery,
+		-- not something the Heian world can offer.
+		local era = getCurrentEra(stats)
+		if era ~= "Modern Era" and era ~= "Collapse Era" then
+			stats.ActivitiesDoneThisAge -= 1
+			fireLifeUpdate(player, stats, tAct(player, "prosthetic_wrong_era", nil, "No surgeon in this era can build you a limb."))
+			return
+		end
+
+		local lost = typeof(stats.LostLimbs) == "table" and stats.LostLimbs or {}
+		if #lost <= 0 then
+			stats.ActivitiesDoneThisAge -= 1
+			fireLifeUpdate(player, stats, tAct(player, "prosthetic_nothing", nil, "You have not lost a limb."))
+			return
+		end
+
+		local cost = 9000
+		if (tonumber(stats.Money) or 0) < cost then
+			stats.ActivitiesDoneThisAge -= 1
+			fireLifeUpdate(player, stats, tAct(player, "prosthetic_no_money", { cost = cost }, "A prosthetic limb costs $" .. cost .. "."))
+			return
+		end
+
+		stats.Money = math.max(0, (tonumber(stats.Money) or 0) - cost)
+		local limb = table.remove(lost, 1)
+		stats.LostLimbs = lost
+		-- Deliberately less than the limb was worth. The prosthetic gives back most of the
+		-- strength but not all of it, so the fight that took the limb still cost something.
+		local recovered = math.random(3, 6)
+		stats.Strength = math.clamp((tonumber(stats.Strength) or 0) + recovered, 0, 100)
+		stats.Happiness = math.clamp((tonumber(stats.Happiness) or 0) + 6, 0, 100)
+		logMessage = tAct(player, "prosthetic_fitted", { limb = tostring(limb), n = recovered },
+			"A surgeon fitted a prosthetic where your " .. tostring(limb) .. " used to be. It answers a half second late, but it answers. Strength +" .. tostring(recovered) .. ".")
+
 	elseif activityId == "doctor" then
 		local cost = 120
 

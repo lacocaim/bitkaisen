@@ -66,9 +66,9 @@ local TECHNIQUE_FLAVOR = {
 
 local TECHNIQUE_DESCRIPTION = {
 	["Limitless"] = "A technique inherited through the Gojo bloodline that manipulates space at the atomic level. The user applies cursed energy to the concept of distance itself, generating infinite convergence that makes direct contact nearly impossible. At its peak, this technique produces an autonomous barrier around the user that deflects anything without conscious thought.",
-	["Ten Shadows"] = "A technique that summons and controls up to ten shikigami through the medium of shadows. Each shikigami must be tamed through ritual combat before it can be commanded — a shikigami that defeats its user is lost forever. The technique's power scales with how many shikigami the user controls and how well each one has been mastered.",
+	["Ten Shadows"] = "A technique that summons and controls up to ten shikigami through the medium of shadows. Each shikigami must be tamed through ritual combat before it can be commanded, a shikigami that defeats its user is lost forever. The technique's power scales with how many shikigami the user controls and how well each one has been mastered.",
 	["Blood Manipulation"] = "A technique that grants complete control over one's own blood. The user can alter blood viscosity, temperature, and trajectory, weaponizing it externally or reinforcing the body from within. Skilled use can stop blood loss entirely, making the user nearly immune to conventional injury in a prolonged fight.",
-	["Cursed Speech"] = "A technique that binds cursed energy to spoken commands, forcing reality to comply. The words themselves carry weight — a command delivered with sufficient force becomes physically unavoidable. The technique taxes the user's throat with every use, limiting how often commands can be issued before the body starts to break.",
+	["Cursed Speech"] = "A technique that binds cursed energy to spoken commands, forcing reality to comply. The words themselves carry weight, a command delivered with sufficient force becomes physically unavoidable. The technique taxes the user's throat with every use, limiting how often commands can be issued before the body starts to break.",
 	["Boogie Woogie"] = "A technique that swaps the position of anything that has been touched with cursed energy. Targets can include people, objects, or the user themselves. The swap is instantaneous and requires no wind-up, making it one of the most unpredictable close-range techniques in practical combat.",
 	["Straw Doll"] = "A technique that creates cursed connections between the user's nails and a target, bypassing distance entirely. Attacks delivered to a nail or effigy transmit directly to the linked target. The connection persists as long as the cursed link remains active, making it effective against enemies who try to disengage.",
 	["Ratio Technique"] = "A technique that divides anything the user touches into a ratio of ten parts. The point that falls on the precise boundary becomes a guaranteed critical strike regardless of the target's defenses. Masters can identify this point on a moving target mid-combat.",
@@ -78,19 +78,19 @@ local TECHNIQUE_DESCRIPTION = {
 	["Thread Manipulation"] = "A technique that creates and controls threads of condensed cursed energy. The threads are invisible to those without cursed energy sensitivity and strong enough to cut through flesh and bone at sufficient mastery.",
 	["Mirror Step"] = "A technique that allows the user to enter and travel through reflective surfaces, emerging from any other reflective surface within range. At higher mastery, the user can pull targets into mirror-space.",
 	["Grave Bloom"] = "A technique that generates cursed flowers from accumulated death energy. The blooms absorb cursed energy from their surroundings and can be detonated, releasing the stored energy as a purifying blast.",
-	["Static Binding"] = "A technique that generates cursed static — a field of disruptive energy that interferes with cursed technique output and motor control. At high mastery, the field can lock a target's technique entirely for a short window.",
-	["Glass Veil"] = "A technique that bends light and cursed perception, making the user difficult to track visually or sense with cursed energy. The user does not become truly invisible — they become inconsistent.",
+	["Static Binding"] = "A technique that generates cursed static, a field of disruptive energy that interferes with cursed technique output and motor control. At high mastery, the field can lock a target's technique entirely for a short window.",
+	["Glass Veil"] = "A technique that bends light and cursed perception, making the user difficult to track visually or sense with cursed energy. The user does not become truly invisible, they become inconsistent.",
 	["Paper Shikigami"] = "A technique that animates paper constructs into functional shikigami. Each construct is single-use and limited in durability, but the technique allows the user to mass-produce scouts, decoys, and support units rapidly.",
 	["Bone Forge"] = "A technique that hardens and shapes the user's own bone matter into weapons and tools. The extracted bone is denser than steel at peak output and can be regrown given enough cursed energy.",
 	["Shadow Stitch"] = "A technique that anchors a target through their shadow, restricting movement as long as the shadow-link holds. Breaking the stitch requires enough force to physically tear the cursed connection.",
 	["Echo Pulse"] = "A technique that reads cursed energy through vibration and sound. At high mastery, the user can send a pulse that temporarily disrupts technique activation in a short radius.",
 	["Crow Funeral"] = "A technique that controls cursed crows as scouting, combat, and intimidation instruments. A large enough flock creates an oppressive presence that degrades enemy morale and blocks line of sight.",
-	["Heavenly Restriction"] = "Not a cursed technique — an inborn contract that strips the body of cursed energy entirely in exchange for physical ability pushed beyond human limits. The restriction is permanent and cannot be undone.",
+	["Heavenly Restriction"] = "Not a cursed technique but an inborn contract that strips the body of cursed energy entirely in exchange for physical ability pushed beyond human limits. The restriction is permanent and cannot be undone.",
 	["Shrine"] = "A technique that generates two intersecting slashes of pure cursed energy at all times, forming a cross-shaped zone of destruction the user can focus or release. The slashes cut through anything regardless of conventional defense.",
 	["Brain Transplant"] = "A technique that allows the user to transfer their consciousness into a new host body through physical contact and cursed surgery. Over time, the user can accumulate techniques from previous hosts.",
 	["Pumpkin Control"] = "A technique that animates pumpkins and seasonal plant matter with cursed energy, using them as constructs for combat, defense, and field control.",
 	["Copy"] = "A technique that records and reproduces cursed techniques the user has observed. The copied technique is always weaker than the original and requires CE expenditure proportional to the original's complexity.",
-	["Rika Manifestation"] = "A technique born from cursed love — a contract sealed in grief that bound the spirit of a deceased loved one to the user as an immense cursed spirit. Control is imperfect at lower mastery.",
+	["Rika Manifestation"] = "A technique born from cursed love, a contract sealed in grief that bound the spirit of a deceased loved one to the user as an immense cursed spirit. Control is imperfect at lower mastery.",
 	["Cursed Spirit Manipulation"] = "A technique that allows the user to consume and control cursed spirits, folding them into a personal army. Each consumed spirit retains its ability, which the user can then deploy.",
 }
 
@@ -429,7 +429,7 @@ local function refresh()
 		awakeText = "Awakening: Triggered (" .. ctxLabel .. ")"
 		awakeColor = theme.Purple
 	elseif stats.AwakeningEligible == true then
-		awakeText = "Awakening: Eligible — conditions not yet met"
+		awakeText = "Awakening: Eligible, conditions not yet met"
 		awakeColor = theme.Gold
 	else
 		awakeText = "Awakening: Not applicable"

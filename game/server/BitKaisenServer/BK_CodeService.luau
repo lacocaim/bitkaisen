@@ -59,12 +59,54 @@ end
 local BitKaisenSaveSystem = {}
 
 local CODE_ORDER = {
+	"TOKYO30",
+	"SHIKIGAMI",
+	"WEAREBACK",
 	"OPCODE",
 	"BLACKMARKET",
 	"HIDDENVEIL",
 }
 
 local CODE_DEFINITIONS = {
+
+	-- Update 30. Rewards sit inside the range the three older codes already set, so a
+	-- returning player gets a real push without skipping past the early game.
+	TOKYO30 = {
+		Name = "Tokyo30",
+		Description = "The Incident Map is open. Every site on it is yours to walk.",
+		RewardText = "+$20,000 | +70 CE | +8 Mastery",
+		Grant = function(stats)
+			stats.Money = (stats.Money or 0) + 20000
+			stats.CursedEnergy = (stats.CursedEnergy or 0) + 70
+			stats.TechniqueMastery = math.clamp((stats.TechniqueMastery or 0) + 8, 0, 100)
+			return "+$20,000 Money, +70 Cursed Energy, and +8 Technique Mastery"
+		end
+	},
+
+	SHIKIGAMI = {
+		Name = "Shikigami",
+		Description = "Something is standing in your shadow, waiting to be sent out.",
+		RewardText = "+$12,000 | +50 CE | +6 Speed | +5 Durability",
+		Grant = function(stats)
+			stats.Money = (stats.Money or 0) + 12000
+			stats.CursedEnergy = (stats.CursedEnergy or 0) + 50
+			stats.Speed = math.clamp((stats.Speed or 0) + 6, 0, 100)
+			stats.Durability = math.clamp((stats.Durability or 0) + 5, 0, 100)
+			return "+$12,000 Money, +50 Cursed Energy, +6 Speed, and +5 Durability"
+		end
+	},
+
+	WEAREBACK = {
+		Name = "WeAreBack",
+		Description = "For everyone who kept playing while it was quiet.",
+		RewardText = "+$25,000 | +10 Rep | +5 Smarts",
+		Grant = function(stats)
+			stats.Money = (stats.Money or 0) + 25000
+			stats.Reputation = (tonumber(stats.Reputation) or 0) + 10
+			stats.Smarts = math.clamp((stats.Smarts or 0) + 5, 0, 100)
+			return "+$25,000 Money, +10 Reputation, and +5 Smarts"
+		end
+	},
 
 	OPCODE = {
 		Name = "OPCode",

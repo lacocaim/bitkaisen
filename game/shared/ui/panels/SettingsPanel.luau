@@ -6,6 +6,7 @@ local MarketplaceService = game:GetService("MarketplaceService")
 local UserInputService = game:GetService("UserInputService")
 
 local uiState = require("@ui-state/uiState")
+local navRegistry = require("@ui-state/navRegistry")
 local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
 local L = BitKaisenLocale.getClientLocale()
 
@@ -121,6 +122,7 @@ local DEFAULT_SETTINGS = {
 	ScreenShake = true,
 	SkipCombatSkillChecks = false,
 	GuideEnabled = true,
+	SimpleNavBar = true,
 }
 
 local THEME = {
@@ -549,6 +551,9 @@ local function applyAllSettings()
 	scanSounds()
 	applyAudioSettings()
 	applyReadabilityMode()
+	-- Runs on both paths that matter: the toggle below, and the initial
+	-- syncSettingsFromStats when a life loads.
+	navRegistry.setSimpleMode(currentSettings.SimpleNavBar ~= false)
 end
 
 task.spawn(function()
@@ -1259,6 +1264,9 @@ buildGameplayPage = function()
 
 	makeSectionLabel("Display")
 	makeToggleRow("High Contrast Text", "Makes life log text larger and easier to read.", "HighContrastText")
+
+	makeSectionLabel("Menu")
+	makeToggleRow("Simple Menu", "Keeps only the main categories on the menu and puts the rest behind MORE. Turn off to show every category at once.", "SimpleNavBar")
 
 	makeSectionLabel("Guide")
 	makeToggleRow("Guide", "An indicator that suggests your next move: training, fighting, traveling...", "GuideEnabled")

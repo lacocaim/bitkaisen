@@ -126,7 +126,7 @@ subtitleLabel.TextSize = 13
 subtitleLabel.Font = Enum.Font.GothamBold
 subtitleLabel.TextWrapped = true
 subtitleLabel.TextXAlignment = Enum.TextXAlignment.Center
-subtitleLabel.Text = "You are on the brink of death. Force Reverse Cursed Technique to survive — at the cost of all your CE."
+subtitleLabel.Text = "You are on the brink of death. Force Reverse Cursed Technique to survive, at the cost of all your CE."
 subtitleLabel.ZIndex = 852
 subtitleLabel.Parent = window
 

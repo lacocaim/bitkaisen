@@ -2,6 +2,11 @@
 return {
 
 	activities = {
+		-- protese (update 30)
+		prosthetic_fitted         = "Um cirurgião colocou uma prótese onde antes estava seu {limb}. Responde meio segundo atrasada, mas responde. Força +{n}.",
+		prosthetic_no_money       = "Uma prótese custa ${cost}.",
+		prosthetic_nothing        = "Você não perdeu nenhum membro.",
+		prosthetic_wrong_era      = "Nenhum cirurgião desta era pode construir um membro para você.",
 		-- childhood
 		play_outside              = "Você passou um tempo brincando lá fora e aproveitou um momento normal de infância.",
 		watch_shadows             = "Você observou as formas estranhas que se moviam onde mais ninguém olhava.",
@@ -446,6 +451,7 @@ return {
 		nav_mastery       = "MAESTRIA",
 		nav_souls         = "VIDAS",
 		nav_incident_map  = "MAPA DE INCIDENTES",
+		nav_more          = "MAIS",
 
 		challenge_title     = "DESAFIOS SEMANAIS",
 		challenge_loading   = "Carregando desafios...",
@@ -1724,7 +1730,7 @@ return {
 		tab_world             = "MUNDO",
 		world_load_error       = "Não foi possível carregar os dados do mundo.",
 		world_private_only     = "Isso só se aplica no modo Público.",
-		world_sealed_title     = "SELO FINAL -- ESTE MUNDO ESTÁ SELADO",
+		world_sealed_title     = "SELO FINAL: ESTE MUNDO ESTÁ SELADO",
 		world_sovereign        = "Você foi coroado Feiticeiro Soberano.",
 		world_legend_prefix    = "Sua lenda: ",
 		world_ranking_title    = "FEITICEIROS NOTÁVEIS DESTE MUNDO",
@@ -2791,14 +2797,14 @@ return {
 		step4_title  = "Este É Você",
 		step4_body   = "Seu rank, técnica, energia amaldiçoada, dinheiro, reputação e progresso de rank vivem todos aqui.",
 		step5_title  = "Acesso Rápido",
-		step5_body   = "Aqui em cima: Ajuda e Guia, recompensas grátis, configurações e outras ações rápidas -- sempre a um clique.",
+		step5_body   = "Aqui em cima: Ajuda e Guia, recompensas grátis, configurações e outras ações rápidas, sempre a um clique.",
 
 		cat_weekly_title = "Desafios Semanais",
 		cat_weekly_body = "Complete metas semanais por dinheiro extra, EC e maestria.",
 		cat_missions_title = "Missões",
 		cat_missions_body = "Aceite trabalhos da Sociedade Jujutsu por dinheiro, reputação e progresso de rank.",
 		cat_activities_title = "Atividades",
-		cat_activities_body = "Passe seus seis meses aqui: treine, descanse, trabalhe ou arrisque. Você só tem algumas ações por idade -- o contador mostra quantas restam.",
+		cat_activities_body = "Passe seus seis meses aqui: treine, descanse, trabalhe ou arrisque. Você só tem algumas ações por idade, e o contador mostra quantas restam.",
 		cat_relationships_title = "Relacionamentos",
 		cat_relationships_body = "Família, amigos e rivais envelhecem com você. Use seu tempo para construir confiança, treinar juntos ou recrutá-los.",
 		cat_assets_title = "Bens",
@@ -2832,7 +2838,7 @@ return {
 		optin_header_title = "ACESSO AO GUIA",
 		optin_header_subtitle = "OPCIONAL",
 		optin_title = "Manter o Guia ativado?",
-		optin_body = "O Guia aponta para uma boa próxima jogada -- treino, uma luta, uma viagem -- para você nunca ficar perdido. Você pode mudar isso a qualquer momento em Menu > Configurações.",
+		optin_body = "O Guia aponta para uma boa próxima jogada (treino, uma luta, uma viagem) para você nunca ficar perdido. Você pode mudar isso a qualquer momento em Menu > Configurações.",
 		optin_keep_button = "MANTER GUIA",
 		optin_skip_button = "Não, obrigado, desativar",
 
@@ -2854,9 +2860,9 @@ return {
 		guide_relationships = "Visite Alguém",
 		guide_domain = "Treine seu Domínio",
 		guide_age_up = "Pressione +IDADE",
-		guide_danger_tip = "Loja -- Recuperação",
-		guide_broke_tip = "Loja -- Dinheiro",
-		guide_losing_streak_tip = "Loja -- Kit de Recuperação",
+		guide_danger_tip = "Loja: Recuperação",
+		guide_broke_tip = "Loja: Dinheiro",
+		guide_losing_streak_tip = "Loja: Kit de Recuperação",
 		timeskip_offer_title = "Pular no Tempo?",
 		timeskip_offer_body = "Parece que você está envelhecendo rápido. Um Salto no Tempo avança anos instantaneamente.",
 		timeskip_offer_option = "+%d Anos",
@@ -2998,6 +3004,12 @@ return {
 		cat_premium   = "Premium",
 	},
 
+	nav_more_panel = {
+		title            = "MAIS",
+		subtitle         = "Todo o resto. Desative Simple Menu nas Configurações para manter tudo na barra.",
+		subtitle_mobile  = "Desative Simple Menu nas Configurações para manter todas as categorias no menu.",
+	},
+
 	world_history = {
 		title           = "HISTÓRIA DO MUNDO",
 		tab_history     = "HISTÓRIA",
@@ -3009,7 +3021,7 @@ return {
 		tab_world             = "MUNDO",
 		world_load_error       = "Não foi possível carregar os dados do mundo.",
 		world_private_only     = "Isso só se aplica no modo Público.",
-		world_sealed_title     = "SELO FINAL -- ESTE MUNDO ESTÁ SELADO",
+		world_sealed_title     = "SELO FINAL: ESTE MUNDO ESTÁ SELADO",
 		world_sovereign        = "Você foi coroado Feiticeiro Soberano.",
 		world_legend_prefix    = "Sua lenda: ",
 		world_ranking_title    = "FEITICEIROS NOTÁVEIS DESTE MUNDO",

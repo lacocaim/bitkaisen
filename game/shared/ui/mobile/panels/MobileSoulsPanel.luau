@@ -116,7 +116,7 @@ refresh = function()
 		if soul.IsYou then
 			local target = byCE[i - 1]
 			local pursuitText = "🎯 #" .. tostring(i) .. " " .. _g("pursuit_of", "of") .. " " .. tostring(#byCE) .. " " .. _g("pursuit_souls", "lives")
-				.. (target and (" -- " .. _g("pursuit_chasing", "chasing") .. " " .. tostring(target.Name)) or " -- " .. _g("pursuit_top", "you lead this world"))
+				.. (target and (" - " .. _g("pursuit_chasing", "chasing") .. " " .. tostring(target.Name)) or " - " .. _g("pursuit_top", "you lead this world"))
 			mobileLabel({ parent = headerCard, text = pursuitText, size = 12, color = theme.Purple, font = Enum.Font.GothamBold, order = 3 })
 			break
 		end
@@ -381,7 +381,7 @@ refresh = function()
 		local throneCard = mobileCard({ parent = scroll, order = 8, accentColor = theme.Gold })
 		mobileLabel({ parent = throneCard, text = "👑 " .. _g("thrones_title", "LOS TRONOS"), size = 13, color = theme.Gold, font = Enum.Font.GothamBlack, order = 1 })
 		for i, seat in ipairs(thrones) do
-			mobileLabel({ parent = throneCard, text = (seat.IsSovereignSeat and "👑 " or tostring(i) .. ". ") .. tostring(seat.Name) .. "  --  ⭐ " .. tostring(seat.Fame) .. " Fame", size = 12, color = seat.IsSovereignSeat and theme.Gold or theme.SubText, order = 1 + i })
+			mobileLabel({ parent = throneCard, text = (seat.IsSovereignSeat and "👑 " or tostring(i) .. ". ") .. tostring(seat.Name) .. "  -  ⭐ " .. tostring(seat.Fame) .. " Fame", size = 12, color = seat.IsSovereignSeat and theme.Gold or theme.SubText, order = 1 + i })
 		end
 	end
 

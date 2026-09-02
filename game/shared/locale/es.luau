@@ -2,6 +2,11 @@
 return {
 
 	activities = {
+		-- protesis (update 30)
+		prosthetic_fitted         = "Un cirujano te colocó una prótesis donde antes estaba tu {limb}. Responde medio segundo tarde, pero responde. Fuerza +{n}.",
+		prosthetic_no_money       = "Una prótesis cuesta ${cost}.",
+		prosthetic_nothing        = "No has perdido ningún miembro.",
+		prosthetic_wrong_era      = "Ningún cirujano de esta era puede construirte un miembro.",
 		-- childhood
 		play_outside              = "Pasaste tiempo jugando afuera y disfrutaste un momento normal de infancia.",
 		watch_shadows             = "Observaste las formas extrañas que se movían donde nadie más miraba.",
@@ -446,6 +451,7 @@ return {
 		nav_mastery       = "MAESTRÍA",
 		nav_souls         = "VIDAS",
 		nav_incident_map  = "MAPA DE INCIDENTES",
+		nav_more          = "MÁS",
 
 		challenge_title     = "DESAFÍOS SEMANALES",
 		challenge_loading   = "Cargando desafíos...",
@@ -1724,7 +1730,7 @@ return {
 		tab_world             = "MUNDO",
 		world_load_error       = "No se pudo cargar la información del mundo.",
 		world_private_only     = "Esto solo aplica en modo Público.",
-		world_sealed_title     = "SELLO FINAL -- ESTE MUNDO ESTÁ SELLADO",
+		world_sealed_title     = "SELLO FINAL: ESTE MUNDO ESTÁ SELLADO",
 		world_sovereign        = "Fuiste coronado Hechicero Soberano.",
 		world_legend_prefix    = "Tu leyenda: ",
 		world_ranking_title    = "HECHICEROS NOTABLES DE ESTE MUNDO",
@@ -2791,14 +2797,14 @@ return {
 		step4_title  = "Este Eres Tú",
 		step4_body   = "Tu rango, técnica, energía maldita, dinero, reputación y progreso de rango viven todos aquí.",
 		step5_title  = "Acceso Rápido",
-		step5_body   = "Aquí arriba: Ayuda y Guía, recompensas gratis, configuración y otras acciones rápidas -- siempre a un clic.",
+		step5_body   = "Aquí arriba: Ayuda y Guía, recompensas gratis, configuración y otras acciones rápidas, siempre a un clic.",
 
 		cat_weekly_title = "Retos Semanales",
 		cat_weekly_body = "Completa metas semanales por dinero extra, EC y maestría.",
 		cat_missions_title = "Misiones",
 		cat_missions_body = "Acepta trabajos de la Sociedad Jujutsu por dinero, reputación y progreso de rango.",
 		cat_activities_title = "Actividades",
-		cat_activities_body = "Aquí pasas tus seis meses: entrena, descansa, trabaja o arriesga. Solo tienes pocas acciones por edad -- el contador muestra cuántas quedan.",
+		cat_activities_body = "Aquí pasas tus seis meses: entrena, descansa, trabaja o arriesga. Solo tienes pocas acciones por edad, y el contador muestra cuántas quedan.",
 		cat_relationships_title = "Relaciones",
 		cat_relationships_body = "Familia, amigos y rivales envejecen contigo. Dedica tiempo a construir confianza, entrenar juntos o reclutarlos.",
 		cat_assets_title = "Activos",
@@ -2832,7 +2838,7 @@ return {
 		optin_header_title = "ACCESO A LA GUÍA",
 		optin_header_subtitle = "OPCIONAL",
 		optin_title = "¿Mantener la Guía activada?",
-		optin_body = "La Guía señala una buena próxima jugada -- entrenar, una pelea, un viaje -- para que nunca te pierdas. Puedes cambiarlo cuando quieras en Menú > Configuración.",
+		optin_body = "La Guía señala una buena próxima jugada (entrenar, una pelea, un viaje) para que nunca te pierdas. Puedes cambiarlo cuando quieras en Menú > Configuración.",
 		optin_keep_button = "MANTENER GUÍA",
 		optin_skip_button = "No gracias, desactivarla",
 
@@ -2854,9 +2860,9 @@ return {
 		guide_relationships = "Visita a Alguien",
 		guide_domain = "Entrena tu Dominio",
 		guide_age_up = "Presiona +EDAD",
-		guide_danger_tip = "Tienda -- Salud",
-		guide_broke_tip = "Tienda -- Dinero",
-		guide_losing_streak_tip = "Tienda -- Recuperación",
+		guide_danger_tip = "Tienda: Salud",
+		guide_broke_tip = "Tienda: Dinero",
+		guide_losing_streak_tip = "Tienda: Recuperación",
 		timeskip_offer_title = "¿Saltar en el Tiempo?",
 		timeskip_offer_body = "Parece que estás avanzando de edad rápido. Un Salto de Tiempo te adelanta años al instante.",
 		timeskip_offer_option = "+%d Años",
@@ -2998,6 +3004,12 @@ return {
 		cat_premium   = "Premium",
 	},
 
+	nav_more_panel = {
+		title            = "MÁS",
+		subtitle         = "Todo lo demás. Desactiva Simple Menu en Ajustes para tenerlo todo en la barra.",
+		subtitle_mobile  = "Desactiva Simple Menu en Ajustes para mantener todas las categorías en el menú.",
+	},
+
 	relationships = {
 		title          = "RELACIONES",
 		actions        = "ACCIONES",
@@ -3021,7 +3033,7 @@ return {
 		tab_world             = "MUNDO",
 		world_load_error       = "No se pudo cargar la información del mundo.",
 		world_private_only     = "Esto solo aplica en modo Público.",
-		world_sealed_title     = "SELLO FINAL -- ESTE MUNDO ESTÁ SELLADO",
+		world_sealed_title     = "SELLO FINAL: ESTE MUNDO ESTÁ SELLADO",
 		world_sovereign        = "Fuiste coronado Hechicero Soberano.",
 		world_legend_prefix    = "Tu leyenda: ",
 		world_ranking_title    = "HECHICEROS NOTABLES DE ESTE MUNDO",

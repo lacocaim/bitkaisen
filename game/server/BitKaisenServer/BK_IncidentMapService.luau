@@ -330,7 +330,67 @@ local function buildPayload(player)
 	return BitKaisenIncidentMap.BuildPayload(stats)
 end
 
-local function handleAction(player, locationId, actionId)
+-- Update 30 -- sending a shikigami to hold a site.
+-- Its combat posture decides the job: Guard suppresses the threat, Hunt wears down the
+-- fear, Scout digs up residue and rumor. The cost is real -- a shadow standing on the
+-- map is a shadow not standing next to you, and BitKaisenCombat stops counting it.
+local function applyShikigamiAction(stats, definition, state, actionId, shikigamiName)
+	if BitKaisenIncidentMap.IsCursedSpirit(stats) then
+		return false, "Cursed spirits do not command the Ten Shadows."
+	end
+
+	shikigamiName = tostring(shikigamiName or "")
+	local deployments = BitKaisenIncidentMap.EnsureShikigamiState(stats)
+
+	if actionId == "recall_shikigami" then
+		if not deployments[shikigamiName] then
+			return false, "That shikigami is not standing anywhere."
+		end
+		deployments[shikigamiName] = nil
+		return true, addLogPrefix("SHIKIGAMI", shikigamiName .. " melts back into your shadow. It counts toward your strength again.")
+	end
+
+	local owned = false
+	for _, name in ipairs(BitKaisenIncidentMap.GetTamedNames(stats)) do
+		if tostring(name) == shikigamiName then
+			owned = true
+			break
+		end
+	end
+	if not owned then
+		return false, "You have not tamed that shikigami."
+	end
+	if deployments[shikigamiName] then
+		return false, shikigamiName .. " is already holding another site."
+	end
+
+	local limit = BitKaisenIncidentMap.GetDeployLimit(stats)
+	if BitKaisenIncidentMap.CountDeployed(stats) >= limit then
+		return false, "You can only hold " .. tostring(limit) .. " shikigami on the map at once."
+	end
+	for _, heldId in pairs(deployments) do
+		if tostring(heldId) == definition.Id then
+			return false, "Another shikigami already holds that site."
+		end
+	end
+
+	deployments[shikigamiName] = definition.Id
+	local role, effect = BitKaisenIncidentMap.GetShikigamiRole(shikigamiName)
+
+	if role == "Guard" then
+		state.Threat = clamp(state.Threat - math.random(6, 12), 0, 100)
+	elseif role == "Hunt" then
+		state.Fear = clamp(state.Fear - math.random(4, 9), 0, 100)
+	else
+		state.CursedResidue = clamp(state.CursedResidue + math.random(8, 15), 0, 100)
+		state.Rumor = BitKaisenIncidentMap.GetRandomRumor(definition)
+	end
+
+	return true, addLogPrefix("SHIKIGAMI", shikigamiName .. " takes position at " .. definition.Name
+		.. ". " .. effect .. " While it stands there it no longer adds to your own strength.")
+end
+
+local function handleAction(player, locationId, actionId, shikigamiName)
 	if not checkRateLimit(player, "IncidentMapAction") then
 		return
 	end
@@ -340,12 +400,31 @@ local function handleAction(player, locationId, actionId)
 		return
 	end
 
+	-- The payload already refuses to build in the Heian era, but the remote is still
+	-- reachable, so the door is shut here too rather than trusting the client.
+	if BitKaisenIncidentMap.IsEraBlocked(stats) then
+		refresh(player, stats, addLogPrefix("INCIDENT MAP", "There is no case board in this era."))
+		return
+	end
+
 	locationId = tostring(locationId or "")
 	actionId = tostring(actionId or "")
 
 	local definition, state = getLocationState(stats, locationId)
 	if not definition or not state then
 		refresh(player, stats, addLogPrefix("INCIDENT MAP", "That location is no longer available."))
+		return
+	end
+
+	-- Handled before IsActionAvailable: these two are not in the role's action list and
+	-- they carry a shikigami name in a fourth argument, which that check knows nothing about.
+	if actionId == "deploy_shikigami" or actionId == "recall_shikigami" then
+		local shikiOk, shikiMessage = applyShikigamiAction(stats, definition, state, actionId, shikigamiName)
+		state.ActiveIncident = (tonumber(state.Threat) or 0) >= 35
+		refresh(player, stats, shikiMessage or addLogPrefix("SHIKIGAMI", "Nothing happened."))
+		if shikiOk then
+			save(player)
+		end
 		return
 	end
 

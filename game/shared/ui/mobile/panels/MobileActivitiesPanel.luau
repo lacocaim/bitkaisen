@@ -384,28 +384,63 @@ local function buildPills(categories: { string })
 	end
 end
 
+-- The panel is opened dozens of times per life. Tearing every card down before the
+-- server answers meant each open flashed "Loading..." and rebuilt ~470 instances even
+-- when nothing had changed. This signature says whether a rebuild is actually needed.
+local lastSignature = nil
+
+local function payloadSignature(activities)
+	local parts = table.create(#activities)
+	for i, entry in ipairs(activities) do
+		parts[i] = table.concat({
+			tostring(entry.Id),
+			entry.CanDo and "1" or "0",
+			tostring(entry.Category or ""),
+			tostring(entry.Title or ""),
+			tostring(entry.LockedReason or ""),
+		}, "\1")
+	end
+	return table.concat(parts, "\2")
+end
+
 local function refresh()
-	clearScroll()
-	selectedCategory = "All"
-	createMessageCard(_act("loading", "Loading activities..."), theme.SubText)
+	-- Stale-while-revalidate, same as the desktop panel: keep the current cards up while
+	-- the server is asked again, and only rebuild when the answer actually differs.
+	local hasCards = lastSignature ~= nil
+	if not hasCards then
+		clearScroll()
+		selectedCategory = "All"
+		createMessageCard(_act("loading", "Loading activities..."), theme.SubText)
+	end
 
 	local success, activities = pcall(function()
 		return getActivityList:InvokeServer()
 	end)
 
-	clearScroll()
-
 	if not success then
 		warn("[MobileActivitiesPanel] Failed to get activities:", activities)
+		lastSignature = nil
+		clearScroll()
 		createMessageCard(_act("error_load", "Could not load activities.\nCheck server output."), theme.Bad)
 		return
 	end
 
 	if not activities or #activities == 0 then
+		lastSignature = nil
+		clearScroll()
 		createMessageCard(_act("none_avail", "No activities available."), theme.SubText)
 		return
 	end
 
+	local signature = payloadSignature(activities)
+	if hasCards and signature == lastSignature and selectedCategory == "All" then
+		activityCache = activities
+		return
+	end
+	lastSignature = signature
+
+	clearScroll()
+	selectedCategory = "All"
 	activityCache = activities
 
 	-- Determine which categories are present

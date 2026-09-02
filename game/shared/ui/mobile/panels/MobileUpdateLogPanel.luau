@@ -13,6 +13,36 @@ local scroll: ScrollingFrame
 
 local sections = {
 	{
+		header = "Update 30 - The Incident Map",
+		body = "• The Incident Map is no longer a list. It is a full-screen map of Tokyo Metropolis, and the twelve incidents are pins on it.\n• Every pin reads its own threat: colour tells you how bad it is, and an active incident pulses faster the worse it gets.\n• The mountains of Okutama sit west, the wards and the bay east. The further you travel from the city, the uglier the site.\n• Cursed energy drifts across the map while you read it.\n• Select a site to open its dossier: threat, fear, society attention, residue and control.",
+		color = theme.Purple,
+	},
+	{
+		header = "Update 30 - Shikigami Hold the Map",
+		body = "• Send a tamed shikigami to stand on an incident. Its combat posture decides its job: Guard suppresses the threat, Hunt sharpens your exorcism, Scout drags residue and rumors into the light.\n• Divine Dogs and Max Elephant guard. Nue, Great Serpent, Piercing Ox and Tiger Funeral hunt. Toad, Rabbit Escape and Round Deer scout.\n• It costs you. A shadow standing on the map is a shadow not standing next to you, so it stops counting toward your combat power until you recall it.\n• Shikigami Master holds two on the map at once instead of one.\n• The Incident Map does not exist in the Heian era. Jujutsu society keeps no case board yet.",
+		color = theme.Purple,
+	},
+	{
+		header = "Update 30 - Simple Menu",
+		body = "• The menu carried fifteen categories. It now starts with six: Missions, Activities, Relationships, Assets and Jobs, and folds the rest behind MORE.\n• Nothing was removed. Every category is one tap away.\n• Toggle Simple Menu in Settings to bring all fifteen back.\n• Players who already had a save keep the full menu they learned. New players start simple.",
+		color = theme.Blue,
+	},
+	{
+		header = "Update 30 - You Asked For These",
+		body = "• Prosthetic limb. Losing a limb was permanent with no way back unless Reverse Cursed Technique caught it as it happened. From age 16, in the Modern and Collapse eras, a surgeon will fit a prosthetic for $9,000. It gives back most of the strength, never all of it. Suggested by plaZa.\n• Your stats now say what they are worth. Every bar in the dossier shows the combat power that stat is contributing right now. Speed, Strength and Durability were doing real work and never said how much. Suggested by noobeh.\n• Perception Blitz is visible. When the enemy is the faster one you counter for 75 percent of the damage they land. That has been true since Update 29 and nothing ever told you. The Blitz button now reads COUNTER READY when it is armed.",
+		color = theme.Gold,
+	},
+	{
+		header = "Update 30 - Fixes",
+		body = "• The combat action row no longer spills outside the window. It wraps onto two lines and the labels shrink to fit instead of clipping.\n• The shikigami and binding vow popups render properly again. They were being dragged into the button row.\n• Activities opens instantly on repeat visits instead of tearing itself down and rebuilding every time.\n• Reputation now actually changes. Twelve places awarded or removed reputation and silently did nothing.\n• Surviving with Verge of Death RCT no longer throws away the rest of the result and fails to save.\n• High Society no longer amplifies relationship losses. Only gains, as intended.",
+		color = theme.Green,
+	},
+	{
+		header = "Update 30 - New Codes",
+		body = "Redeem in Settings > Codes:\n\n• Tokyo30 - +$20,000, +70 CE, +8 Mastery\n• Shikigami - +$12,000, +50 CE, +6 Speed, +5 Durability\n• WeAreBack - +$25,000, +10 Reputation, +5 Smarts",
+		color = theme.Gold,
+	},
+	{
 		header = "Update 29 - Combat Is Yours Now",
 		body = "• Chant: spend a turn building your technique. The next one hits 1.5x harder and breaks the normal damage cap.\n• Blitz is no longer automatic. Arm it when your Speed clears the gap and choose the moment it fires.\n• Brace: a Durability move. Plant your feet, eat the combo, absorb a slice of it, and return everything you soaked on your next hit.\n• CE Output now raises your technique damage cap from 35% up to 43%.\n• Every combat button now tells you why it is locked and what stat unlocks it.",
 		color = theme.Bad,
@@ -506,7 +536,7 @@ local function renderSections()
 	local subtitleCard = mc.mobileCard({ parent = scroll, order = 0, accentColor = theme.Gold })
 	mc.mobileLabel({
 		parent = subtitleCard,
-		text = "UPDATE 29: Combat rework, shikigami postures, and the Vessel",
+		text = "UPDATE 30: The Incident Map, shikigami on the map, and the Simple Menu",
 		size = 13,
 		color = theme.SubText,
 		order = 1,

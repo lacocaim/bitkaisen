@@ -98,6 +98,7 @@ navRegistry.registerBatch({
 	{ id = "technique_mastery", label = navT("nav_mastery",        "MASTERY"),        order = 12, color = theme.Purple },
 	{ id = "souls",             label = navT("nav_souls",          "LIVES"),          order = 13, color = Color3.fromRGB(120, 200, 255) },
 	{ id = "incident_map",       label = navT("nav_incident_map",  "INCIDENT MAP"),   order = 14, color = Color3.fromRGB(200, 75, 120) },
+	{ id = "nav_more",           label = navT("nav_more",           "MORE"),          order = 99, color = Color3.fromRGB(150, 150, 172) },
 })
 
 loadingScreen.bump("Preparing panels...")
@@ -105,6 +106,7 @@ loadingScreen.bump("Preparing panels...")
 tryInit("MobileWeeklyChallengesPanel", function() return require("@ui/mobile/panels/MobileWeeklyChallengesPanel") end)
 tryInit("MobileMissionsPanel", function() return require("@ui/mobile/panels/MobileMissionsPanel") end)
 tryInit("MobileActivitiesPanel", function() return require("@ui/mobile/panels/MobileActivitiesPanel") end)
+tryInit("MobileNavMorePanel", function() return require("@ui/mobile/panels/MobileNavMorePanel") end)
 tryInit("MobileBlackMarketPanel", function() return require("@ui/mobile/panels/MobileBlackMarketPanel") end)
 tryInit("MobileCultPanel", function() return require("@ui/mobile/panels/MobileCultPanel") end)
 tryInit("MobileRelationshipsPanel", function() return require("@ui/mobile/panels/MobileRelationshipsPanel") end)

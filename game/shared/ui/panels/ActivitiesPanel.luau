@@ -347,26 +347,63 @@ local function createActivityCard(activityData)
 	return card
 end
 
+-- The panel is opened dozens of times per life. Tearing every card down before the
+-- server answers meant each open flashed "Loading..." and rebuilt ~470 instances even
+-- when nothing had changed. This signature says whether a rebuild is actually needed.
+local lastSignature = nil
+
+local function payloadSignature(activities)
+	local parts = table.create(#activities)
+	for i, entry in ipairs(activities) do
+		parts[i] = table.concat({
+			tostring(entry.Id),
+			entry.CanDo and "1" or "0",
+			tostring(entry.Category or ""),
+			tostring(entry.Title or ""),
+			tostring(entry.LockedReason or ""),
+		}, "\1")
+	end
+	return table.concat(parts, "\2")
+end
+
 local function refresh()
-	clearCards()
-	clearRailButtons()
-	createMessageCard(_act("loading", "Loading activities..."), Color3.fromRGB(180, 180, 190))
+	-- Stale-while-revalidate: whatever is already on screen stays up while the server is
+	-- asked again, so a repeat open costs nothing visible.
+	local hasCards = lastSignature ~= nil
+	if not hasCards then
+		clearCards()
+		clearRailButtons()
+		createMessageCard(_act("loading", "Loading activities..."), Color3.fromRGB(180, 180, 190))
+	end
 
 	local success, activities = pcall(function()
 		return getActivityList:InvokeServer()
 	end)
 
-	clearCards()
-
 	if not success then
 		warn("[ActivitiesPanel] Failed to get activities:", activities)
+		lastSignature = nil
+		clearCards()
+		clearRailButtons()
 		createMessageCard(_act("error_load", "Could not load activities.\nCheck server output."), Color3.fromRGB(220, 90, 90))
 		return
 	end
 	if not activities or #activities <= 0 then
+		lastSignature = nil
+		clearCards()
+		clearRailButtons()
 		createMessageCard(_act("none_avail", "No activities available."), Color3.fromRGB(180, 180, 190))
 		return
 	end
+
+	local signature = payloadSignature(activities)
+	if hasCards and signature == lastSignature then
+		return
+	end
+	lastSignature = signature
+
+	clearCards()
+	clearRailButtons()
 
 	local grouped = {}
 	local presentCategories = {}

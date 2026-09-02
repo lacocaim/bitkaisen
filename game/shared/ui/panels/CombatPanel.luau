@@ -215,7 +215,7 @@ local function init(playerGui: Instance)
 	window.Name = "CombatWindow"
 	window.AnchorPoint = Vector2.new(0.5, 0.5)
 	window.Position = UDim2.new(0.5, 0, 0.52, 0)
-	window.Size = UDim2.new(0, 610, 0, 470)
+	window.Size = UDim2.new(0, 610, 0, 516)
 	window.BackgroundColor3 = theme.Panel
 	window.BorderSizePixel = 0
 	window.ZIndex = 701
@@ -334,10 +334,14 @@ local function init(playerGui: Instance)
 	ceBar.Parent = ceBarBg
 	corner(ceBar, 8)
 
+	-- Update 29 grew this row from six buttons to eleven. It wraps onto a second line
+	-- now, and these numbers drive the row height, the log offset and the window height.
+	local ACTION_ROW = { Y = 272, MaxPerRow = 6, ButtonHeight = 40, Padding = 10, Height = 90 }
+
 	local actionRow = Instance.new("Frame")
 	actionRow.Name = "ActionRow"
-	actionRow.Position = UDim2.new(0, 22, 0, 272)
-	actionRow.Size = UDim2.new(1, -44, 0, 44)
+	actionRow.Position = UDim2.new(0, 22, 0, ACTION_ROW.Y)
+	actionRow.Size = UDim2.new(1, -44, 0, ACTION_ROW.Height)
 	actionRow.BackgroundTransparency = 1
 	actionRow.ZIndex = 702
 	actionRow.Parent = window
@@ -345,6 +349,8 @@ local function init(playerGui: Instance)
 	actionLayout.FillDirection = Enum.FillDirection.Horizontal
 	actionLayout.Padding = UDim.new(0, 10)
 	actionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	actionLayout.Wraps = true
+	actionLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	actionLayout.Parent = actionRow
 
 	local function makeButton(text, color)
@@ -353,16 +359,23 @@ local function init(playerGui: Instance)
 		-- this row used to share one name, which makes them impossible to address from
 		-- a test or a script and hard to find in the explorer.
 		b.Name = (string.gsub(text, "[^%w]", "")) .. "Button"
-		b.Size = UDim2.new(1/6, -9, 1, 0)
+		b.Size = UDim2.new(1 / ACTION_ROW.MaxPerRow, -ACTION_ROW.Padding, 0, ACTION_ROW.ButtonHeight)
 		b.BackgroundColor3 = color
 		b.BorderSizePixel = 0
 		b.Text = text
 		b.TextColor3 = theme.Text
 		b.TextSize = 12
+		b.TextScaled = true
 		b.Font = Enum.Font.GothamBlack
 		b.ZIndex = 703
 		b.Parent = actionRow
 		corner(b, 8)
+		-- Labels carry live numbers ("BLITZ +25 SPD"), so they shrink to fit instead of
+		-- clipping, and never below the size where they stop being readable.
+		local textSize = Instance.new("UITextSizeConstraint")
+		textSize.MinTextSize = 8
+		textSize.MaxTextSize = 12
+		textSize.Parent = b
 		return b
 	end
 
@@ -387,8 +400,8 @@ local function init(playerGui: Instance)
 
 	local logBox = Instance.new("ScrollingFrame")
 	logBox.Name = "CombatLog"
-	logBox.Position = UDim2.new(0, 22, 0, 330)
-	logBox.Size = UDim2.new(1, -44, 1, -352)
+	logBox.Position = UDim2.new(0, 22, 0, ACTION_ROW.Y + ACTION_ROW.Height + 14)
+	logBox.Size = UDim2.new(1, -44, 1, -398)
 	logBox.BackgroundColor3 = Color3.fromRGB(11, 11, 17)
 	logBox.BorderSizePixel = 0
 	logBox.ScrollBarThickness = 4
@@ -409,15 +422,20 @@ local function init(playerGui: Instance)
 	logPad.PaddingRight = UDim.new(0, 10)
 	logPad.Parent = logBox
 
-	local actionRowButtons = { attackButton, techniqueButton, domainButton, blackFlashButton, invokeButton, vowButton, encoreButton, defendButton, fleeButton, resetButton }
+	-- BLITZ, CHANT, BRACE and SHIKIGAMI were missing from this list, so the row measured
+	-- six slots while rendering ten or more buttons and spilled past the window border.
+	local actionRowButtons = { attackButton, techniqueButton, blitzButton, chantButton, braceButton, shikigamiButton, domainButton, blackFlashButton, invokeButton, vowButton, encoreButton, defendButton, fleeButton, resetButton }
 	local function layoutActionRow()
 		local visibleCount = 0
 		for _, b in ipairs(actionRowButtons) do
 			if b.Visible then visibleCount += 1 end
 		end
 		visibleCount = math.max(visibleCount, 1)
+		-- Split across two lines once the row is over capacity: eleven buttons on one line
+		-- leaves each about 45px wide, which clips every label that carries a number.
+		local perRow = visibleCount > ACTION_ROW.MaxPerRow and math.ceil(visibleCount / 2) or visibleCount
 		for _, b in ipairs(actionRowButtons) do
-			b.Size = UDim2.new(1 / visibleCount, -9, 1, 0)
+			b.Size = UDim2.new(1 / perRow, -ACTION_ROW.Padding, 0, ACTION_ROW.ButtonHeight)
 		end
 	end
 
@@ -450,8 +468,8 @@ local function init(playerGui: Instance)
 		local v = camera and camera.ViewportSize or Vector2.new(1280, 720)
 		local availableWidth = math.max(280, v.X - 36)
 		local availableHeight = math.max(250, v.Y - 42)
-		window.Size = UDim2.new(0, 610, 0, 470)
-		windowScale.Scale = math.clamp(math.min(availableWidth / 610, availableHeight / 470, 1), 0.56, 1)
+		window.Size = UDim2.new(0, 610, 0, 516)
+		windowScale.Scale = math.clamp(math.min(availableWidth / 610, availableHeight / 516, 1), 0.56, 1)
 	end
 
 	local function updateBars()
@@ -1122,7 +1140,13 @@ local function init(playerGui: Instance)
 		setButtonEnabled(techniqueButton, playerTurn and techniqueRemaining > 0 and (tonumber(state.PlayerCE) or 0) >= (tonumber(state.TechniqueCECost) or 0))
 		-- The label carries the reason, so the speed gap is legible instead of invisible.
 		local blitzArmed = state.BlitzArmed == true and state.BlitzUsed ~= true
-		if state.BlitzUsed == true then
+		-- Update 30: the counter has existed since Update 29 and nothing ever said so. When the
+	-- enemy is the faster one the server arms Perception Blitz, and the player only found
+	-- out by reading the log after it fired. The Blitz button carries the news now, because
+	-- both states are the same question: what does the speed gap between us mean.
+	if state.PerceptionBlitzArmed == true then
+		blitzButton.Text = "COUNTER READY"
+	elseif state.BlitzUsed == true then
 			blitzButton.Text = "BLITZ USED"
 		elseif blitzArmed then
 			blitzButton.Text = "BLITZ"
@@ -1140,7 +1164,10 @@ local function init(playerGui: Instance)
 			for _, posture in ipairs(state.ShikigamiPostures or {}) do
 				if posture.Active == true then table.insert(active, string.upper(posture.Name)) end
 			end
-			shikigamiButton.Text = #active > 0 and ("SHIKI: " .. table.concat(active, "+"))
+			-- Two posture names do not fit on a button this width, so the count stands in for
+			-- the pair and the popup carries which ones they are.
+			shikigamiButton.Text = #active > 1 and ("SHIKI x" .. tostring(#active))
+				or #active == 1 and ("SHIKI: " .. active[1])
 				or ("SHIKIGAMI " .. tostring(state.ShikigamiTamed or 0))
 		end
 		setButtonEnabled(shikigamiButton, playerTurn and shikiReady)
@@ -1276,12 +1303,15 @@ local function init(playerGui: Instance)
 		if vowPopup then destroyVowPopup() return end
 		local popup = Instance.new("Frame")
 		popup.Name = "VowSelection"
-		popup.Size = UDim2.new(0, 260, 0, (#COMBAT_VOW_PRESETS * 38) + 10)
-		popup.Position = UDim2.new(0.5, -130, 0, -((#COMBAT_VOW_PRESETS * 38) + 14))
+		local popupHeight = (#COMBAT_VOW_PRESETS * 38) + 10
+		popup.Size = UDim2.new(0, 260, 0, popupHeight)
+		-- Parented to the window, not to the action row: the row runs a UIListLayout, which
+		-- sweeps every child into the button flow and overrides this position.
+		popup.Position = UDim2.new(0.5, -130, 0, ACTION_ROW.Y - popupHeight - 8)
 		popup.BackgroundColor3 = Color3.fromRGB(30, 22, 14)
 		popup.BorderSizePixel = 0
 		popup.ZIndex = 750
-		popup.Parent = actionRow
+		popup.Parent = window
 		corner(popup, 8)
 		local layout = Instance.new("UIListLayout")
 		layout.FillDirection = Enum.FillDirection.Vertical
@@ -1329,12 +1359,13 @@ local function init(playerGui: Instance)
 		local postures = state.ShikigamiPostures or {}
 		local popup = Instance.new("Frame")
 		popup.Name = "ShikigamiPostures"
-		popup.Size = UDim2.new(0, 280, 0, (#postures * 38) + 10)
-		popup.Position = UDim2.new(0.5, -140, 0, -((#postures * 38) + 14))
+		local popupHeight = (#postures * 38) + 10
+		popup.Size = UDim2.new(0, 280, 0, popupHeight)
+		popup.Position = UDim2.new(0.5, -140, 0, ACTION_ROW.Y - popupHeight - 8)
 		popup.BackgroundColor3 = Color3.fromRGB(20, 20, 38)
 		popup.BorderSizePixel = 0
 		popup.ZIndex = 750
-		popup.Parent = actionRow
+		popup.Parent = window
 		corner(popup, 8)
 		local layout = Instance.new("UIListLayout")
 		layout.FillDirection = Enum.FillDirection.Vertical

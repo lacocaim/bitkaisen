@@ -32,7 +32,7 @@ local MAIN_GUI_NAME = "BitKaisenGui"
 local GOLD = Color3.fromRGB(255, 207, 105)
 
 -- Fixed priority order (not "highest remaining fraction" -- that produced a
--- stat readout like "Training -- 3 sessions left" instead of an actual next
+-- stat readout like "Training: 3 sessions left" instead of an actual next
 -- step, per Luisa's feedback). Mirrors a normal early-game loop: try an
 -- Activity, face a Rival if one's active, take a Mission, see a
 -- Relationship, then Domain training -- whichever is the first one the
@@ -137,7 +137,7 @@ local MONETIZATION_RULES = {
 	{
 		id = "GuideDangerTip",
 		labelKey = "guide_danger_tip",
-		fallback = "Shop -- Recovery",
+		fallback = "Shop: Recovery",
 		check = function(stats)
 			local health = tonumber(stats.Health)
 			return stats.Alive ~= false and health ~= nil and health <= 20
@@ -146,7 +146,7 @@ local MONETIZATION_RULES = {
 	{
 		id = "GuideBrokeTip",
 		labelKey = "guide_broke_tip",
-		fallback = "Shop -- Money",
+		fallback = "Shop: Money",
 		check = function(stats)
 			local money = tonumber(stats.Money)
 			return money ~= nil and money < 500
@@ -155,7 +155,7 @@ local MONETIZATION_RULES = {
 	{
 		id = "GuideLosingStreakTip",
 		labelKey = "guide_losing_streak_tip",
-		fallback = "Shop -- Recovery Kit",
+		fallback = "Shop: Recovery Kit",
 		check = function(stats)
 			local losses = tonumber(stats.CombatLosses) or 0
 			local wins = tonumber(stats.CombatWins) or 0

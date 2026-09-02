@@ -492,7 +492,7 @@ local function init(playerGui: Instance)
 	optInBody.BackgroundTransparency = 1
 	optInBody.Position = UDim2.new(0, 18, 0, 48)
 	optInBody.Size = UDim2.new(1, -36, 0, 56)
-	optInBody.Text = _g("optin_body", "The Guide points at a smart next move -- training, a fight, a trip -- so you're never lost. You can change this anytime in Menu > Settings.")
+	optInBody.Text = _g("optin_body", "The Guide points at a smart next move (training, a fight, a trip) so you're never lost. You can change this anytime in Menu > Settings.")
 	optInBody.TextColor3 = GM_MUTED
 	optInBody.TextSize = 12
 	optInBody.Font = Enum.Font.GothamMedium

@@ -58,7 +58,7 @@ local CATEGORY_KEYS = {
 local CATEGORY_FALLBACK = {
 	weekly = { Title = "Weekly Challenges", Body = "Complete weekly goals for bonus money, CE, and mastery." },
 	missions = { Title = "Missions", Body = "Take on jobs from the Jujutsu Society for money, reputation, and rank progress." },
-	activities = { Title = "Activities", Body = "Spend your six months here: train, rest, work, or take risks. You only get a few actions per age -- the counter shows how many are left." },
+	activities = { Title = "Activities", Body = "Spend your six months here: train, rest, work, or take risks. You only get a few actions per age, and the counter shows how many are left." },
 	relationships = { Title = "Relationships", Body = "Family, friends, and rivals age alongside you. Spend time to build trust, train together, or recruit them." },
 	assets = { Title = "Assets", Body = "Manage property and cursed tools you own or can inherit." },
 	jobs = { Title = "Jobs", Body = "Work civilian or sorcerer jobs for steady income." },
@@ -122,7 +122,7 @@ local function buildSteps()
 		},
 		{
 			Title = _g("step5_title", "Quick Access"),
-			Body = _g("step5_body", "Up here: Help & Guide, free rewards, settings, and other quick actions -- always one click away."),
+			Body = _g("step5_body", "Up here: Help & Guide, free rewards, settings, and other quick actions, always one click away."),
 			Button = _g("btn_next", "NEXT"),
 			TargetIconGroup = true,
 		},

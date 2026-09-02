@@ -903,6 +903,13 @@ local function MobileNavPanel()
 
 			local btn = create("TextButton") {
 				Name = entry.id,
+				-- Simple mode keeps only the core life-sim loop on the menu and folds the rest
+				-- behind the MORE tile (navRegistry). Reading version() here makes the tile
+				-- react to the Settings toggle without rebuilding the whole grid.
+				Visible = function()
+					local _ = navRegistry.version()
+					return navRegistry.isEntryVisible(entry.id)
+				end,
 				BackgroundColor3 = function()
 					return isActive() and Color3.fromRGB(22, 20, 32) or Color3.fromRGB(14, 12, 20)
 				end,

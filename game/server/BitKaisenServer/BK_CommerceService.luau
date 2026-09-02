@@ -1719,7 +1719,7 @@ end
 -- still grant the receipt but tell the player plainly why nothing changed.
 local function grantGodModeThisWorld(player, stats)
 	if not stats or stats.WorldMode ~= "Public" or typeof(stats.PublicWorldId) ~= "string" or stats.PublicWorldId == "" then
-		fireLifeUpdate(player, stats, "<font color='#e15a68'><b>[ GOD MODE ]</b></font> This unlock only applies to a Public world -- it did nothing this time because you weren't living in one.")
+		fireLifeUpdate(player, stats, "<font color='#e15a68'><b>[ GOD MODE ]</b></font> This unlock only applies to a Public world. It did nothing this time because you weren't living in one.")
 		return true
 	end
 

@@ -1196,7 +1196,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 			logMessage = "You took a paired mission with " .. relationship.Name .. ". The job went clean, and the two of you came back with more respect for each other."
 		else
 			stats.Health = math.clamp((stats.Health or 100) - math.random(8, 18), 0, 100)
-			stats.Reputation = (stats.Reputation or 0 - math.random(0, 3))
+			stats.Reputation = (tonumber(stats.Reputation) or 0) - math.random(0, 3)
 			stats.MissionsFailed += 1
 
 			AdjustRelationship(relationship, {
@@ -1950,7 +1950,7 @@ local function processRelationshipAction(player, relationshipId, actionId, data)
 		table.insert(spiritNames, relationship.Name)
 		stats.VengefulSpiritNames = spiritNames
 		stats.VengefulSpirits = #spiritNames
-		logMessage = relationship.Name .. " has been bound as a vengeful spirit. Their will persists — " .. personality .. "."
+		logMessage = relationship.Name .. " has been bound as a vengeful spirit. Their will persists: " .. personality .. "."
 
 	elseif actionId == "release_vengeful_spirit" then
 		if relationship.Alive ~= false then

@@ -277,6 +277,22 @@ BitKaisenActivities.Database = {
 	},
 
 	{
+		-- Update 30: suggested by plaZa in the limb loss thread. Losing a limb was permanent
+		-- with no way back at all unless Reverse Cursed Technique caught it as it happened,
+		-- which made a bad fight follow you for the rest of the life with nothing to do about
+		-- it. Modern medicine gives that life an expensive way out.
+		Id = "prosthetic_limb",
+		Title = "Prosthetic Limb",
+		Description = "Pay a surgeon to fit a prosthetic where a limb was lost. It never fully replaces what it stands in for.",
+		MinAge = 16,
+		MaxAge = 100,
+		RequiresTechnique = false,
+		RequiresSorcerer = false,
+		RequiresJujutsuHigh = false,
+		ButtonColor = Color3.fromRGB(120, 150, 190),
+		LockedText = "You have not lost a limb.",
+	},
+	{
 		Id = "surgery",
 		Title = "Cosmetic Surgery",
 		Description = "Pay for a face lift, nose reshaping, or other cosmetic work to improve your Looks.",
@@ -1896,6 +1912,13 @@ function BitKaisenActivities.CanDoActivity(stats, activity)
 	if activity.RequiresGrandDojo then
 		if stats.ClanFounded ~= true or not ownsAssetById(stats, "grand_dojo") then
 			return false, activity.LockedText ~= "" and activity.LockedText or "You need a founded clan and Grand Dojo."
+		end
+	end
+
+	if activity.Id == "prosthetic_limb" then
+		local lost = typeof(stats.LostLimbs) == "table" and #stats.LostLimbs or 0
+		if lost <= 0 then
+			return false, "You have not lost a limb."
 		end
 	end
 

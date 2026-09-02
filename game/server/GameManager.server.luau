@@ -1692,7 +1692,7 @@ function applyCETraitCombatEffect(stats, combatResult)
 
 	if effect == "shock" then
 		combatResult.HealthDamage = math.max(0, math.floor((combatResult.HealthDamage or 0) * 0.75))
-		note = label .. " Your cursed energy crackled through the strike — the enemy was momentarily stunned."
+		note = label .. " Your cursed energy crackled through the strike and the enemy was momentarily stunned."
 
 	elseif effect == "burn_damage" then
 		if tostring(stats.CursedTechnique or "None") ~= "None" then
@@ -1804,9 +1804,14 @@ function tryVoDRCT(player, stats, onDeath)
 		stats.CursedEnergy = 0
 		stats.VoDRCTUsed = true
 		stats.VoDRCTActivations = (tonumber(stats.VoDRCTActivations) or 0) + 1
-		fireLifeUpdate(player, stats, "<font color='#a782ff'><b>[ VERGE OF DEATH RCT ]</b></font> You activated Reverse Cursed Technique at the brink of death. All CE drained. You survived — barely.")
-		fireMajorPopup(player, "VERGE OF DEATH RCT", "You forced Reverse Cursed Technique at the last possible moment.", "CE FULLY DRAINED", "You survived — but you cannot use this again this life.")
-		saveStats(player)
+		fireLifeUpdate(player, stats, "<font color='#a782ff'><b>[ VERGE OF DEATH RCT ]</b></font> You activated Reverse Cursed Technique at the brink of death. All CE drained. You survived, barely.")
+		fireMajorPopup(player, "VERGE OF DEATH RCT", "You forced Reverse Cursed Technique at the last possible moment.", "CE FULLY DRAINED", "You survived, but you cannot use this again this life.")
+		-- saveStats is a local declared ~1500 lines below this function, so the name here
+		-- resolved to a nil global and this call threw, aborting the caller before it could
+		-- report the result. forceSaveStats is a global and is safe to call this early.
+		if type(forceSaveStats) == "function" then
+			forceSaveStats(player, "VoDRCT")
+		end
 	else
 		onDeath()
 	end
@@ -3199,6 +3204,16 @@ function ensureExtraStats(stats)
 
 	stats.Settings = stats.Settings or {}
 
+	-- Update 30 -- Simple nav bar default.
+	-- New players start simple: fifteen equally weighted nav entries was the single
+	-- most common "this is a lot" complaint. Players who already have a settings
+	-- table are established, so they keep the full bar they already learned and
+	-- nothing disappears from under them. Decided once here and then stored, so it
+	-- never re-evaluates on later loads.
+	if stats.Settings.SimpleNavBar == nil then
+		stats.Settings.SimpleNavBar = next(stats.Settings) == nil
+	end
+
 	local defaultSettings = {
 		MusicVolume = 1,
 		SFXVolume = 1,
@@ -3231,6 +3246,7 @@ function ensureExtraStats(stats)
 	stats.Settings.ReducedMotion = stats.Settings.ReducedMotion == true
 	stats.Settings.ScreenShake = stats.Settings.ScreenShake ~= false
 	stats.Settings.SkipCombatSkillChecks = stats.Settings.SkipCombatSkillChecks == true
+	stats.Settings.SimpleNavBar = stats.Settings.SimpleNavBar == true
 
 	if stats.Settings.UIMode ~= "Computer" and stats.Settings.UIMode ~= "Mobile" and stats.Settings.UIMode ~= "" then
 		stats.Settings.UIMode = ""
@@ -3576,17 +3592,17 @@ function resolveOrphanRescueChoice(player, stats, missionData, choice)
 
 		if not stats.ClanFounded or not hasDojo then
 			stats.Happiness = math.clamp((stats.Happiness or 100) - 3, 0, 100)
-			stats.Reputation = (stats.Reputation or 0 + 1)
+			stats.Reputation = (tonumber(stats.Reputation) or 0) + 1
 			message = "You wanted to take the child in, but without a founded clan and Grand Dojo, you could not give them a stable place to train. Jujutsu High took custody instead."
 		else
 			if current >= capacity then
 				stats.Happiness = math.clamp((stats.Happiness or 100) - 2, 0, 100)
-				stats.Reputation = (stats.Reputation or 0 + 2)
+				stats.Reputation = (tonumber(stats.Reputation) or 0) + 2
 				message = "Your dojo was already at capacity, so you arranged for the child to be protected through Jujutsu High instead."
 			else
 				local ward = createRescuedWard(stats, "You rescued them after " .. tostring(missionData.Title or "a curse mission") .. " and chose to raise them under your protection.")
 				stats.Happiness = math.clamp((stats.Happiness or 100) + 8, 0, 100)
-				stats.Reputation = (stats.Reputation or 0 + 4)
+				stats.Reputation = (tonumber(stats.Reputation) or 0) + 4
 				stats.ClanReputation = math.max(0, (stats.ClanReputation or 0) + 3)
 				stats.ClanMembers = math.max(stats.ClanMembers or 0, countDojoStudentsAndWards(stats) + 1)
 
@@ -3602,12 +3618,12 @@ function resolveOrphanRescueChoice(player, stats, missionData, choice)
 			end
 		end
 	elseif rescueChoice == "jujutsu_high" then
-		stats.Reputation = (stats.Reputation or 0 + 5)
+		stats.Reputation = (tonumber(stats.Reputation) or 0) + 5
 		stats.TeacherRecommendations = (stats.TeacherRecommendations or 0) + (math.random(1, 100) <= 35 and 1 or 0)
 		stats.Happiness = math.clamp((stats.Happiness or 100) + 3, 0, 100)
 		message = "You brought the orphan to Jujutsu High. The staff recognized your judgement and the child was placed under protection."
 	elseif rescueChoice == "foster_home" then
-		stats.Reputation = (stats.Reputation or 0 + 2)
+		stats.Reputation = (tonumber(stats.Reputation) or 0) + 2
 		stats.Happiness = math.clamp((stats.Happiness or 100) + 5, 0, 100)
 		message = "You found the child a civilian foster home far from curses. It was not flashy, but it gave them a safer life."
 	else
@@ -9397,7 +9413,7 @@ function resolveHigherUpsInvitationChoice(player, stats, option)
 	end
 
 	stats.HigherUps.InvitationDeclined = true
-	stats.Reputation = (stats.Reputation or 0 - 3)
+	stats.Reputation = (tonumber(stats.Reputation) or 0) - 3
 
 	fireLifeUpdate(player, stats, "<font color='#f0b955'><b>[ HIGHER-UPS ]</b></font> You ignored the summons. The higher-ups did not chase you, but your name became quieter in certain rooms. (-3 Reputation)")
 	saveStats(player)
@@ -9417,7 +9433,7 @@ function resolveHigherUpsMissionOffer(player, stats, option)
 
 	stats.HigherUps.MissionChainUnlocked = true
 	stats.HigherUps.CurrentMission = math.max(1, tonumber(stats.HigherUps.CurrentMission) or 0)
-	stats.Reputation = (stats.Reputation or 0 - 5)
+	stats.Reputation = (tonumber(stats.Reputation) or 0) - 5
 
 	fireLifeUpdate(player, stats, "<font color='#78beff'><b>[ VESSEL ESCORT ]</b></font> You refused the escort assignment. The higher-ups marked you as unreliable for classified work. (-5 Reputation)")
 	saveStats(player)
@@ -9452,7 +9468,7 @@ function resolveVesselEscortDialogue(player, stats, option)
 		stats.HigherUps.HeavenlyRestrictedAchievement = true
 		stats.MetaProgress = stats.MetaProgress or {}
 		stats.MetaProgress.HeavenlyRestrictionBoost = true
-		stats.Reputation = (stats.Reputation or 0 + 18)
+		stats.Reputation = (tonumber(stats.Reputation) or 0) + 18
 		stats.Money = math.max(0, (stats.Money or 0) + 15000)
 		stats.TeacherRecommendations = (stats.TeacherRecommendations or 0) + 1
 		stats.Happiness = math.clamp((stats.Happiness or 100) + 5, 0, 100)
@@ -9469,7 +9485,7 @@ function resolveVesselEscortDialogue(player, stats, option)
 	else
 		stats.Health = math.clamp((stats.Health or 100) - math.random(12, 24), 0, 100)
 		stats.Happiness = math.clamp((stats.Happiness or 100) - 8, 0, 100)
-		stats.Reputation = (stats.Reputation or 0 - 8)
+		stats.Reputation = (tonumber(stats.Reputation) or 0) - 8
 		stats.MissionsFailed = (stats.MissionsFailed or 0) + 1
 		adjustKarma(stats, -2)
 
@@ -12017,7 +12033,7 @@ devToolsAction.OnServerEvent:Connect(function(player, actionId, data)
 
 		local lines = { "===== MULTIPLAYER DIAGNOSTIC =====" }
 		local function add(label, ok, detail)
-			table.insert(lines, (ok and "[ OK   ] " or "[ FAIL ] ") .. label .. (detail and (" -- " .. tostring(detail)) or ""))
+			table.insert(lines, (ok and "[ OK   ] " or "[ FAIL ] ") .. label .. (detail and (" - " .. tostring(detail)) or ""))
 		end
 
 		table.insert(lines, "PlaceId=" .. tostring(game.PlaceId)
@@ -12152,6 +12168,29 @@ devToolsAction.OnServerEvent:Connect(function(player, actionId, data)
 			end
 			fireLifeUpdate(player, stats, "<font color='#78beff'><b>[ DEV ]</b></font> Granted cursed tool: <b>" .. tostring(tool.Name) .. "</b>" .. (data.Equip == true and " and equipped it." or "."))
 		end
+	elseif actionId == "grant_shikigami" then
+		-- Update 30: the Incident Map lets you send shikigami out to hold sites, and there
+		-- was no way to reach that state without playing a full Ten Shadows life first.
+		stats.InnateTechnique = "Ten Shadows Technique"
+		stats.CursedTechnique = "Ten Shadows Technique"
+		stats.TechniqueKnown = true
+		stats.TechniqueUsable = true
+		stats.TamedShikigamiNames = typeof(stats.TamedShikigamiNames) == "table" and stats.TamedShikigamiNames or {}
+		local roster = { "Divine Dogs", "Nue", "Toad", "Great Serpent", "Max Elephant" }
+		local wanted = math.clamp(tonumber(data.Count) or 3, 1, #roster)
+		local held = {}
+		for _, name in ipairs(stats.TamedShikigamiNames) do
+			held[tostring(name)] = true
+		end
+		for _, name in ipairs(roster) do
+			if #stats.TamedShikigamiNames >= wanted then break end
+			if not held[name] then
+				table.insert(stats.TamedShikigamiNames, name)
+			end
+		end
+		stats.TamedShikigami = #stats.TamedShikigamiNames
+		fireLifeUpdate(player, stats, "<font color='#78beff'><b>[ DEV ]</b></font> Ten Shadows granted with <b>"
+			.. tostring(stats.TamedShikigami) .. "</b> tamed shikigami: " .. table.concat(stats.TamedShikigamiNames, ", "))
 	elseif actionId == "grant_all_cursed_tools" then
 		local count = 0
 		for _, tool in ipairs(BitKaisenCursedTools.Definitions or {}) do
@@ -12814,6 +12853,7 @@ ALLOWED_SETTINGS = {
 	SkipCombatSkillChecks = "boolean",
 	UIMode = "string",
 	GuideEnabled = "boolean",
+	SimpleNavBar = "boolean",
 }
 
 ALLOWED_STRING_VALUES = {
@@ -13149,7 +13189,7 @@ TeleportService.TeleportInitFailed:Connect(function(player, teleportResult, erro
 	end
 
 	warn("[BitKaisen] Teleport failed for " .. tostring(player.Name)
-		.. ": " .. tostring(teleportResult) .. " -- " .. tostring(errorMessage))
+		.. ": " .. tostring(teleportResult) .. " - " .. tostring(errorMessage))
 
 	fireMajorPopup(
 		player,

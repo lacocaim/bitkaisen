@@ -92,6 +92,33 @@ local function getAssetBonuses(stats)
 	return ok and bonuses or {}
 end
 
+-- Update 30 -- what a stat is actually worth.
+-- noobeh asked for this twice in content-suggestions: "currently speed strength and
+-- durability's bonuses are unknown". They were unknown because GetCombatPower only ever
+-- ran on the server and these weights were buried inside it. They live here now so the
+-- dossier can show the real number, and so the number shown can never drift away from
+-- the number used.
+BitKaisenCombat.STAT_POWER_WEIGHTS = {
+	CursedEnergy = 0.78,
+	Smarts       = 0.34,
+	Strength     = 0.42,
+	Health       = 0.18,
+	Reputation   = 0.12,
+	Speed        = 0.35,
+	Durability   = 0.30,
+	Damage       = 0.20,
+	CEEfficiency = 0.15,
+}
+
+-- Combat power this one stat contributes right now, rounded the way a player reads it.
+function BitKaisenCombat.GetStatPower(statName, value)
+	local weight = BitKaisenCombat.STAT_POWER_WEIGHTS[tostring(statName or "")]
+	if not weight then
+		return 0
+	end
+	return math.floor((math.max(0, tonumber(value) or 0) * weight) + 0.5)
+end
+
 function BitKaisenCombat.GetCombatPower(stats, options)
 	options = options or {}
 	if typeof(stats) ~= "table" then
@@ -114,16 +141,17 @@ function BitKaisenCombat.GetCombatPower(stats, options)
 	local damage = strength * 0.5 + cursedEnergy * 0.3
 	local ceEfficiency = mastery * 0.6 + cursedEnergy * 0.2
 
+	local W = BitKaisenCombat.STAT_POWER_WEIGHTS
 	local power = 0
-	power += cursedEnergy * 0.78
-	power += smarts * 0.34
-	power += strength * 0.42
-	power += math.max(0, health) * 0.18
-	power += math.max(0, reputation) * 0.12
-	power += speed * 0.35
-	power += durability * 0.30
-	power += damage * 0.20
-	power += ceEfficiency * 0.15
+	power += cursedEnergy * W.CursedEnergy
+	power += smarts * W.Smarts
+	power += strength * W.Strength
+	power += math.max(0, health) * W.Health
+	power += math.max(0, reputation) * W.Reputation
+	power += speed * W.Speed
+	power += durability * W.Durability
+	power += damage * W.Damage
+	power += ceEfficiency * W.CEEfficiency
 	power += GRADE_POWER[grade] or 0
 	power += ORIGIN_POWER[origin] or 0
 
@@ -162,7 +190,17 @@ function BitKaisenCombat.GetCombatPower(stats, options)
 	if string.find(techniqueLower, "cursed spirit manipulation", 1, true) then
 		power += math.min(50, (tonumber(stats.StoredCurses) or 0) * 4 + math.floor((tonumber(stats.StoredCursePower) or 0) / 25))
 	elseif string.find(techniqueLower, "ten shadows", 1, true) then
-		power += math.min(46, (tonumber(stats.TamedShikigami) or 0) * 5)
+		-- Update 30: a shikigami holding a site on the Incident Map is not standing next to
+		-- you. Deployed shadows stop counting here until they are recalled, which is what
+		-- makes sending one out an actual decision instead of free value.
+		local tamed = tonumber(stats.TamedShikigami) or 0
+		local deployed = 0
+		if typeof(stats.ShikigamiDeployments) == "table" then
+			for _ in pairs(stats.ShikigamiDeployments) do
+				deployed += 1
+			end
+		end
+		power += math.min(46, math.max(0, tamed - deployed) * 5)
 	end
 	local spiritCount = tonumber(stats.VengefulSpirits) or 0
 	if spiritCount > 0 then

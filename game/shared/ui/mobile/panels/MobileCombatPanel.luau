@@ -1141,7 +1141,13 @@ local function init(playerGui: Instance)
 		braceButton.Text = braceReady and _cb("btn_brace", "BRACE") or (_cb("btn_brace", "BRACE") .. " +" .. tostring(tonumber(state.BraceThreshold) or 20))
 		setButtonEnabled(braceButton, playerTurn and braceReady)
 		local blitzArmed = state.BlitzArmed == true and state.BlitzUsed ~= true
-		if state.BlitzUsed == true then
+		-- Update 30: the counter has existed since Update 29 and nothing ever said so. When the
+	-- enemy is the faster one the server arms Perception Blitz, and the player only found
+	-- out by reading the log after it fired. The Blitz button carries the news now, because
+	-- both states are the same question: what does the speed gap between us mean.
+	if state.PerceptionBlitzArmed == true then
+		blitzButton.Text = "COUNTER READY"
+	elseif state.BlitzUsed == true then
 			blitzButton.Text = _cb("btn_blitz_used", "BLITZ USED")
 		elseif blitzArmed then
 			blitzButton.Text = _cb("btn_blitz", "BLITZ")

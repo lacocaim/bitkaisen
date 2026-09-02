@@ -1405,7 +1405,7 @@ local function processAssetAction(player, actionId, assetId)
 		stats.ClanMembers = math.max(1, (stats.ClanMembers or 1) + 1)
 		stats.ClanReputation = math.max(0, (stats.ClanReputation or 0) + math.random(3, 7))
 		stats.DojoPrestige = math.max(0, (stats.DojoPrestige or 0) + math.random(2, 5))
-		stats.Reputation = (stats.Reputation or 0 + math.random(1, 3))
+		stats.Reputation = (tonumber(stats.Reputation) or 0) + math.random(1, 3)
 
 		fireMajorPopup(
 			player,
@@ -1459,7 +1459,7 @@ local function processAssetAction(player, actionId, assetId)
 			stats.ClanReputation = math.max(0, (stats.ClanReputation or 0) + math.random(2, 6))
 			stats.DojoPrestige = math.max(0, (stats.DojoPrestige or 0) + math.random(1, 3))
 			adjustDojoCondition(stats, -math.random(1, 3))
-			stats.Reputation = (stats.Reputation or 0 + math.random(1, 3))
+			stats.Reputation = (tonumber(stats.Reputation) or 0) + math.random(1, 3)
 
 			fireMajorPopup(
 				player,

@@ -83,7 +83,7 @@ local OPTIONS = {
 	},
 
 	Era = {
-		"Modern Era", "Edo Era", "Heian Era", "Collapse Era",
+		"Modern Era", "Edo Era", "Heian Era", "Collapse Era", "Modulo Era",
 	},
 
 	Upbringing = {
@@ -131,6 +131,7 @@ local ERA_START_YEARS = {
 	["Edo Era"] = 1603,
 	["Heian Era"] = 794,
 	["Collapse Era"] = 2018,
+	["Modulo Era"] = 2086,
 }
 
 local PAGE1_FIELDS = {
@@ -723,7 +724,8 @@ local function init(playerGui: Instance)
 				state.BirthYear = digits
 				local year = tonumber(digits)
 				if year then
-					if year >= 2018 then state.Era = "Collapse Era"
+					if year >= 2086 then state.Era = "Modulo Era"
+					elseif year >= 2018 then state.Era = "Collapse Era"
 					elseif year >= 2000 then state.Era = "Modern Era"
 					elseif year >= 1603 then state.Era = "Edo Era"
 					else state.Era = "Heian Era" end

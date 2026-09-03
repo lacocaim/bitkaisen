@@ -17,8 +17,8 @@ local function _ui(key, fallback) return BitKaisenLocale.tOrFallback(L, "ui." ..
 
 local MONTH_KEYS = { "month_1","month_2","month_3","month_4","month_5","month_6","month_7","month_8","month_9","month_10","month_11","month_12" }
 local MONTH_FALLBACKS = { "January","February","March","April","May","June","July","August","September","October","November","December" }
-local ERA_KEYS = { ["Modern Era"] = "era_modern", ["Edo Era"] = "era_edo", ["Heian Era"] = "era_heian", ["Collapse Era"] = "era_collapse" }
-local ERA_FALLBACKS = { ["Modern Era"] = "Modern Era", ["Edo Era"] = "Edo Era", ["Heian Era"] = "Heian Era", ["Collapse Era"] = "Collapse Era" }
+local ERA_KEYS = { ["Modern Era"] = "era_modern", ["Edo Era"] = "era_edo", ["Heian Era"] = "era_heian", ["Collapse Era"] = "era_collapse", ["Modulo Era"] = "era_modulo" }
+local ERA_FALLBACKS = { ["Modern Era"] = "Modern Era", ["Edo Era"] = "Edo Era", ["Heian Era"] = "Heian Era", ["Collapse Era"] = "Collapse Era", ["Modulo Era"] = "Modulo Era" }
 local PATH_KEYS = {
 	["Civilian"] = "path_civilian", ["Awakened Civilian"] = "path_awakened_civilian",
 	["Unregistered Sorcerer"] = "path_unregistered", ["Registered Sorcerer"] = "path_registered",

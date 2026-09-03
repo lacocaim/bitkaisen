@@ -2378,7 +2378,7 @@ CHARACTER_CUSTOMIZATION_OPTIONS = {
 	},
 
 	Era = {
-		"Modern Era", "Edo Era", "Heian Era", "Collapse Era"
+		"Modern Era", "Edo Era", "Heian Era", "Collapse Era", "Modulo Era"
 	},
 
 	Upbringing = {
@@ -2429,6 +2429,8 @@ CHARACTER_ERA_START_YEARS = {
 	["Edo Era"] = 1603,
 	["Heian Era"] = 794,
 	["Collapse Era"] = 2018,
+	-- Update 30, asked for by Goots: the year Modulo takes place.
+	["Modulo Era"] = 2086,
 }
 
 -- Update 6: live era timeline.
@@ -2440,6 +2442,7 @@ CHARACTER_ERA_TIMELINE = {
 	{ Name = "Edo Era", StartYear = 1603 },
 	{ Name = "Modern Era", StartYear = 2000 },
 	{ Name = "Collapse Era", StartYear = 2018 },
+	{ Name = "Modulo Era", StartYear = 2086 },
 }
 
 -- Multiplayer Fase 1: only one Public world exists until Fase 4 builds real
@@ -2483,6 +2486,10 @@ function getEraTransitionFlavor(previousEra, newEra)
 		return "The old houses survived into a world of schools, records, missions, and hidden bureaucracy."
 	elseif previousEra == "Modern Era" and newEra == "Collapse Era" then
 		return "Cursed energy began spilling into ordinary society. Even civilians started noticing what should have stayed hidden."
+	elseif previousEra == "Collapse Era" and newEra == "Modulo Era" then
+		return "The collapse stopped being an emergency and became the ordinary state of things. Jujutsu society rebuilt itself around what it had lost, and the sorcerers who came after inherited a world that had already broken once."
+	elseif newEra == "Modulo Era" then
+		return "You lived into the world that came after the collapse, where the old rules are studied rather than followed."
 	elseif newEra == "Collapse Era" then
 		return "The world shifted into a cursed collapse where old rules stopped protecting anyone."
 	end
@@ -10922,7 +10929,7 @@ function ageUp(player)
 		local isUnreg = isUnregisteredSorcerer(stats)
 		local hasGoRogue = ownsGoRoguePass(player) or stats.HasGoRoguePass == true
 		local era = tostring(stats.Era or "Modern Era")
-		local jjhEraAllowed = era == "Modern Era" or era == "Collapse Era"
+		local jjhEraAllowed = BitKaisenStats.IsModernOrLaterEra(era)
 		if (hasAwakened or isUnreg) and not isCurseLife(stats) and not isCurseUser(stats) and not stats.InJujutsuHigh and not hasGoRogue and jjhEraAllowed then
 			local enrollMsg, enrolled = BK_ActivityService.EnrollInJujutsuHigh(player, stats)
 			if enrolled then

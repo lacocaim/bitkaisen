@@ -1327,5 +1327,25 @@ function BitKaisenStats.CheckPromotion(stats)
 	return nil
 end
 
+----------------------------------------------------------------
+-- Update 30: eras from the Modern Era onward.
+--
+-- Several gates were written as `era == "Modern Era" or era == "Collapse Era"`, which is
+-- correct until an era is added after them and then silently locks it out. Adding the
+-- Modulo Era exposed two of those, in the prosthetic surgery gate and in Jujutsu High
+-- enrolment. Anything that means "the modern world or later" should ask here instead of
+-- listing era names, so the next era added does not repeat this.
+----------------------------------------------------------------
+
+BitKaisenStats.ModernOrLaterEras = {
+	["Modern Era"] = true,
+	["Collapse Era"] = true,
+	["Modulo Era"] = true,
+}
+
+function BitKaisenStats.IsModernOrLaterEra(era): boolean
+	return BitKaisenStats.ModernOrLaterEras[tostring(era or "")] == true
+end
+
 return BitKaisenStats
 

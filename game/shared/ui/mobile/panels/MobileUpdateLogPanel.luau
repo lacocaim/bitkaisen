@@ -38,6 +38,11 @@ local sections = {
 		color = theme.Orange,
 	},
 	{
+		header = "Update 30 - The Modulo Era",
+		body = "• A fifth era begins in 2086. The collapse stops being an emergency and becomes the ordinary state of things, and the sorcerers who come after inherit a world that has already broken once.\n• You can be born into it. Living there from a Modern Era birth means surviving to 86, which almost nobody does, so Modulo is a starting era of its own.\n• Live through the year 2086 in any life and the era shifts around you, with your own era history recording where you were standing when it happened.\n• Suggested by Goots.",
+		color = theme.Blue,
+	},
+	{
 		header = "Update 30 - Fixes",
 		body = "• The combat action row no longer spills outside the window. It wraps onto two lines and the labels shrink to fit instead of clipping.\n• The shikigami and binding vow popups render properly again. They were being dragged into the button row.\n• Activities opens instantly on repeat visits instead of tearing itself down and rebuilding every time.\n• Reputation now actually changes. Twelve places awarded or removed reputation and silently did nothing.\n• Surviving with Verge of Death RCT no longer throws away the rest of the result and fails to save.\n• High Society no longer amplifies relationship losses. Only gains, as intended.",
 		color = theme.Green,

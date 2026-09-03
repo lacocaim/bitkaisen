@@ -1956,7 +1956,7 @@ local function processActivity(player, activityId)
 		-- Era gated on purpose: a prosthetic that gives back most of a limb is modern surgery,
 		-- not something the Heian world can offer.
 		local era = getCurrentEra(stats)
-		if era ~= "Modern Era" and era ~= "Collapse Era" then
+		if not BitKaisenStats.IsModernOrLaterEra(era) then
 			stats.ActivitiesDoneThisAge -= 1
 			fireLifeUpdate(player, stats, tAct(player, "prosthetic_wrong_era", nil, "No surgeon in this era can build you a limb."))
 			return

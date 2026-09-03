@@ -352,6 +352,7 @@ return {
 		era_edo     = "Era Edo",
 		era_heian   = "Era Heian",
 		era_collapse = "Era del Colapso",
+		era_modulo = "Era Modulo",
 
 		-- age header
 		age_header = "Edad {age} • {month} {year} • {era}",

@@ -21,7 +21,7 @@ local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
 local GUI_NAME = "BitKaisenMobileWorldBrowserGui"
-local ERA_OPTIONS = { "Heian Era", "Edo Era", "Modern Era", "Collapse Era" }
+local ERA_OPTIONS = { "Heian Era", "Edo Era", "Modern Era", "Collapse Era", "Modulo Era" }
 local CAPACITY_OPTIONS = { 10, 20, 30 }
 
 local state = {

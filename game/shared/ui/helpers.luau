@@ -36,6 +36,9 @@ local ERA_START_YEARS = {
 	["Edo Era"] = 1603,
 	["Heian Era"] = 794,
 	["Collapse Era"] = 2018,
+	-- Update 30, asked for by Goots: the year Modulo takes place. This table is the client
+	-- copy of CHARACTER_ERA_START_YEARS in GameManager. If one changes so does the other.
+	["Modulo Era"] = 2086,
 }
 
 local ERA_TIMELINE = {
@@ -43,6 +46,7 @@ local ERA_TIMELINE = {
 	{ Name = "Edo Era", StartYear = 1603 },
 	{ Name = "Modern Era", StartYear = 2000 },
 	{ Name = "Collapse Era", StartYear = 2018 },
+	{ Name = "Modulo Era", StartYear = 2086 },
 }
 
 function helpers.getEraStartYear(stats: { [string]: any }?): number

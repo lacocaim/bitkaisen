@@ -39,7 +39,7 @@ local THEME = {
 	Pill = Color3.fromRGB(40, 36, 54),
 }
 
-local ERA_OPTIONS = { "Heian Era", "Edo Era", "Modern Era", "Collapse Era" }
+local ERA_OPTIONS = { "Heian Era", "Edo Era", "Modern Era", "Collapse Era", "Modulo Era" }
 local CAPACITY_OPTIONS = { 10, 20, 30 }
 
 local state = {

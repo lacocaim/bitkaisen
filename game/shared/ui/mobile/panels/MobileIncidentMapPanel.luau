@@ -15,6 +15,7 @@ local TweenService = game:GetService("TweenService")
 local mc = require("@ui/mobile/mobileComponents")
 local uiState = require("@ui-state/uiState")
 local BitKaisenIncidentMap = require(ReplicatedStorage:WaitForChild("BitKaisenIncidentMap"))
+local shikigamiEmblem = require("@ui/shikigamiEmblem")
 local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
 local _L = BitKaisenLocale.getClientLocale()
 local function _im(key, fallback)
@@ -499,14 +500,42 @@ local function renderDossier()
 				break
 			end
 		end
-		mc.mobileLabel({
-			parent = card,
-			text = holder .. (role ~= "" and ("  //  " .. string.upper(role)) or "") .. (effect ~= "" and ("\n" .. effect) or ""),
-			size = 11,
-			color = theme.Purple,
-			font = Enum.Font.GothamBold,
-			order = 6,
-		})
+		-- The creature itself: the uploaded portrait if there is one, otherwise the drawn
+		-- sigil. Either way the row is never a blank frame.
+		local holderRow = Instance.new("Frame")
+		holderRow.Size = UDim2.new(1, 0, 0, 56)
+		holderRow.BackgroundTransparency = 1
+		holderRow.LayoutOrder = 6
+		holderRow.Parent = card
+
+		local face = Instance.new("ImageLabel")
+		face.Name = "ShikigamiPortrait"
+		face.Size = UDim2.fromOffset(56, 56)
+		face.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
+		face.BorderSizePixel = 0
+		face.Image = artId(BitKaisenIncidentMap.SHIKIGAMI_ART[holder]) or ""
+		face.ScaleType = Enum.ScaleType.Crop
+		face.Parent = holderRow
+		corner(face, 8)
+		stroke(face, theme.Purple, 1)
+		if face.Image == "" then
+			shikigamiEmblem.draw(face, holder, theme.Purple, 4)
+		end
+
+		local holderText = Instance.new("TextLabel")
+		holderText.Position = UDim2.fromOffset(66, 0)
+		holderText.Size = UDim2.new(1, -66, 1, 0)
+		holderText.BackgroundTransparency = 1
+		holderText.Text = holder
+			.. (role ~= "" and ("  //  " .. string.upper(role)) or "")
+			.. (effect ~= "" and ("\n" .. effect) or "")
+		holderText.TextColor3 = theme.Purple
+		holderText.TextSize = 11
+		holderText.Font = Enum.Font.GothamBold
+		holderText.TextXAlignment = Enum.TextXAlignment.Left
+		holderText.TextYAlignment = Enum.TextYAlignment.Center
+		holderText.TextWrapped = true
+		holderText.Parent = holderRow
 		makeButtonRow(card, 7, {
 			{
 				Text = _im("recall", "RECALL"),

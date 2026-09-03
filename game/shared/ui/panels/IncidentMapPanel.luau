@@ -15,6 +15,7 @@ local TweenService = game:GetService("TweenService")
 
 local uiState = require("@ui-state/uiState")
 local BitKaisenIncidentMap = require(ReplicatedStorage:WaitForChild("BitKaisenIncidentMap"))
+local shikigamiEmblem = require("@ui/shikigamiEmblem")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -739,19 +740,20 @@ local function renderDetail(location)
 			end
 		end
 		local holderArt = artId(MAP_ART.Shikigami[holder])
-		if holderArt then
-			local portrait = Instance.new("ImageLabel")
-			portrait.Name = "ShikigamiPortrait"
-			portrait.Size = UDim2.new(1, 0, 0, 132)
-			portrait.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
-			portrait.BorderSizePixel = 0
-			portrait.Image = holderArt
-			portrait.ScaleType = Enum.ScaleType.Crop
-			portrait.LayoutOrder = nextOrder()
-			portrait.ZIndex = 5
-			portrait.Parent = detailScroll
-			addCorner(portrait, 10)
-			addStroke(portrait, COLORS.Purple, 1, 0.5)
+		local portrait = Instance.new("ImageLabel")
+		portrait.Name = "ShikigamiPortrait"
+		portrait.Size = UDim2.new(1, 0, 0, 132)
+		portrait.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
+		portrait.BorderSizePixel = 0
+		portrait.Image = holderArt or ""
+		portrait.ScaleType = Enum.ScaleType.Crop
+		portrait.LayoutOrder = nextOrder()
+		portrait.ZIndex = 5
+		portrait.Parent = detailScroll
+		addCorner(portrait, 10)
+		addStroke(portrait, COLORS.Purple, 1, 0.5)
+		if not holderArt then
+			shikigamiEmblem.draw(portrait, holder, COLORS.Purple, 6)
 		end
 		detailLabel(holder .. "  ·  " .. holderRole, 13, COLORS.Purple, Enum.Font.GothamBlack, nextOrder(), 20)
 		detailLabel(holderEffect, 11, COLORS.SubText, Enum.Font.GothamMedium, nextOrder(), 32)
@@ -993,7 +995,7 @@ local function makePin(location)
 	-- so the map stays a map and the creature is something you find by looking closer.
 	local hoverCard = nil
 	local holderArt = location.Shikigami and artId(MAP_ART.Shikigami[tostring(location.Shikigami)])
-	if holderArt then
+	if location.Shikigami then
 		hoverCard = Instance.new("Frame")
 		hoverCard.Name = "ShikigamiCard"
 		hoverCard.AnchorPoint = Vector2.new(0.5, 1)
@@ -1013,11 +1015,17 @@ local function makePin(location)
 		face.Size = UDim2.new(1, -16, 0, 112)
 		face.BackgroundColor3 = Color3.fromRGB(9, 9, 14)
 		face.BorderSizePixel = 0
-		face.Image = holderArt
+		face.Image = holderArt or ""
 		face.ScaleType = Enum.ScaleType.Crop
 		face.ZIndex = 21
 		face.Parent = hoverCard
 		addCorner(face, 8)
+
+		-- No illustration means the drawn sigil, not an empty frame. The moment an id is
+		-- put in SHIKIGAMI_ART the image takes over and this stops being built.
+		if not holderArt then
+			shikigamiEmblem.draw(face, tostring(location.Shikigami), COLORS.Purple, 22)
+		end
 
 		local caption = Instance.new("TextLabel")
 		caption.Name = "Caption"

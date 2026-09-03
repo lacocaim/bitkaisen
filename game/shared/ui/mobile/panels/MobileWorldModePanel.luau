@@ -69,7 +69,7 @@ subtitle.BackgroundTransparency = 1
 subtitle.Position = UDim2.new(0.5, 0, 0, 92)
 subtitle.AnchorPoint = Vector2.new(0.5, 0)
 subtitle.Size = UDim2.new(1, -50, 0, 40)
-subtitle.Text = _g("subtitle", "One life is yours alone - the other is shared by every sorcerer brave enough to live it.")
+subtitle.Text = _g("subtitle", "One life is yours alone. The other is shared by every sorcerer brave enough to live it.")
 subtitle.TextColor3 = theme.SubText
 subtitle.Font = Enum.Font.Gotham
 subtitle.TextSize = 12
@@ -263,7 +263,7 @@ local function open()
 	gui.Enabled = true
 end
 
-makeCard(1, "個人記録", "封印済", theme.Purple, _g("private_tag", "PRIVATE"), _g("private_title", "Your Own Era"), _g("private_body", "The classic BitKaisen life - live, rise, fall, and raise a dynasty at your own pace."), "Private", _g("private_cta", "BEGIN YOUR OWN ERA"), function()
+makeCard(1, "個人記録", "封印済", theme.Purple, _g("private_tag", "PRIVATE"), _g("private_title", "Your Own Era"), _g("private_body", "The classic BitKaisen life: live, rise, fall, and raise a dynasty at your own pace."), "Private", _g("private_cta", "BEGIN YOUR OWN ERA"), function()
 	choose("Private")
 end)
 

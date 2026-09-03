@@ -511,7 +511,7 @@ local function renderLives()
 	updateTabStyles()
 	if not getPastLives then
 		rendering = false
-		text(card(70), "Cemetery unavailable - rejoin to enable it.", 13, COLORS.SubText, 20, false)
+		text(card(70), "Cemetery unavailable. Rejoin to enable it.", 13, COLORS.SubText, 20, false)
 		return
 	end
 	local ok, data = pcall(function() return getPastLives:InvokeServer() end)
@@ -623,7 +623,7 @@ local function renderInfluence()
 
 	-- description card
 	local descCard = card(64)
-	text(descCard, "How the world perceives you - built from your actions, missions, and reputation.", 12, COLORS.SubText, 14, false)
+	text(descCard, "How the world perceives you, built from your actions, missions, and reputation.", 12, COLORS.SubText, 14, false)
 	text(descCard, "Fame and Fear grow silently as you live your life.", 11, COLORS.SubText, 36, false)
 
 	-- fame card

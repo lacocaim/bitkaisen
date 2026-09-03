@@ -2,6 +2,91 @@ local BitKaisenStats = require(script.Parent:WaitForChild("BitKaisenStats"))
 
 local BitKaisenIncidentMap = {}
 
+-- Presentation data for the map board, kept here rather than in either panel so the
+-- desktop and the phone cannot drift apart. That drift is not hypothetical: the combat
+-- power figures added to the dossier in Update 30 shipped on desktop only because the
+-- phone had its own copy of the same widget.
+--
+-- The Tokyo image is built from OpenStreetMap data, restyled dark. OpenStreetMap is open
+-- data and free to use commercially, on the condition that it is credited. That is what
+-- the line in the corner of the board is for. Do not remove it.
+BitKaisenIncidentMap.MAP_IMAGE = "rbxassetid://125198338888042"
+BitKaisenIncidentMap.MAP_CREDIT = "Map data (c) OpenStreetMap contributors"
+
+-- The map image is 1024x572. Pins are placed in that image's own normalised space so
+-- they stay glued to the geography at any screen size.
+BitKaisenIncidentMap.MAP_ASPECT = 1024 / 572
+
+-- Roughly where each incident sits on Tokyo Metropolis: the mountainous Okutama/Tama
+-- side is west (low X), the dense wards and the bay are east (high X). Rural Village and
+-- Forest Shrine are the two western ones, which is also why they are the high-threat pair.
+BitKaisenIncidentMap.MAP_POINTS = {
+	rural_village         = Vector2.new(0.12, 0.42),
+	forest_shrine         = Vector2.new(0.23, 0.56),
+	construction_site     = Vector2.new(0.44, 0.47),
+	abandoned_school      = Vector2.new(0.55, 0.38),
+	old_apartment_complex = Vector2.new(0.60, 0.56),
+	closed_mall           = Vector2.new(0.66, 0.34),
+	apartment_stairwell   = Vector2.new(0.69, 0.63),
+	sewer_tunnel          = Vector2.new(0.73, 0.49),
+	hospital_basement     = Vector2.new(0.77, 0.41),
+	underpass             = Vector2.new(0.76, 0.60),
+	last_train_station    = Vector2.new(0.82, 0.50),
+	burned_out_theater    = Vector2.new(0.72, 0.70),
+}
+
+-- Where the travelling marker rests before you send it anywhere: Tokyo Jujutsu High,
+-- roughly west of the ward belt.
+BitKaisenIncidentMap.HOME_POINT = Vector2.new(0.38, 0.30)
+
+-- Artwork slots. An empty entry is deliberate, not a missing file: drop a Roblox asset id
+-- in and it appears in game with no other change. The five site photographs are Creative
+-- Commons Attribution, which is free to use and modify commercially provided the credit
+-- stays visible, which is what CREDITS is for.
+BitKaisenIncidentMap.LOCATION_ART = {
+	abandoned_school      = "",
+	forest_shrine         = "",
+	last_train_station    = "rbxassetid://130862244840347",
+	hospital_basement     = "rbxassetid://125237072867846",
+	construction_site     = "rbxassetid://140563163782352",
+	old_apartment_complex = "",
+	rural_village         = "",
+	sewer_tunnel          = "rbxassetid://99316352645992",
+	closed_mall           = "",
+	apartment_stairwell   = "",
+	burned_out_theater    = "",
+	underpass             = "rbxassetid://138242076990791",
+}
+
+BitKaisenIncidentMap.LOCATION_CREDITS = {
+	last_train_station = "Photo: Rex Roof (CC BY)",
+	hospital_basement  = "Photo: janbommes (CC BY)",
+	construction_site  = "Photo: takomabibelot (CC BY)",
+	sewer_tunnel       = "Photo: darkday (CC BY)",
+	underpass          = "Photo: ell brown (CC BY)",
+}
+
+BitKaisenIncidentMap.SHIKIGAMI_ART = {
+	["Divine Dogs"]   = "",
+	["Nue"]           = "",
+	["Toad"]          = "",
+	["Great Serpent"] = "",
+	["Max Elephant"]  = "",
+	["Rabbit Escape"] = "",
+	["Round Deer"]    = "",
+	["Piercing Ox"]   = "",
+	["Tiger Funeral"] = "",
+	["Mahoraga"]      = "",
+}
+
+-- An unfilled slot above is an empty string, and an empty string is truthy in Lua, so a
+-- plain `if art then` builds the frame anyway and shows an empty box. That is exactly what
+-- happened to the shikigami hover card. Every read of the art tables goes through this.
+function BitKaisenIncidentMap.ArtId(value): string?
+	local id = tostring(value or "")
+	return id ~= "" and id or nil
+end
+
 local RUMORS = {
 	"The Hallway That Adds Another Door",
 	"The Last Train Has No Driver",

@@ -205,7 +205,7 @@ local SHOP_CATEGORIES = {
 		Subtitle = "Skip years instantly. Cannot be used on dead lives.",
 		Accent = THEME.Blue,
 		Items = {
-			{ Id = "time_skip_5",  Name = "Time Skip +5 Years",  Subtitle = "Skip 5 years into the future. Your character ages instantly - use wisely.",           Kind = "Product", RobloxId = TIME_SKIP_5_PRODUCT_ID,  PriceText = "R$ 75",  Accent = THEME.Blue },
+			{ Id = "time_skip_5",  Name = "Time Skip +5 Years",  Subtitle = "Skip 5 years into the future. Your character ages instantly, so use it wisely.",           Kind = "Product", RobloxId = TIME_SKIP_5_PRODUCT_ID,  PriceText = "R$ 75",  Accent = THEME.Blue },
 			{ Id = "time_skip_10", Name = "Time Skip +10 Years", Subtitle = "Skip 10 years into the future. Time waits for no sorcerer.",                          Kind = "Product", RobloxId = TIME_SKIP_10_PRODUCT_ID, PriceText = "R$ 149", Accent = THEME.Blue },
 			{ Id = "time_skip_25", Name = "Time Skip +25 Years", Subtitle = "Skip 25 years into the future. A quarter century, gone in an instant.",               Kind = "Product", RobloxId = TIME_SKIP_25_PRODUCT_ID, PriceText = "R$ 299", Accent = THEME.Purple },
 		},

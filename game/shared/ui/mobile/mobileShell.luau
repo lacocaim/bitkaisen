@@ -9,6 +9,7 @@ local navRegistry = require("@ui-state/navRegistry")
 local remotes = require("@ui-state/remotes")
 local mc = require("@ui/mobile/mobileComponents")
 local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
+local BitKaisenCombat = require(ReplicatedStorage:WaitForChild("BitKaisenCombat"))
 local bindTap = mc.bindTap
 
 local L = BitKaisenLocale.getClientLocale()
@@ -90,9 +91,18 @@ local DIM    = Color3.fromRGB(100, 98, 120)
 local DIMLO  = Color3.fromRGB(60, 58, 78)
 local LABEL  = Color3.fromRGB(130, 128, 158)
 
-local function DossierBar(label: string, color: Color3, getValue: () -> number)
+-- powerKey mirrors the desktop ProfileCard: when a stat carries combat weight, the row
+-- also shows what it is contributing to combat power right now. Mobile had been left out
+-- of this, so the players who most needed the number were the ones not seeing it.
+local function DossierBar(label: string, color: Color3, getValue: () -> number, powerKey: string?)
 	local frac = derive(function() return math.clamp((getValue() or 0) / 100, 0, 1) end)
-	local val  = derive(function() return tostring(math.floor(getValue() or 0)) .. " / 100" end)
+	local val  = derive(function()
+		local base = tostring(math.floor(getValue() or 0)) .. " / 100"
+		if not powerKey then
+			return base
+		end
+		return base .. "  +" .. tostring(BitKaisenCombat.GetStatPower(powerKey, getValue() or 0))
+	end)
 	return create("Frame") {
 		Name = "DB_" .. label,
 		Size = UDim2.new(1, 0, 0, 17),
@@ -119,7 +129,7 @@ local function DossierBar(label: string, color: Color3, getValue: () -> number)
 		create("Frame") {
 			Name = "Track",
 			Position = UDim2.new(0, 88, 0.5, -3),
-			Size = UDim2.new(1, -142, 0, 5),
+			Size = UDim2.new(1, -172, 0, 5),
 			BackgroundColor3 = Color3.fromRGB(22, 20, 32),
 			BorderSizePixel = 0,
 			create("UICorner") { CornerRadius = UDim.new(0, 999) },
@@ -133,7 +143,7 @@ local function DossierBar(label: string, color: Color3, getValue: () -> number)
 		create("TextLabel") {
 			AnchorPoint = Vector2.new(1, 0.5),
 			Position = UDim2.new(1, 0, 0.5, 0),
-			Size = UDim2.new(0, 50, 1, 0),
+			Size = UDim2.new(0, 80, 1, 0),
 			BackgroundTransparency = 1,
 			Text = val,
 			TextColor3 = DIMLO,
@@ -325,13 +335,13 @@ local function MobileProfileHeader()
 			LayoutOrder = 2,
 			create("UIPadding") { PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 4), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) },
 			create("UIListLayout") { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 2) },
-			DossierBar(BitKaisenLocale.tOrFallback(L, "ui.stat_health",     nil, "Health"),     theme.Red,                    function() local s = stats() return s and s.Health     or 100 end),
+			DossierBar(BitKaisenLocale.tOrFallback(L, "ui.stat_health",     nil, "Health"),     theme.Red,                    function() local s = stats() return s and s.Health     or 100 end, "Health"),
 			DossierBar(BitKaisenLocale.tOrFallback(L, "ui.stat_happiness",  nil, "Happiness"),  theme.Green,                  function() local s = stats() return s and s.Happiness  or 100 end),
-			DossierBar(BitKaisenLocale.tOrFallback(L, "ui.stat_smarts",     nil, "Smarts"),     theme.Gold,                   function() local s = stats() return s and s.Smarts     or 50  end),
+			DossierBar(BitKaisenLocale.tOrFallback(L, "ui.stat_smarts",     nil, "Smarts"),     theme.Gold,                   function() local s = stats() return s and s.Smarts     or 50  end, "Smarts"),
 			DossierBar(BitKaisenLocale.tOrFallback(L, "ui.stat_looks",      nil, "Looks"),      Color3.fromRGB(96, 170, 255), function() local s = stats() return s and s.Looks      or 50  end),
-			DossierBar(BitKaisenLocale.tOrFallback(L, "ui.stat_strength",   nil, "Strength"),   Color3.fromRGB(236, 116, 76), function() local s = stats() return s and s.Strength   or 0   end),
-			DossierBar(BitKaisenLocale.tOrFallback(L, "ui.stat_speed",      nil, "Speed"),      Color3.fromRGB(96, 220, 200), function() local s = stats() return s and s.Speed      or 0   end),
-			DossierBar(BitKaisenLocale.tOrFallback(L, "ui.stat_durability", nil, "Durability"), Color3.fromRGB(150, 150, 160), function() local s = stats() return s and s.Durability or 0  end),
+			DossierBar(BitKaisenLocale.tOrFallback(L, "ui.stat_strength",   nil, "Strength"),   Color3.fromRGB(236, 116, 76), function() local s = stats() return s and s.Strength   or 0   end, "Strength"),
+			DossierBar(BitKaisenLocale.tOrFallback(L, "ui.stat_speed",      nil, "Speed"),      Color3.fromRGB(96, 220, 200), function() local s = stats() return s and s.Speed      or 0   end, "Speed"),
+			DossierBar(BitKaisenLocale.tOrFallback(L, "ui.stat_durability", nil, "Durability"), Color3.fromRGB(150, 150, 160), function() local s = stats() return s and s.Durability or 0  end, "Durability"),
 		},
 
 		-- Divider

@@ -14,6 +14,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
 local uiState = require("@ui-state/uiState")
+local BitKaisenIncidentMap = require(ReplicatedStorage:WaitForChild("BitKaisenIncidentMap"))
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -51,93 +52,19 @@ local COLORS = {
 	Bad = Color3.fromRGB(230, 75, 90),
 }
 
--- Update 30: the art is uploaded and approved, but it is held back for now -- the
--- community was mid-argument about AI-generated content when this shipped, and handing
--- them the illustrations in that moment would have made the art the story instead of the
--- map. Flip this to true to turn all of it on at once; nothing else has to change.
--- Artwork slots. Every entry is empty on purpose: the illustrations that used to sit
--- here were placeholders and have been pulled. Drop a Roblox asset id into a slot and it
--- appears in game with no other change. A slot left empty simply renders nothing, so the
--- panel is complete either way.
---
--- The Tokyo map below is a real map of the city, built from OpenStreetMap data and
--- restyled dark to match the panel. OpenStreetMap is open data and free to use in a
--- commercial product, but it requires attribution, which is why the credit line sits in
--- the corner of the board. Do not remove it.
+-- The map data, the pin coordinates and the artwork slots all live in
+-- BitKaisenIncidentMap so this panel and MobileIncidentMapPanel read one source. Keeping
+-- a private copy here is what let the phone drift out of sync before.
 local MAP_ART = {
-	Map = "rbxassetid://125198338888042",
-
-	-- Shown in the dossier when a site is selected. Keys are location ids.
-	Locations = {
-		abandoned_school      = "",
-		forest_shrine         = "",
-		last_train_station    = "rbxassetid://130862244840347",
-		hospital_basement     = "rbxassetid://125237072867846",
-		construction_site     = "rbxassetid://140563163782352",
-		old_apartment_complex = "",
-		rural_village         = "",
-		sewer_tunnel          = "rbxassetid://99316352645992",
-		closed_mall           = "",
-		apartment_stairwell   = "",
-		burned_out_theater    = "",
-		underpass             = "rbxassetid://138242076990791",
-	},
-
-	-- Photographers behind the five images above. Every one is Creative Commons Attribution,
-	-- which is free to use and to modify in a commercial game on one condition: the credit
-	-- has to be visible. That is what the line under the photo is for. A site with no photo
-	-- has no entry here and shows no credit.
-	Credits = {
-		last_train_station = "Photo: Rex Roof (CC BY)",
-		hospital_basement  = "Photo: janbommes (CC BY)",
-		construction_site  = "Photo: takomabibelot (CC BY)",
-		sewer_tunnel       = "Photo: darkday (CC BY)",
-		underpass          = "Photo: ell brown (CC BY)",
-	},
-
-	-- Shown on the card that rises when the mouse is over a pin a shikigami is holding.
-	-- With no portrait the pin keeps its ring and no card appears, which is the whole
-	-- point: the pin stays readable and the creature is the reward for looking closer.
-	Shikigami = {
-		["Divine Dogs"]   = "",
-		["Nue"]           = "",
-		["Toad"]          = "",
-		["Great Serpent"] = "",
-		["Max Elephant"]  = "",
-		["Rabbit Escape"] = "",
-		["Round Deer"]    = "",
-		["Piercing Ox"]   = "",
-		["Tiger Funeral"] = "",
-		["Mahoraga"]      = "",
-	},
-
+	Map = BitKaisenIncidentMap.MAP_IMAGE,
+	Locations = BitKaisenIncidentMap.LOCATION_ART,
+	Credits = BitKaisenIncidentMap.LOCATION_CREDITS,
+	Shikigami = BitKaisenIncidentMap.SHIKIGAMI_ART,
 }
-
--- The map image is 1024x572. Pins are placed in that image's own normalised space so
--- they stay glued to the geography at any window size (see the aspect-ratio constraint).
-local MAP_ASPECT = 1024 / 572
-
--- Roughly where each incident sits on Tokyo Metropolis: the mountainous Okutama/Tama
--- side is west (low X), the dense wards and the bay are east (high X). Rural Village and
--- Forest Shrine are the two western ones, which is also why they are the high-threat pair.
-local MAP_POINTS = {
-	rural_village        = Vector2.new(0.12, 0.42),
-	forest_shrine        = Vector2.new(0.23, 0.56),
-	construction_site    = Vector2.new(0.44, 0.47),
-	abandoned_school     = Vector2.new(0.55, 0.38),
-	old_apartment_complex = Vector2.new(0.60, 0.56),
-	closed_mall          = Vector2.new(0.66, 0.34),
-	apartment_stairwell  = Vector2.new(0.69, 0.63),
-	sewer_tunnel         = Vector2.new(0.73, 0.49),
-	hospital_basement    = Vector2.new(0.77, 0.41),
-	underpass            = Vector2.new(0.76, 0.60),
-	last_train_station   = Vector2.new(0.82, 0.50),
-	burned_out_theater   = Vector2.new(0.72, 0.70),
-}
-
--- Where the marker rests before you send it anywhere: Tokyo Jujutsu High, roughly west
--- of the ward belt.
-local HOME_POINT = Vector2.new(0.38, 0.30)
+local artId = BitKaisenIncidentMap.ArtId
+local MAP_ASPECT = BitKaisenIncidentMap.MAP_ASPECT
+local MAP_POINTS = BitKaisenIncidentMap.MAP_POINTS
+local HOME_POINT = BitKaisenIncidentMap.HOME_POINT
 
 local isOpen = false
 local busy = false
@@ -608,7 +535,7 @@ local function renderDetail(location)
 	-- is not, this draws a case-file plate instead: the threat colour, the grade, and a
 	-- hazard pattern. It is deliberate rather than an empty gap, and it costs nothing to
 	-- license, so a site without a photograph does not look like a site with a bug.
-	local art = MAP_ART.Locations[tostring(location.Id)]
+	local art = artId(MAP_ART.Locations[tostring(location.Id)])
 	local threat = tonumber(location.Threat) or 0
 	local accent = threatColor(threat)
 
@@ -624,7 +551,7 @@ local function renderDetail(location)
 	addCorner(plate, 10)
 	addStroke(plate, accent, 1, 0.55)
 
-	if art and art ~= "" then
+	if art then
 		local photo = Instance.new("ImageLabel")
 		photo.Name = "Photo"
 		photo.Size = UDim2.fromScale(1, 1)
@@ -654,13 +581,13 @@ local function renderDetail(location)
 			line.Parent = plate
 		end
 	else
-		-- Diagonal hazard stripes, angled so they read as a marked file rather than a texture.
-		for i = 0, 13 do
+		-- Upright bars, not rotated ones. ClipsDescendants does not clip a rotated child in
+		-- Roblox, so the diagonal version of this ran straight out of the plate and across
+		-- the rest of the dossier.
+		for i = 0, 17 do
 			local stripe = Instance.new("Frame")
-			stripe.AnchorPoint = Vector2.new(0.5, 0.5)
-			stripe.Position = UDim2.new(0, i * 34 - 20, 0.5, 0)
-			stripe.Size = UDim2.fromOffset(9, 300)
-			stripe.Rotation = 24
+			stripe.Position = UDim2.new(0, i * 34, 0, 0)
+			stripe.Size = UDim2.new(0, 9, 1, 0)
 			stripe.BackgroundColor3 = accent
 			stripe.BackgroundTransparency = 0.93
 			stripe.BorderSizePixel = 0
@@ -811,7 +738,7 @@ local function renderDetail(location)
 				break
 			end
 		end
-		local holderArt = MAP_ART.Shikigami[holder]
+		local holderArt = artId(MAP_ART.Shikigami[holder])
 		if holderArt then
 			local portrait = Instance.new("ImageLabel")
 			portrait.Name = "ShikigamiPortrait"
@@ -1065,7 +992,7 @@ local function makePin(location)
 	-- Hover card. Only exists when a shikigami is standing here and we have its portrait,
 	-- so the map stays a map and the creature is something you find by looking closer.
 	local hoverCard = nil
-	local holderArt = location.Shikigami and MAP_ART.Shikigami[tostring(location.Shikigami)]
+	local holderArt = location.Shikigami and artId(MAP_ART.Shikigami[tostring(location.Shikigami)])
 	if holderArt then
 		hoverCard = Instance.new("Frame")
 		hoverCard.Name = "ShikigamiCard"

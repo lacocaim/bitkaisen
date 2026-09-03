@@ -246,7 +246,7 @@ local function renderLives()
 	if not getPastLives then
 		rendering = false
 		local errCard = mc.mobileCard({ parent = scroll, order = 1 })
-		mc.mobileLabel({ parent = errCard, text = _h("cemetery_unavail", "Cemetery unavailable - rejoin to enable it."), size = 13, color = theme.SubText, order = 1 })
+		mc.mobileLabel({ parent = errCard, text = _h("cemetery_unavail", "Cemetery unavailable. Rejoin to enable it."), size = 13, color = theme.SubText, order = 1 })
 		return
 	end
 

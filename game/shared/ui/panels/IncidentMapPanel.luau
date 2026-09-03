@@ -129,7 +129,12 @@ end
 local gui = Instance.new("ScreenGui")
 gui.Name = "BitKaisenIncidentMapGui"
 gui.ResetOnSpawn = false
-gui.IgnoreGuiInset = true
+-- Not ignoring the inset: the panel puts its title in the top-left corner, which is
+-- exactly where Roblox parks its own topbar buttons, and "INCIDENT MAP" was coming out as
+-- "...ENT...AP" behind them. Letting Roblox reserve its strip costs 36 pixels and is the
+-- only fix that survives a topbar that changes width. MobileIncidentMapPanel already does
+-- the same.
+gui.IgnoreGuiInset = false
 gui.DisplayOrder = 626
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.AutoLocalize = false

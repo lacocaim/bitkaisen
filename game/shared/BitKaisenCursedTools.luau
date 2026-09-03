@@ -10,6 +10,8 @@ BitKaisenCursedTools.RarityOrder = {
 	Epic = 4,
 	Legendary = 5,
 	SpecialGrade = 6,
+	-- A tool the player made themselves sorts above the catalogue.
+	Forged = 7,
 }
 
 BitKaisenCursedTools.Definitions = {
@@ -187,11 +189,14 @@ function BitKaisenCursedTools.EnsureInventory(stats)
 end
 
 function BitKaisenCursedTools.GetOwnedPayload(stats)
-	local owned, equippedId = BitKaisenCursedTools.EnsureInventory(stats)
+	local owned = BitKaisenCursedTools.EnsureInventory(stats)
 	local payload = {}
 	for toolId, item in pairs(owned) do
-		local def = byId[toolId]
+		-- ResolveTool rather than byId, so a tool the player forged shows up in their own
+		-- inventory instead of being silently skipped.
+		local def = BitKaisenCursedTools.ResolveTool(stats, toolId)
 		if def then
+			local nextGrade = def.Forged and BitKaisenCursedTools.GetNextForgeGrade(item.Uses) or nil
 			table.insert(payload, {
 				Id = def.Id,
 				Name = def.Name,
@@ -199,13 +204,19 @@ function BitKaisenCursedTools.GetOwnedPayload(stats)
 				Type = def.Type,
 				Description = def.Description,
 				EffectText = def.EffectText,
-				Equipped = equippedId == def.Id,
+				Equipped = BitKaisenCursedTools.IsEquipped(stats, def.Id),
 				AcquiredFrom = item.AcquiredFrom or "Unknown",
 				AcquiredYear = item.AcquiredYear,
 				SellValue = BitKaisenCursedTools.GetSellValue(def),
-				Affinity = math.clamp(tonumber(item.Affinity) or 0, 0, 100),
+				Affinity = def.Forged and 0 or math.clamp(tonumber(item.Affinity) or 0, 0, 100),
 				Imbued = item.Imbued == true,
 				ImbuedPower = tonumber(item.ImbuedPower) or 0,
+				Forged = def.Forged == true,
+				Grade = def.Grade,
+				AffinityName = def.AffinityName,
+				Uses = def.Uses,
+				NextGrade = nextGrade and nextGrade.Grade or nil,
+				UsesToNextGrade = nextGrade and math.max(0, nextGrade.Uses - (tonumber(item.Uses) or 0)) or nil,
 			})
 		end
 	end
@@ -338,27 +349,80 @@ function BitKaisenCursedTools.SellTool(stats, toolId)
 end
 
 function BitKaisenCursedTools.EquipTool(stats, toolId)
-	local def = BitKaisenCursedTools.GetTool(toolId)
 	local owned = BitKaisenCursedTools.EnsureInventory(stats)
+	local def = BitKaisenCursedTools.ResolveTool(stats, toolId)
 	if not def or not owned[def.Id] then
 		return false, "You do not own that cursed tool."
 	end
-	stats.EquippedCursedToolId = def.Id
+	if BitKaisenCursedTools.IsEquipped(stats, def.Id) then
+		return true, def
+	end
+
+	local limit = BitKaisenCursedTools.GetEquipLimit(stats)
+	local current = BitKaisenCursedTools.GetEquippedIds(stats)
+	if #current >= limit then
+		return false, "You can carry " .. tostring(limit) .. " cursed tools at once. Put one away first."
+	end
+
+	if not stats.EquippedCursedToolId then
+		stats.EquippedCursedToolId = def.Id
+	else
+		if typeof(stats.EquippedCursedToolIds) ~= "table" then
+			stats.EquippedCursedToolIds = {}
+		end
+		table.insert(stats.EquippedCursedToolIds, def.Id)
+	end
 	return true, def
 end
 
-function BitKaisenCursedTools.UnequipTool(stats)
-	stats.EquippedCursedToolId = nil
+-- Passing no id puts everything away, which is what the old single-slot callers expect.
+function BitKaisenCursedTools.UnequipTool(stats, toolId)
+	if toolId == nil then
+		stats.EquippedCursedToolId = nil
+		stats.EquippedCursedToolIds = {}
+		return true
+	end
+
+	local id = tostring(toolId)
+	if typeof(stats.EquippedCursedToolIds) == "table" then
+		for index = #stats.EquippedCursedToolIds, 1, -1 do
+			if stats.EquippedCursedToolIds[index] == id then
+				table.remove(stats.EquippedCursedToolIds, index)
+			end
+		end
+	end
+	if stats.EquippedCursedToolId == id then
+		-- Promote one of the extras so the first slot never sits empty while others are held.
+		local promoted = nil
+		if typeof(stats.EquippedCursedToolIds) == "table" then
+			promoted = table.remove(stats.EquippedCursedToolIds, 1)
+		end
+		stats.EquippedCursedToolId = promoted
+	end
 	return true
 end
 
+-- Sums every equipped tool rather than reading one. Multipliers multiply, everything else
+-- adds, so two tools with the same affinity stack the way two of anything else would.
 function BitKaisenCursedTools.GetEquippedEffects(stats)
-	local _, equippedId = BitKaisenCursedTools.EnsureInventory(stats)
-	local def = BitKaisenCursedTools.GetTool(equippedId)
-	if not def or typeof(def.Effects) ~= "table" then
-		return {}, nil
+	local combined, first = {}, nil
+	for _, toolId in ipairs(BitKaisenCursedTools.GetEquippedIds(stats)) do
+		local def = BitKaisenCursedTools.ResolveTool(stats, toolId)
+		if def and typeof(def.Effects) == "table" then
+			first = first or def
+			for key, value in pairs(def.Effects) do
+				local amount = tonumber(value)
+				if amount then
+					if key == "CEGainMult" then
+						combined[key] = (tonumber(combined[key]) or 1) * amount
+					else
+						combined[key] = (tonumber(combined[key]) or 0) + amount
+					end
+				end
+			end
+		end
 	end
-	return def.Effects, def
+	return combined, first
 end
 
 function BitKaisenCursedTools.ApplyCEGain(stats, baseAmount)
@@ -447,6 +511,295 @@ function BitKaisenCursedTools.RollDrop(maxRarityRank)
 		end
 	end
 	return pool[#pool] and pool[#pool].Tool or nil
+end
+
+----------------------------------------------------------------
+-- UPDATE 30: FORGING
+--
+-- Asked for by RUS_erious and marked Accepted by staff. The original suggestion has two
+-- halves: forging your own tool, and replacing combat with a turn-based body-part system.
+-- Only the forging half is here. The second half would throw away the combat rework that
+-- shipped in Update 29, which is not a thing to do two days before an update log.
+--
+-- A forged tool is not in Definitions, so it cannot be found by the static byId lookup.
+-- It carries its own definition inline on the inventory entry instead, and ResolveTool
+-- checks both. Everything that used GetTool on an owned tool should use ResolveTool.
+----------------------------------------------------------------
+
+BitKaisenCursedTools.ToolTypes = {
+	{ Id = "katana",  Name = "Katana",     Line = "A long edge. Cuts before it is seen.",        Power = 7, Defense = 1 },
+	{ Id = "spear",   Name = "Spear",      Line = "Reach. It keeps the curse at arm's length.",  Power = 5, Defense = 4 },
+	{ Id = "dagger",  Name = "Dagger",     Line = "Short and quick. Made for the opening.",      Power = 6, Defense = 0, CEGain = 0.05 },
+	{ Id = "chain",   Name = "Chain Whip", Line = "Wraps, binds, and drags them back in.",       Power = 3, Defense = 6 },
+}
+
+-- The four affinities from the suggestion. In the turn-based combat RUS_erious described
+-- these would be once-per-fight abilities. Combat here is not turn-based, so each one is
+-- a standing effect that leans the same way the ability would have.
+BitKaisenCursedTools.ToolAffinities = {
+	{
+		Id = "black_flames",
+		Name = "Black Flames",
+		Line = "It burns after the cut lands.",
+		Effects = { CombatPower = 9 },
+	},
+	{
+		Id = "lightning_control",
+		Name = "Lightning Control",
+		Line = "The strike arrives before the decision to move.",
+		Effects = { CombatPower = 6, CEGainMult = 0.08 },
+	},
+	{
+		Id = "barrier_bypass",
+		Name = "Barrier Bypass",
+		Line = "Walls are a suggestion.",
+		Effects = { CombatPower = 4, MissionRiskReduction = 0.07 },
+	},
+	{
+		Id = "technique_immunity",
+		Name = "Technique Immunity",
+		Line = "Their technique finds nothing to hold.",
+		Effects = { DefensePower = 10 },
+	},
+}
+
+-- Grade 4 is where every forged tool starts. Fighting with it grades it up, which is the
+-- progression the suggestion asked for. The multiplier applies to the whole effect set,
+-- so a Grade 1 tool is worth a little over twice what it was the day it was made.
+BitKaisenCursedTools.ForgeGrades = {
+	{ Grade = "Grade 4",       Uses = 0,  Multiplier = 1.0 },
+	{ Grade = "Grade 3",       Uses = 5,  Multiplier = 1.35 },
+	{ Grade = "Grade 2",       Uses = 14, Multiplier = 1.75 },
+	{ Grade = "Grade 1",       Uses = 30, Multiplier = 2.2 },
+	{ Grade = "Special Grade", Uses = 55, Multiplier = 2.8 },
+}
+
+BitKaisenCursedTools.ForgeCost = 14000
+BitKaisenCursedTools.ForgeMinAge = 16
+BitKaisenCursedTools.ForgeMinMastery = 25
+
+local function findById(list, id)
+	for _, entry in ipairs(list) do
+		if entry.Id == tostring(id or "") then
+			return entry
+		end
+	end
+	return nil
+end
+
+function BitKaisenCursedTools.GetForgeGradeFor(uses: number?)
+	local count = tonumber(uses) or 0
+	local current = BitKaisenCursedTools.ForgeGrades[1]
+	for _, step in ipairs(BitKaisenCursedTools.ForgeGrades) do
+		if count >= step.Uses then
+			current = step
+		end
+	end
+	return current
+end
+
+function BitKaisenCursedTools.GetNextForgeGrade(uses: number?)
+	local count = tonumber(uses) or 0
+	for _, step in ipairs(BitKaisenCursedTools.ForgeGrades) do
+		if count < step.Uses then
+			return step
+		end
+	end
+	return nil
+end
+
+-- Builds the definition a forged tool presents to the rest of the game. Same shape as an
+-- entry in Definitions, so nothing downstream needs to know the difference.
+local function buildForgedDefinition(entry)
+	local typeDef = findById(BitKaisenCursedTools.ToolTypes, entry.ToolType) or BitKaisenCursedTools.ToolTypes[1]
+	local affinity = findById(BitKaisenCursedTools.ToolAffinities, entry.AffinityId) or BitKaisenCursedTools.ToolAffinities[1]
+	local grade = BitKaisenCursedTools.GetForgeGradeFor(entry.Uses)
+	local mult = grade.Multiplier
+
+	local effects = {
+		CombatPower = math.floor(((typeDef.Power or 0) + (affinity.Effects.CombatPower or 0)) * mult + 0.5),
+		DefensePower = math.floor(((typeDef.Defense or 0) + (affinity.Effects.DefensePower or 0)) * mult + 0.5),
+	}
+	local ceGain = (typeDef.CEGain or 0) + (affinity.Effects.CEGainMult or 0)
+	if ceGain > 0 then
+		effects.CEGainMult = 1 + (ceGain * mult)
+	end
+	local risk = affinity.Effects.MissionRiskReduction or 0
+	if risk > 0 then
+		effects.MissionRiskReduction = risk * mult
+	end
+
+	return {
+		Id = entry.Id,
+		Name = entry.Name,
+		Rarity = "Forged",
+		Type = typeDef.Name,
+		Forged = true,
+		ToolTypeId = typeDef.Id,
+		AffinityId = affinity.Id,
+		AffinityName = affinity.Name,
+		Grade = grade.Grade,
+		Uses = tonumber(entry.Uses) or 0,
+		Description = typeDef.Line .. " " .. affinity.Line,
+		EffectText = string.format(
+			"%s, %s. +%d combat power, +%d defense while equipped.",
+			grade.Grade, affinity.Name, effects.CombatPower, effects.DefensePower
+		),
+		Effects = effects,
+	}
+end
+
+-- Definitions first, then the player's own forged tools. Use this anywhere a tool id can
+-- have come from a player rather than from the catalogue.
+function BitKaisenCursedTools.ResolveTool(stats, toolId)
+	local def = BitKaisenCursedTools.GetTool(toolId)
+	if def then
+		return def
+	end
+	if typeof(stats) ~= "table" or typeof(stats.CursedTools) ~= "table" then
+		return nil
+	end
+	local entry = stats.CursedTools[tostring(toolId or "")]
+	if entry and entry.Forged then
+		return buildForgedDefinition(entry)
+	end
+	return nil
+end
+
+function BitKaisenCursedTools.GetForgeOptions(stats)
+	local types, affinities = {}, {}
+	for _, t in ipairs(BitKaisenCursedTools.ToolTypes) do
+		table.insert(types, { Id = t.Id, Name = t.Name, Line = t.Line })
+	end
+	for _, a in ipairs(BitKaisenCursedTools.ToolAffinities) do
+		table.insert(affinities, { Id = a.Id, Name = a.Name, Line = a.Line })
+	end
+	local age = tonumber(stats and stats.Age) or 0
+	local mastery = tonumber(stats and stats.TechniqueMastery) or 0
+	local money = tonumber(stats and stats.Money) or 0
+	local locked, reason = false, nil
+	if age < BitKaisenCursedTools.ForgeMinAge then
+		locked, reason = true, "Forging unlocks at age " .. tostring(BitKaisenCursedTools.ForgeMinAge) .. "."
+	elseif mastery < BitKaisenCursedTools.ForgeMinMastery then
+		locked, reason = true, "You need " .. tostring(BitKaisenCursedTools.ForgeMinMastery) .. " Technique Mastery to shape cursed energy into a tool."
+	elseif money < BitKaisenCursedTools.ForgeCost then
+		locked, reason = true, "Forging costs $" .. tostring(BitKaisenCursedTools.ForgeCost) .. "."
+	end
+	return {
+		Types = types,
+		Affinities = affinities,
+		Cost = BitKaisenCursedTools.ForgeCost,
+		Locked = locked,
+		LockReason = reason,
+	}
+end
+
+function BitKaisenCursedTools.ForgeTool(stats, name, toolTypeId, affinityId, year)
+	if typeof(stats) ~= "table" then
+		return nil, "No active life."
+	end
+	local options = BitKaisenCursedTools.GetForgeOptions(stats)
+	if options.Locked then
+		return nil, options.LockReason
+	end
+	local typeDef = findById(BitKaisenCursedTools.ToolTypes, toolTypeId)
+	if not typeDef then
+		return nil, "Choose a tool type."
+	end
+	local affinity = findById(BitKaisenCursedTools.ToolAffinities, affinityId)
+	if not affinity then
+		return nil, "Choose an affinity."
+	end
+
+	local cleanName = string.gsub(tostring(name or ""), "^%s+", "")
+	cleanName = string.gsub(cleanName, "%s+$", "")
+	if cleanName == "" then
+		cleanName = typeDef.Name .. " of " .. affinity.Name
+	end
+	if #cleanName > 28 then
+		cleanName = string.sub(cleanName, 1, 28)
+	end
+
+	local owned = BitKaisenCursedTools.EnsureInventory(stats)
+	local id = string.format("forged_%d_%d", os.time(), math.random(1000, 9999))
+	owned[id] = {
+		Id = id,
+		Forged = true,
+		Name = cleanName,
+		ToolType = typeDef.Id,
+		AffinityId = affinity.Id,
+		Uses = 0,
+		AcquiredFrom = "Forged",
+		AcquiredYear = year,
+	}
+	stats.Money = math.max(0, (tonumber(stats.Money) or 0) - BitKaisenCursedTools.ForgeCost)
+
+	return buildForgedDefinition(owned[id]), nil
+end
+
+-- Called once per fight. Only forged tools track use, and only the ones actually equipped,
+-- so a tool grades up because you fought with it and not because you owned it.
+function BitKaisenCursedTools.RecordCombatUse(stats)
+	local owned = BitKaisenCursedTools.EnsureInventory(stats)
+	local graded = {}
+	for _, toolId in ipairs(BitKaisenCursedTools.GetEquippedIds(stats)) do
+		local entry = owned[toolId]
+		if entry and entry.Forged then
+			local before = BitKaisenCursedTools.GetForgeGradeFor(entry.Uses)
+			entry.Uses = (tonumber(entry.Uses) or 0) + 1
+			local after = BitKaisenCursedTools.GetForgeGradeFor(entry.Uses)
+			if after.Grade ~= before.Grade then
+				table.insert(graded, { Name = entry.Name, Grade = after.Grade })
+			end
+		end
+	end
+	return graded
+end
+
+----------------------------------------------------------------
+-- UPDATE 30: MORE THAN ONE TOOL
+--
+-- The suggestion asks for two tools, and four under Heavenly Restriction, which fits: a
+-- body with no cursed energy has nothing to spend on a technique and leans on steel.
+--
+-- EquippedCursedToolId stays as the first slot. Nine files and twenty four call sites read
+-- it directly, and rewriting all of them the week of a release is how a release breaks.
+-- The extra slots live alongside it and every reader of the old field keeps working.
+----------------------------------------------------------------
+
+function BitKaisenCursedTools.GetEquipLimit(stats)
+	local technique = string.lower(tostring((stats and (stats.CursedTechnique or stats.InnateTechnique)) or ""))
+	if string.find(technique, "heavenly restriction", 1, true) then
+		return 4
+	end
+	return 2
+end
+
+function BitKaisenCursedTools.GetEquippedIds(stats)
+	local owned = BitKaisenCursedTools.EnsureInventory(stats)
+	local ids, seen = {}, {}
+	if stats.EquippedCursedToolId and owned[stats.EquippedCursedToolId] then
+		table.insert(ids, stats.EquippedCursedToolId)
+		seen[stats.EquippedCursedToolId] = true
+	end
+	if typeof(stats.EquippedCursedToolIds) == "table" then
+		for _, id in ipairs(stats.EquippedCursedToolIds) do
+			if owned[id] and not seen[id] then
+				table.insert(ids, id)
+				seen[id] = true
+			end
+		end
+	end
+	return ids
+end
+
+function BitKaisenCursedTools.IsEquipped(stats, toolId)
+	for _, id in ipairs(BitKaisenCursedTools.GetEquippedIds(stats)) do
+		if id == toolId then
+			return true
+		end
+	end
+	return false
 end
 
 return BitKaisenCursedTools

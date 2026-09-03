@@ -935,9 +935,30 @@ local function processAssetAction(player, actionId, assetId)
 		end
 		return
 	elseif actionId == "UnequipCursedTool" then
-		BitKaisenCursedTools.UnequipTool(stats)
+		-- Passing the id matters now that more than one tool can be held: without it this
+		-- put every tool away instead of the one the player tapped.
+		BitKaisenCursedTools.UnequipTool(stats, assetId)
 		fireLifeUpdate(player, stats, "<font color='#f0b955'><b>[ CURSED TOOL ]</b></font> Cursed tool unequipped.")
 		saveStats(player, "unequip cursed tool")
+		return
+	elseif actionId == "ForgeCursedTool" then
+		-- Update 30, asked for by RUS_erious. The payload rides in assetId as
+		-- "type|affinity|name" because this remote only accepts a string and changing that
+		-- would touch every asset action in the game.
+		local typeId, affinityId, name = string.match(tostring(assetId), "^([^|]*)|([^|]*)|(.*)$")
+		local def, err = BitKaisenCursedTools.ForgeTool(stats, name, typeId, affinityId, getCurrentYear(stats))
+		if not def then
+			fireLifeUpdate(player, stats, tostring(err or "You could not forge that."))
+			return
+		end
+		fireLifeUpdate(
+			player,
+			stats,
+			"<font color='#f0b955'><b>[ FORGE ]</b></font> You shaped <b>" .. tostring(def.Name) .. "</b>, a "
+				.. tostring(def.Grade) .. " " .. string.lower(tostring(def.Type)) .. " with the "
+				.. tostring(def.AffinityName) .. " affinity. Fight with it and it will sharpen."
+		)
+		saveStats(player, "forge cursed tool")
 		return
 	elseif actionId == "ImbueCursedTool" then
 		local ok, msg = BitKaisenCursedTools.ImbueTool(stats, assetId)
@@ -2193,6 +2214,10 @@ local function getAssetsPayload(player)
 		CursedTools = BitKaisenCursedTools.GetOwnedPayload(stats),
 		CursedToolCatalog = BitKaisenCursedTools.GetCatalogPayload(stats),
 		EquippedCursedToolId = stats.EquippedCursedToolId,
+		-- Update 30: the forge menu and how many tools this life can hold at once.
+		CursedToolForge = BitKaisenCursedTools.GetForgeOptions(stats),
+		EquippedCursedToolIds = BitKaisenCursedTools.GetEquippedIds(stats),
+		CursedToolEquipLimit = BitKaisenCursedTools.GetEquipLimit(stats),
 	}
 end
 

@@ -292,7 +292,17 @@ local function buildOwnedTab(data)
 				size = 13, color = theme.SubText, order = 3,
 			})
 			local affinity = math.clamp(tonumber(tool.Affinity) or 0, 0, 100)
-			local affinityText = tool.Imbued and "IMBUED" or ("Affinity: " .. tostring(affinity) .. "%")
+			-- A forged tool already states its affinity by name, so the bond percentage next to it
+			-- read as a second, contradictory affinity. Forged tools show their grade instead.
+			local affinityText
+			if tool.Forged then
+				affinityText = tostring(tool.Grade or "Grade 4")
+				if tool.NextGrade and tool.UsesToNextGrade then
+					affinityText = affinityText .. "  ->  " .. tostring(tool.NextGrade) .. " in " .. tostring(tool.UsesToNextGrade) .. " fights"
+				end
+			else
+				affinityText = tool.Imbued and "IMBUED" or ("Affinity: " .. tostring(affinity) .. "%")
+			end
 			if tool.EffectText and tool.EffectText ~= "" then
 				mobileLabel({
 					parent = card, text = tostring(tool.EffectText) .. " | " .. affinityText,

@@ -6126,6 +6126,31 @@ do
 			Break = function(stats, power)
 				stats.ClanReputation = math.max(0, (tonumber(stats.ClanReputation) or 0) - (7 * power))
 			end
+		},
+		{
+			-- Update 30, asked for by noobeh. CE Potential is rolled once at birth, between
+			-- 20 and 70, and it is a hard ceiling: CE Output, Reinforcement and Control can
+			-- never train past it. A bad roll was a wall with no answer for the whole life.
+			-- Raising a ceiling you were born under is exactly what a binding vow is for.
+			--
+			-- Note the break cost is deliberately larger than the gain, unlike the other
+			-- rewards here. A vow can be broken on demand, so a break that cost less than
+			-- the gain would let anyone sign and break in a loop to farm the ceiling.
+			Id = "ce_potential",
+			Name = "Cursed Energy Potential",
+			Line = "In return, the ceiling I was born under shall rise.",
+			BuildGainText = function(power)
+				return "+" .. tostring(4 * power) .. " CE Potential, raising the cap on Output, Reinforcement and Control"
+			end,
+			Apply = function(stats, power)
+				stats.CEPotential = math.clamp((tonumber(stats.CEPotential) or 0) + (4 * power), 0, 100)
+			end,
+			BreakText = function(power)
+				return "-" .. tostring(7 * power) .. " CE Potential"
+			end,
+			Break = function(stats, power)
+				stats.CEPotential = math.clamp((tonumber(stats.CEPotential) or 0) - (7 * power), 0, 100)
+			end
 		}
 	}
 

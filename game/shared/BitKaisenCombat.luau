@@ -176,11 +176,11 @@ function BitKaisenCombat.GetCombatPower(stats, options)
 	power += tonumber(assetBonuses.MissionPowerBonus) or 0
 	power += math.floor((tonumber(assetBonuses.ReputationBonus) or 0) * 0.5)
 
-	local equippedTool = BitKaisenCursedTools.GetTool(stats.EquippedCursedToolId)
-	if equippedTool and equippedTool.Effects then
-		power += tonumber(equippedTool.Effects.CombatPower) or 0
-		power += tonumber(equippedTool.Effects.DefensePower) or 0
-	end
+	-- Update 30: this used to read one tool out of the static catalogue, which missed both
+	-- forged tools and the second slot. GetEquippedEffects sums everything held.
+	local toolEffects = BitKaisenCursedTools.GetEquippedEffects(stats)
+	power += tonumber(toolEffects.CombatPower) or 0
+	power += tonumber(toolEffects.DefensePower) or 0
 	local toolEntry = typeof(stats.CursedTools) == "table" and stats.EquippedCursedToolId and stats.CursedTools[stats.EquippedCursedToolId]
 	if toolEntry and toolEntry.Imbued then
 		power += tonumber(toolEntry.ImbuedPower) or 0

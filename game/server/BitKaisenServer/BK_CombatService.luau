@@ -601,6 +601,17 @@ local function finishCombat(player, session, winner, reason)
 			if stats.EquippedCursedToolId then
 				BitKaisenCursedTools.GrowAffinity(stats, stats.EquippedCursedToolId, math.random(2, 5))
 			end
+			-- Update 30: a forged tool grades up by being used, which is the progression
+			-- RUS_erious asked for. Only equipped forged tools count the fight.
+			local gradedUp = BitKaisenCursedTools.RecordCombatUse(stats)
+			for _, entry in ipairs(gradedUp) do
+				fireLifeUpdate(
+					player,
+					stats,
+					"<font color='#f0b955'><b>[ FORGE ]</b></font> <b>" .. tostring(entry.Name)
+						.. "</b> has sharpened into <b>" .. tostring(entry.Grade) .. "</b>."
+				)
+			end
 			local dropText = ""
 			local dropChance, maxRarity = BitKaisenCursedTools.GetCombatDropConfig(session.Enemy.Power)
 			if math.random(1, 100) <= dropChance then

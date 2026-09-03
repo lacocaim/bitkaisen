@@ -52,6 +52,12 @@ local COLORS = {
 -- STATE
 ----------------------------------------------------------------
 local busy = false
+
+-- Update 30 forge selection. Kept at file scope so the choice survives the panel rebuild
+-- that follows every asset action.
+local forgeTypeIndex = 1
+local forgeAffinityIndex = 1
+local forgeNameText = ""
 local isOpen = false
 local currentTab = "Owned"
 local currentData = nil
@@ -1918,6 +1924,155 @@ refreshAssets = function()
 		end
 
 		makeHeader("Cursed Tools")
+
+		-- Update 30: the forge, asked for by RUS_erious. Name it, pick a shape, pick an
+		-- affinity. It comes out at Grade 4 and sharpens every fight you carry it into.
+		local forge = currentData.CursedToolForge
+		if forge then
+			local forgeCard = Instance.new("Frame")
+			forgeCard.Name = "ForgeCard"
+			forgeCard.Size = UDim2.new(1, -10, 0, forge.Locked and 78 or 148)
+			forgeCard.BackgroundColor3 = COLORS.CardDark
+			forgeCard.BorderSizePixel = 0
+			forgeCard.ZIndex = 354
+			forgeCard.Parent = scroll
+			addCorner(forgeCard, 8)
+			addStroke(forgeCard, COLORS.GoldStroke, 1)
+
+			local forgeTitle = Instance.new("TextLabel")
+			forgeTitle.BackgroundTransparency = 1
+			forgeTitle.Position = UDim2.fromOffset(14, 10)
+			forgeTitle.Size = UDim2.new(1, -28, 0, 18)
+			forgeTitle.Text = "FORGE A CURSED TOOL"
+			forgeTitle.TextColor3 = COLORS.Gold
+			forgeTitle.TextSize = 13
+			forgeTitle.Font = Enum.Font.GothamBlack
+			forgeTitle.TextXAlignment = Enum.TextXAlignment.Left
+			forgeTitle.ZIndex = 355
+			forgeTitle.Parent = forgeCard
+
+			local forgeSub = Instance.new("TextLabel")
+			forgeSub.BackgroundTransparency = 1
+			forgeSub.Position = UDim2.fromOffset(14, 30)
+			forgeSub.Size = UDim2.new(1, -28, 0, 30)
+			forgeSub.Text = forge.Locked
+				and tostring(forge.LockReason or "Not available yet.")
+				or ("Shape your own tool for $" .. tostring(forge.Cost)
+					.. ". It starts at Grade 4 and grades up the more you fight with it. You can carry "
+					.. tostring(currentData.CursedToolEquipLimit or 2) .. " tools at once.")
+			forgeSub.TextColor3 = forge.Locked and COLORS.Muted or COLORS.SubText
+			forgeSub.TextSize = 11
+			forgeSub.Font = Enum.Font.GothamMedium
+			forgeSub.TextXAlignment = Enum.TextXAlignment.Left
+			forgeSub.TextYAlignment = Enum.TextYAlignment.Top
+			forgeSub.TextWrapped = true
+			forgeSub.ZIndex = 355
+			forgeSub.Parent = forgeCard
+
+			if not forge.Locked then
+				local types = forge.Types or {}
+				local affinities = forge.Affinities or {}
+				forgeTypeIndex = math.clamp(forgeTypeIndex, 1, math.max(1, #types))
+				forgeAffinityIndex = math.clamp(forgeAffinityIndex, 1, math.max(1, #affinities))
+
+				local nameBox = Instance.new("TextBox")
+				nameBox.Position = UDim2.fromOffset(14, 66)
+				nameBox.Size = UDim2.new(1, -28, 0, 26)
+				nameBox.BackgroundColor3 = COLORS.Button
+				nameBox.BorderSizePixel = 0
+				nameBox.Text = forgeNameText
+				nameBox.PlaceholderText = "Name it, or leave this empty"
+				nameBox.TextColor3 = COLORS.Text
+				nameBox.PlaceholderColor3 = COLORS.Muted
+				nameBox.TextSize = 12
+				nameBox.Font = Enum.Font.GothamMedium
+				nameBox.ClearTextOnFocus = false
+				nameBox.ZIndex = 356
+				nameBox.Parent = forgeCard
+				addCorner(nameBox, 6)
+				nameBox:GetPropertyChangedSignal("Text"):Connect(function()
+					forgeNameText = nameBox.Text
+				end)
+
+				-- Cycling buttons rather than dropdowns: four options each, and a dropdown
+				-- would be more chrome than the choice deserves.
+				local function makeCycler(x, width, label, getText, onCycle)
+					local b = Instance.new("TextButton")
+					b.Position = UDim2.fromOffset(x, 98)
+					b.Size = UDim2.new(width, -6, 0, 30)
+					b.BackgroundColor3 = COLORS.Button
+					b.BorderSizePixel = 0
+					b.Text = label .. ": " .. getText()
+					b.TextColor3 = COLORS.Blue
+					b.TextSize = 11
+					b.Font = Enum.Font.GothamBold
+					b.TextTruncate = Enum.TextTruncate.AtEnd
+					b.AutoButtonColor = true
+					b.ZIndex = 356
+					b.Parent = forgeCard
+					addCorner(b, 6)
+					b.Activated:Connect(function()
+						onCycle()
+						b.Text = label .. ": " .. getText()
+					end)
+					return b
+				end
+
+				makeCycler(14, 0.36, "SHAPE", function()
+					local t = types[forgeTypeIndex]
+					return t and tostring(t.Name) or "?"
+				end, function()
+					forgeTypeIndex = (forgeTypeIndex % math.max(1, #types)) + 1
+				end)
+
+				local affinityButton = Instance.new("TextButton")
+				affinityButton.Position = UDim2.new(0.36, 14, 0, 98)
+				affinityButton.Size = UDim2.new(0.4, -8, 0, 30)
+				affinityButton.BackgroundColor3 = COLORS.Button
+				affinityButton.BorderSizePixel = 0
+				affinityButton.TextColor3 = COLORS.Purple
+				affinityButton.TextSize = 11
+				affinityButton.Font = Enum.Font.GothamBold
+				affinityButton.TextTruncate = Enum.TextTruncate.AtEnd
+				affinityButton.ZIndex = 356
+				affinityButton.Parent = forgeCard
+				addCorner(affinityButton, 6)
+				local function affinityText()
+					local a = affinities[forgeAffinityIndex]
+					return "AFFINITY: " .. (a and tostring(a.Name) or "?")
+				end
+				affinityButton.Text = affinityText()
+				affinityButton.Activated:Connect(function()
+					forgeAffinityIndex = (forgeAffinityIndex % math.max(1, #affinities)) + 1
+					affinityButton.Text = affinityText()
+				end)
+
+				local forgeButton = Instance.new("TextButton")
+				forgeButton.AnchorPoint = Vector2.new(1, 0)
+				forgeButton.Position = UDim2.new(1, -14, 0, 98)
+				forgeButton.Size = UDim2.new(0.22, -8, 0, 30)
+				forgeButton.BackgroundColor3 = COLORS.Accent
+				forgeButton.BorderSizePixel = 0
+				forgeButton.Text = "FORGE"
+				forgeButton.TextColor3 = COLORS.Gold
+				forgeButton.TextSize = 12
+				forgeButton.Font = Enum.Font.GothamBlack
+				forgeButton.ZIndex = 356
+				forgeButton.Parent = forgeCard
+				addCorner(forgeButton, 6)
+				forgeButton.Activated:Connect(function()
+					local t = types[forgeTypeIndex]
+					local a = affinities[forgeAffinityIndex]
+					if not t or not a then
+						return
+					end
+					local cleanName = string.gsub(forgeNameText, "|", "")
+					fireAssetAction("ForgeCursedTool", tostring(t.Id) .. "|" .. tostring(a.Id) .. "|" .. cleanName)
+					forgeNameText = ""
+				end)
+			end
+		end
+
 		local cursedTools = currentData.CursedTools or {}
 		local toolViewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
 		local compactToolCards = toolViewport.X < 760
@@ -1976,7 +2131,17 @@ refreshAssets = function()
 				descLabel.Parent = card
 
 				local affinity = math.clamp(tonumber(tool.Affinity) or 0, 0, 100)
-				local affinityText = tool.Imbued and "IMBUED" or ("Affinity: " .. tostring(affinity) .. "%")
+				-- A forged tool already states its affinity by name, so the bond percentage next to it
+			-- read as a second, contradictory affinity. Forged tools show their grade instead.
+			local affinityText
+			if tool.Forged then
+				affinityText = tostring(tool.Grade or "Grade 4")
+				if tool.NextGrade and tool.UsesToNextGrade then
+					affinityText = affinityText .. "  ->  " .. tostring(tool.NextGrade) .. " in " .. tostring(tool.UsesToNextGrade) .. " fights"
+				end
+			else
+				affinityText = tool.Imbued and "IMBUED" or ("Affinity: " .. tostring(affinity) .. "%")
+			end
 				local effectLabel = Instance.new("TextLabel")
 				effectLabel.Size = compactToolCards and UDim2.new(1, -36, 0, 32) or UDim2.new(1, -178, 0, 34)
 				effectLabel.Position = compactToolCards and UDim2.new(0, 18, 0, 108) or UDim2.new(0, 18, 0, 96)

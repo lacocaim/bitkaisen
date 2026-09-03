@@ -29,8 +29,13 @@ local sections = {
 	},
 	{
 		header = "Update 30 - You Asked For These",
-		body = "• Prosthetic limb. Losing a limb was permanent with no way back unless Reverse Cursed Technique caught it as it happened. From age 16, in the Modern and Collapse eras, a surgeon will fit a prosthetic for $9,000. It gives back most of the strength, never all of it. Suggested by plaZa.\n• Your stats now say what they are worth. Every bar in the dossier shows the combat power that stat is contributing right now. Speed, Strength and Durability were doing real work and never said how much. Suggested by noobeh.\n• Perception Blitz is visible. When the enemy is the faster one you counter for 75 percent of the damage they land. That has been true since Update 29 and nothing ever told you. The Blitz button now reads COUNTER READY when it is armed.",
+		body = "• Prosthetic limb. Losing a limb was permanent with no way back unless Reverse Cursed Technique caught it as it happened. From age 16, in the Modern and Collapse eras, a surgeon will fit a prosthetic for $9,000. It gives back most of the strength, never all of it. Suggested by plaZa.\n• Your stats now say what they are worth. Every bar in the dossier shows the combat power that stat is contributing right now. Speed, Strength and Durability were doing real work and never said how much. Suggested by noobeh.\n• Perception Blitz is visible. When the enemy is the faster one you counter for 75 percent of the damage they land. That has been true since Update 29 and nothing ever told you. The Blitz button now reads COUNTER READY when it is armed.\n• Binding vows can raise CE Potential. The ceiling you are born under caps CE Output, Reinforcement and Control for the whole life, and a low roll had no answer at all. A vow lifts it now. Breaking that vow takes back more than it gave, so it is a real trade and not a loophole. Suggested by noobeh.",
 		color = theme.Gold,
+	},
+	{
+		header = "Update 30 - Forge Your Own Cursed Tool",
+		body = "• The forge. Name a tool, choose its shape and choose its affinity, and it is yours. Katana, Spear, Dagger or Chain Whip. Black Flames, Lightning Control, Barrier Bypass or Technique Immunity.\n• It starts at Grade 4 and sharpens. Every fight you carry it into counts. Five fights make it Grade 3, and it keeps climbing to Special Grade, worth almost three times what it was the day you made it. A tool left in the bag learns nothing.\n• You can carry two cursed tools now instead of one, and four if you were born under Heavenly Restriction. A body with no cursed energy leans on steel.\n• Forging opens at 16, needs 25 Technique Mastery, and costs $14,000.\n• Suggested by RUS_erious. The turn-based combat half of that suggestion is not in this update.",
+		color = theme.Orange,
 	},
 	{
 		header = "Update 30 - Fixes",

@@ -398,7 +398,7 @@ addSection("Update 10 - Stability", "- Added server validation for test purchase
 
 addSection("Update 10 - Combat Foundation", "- Added interactive combat sessions with player and enemy HP/CE\n- Added attack timing minigame with target zone and sweet spot\n- Added defend QTE for 1 to 3 hit enemy combos\n- Added perfect-dodge counter attack window\n- Added test-place combat starter for verification\n- Added Reset Fight developer product hook with test-place bypass\n")
 
-local footer = makeText(panel, "Footer", "Update 23 is live. Rejoin once if anything looks off after the update.", 12, false)
+local footer = makeText(panel, "Footer", "Update 30 is live. Rejoin once if anything looks off after the update.", 12, false)
 footer.AnchorPoint = Vector2.new(0, 1)
 footer.Position = UDim2.new(0, 0, 1, 0)
 footer.Size = UDim2.new(1, 0, 0, 34)

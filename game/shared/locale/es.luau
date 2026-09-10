@@ -415,6 +415,8 @@ return {
 		dossier_lineage   = "LINAJE",
 		dossier_technique = "TÉCNICA",
 		dossier_traits    = "RASGOS",
+		dossier_trait_effect = "EFECTO",
+		dossier_studies = "ESTUDIOS",
 		dossier_ce        = "EC",
 		dossier_money     = "DINERO",
 		dossier_rep       = "REP",

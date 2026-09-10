@@ -4,6 +4,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local BitKaisenCultData = require(ReplicatedStorage:WaitForChild("BitKaisenCultData"))
+local BitKaisenStats = require(ReplicatedStorage:WaitForChild("BitKaisenStats"))
 
 local BitKaisenActivities = {}
 
@@ -307,6 +308,38 @@ BitKaisenActivities.Database = {
 	},
 
 	{
+		-- Update 31: two fields of study, asked for by LavieCovie. Barriers because they are
+		-- a discipline and not a cursed technique, and reincarnation theory because Death
+		-- Paintings and the Culling Games should be earned by a life spent studying rather
+		-- than by being born into a family that never made sense as a family.
+		Id = "study_barriers",
+		Title = "Study Barrier Techniques",
+		Description = "Spend the year on curtains, veils and the geometry that holds them. Smarts decide how fast it goes.",
+		MinAge = 14,
+		MaxAge = 120,
+		RequiresTechnique = false,
+		RequiresSorcerer = false,
+		RequiresJujutsuHigh = false,
+		ButtonColor = Color3.fromRGB(40, 62, 96),
+		LockedText = "Barrier study opens at 14 with 25 Smarts.",
+		HideWhenLocked = false
+	},
+
+	{
+		Id = "study_reincarnation",
+		Title = "Study Reincarnation Theory",
+		Description = "Spend the year on what anchors a soul and what it takes to move one. People notice this kind of reading.",
+		MinAge = 20,
+		MaxAge = 120,
+		RequiresTechnique = false,
+		RequiresSorcerer = false,
+		RequiresJujutsuHigh = false,
+		ButtonColor = Color3.fromRGB(74, 34, 92),
+		LockedText = "Reincarnation theory opens at 20 with 55 Smarts.",
+		HideWhenLocked = false
+	},
+
+	{
 		Id = "create_death_painting",
 		Title = "Create Death Painting",
 		Description = "Use your Brain Transplant mastery to pour 250 CE into a cursed womb, birthing a Death Painting you can call on later.",
@@ -316,7 +349,7 @@ BitKaisenActivities.Database = {
 		RequiresSorcerer = false,
 		RequiresJujutsuHigh = false,
 		ButtonColor = Color3.fromRGB(90, 20, 30),
-		LockedText = "Only Kenjaku Clan sorcerers with Brain Transplant can create Death Paintings.",
+		LockedText = "Requires Master level Reincarnation Theory, or Brain Transplant with Expert level.",
 		HideWhenLocked = true
 	},
 
@@ -2083,17 +2116,44 @@ function BitKaisenActivities.CanDoActivity(stats, activity)
 	return true, nil
 end
 
+-- Update 31: a handful of activities are named after a modern institution that did not
+-- exist in the older eras. Rather than duplicating the whole activity per era, the title
+-- and description are swapped at the moment the list is built. Raised by LavieCovie.
+local ERA_ACTIVITY_TEXT = {
+	apply_jujutsu_high = {
+		Title = "Benefit Jujutsu Society",
+		Description = "Offer your technique to the jujutsu establishment of your era and be recorded as one of theirs.",
+		LockedText = "You must be between 16 and 22 with a cursed technique.",
+	},
+	jujutsu_affiliation_duty = {
+		Title = "Affiliation Duty",
+		Description = "Take a duty for the jujutsu society to build standing, earn trust, and affect public reputation.",
+	},
+}
+
+local function eraActivityText(stats, activity)
+	if BitKaisenStats.IsModernOrLaterEra(BitKaisenStats.GetCurrentEra(stats)) then
+		return activity.Title, activity.Description
+	end
+	local swap = ERA_ACTIVITY_TEXT[tostring(activity.Id)]
+	if not swap then
+		return activity.Title, activity.Description
+	end
+	return swap.Title or activity.Title, swap.Description or activity.Description
+end
+
 function BitKaisenActivities.GenerateActivityList(stats)
 	local list = {}
 
 	for _, activity in ipairs(BitKaisenActivities.Database) do
 		local canDo, reason = BitKaisenActivities.CanDoActivity(stats, activity)
+		local title, description = eraActivityText(stats, activity)
 
 		if canDo then
 			table.insert(list, {
 				Id = activity.Id,
-				Title = activity.Title,
-				Description = activity.Description,
+				Title = title,
+				Description = description,
 				ButtonColor = activity.ButtonColor,
 				CanDo = true,
 				LockedReason = nil,
@@ -2103,8 +2163,8 @@ function BitKaisenActivities.GenerateActivityList(stats)
 			if not activity.HideWhenLocked then
 				table.insert(list, {
 					Id = activity.Id,
-					Title = activity.Title,
-					Description = activity.Description,
+					Title = title,
+					Description = description,
 					ButtonColor = activity.ButtonColor,
 					CanDo = false,
 					LockedReason = reason,

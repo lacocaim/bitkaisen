@@ -3,6 +3,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local BitKaisenCursedTools = require(ReplicatedStorage:WaitForChild("BitKaisenCursedTools"))
+local BitKaisenStudies = require(ReplicatedStorage:WaitForChild("BitKaisenStudies"))
 local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
 
 local BitKaisenLifeEvents = {}
@@ -2229,7 +2230,12 @@ local function matchesEvent(stats, eventData)
 		local ct = tostring(stats.CursedTechnique or "None")
 		local it = tostring(stats.InnateTechnique or "None")
 		if ct ~= eventData.RequiredTechnique and it ~= eventData.RequiredTechnique then
-			return false
+			-- Update 31: barrier work is something you can study into. Same opening as in
+			-- BitKaisenSituations, and LavieCovie for why.
+			if eventData.RequiredTechnique ~= "Barrier Technique"
+				or not BitKaisenStudies.IsAtLeast(stats, "barrier", "adept") then
+				return false
+			end
 		end
 	end
 

@@ -123,11 +123,19 @@ end
 
 local SPECIAL_ORIGINS = {
 	{
-		Id = "ryomen_clan",
-		DisplayName = "Ryomen Clan",
-		Category = "Clan",
+		-- Update 31: was "Ryomen Clan". "Ryomen Sukuna" is a title, not a family, so the
+		-- anomaly is now a mutation an Itadori can carry. See BitKaisenTraits.cursed_mutation.
+		-- DisplayName is what gets written onto the save, so it stays the real origin name:
+		-- combat power and every origin comparison look it up by that string. PickerName is
+		-- only what the God Mode list calls it, so the mutated version stays selectable and
+		-- distinguishable from an ordinary Itadori birth.
+		Id = "itadori_lineage",
+		DisplayName = "Itadori Lineage",
+		PickerName = "Itadori Lineage (Mutated)",
+		Category = "Lineage",
 		FamilyType = "Sorcerer",
-		FamilyName = "Ryomen",
+		FamilyName = "Itadori",
+		GrantTrait = "cursed_mutation",
 		BonusCE = 36,
 		BonusSmarts = 6,
 		InnatePool = { { Name = "Shrine", Weight = 100 } },
@@ -148,7 +156,7 @@ local function getClanOptionsPayload()
 	end
 	for _, origin in ipairs(SPECIAL_ORIGINS) do
 		table.insert(list, {
-			Name = tostring(origin.DisplayName or origin.FamilyName or "Unknown"),
+			Name = tostring(origin.PickerName or origin.DisplayName or origin.FamilyName or "Unknown"),
 			FamilyName = tostring(origin.FamilyName or origin.DisplayName or "Unknown"),
 			Category = tostring(origin.Category or "Special"),
 			Chance = 0,
@@ -169,7 +177,8 @@ local function findOriginByName(name)
 		for _, origin in ipairs(sourceList) do
 			local displayName = string.lower(tostring(origin.DisplayName or ""))
 			local familyName = string.lower(tostring(origin.FamilyName or ""))
-			if displayName == needle or familyName == needle then
+			local pickerName = string.lower(tostring(origin.PickerName or ""))
+			if displayName == needle or familyName == needle or (pickerName ~= "" and pickerName == needle) then
 				return origin
 			end
 		end
@@ -320,6 +329,12 @@ local function applyOriginReroll(stats, origin)
 	stats.Origin = origin.DisplayName or stats.Origin
 	stats.OriginCategory = origin.Category or stats.OriginCategory
 	stats.PlayerClanName = origin.FamilyName or stats.FamilyName
+
+	-- Update 31: an origin can now carry a trait, which is how the old Ryomen Clan became
+	-- an Itadori with the Cursed Mutation.
+	if origin.GrantTrait then
+		BitKaisenTraits.AddTrait(stats, origin.GrantTrait)
+	end
 
 	stats.CursedTechnique = "None"
 	stats.InnateTechnique = "None"

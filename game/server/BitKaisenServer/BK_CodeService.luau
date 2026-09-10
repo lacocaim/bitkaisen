@@ -59,6 +59,7 @@ end
 local BitKaisenSaveSystem = {}
 
 local CODE_ORDER = {
+	"STUDY31",
 	"TOKYO30",
 	"SHIKIGAMI",
 	"WEAREBACK",
@@ -68,6 +69,20 @@ local CODE_ORDER = {
 }
 
 local CODE_DEFINITIONS = {
+
+	-- Update 31. Smarts is what decides how fast a field of study advances, so this code
+	-- leans into the update instead of just handing out money.
+	STUDY31 = {
+		Name = "Study31",
+		Description = "Barriers and reincarnation are read about, not inherited.",
+		RewardText = "+$18,000 | +60 CE | +8 Smarts",
+		Grant = function(stats)
+			stats.Money = (stats.Money or 0) + 18000
+			stats.CursedEnergy = (stats.CursedEnergy or 0) + 60
+			stats.Smarts = math.clamp((stats.Smarts or 0) + 8, 0, 100)
+			return "+$18,000 Money, +60 Cursed Energy, and +8 Smarts"
+		end
+	},
 
 	-- Update 30. Rewards sit inside the range the three older codes already set, so a
 	-- returning player gets a real push without skipping past the early game.
@@ -251,7 +266,6 @@ local function getCodeGatePayload(player, clientConfirmedLike)
 		CodeGroupVerified = groupOk == true,
 		PermanentVerified = groupOk == true,
 		CanRedeem = groupOk and likeOk,
-		CanUseCodes = groupOk and likeOk,
 		LikeConfirmed = likeOk == true,
 		GroupMessage = groupMessage,
 		LikeMessage = likeMessage,

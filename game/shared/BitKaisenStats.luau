@@ -159,7 +159,7 @@ BitKaisenStats.Origins = {
 	{ Id = "zenin_clan", DisplayName = "Zenin Clan", Category = "Clan", FamilyType = "Sorcerer", Chance = 3, BonusCE = 24, BonusSmarts = 5, FamilyName = "Zenin", InnatePool = { {Name="Ten Shadows", Weight=18}, {Name="Projection Sorcery", Weight=32}, {Name="Construction", Weight=18}, {Name="Tool Manipulation", Weight=20}, {Name="Heavenly Restriction", Weight=12} } },
 	{ Id = "fushiguro_lineage", DisplayName = "Fushiguro Lineage", Category = "Lineage", FamilyType = "Sorcerer", Chance = 2.5, BonusCE = 22, BonusSmarts = 5, FamilyName = "Fushiguro", InnatePool = { {Name="Ten Shadows", Weight=55}, {Name="Shikigami Technique", Weight=30}, {Name="Tool Manipulation", Weight=15} } },
 	{ Id = "okkotsu_lineage", DisplayName = "Okkotsu Lineage", Category = "Lineage", FamilyType = "Sorcerer", Chance = 2, BonusCE = 36, BonusSmarts = 7, FamilyName = "Okkotsu", InnatePool = { {Name="Copy", Weight=70}, {Name="Rika Manifestation", Weight=30} } },
-	{ Id = "itadori_lineage", DisplayName = "Itadori Lineage", Category = "Lineage", FamilyType = "Sorcerer", Chance = 2, BonusCE = 25, BonusSmarts = 3, FamilyName = "Itadori", InnatePool = { {Name="Shrine", Weight=18}, {Name="Divergent Fist", Weight=45}, {Name="Soul Striking", Weight=37} } },
+	{ Id = "itadori_lineage", DisplayName = "Itadori Lineage", Category = "Lineage", FamilyType = "Sorcerer", Chance = 2, BonusCE = 25, BonusSmarts = 3, FamilyName = "Itadori", InnatePool = { {Name="Shrine", Weight=30}, {Name="Soul Striking", Weight=70} } },
 	{ Id = "hakari_lineage", DisplayName = "Hakari Lineage", Category = "Lineage", FamilyType = "Sorcerer", Chance = 2, BonusCE = 24, BonusSmarts = 6, FamilyName = "Hakari", InnatePool = { {Name="Private Pure Love Train", Weight=100} } },
 	{ Id = "higuruma_lineage", DisplayName = "Higuruma Lineage", Category = "Lineage", FamilyType = "Sorcerer", Chance = 1.5, BonusCE = 20, BonusSmarts = 18, FamilyName = "Higuruma", InnatePool = { {Name="Deadly Sentencing", Weight=100} } },
 	{ Id = "fujiwara_lineage", DisplayName = "Fujiwara Lineage", Category = "Lineage", FamilyType = "Sorcerer", Chance = 1.5, BonusCE = 25, BonusSmarts = 14, FamilyName = "Fujiwara", InnatePool = { {Name="Sky Manipulation", Weight=30}, {Name="Contractual Re-Creation", Weight=25}, {Name="Barrier Technique", Weight=25}, {Name="Cursed Energy Discharge", Weight=20} } },
@@ -171,7 +171,7 @@ BitKaisenStats.Origins = {
 	{ Id = "kashimo_lineage", DisplayName = "Kashimo Lineage", Category = "Lineage", FamilyType = "Sorcerer", Chance = 1, BonusCE = 28, BonusSmarts = 5, FamilyName = "Kashimo", InnatePool = { {Name="Mythical Beast Amber", Weight=100} } },
 	{ Id = "uraume_lineage", DisplayName = "Uraume Lineage", Category = "Lineage", FamilyType = "Sorcerer", Chance = 1, BonusCE = 24, BonusSmarts = 8, FamilyName = "Uraume", InnatePool = { {Name="Ice Formation", Weight=100} } },
 	{ Id = "geto_lineage", DisplayName = "Geto Lineage", Category = "Lineage", FamilyType = "Sorcerer", Chance = 1, BonusCE = 26, BonusSmarts = 12, FamilyName = "Geto", InnatePool = { {Name="Cursed Spirit Manipulation", Weight=100} } },
-	{ Id = "kenjaku_clan", DisplayName = "Kenjaku Clan", Category = "Clan", FamilyType = "Sorcerer", Chance = 0.4, BonusCE = 34, BonusSmarts = 22, FamilyName = "Kenjaku", InnatePool = { {Name="Brain Transplant", Weight=100} } },
+	{ Id = "kenjaku_clan", DisplayName = "Kenjaku Clan", Category = "Clan", FamilyType = "Sorcerer", Legacy = true, Chance = 0, BonusCE = 34, BonusSmarts = 22, FamilyName = "Kenjaku", InnatePool = { {Name="Brain Transplant", Weight=100} } },
 	{ Id = "todo_lineage", DisplayName = "Todo Lineage", Category = "Lineage", FamilyType = "Sorcerer", Chance = 1.2, BonusCE = 21, BonusSmarts = 8, FamilyName = "Todo", InnatePool = { {Name="Boogie Woogie", Weight=100} } },
 	{ Id = "mei_mei_lineage", DisplayName = "Mei Mei Lineage", Category = "Lineage", FamilyType = "Sorcerer", Chance = 1.2, BonusCE = 18, BonusSmarts = 12, FamilyName = "Mei", InnatePool = { {Name="Black Bird Manipulation", Weight=100} } },
 	{ Id = "nanami_lineage", DisplayName = "Nanami Lineage", Category = "Lineage", FamilyType = "Sorcerer", Chance = 1.2, BonusCE = 18, BonusSmarts = 14, FamilyName = "Nanami", InnatePool = { {Name="Ratio Technique", Weight=100} } },
@@ -192,7 +192,7 @@ BitKaisenStats.Techniques = {
 	{ Name = "Brain Transplant", Rarity = "Legendary", ClanInnate = true, Origins = { "Kenjaku Clan" } },
 	{ Name = "Idle Transfiguration", Rarity = "Legendary", ClanInnate = true, Origins = { "Cursed Womb" } },
 	{ Name = "Mythical Beast Amber", Rarity = "Legendary", ClanInnate = true, Origins = { "Kashimo Lineage" } },
-	{ Name = "Shrine", Rarity = "Legendary", ClanInnate = true, Origins = { "Itadori Lineage", "Ryomen Clan" } },
+	{ Name = "Shrine", Rarity = "Legendary", ClanInnate = true, Origins = { "Itadori Lineage" } },
 	{ Name = "Pumpkin Control", Rarity = "Legendary", ClanInnate = true, Origins = { "Pumpkin King Clan" } },
 	{ Name = "Star Rage", Rarity = "Legendary" },
 	{ Name = "Comedian", Rarity = "Legendary", Origins = { "Hoshinari Clan" } },
@@ -230,7 +230,7 @@ BitKaisenStats.Techniques = {
 	{ Name = "Explosive CE Output", Rarity = "Common" },
 	{ Name = "Binding Rope Technique", Rarity = "Common", Origins = { "Shinkawa Clan" } },
 	{ Name = "Curtain Specialist", Rarity = "Common", Origins = { "Yamashiro Clan" } },
-	{ Name = "Divergent Fist", Rarity = "Uncommon", Origins = { "Itadori Lineage" } },
+	{ Name = "Divergent Fist", Rarity = "Uncommon", Legacy = true, Origins = { "Itadori Lineage" } },
 	{ Name = "Soul Striking", Rarity = "Rare", Origins = { "Itadori Lineage" } },
 	{ Name = "Heavenly Restriction", Rarity = "Rare", ClanInnate = true, Origins = { "Zenin Clan" } },
 	{ Name = "Disaster Flames", Rarity = "Rare", Origins = { "Cursed Womb" } },
@@ -1034,6 +1034,14 @@ function BitKaisenStats.RollTechnique(origin, options)
 		local allowed = true
 		local isClanLocked = tech.ClanInnate == true or (typeof(tech.Origins) == "table" and #tech.Origins > 0)
 
+		-- Update 31: a legacy technique is one that has been reclassified since, most often
+		-- into a birth trait. It stops being handed out to new lives but stays in the table
+		-- so the characters who already have it keep working. Raised by LavieCovie about
+		-- Divergent Fist, which is a body quirk rather than a cursed technique.
+		if tech.Legacy == true then
+			allowed = false
+		end
+
 		if isClanLocked and not includeClanLocked then
 			allowed = false
 		end
@@ -1345,6 +1353,62 @@ BitKaisenStats.ModernOrLaterEras = {
 
 function BitKaisenStats.IsModernOrLaterEra(era): boolean
 	return BitKaisenStats.ModernOrLaterEras[tostring(era or "")] == true
+end
+
+-- The canonical era of a life. Four different files had their own copy of this fallback
+-- chain, which is how the Modulo Era ended up missing from two of them.
+function BitKaisenStats.GetCurrentEra(stats): string
+	if typeof(stats) ~= "table" then
+		return "Modern Era"
+	end
+	local birthPath = typeof(stats.BirthPath) == "table" and stats.BirthPath or nil
+	return tostring(
+		stats.CurrentEra
+			or stats.Era
+			or stats.BirthEra
+			or (birthPath and birthPath.Era)
+			or "Modern Era"
+	)
+end
+
+----------------------------------------------------------------
+-- Update 31: what the jujutsu establishment is called in each era.
+--
+-- Raised by LavieCovie: Japan had no high schools until the 1870s, so a character born in
+-- the Heian or Edo era being accepted into "Jujutsu High" is an anachronism.
+--
+-- The fix is the name and the framing, not the progression. The internal InJujutsuHigh
+-- flag stays exactly as it is: 85 call sites across twenty files hang off it, covering
+-- missions, jobs, relationships, achievements and commerce, and turning it off for older
+-- eras would not correct the lore, it would delete most of the game for those lives.
+-- Sorcerers in those centuries still trained under the establishment. It was a patronage,
+-- not a school, so that is what the player is told.
+----------------------------------------------------------------
+
+BitKaisenStats.JujutsuInstitutions = {
+	Modern = {
+		Name = "Jujutsu High",
+		Rank = "Student",
+		AcceptTitle = "JUJUTSU HIGH ACCEPTANCE",
+		AcceptBody = "Your application was reviewed by the jujutsu world.",
+		AcceptLine = "You were accepted into Jujutsu High and officially registered as ",
+		TeacherLine = " was assigned as one of your instructors.",
+	},
+	PreModern = {
+		Name = "Jujutsu Society",
+		Rank = "Apprentice",
+		AcceptTitle = "TAKEN INTO THE SOCIETY",
+		AcceptBody = "The jujutsu establishment of your era looked over your name and decided you were worth keeping.",
+		AcceptLine = "The jujutsu society took you in and recorded you as ",
+		TeacherLine = " took you on as an apprentice.",
+	},
+}
+
+function BitKaisenStats.GetJujutsuInstitution(stats)
+	if BitKaisenStats.IsModernOrLaterEra(BitKaisenStats.GetCurrentEra(stats)) then
+		return BitKaisenStats.JujutsuInstitutions.Modern
+	end
+	return BitKaisenStats.JujutsuInstitutions.PreModern
 end
 
 return BitKaisenStats

@@ -598,8 +598,11 @@ local function finishCombat(player, session, winner, reason)
 			stats.Reputation = (tonumber(stats.Reputation) or 0) + repGain
 			stats.CursedEnergy = (tonumber(stats.CursedEnergy) or 0) + ceGain
 			stats.CombatWins = (tonumber(stats.CombatWins) or 0) + 1
-			if stats.EquippedCursedToolId then
-				BitKaisenCursedTools.GrowAffinity(stats, stats.EquippedCursedToolId, math.random(2, 5))
+			-- Update 30 let you hold two tools, but this still only grew the first slot, so
+			-- the second one never gained affinity no matter how much you fought with it.
+			-- Reported by Light.
+			for _, toolId in ipairs(BitKaisenCursedTools.GetEquippedIds(stats)) do
+				BitKaisenCursedTools.GrowAffinity(stats, toolId, math.random(2, 5))
 			end
 			-- Update 30: a forged tool grades up by being used, which is the progression
 			-- RUS_erious asked for. Only equipped forged tools count the fight.

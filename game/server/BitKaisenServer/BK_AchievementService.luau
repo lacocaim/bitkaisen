@@ -327,7 +327,7 @@ local ACHIEVEMENT_DEFINITIONS = {
 	{
 		Id = "secret_myth",
 		Name = "The Myth",
-		Description = "Be born into the Ryomen Clan. People said it never existed.",
+		Description = "Be born an Itadori carrying the Cursed Mutation. People said it never existed.",
 		RewardText = "Starting cash: $10,000 once per account",
 		IsUnlocked = function(stats)
 			return stats.SecretAchievements and stats.SecretAchievements.Myth == true

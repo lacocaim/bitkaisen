@@ -27,7 +27,7 @@ local ORIGIN_POWER = {
 	["Gojo Clan"] = 22,
 	["Kenjaku Clan"] = 19,
 	["Pumpkin King Clan"] = 18,
-	["Ryomen Clan"] = 20,
+
 	["Zenin Clan"] = 16,
 	["Kamo Clan"] = 15,
 	["Sugawara Lineage"] = 18,
@@ -181,9 +181,15 @@ function BitKaisenCombat.GetCombatPower(stats, options)
 	local toolEffects = BitKaisenCursedTools.GetEquippedEffects(stats)
 	power += tonumber(toolEffects.CombatPower) or 0
 	power += tonumber(toolEffects.DefensePower) or 0
-	local toolEntry = typeof(stats.CursedTools) == "table" and stats.EquippedCursedToolId and stats.CursedTools[stats.EquippedCursedToolId]
-	if toolEntry and toolEntry.Imbued then
-		power += tonumber(toolEntry.ImbuedPower) or 0
+	-- Same defect as the affinity one Light reported: this counted the imbued bonus of the
+	-- first slot only, so an imbued tool in the second slot was worth nothing.
+	if typeof(stats.CursedTools) == "table" then
+		for _, toolId in ipairs(BitKaisenCursedTools.GetEquippedIds(stats)) do
+			local toolEntry = stats.CursedTools[toolId]
+			if toolEntry and toolEntry.Imbued then
+				power += tonumber(toolEntry.ImbuedPower) or 0
+			end
+		end
 	end
 
 	local techniqueLower = string.lower(tostring(technique or ""))

@@ -551,6 +551,26 @@ BitKaisenTraits.Definitions = {
 		Description = "faster than most people expect, improving combat and mission reaction.",
 		Modifiers = { CombatGainMult = 1.14, MissionSuccessBonus = 3 } },
 
+	-- Cursed Mutation: Update 31. This was a clan called "Ryomen", which it never was.
+	-- "Ryomen Sukuna" is a title, not a family, and there is no Ryomen bloodline to be born
+	-- into. Raised by LavieCovie, who proposed exactly this: keep the Itadori family, and
+	-- let an Itadori birth carry a mutation that produces the anomaly. Sukuna's own canon
+	-- situation, rather than a family of Sukunas.
+	--
+	-- It carries what the clan carried, so nobody who found the secret loses anything.
+	{ Id = "cursed_mutation", Name = "Cursed Mutation", Category = "Bloodline", Rarity = "Mythic", Weight = 0,
+		Description = "something ancient surfaced in your blood that the family line was never supposed to carry.",
+		Modifiers = { StartingCEBonus = 36, SmartsGainMult = 1.10, CombatGainMult = 1.20 } },
+
+	-- Lagged Output: Update 31. This was a cursed technique called Divergent Fist, which
+	-- it never was. Divergent Fist is a body quirk: the cursed energy arrives a beat after
+	-- the blow instead of with it, which hits harder and is worse to steer. Raised by
+	-- LavieCovie, who proposed the name. It is a birth trait now, so it can sit alongside
+	-- whatever real technique the character was born with instead of replacing it.
+	{ Id = "lagged_output", Name = "Lagged Output", Category = "Body", Rarity = "Uncommon", Weight = 40,
+		Description = "cursed energy lands a beat after the blow, hitting harder but answering worse to control.",
+		Modifiers = { CombatGainMult = 1.10, StartingCEOutputBonus = 6, StartingCEControlPenalty = 4 } },
+
 	-- Heavy Sleeper: happiness protected (well rested), smarts slightly down
 	{ Id = "heavy_sleeper", Name = "Heavy Sleeper", Category = "Body", Rarity = "Common", Weight = 100,
 		Description = "sleeps deeply, protecting happiness, but misses things that happen early.",
@@ -1541,6 +1561,28 @@ function BitKaisenTraits.HasTrait(stats, traitIdOrName)
 	return false
 end
 
+-- Update 31: granting a trait outside of birth. The dev command already open-coded this
+-- and so did two other places, each with their own duplicate check. One copy now, and it
+-- keeps TraitSummary in step so the dossier does not need a separate refresh.
+function BitKaisenTraits.AddTrait(stats, traitIdOrName): boolean
+	if typeof(stats) ~= "table" then
+		return false
+	end
+	local trait = BitKaisenTraits.GetTrait(traitIdOrName)
+	if not trait then
+		return false
+	end
+	stats.Traits = typeof(stats.Traits) == "table" and stats.Traits or {}
+	for _, owned in ipairs(stats.Traits) do
+		if tostring(owned) == trait.Id then
+			return false
+		end
+	end
+	table.insert(stats.Traits, trait.Id)
+	stats.TraitSummary = BitKaisenTraits.GetTraitDisplay(stats)
+	return true
+end
+
 function BitKaisenTraits.GetTraitNames(stats)
 	local names = {}
 	if not stats or not stats.Traits then return names end
@@ -1571,6 +1613,87 @@ function BitKaisenTraits.GetTraitTooltip(stats)
 
 	if #parts <= 0 then return "No traits." end
 	return table.concat(parts, "\n")
+end
+
+----------------------------------------------------------------
+-- Update 31: what your traits are actually doing, added up.
+--
+-- Raised as "traits don't impact anything". They do: combat power, mission success and
+-- risk all read them. The player just had no way to see it. Clicking a single trait has
+-- always shown that trait's numbers, but nobody clicks 6 traits to add them up in their
+-- head, so the game read as if the system did nothing.
+--
+-- This is the same fix that went into the stat bars in Update 30. The work was already
+-- happening. It just never said so.
+----------------------------------------------------------------
+
+local SUMMARY_LABELS = {
+	CombatGainMult = "Combat",
+	CEGainMult = "CE",
+	MasteryGainMult = "Mastery",
+	SmartsGainMult = "Smarts",
+	MoneyGainMult = "Money",
+	RelationshipGainMult = "Relationships",
+	RomanceGainMult = "Romance",
+	FamilyGainMult = "Family",
+	KidBondGainMult = "Kids",
+	HappinessLossMult = "Happiness loss",
+	GradeProgressMult = "Grade progress",
+	MarriageReqMult = "Marriage bar",
+	RiskMult = "Risk",
+	MissionSuccessBonus = "Mission success",
+	StartingCEOutputBonus = "CE Output",
+	StartingCEControlPenalty = "CE Control",
+	StartingCEBonus = "Starting CE",
+	StartingHealthBonus = "Starting health",
+	StartingMoneyBonus = "Starting money",
+}
+
+-- The order the summary reads in. Combat first because that is the one people doubt.
+local SUMMARY_ORDER = {
+	"CombatGainMult", "MissionSuccessBonus", "RiskMult", "CEGainMult", "MasteryGainMult",
+	"GradeProgressMult", "SmartsGainMult", "MoneyGainMult", "RelationshipGainMult",
+	"RomanceGainMult", "FamilyGainMult", "KidBondGainMult", "HappinessLossMult",
+	"MarriageReqMult", "StartingCEOutputBonus", "StartingCEControlPenalty",
+	"StartingCEBonus", "StartingHealthBonus", "StartingMoneyBonus",
+}
+
+-- Returns a short line like "Combat +12%, Risk +18%, Happiness loss -18%", or nil when
+-- the traits genuinely change nothing. Multipliers read as a percentage away from neutral;
+-- a multiplier below 1 on a cost like Happiness loss is a good thing and reads negative,
+-- which is correct: less of it.
+function BitKaisenTraits.GetModifierSummary(stats): string?
+	if not stats or typeof(stats.Traits) ~= "table" or #stats.Traits <= 0 then
+		return nil
+	end
+
+	local parts = {}
+	for _, name in ipairs(SUMMARY_ORDER) do
+		local isMult = string.find(name, "Mult") ~= nil
+		local value = BitKaisenTraits.GetModifier(stats, name, isMult and 1 or 0)
+		if type(value) == "number" then
+			if isMult then
+				local percent = math.floor(((value - 1) * 100) + 0.5)
+				if percent ~= 0 then
+					table.insert(parts, SUMMARY_LABELS[name] .. " " .. (percent > 0 and "+" or "") .. tostring(percent) .. "%")
+				end
+			elseif value ~= 0 then
+				local amount = math.floor(value + 0.5)
+				if amount ~= 0 then
+					-- A penalty modifier is stored as a positive number and spent as a subtraction.
+					if name == "StartingCEControlPenalty" then
+						amount = -amount
+					end
+					table.insert(parts, SUMMARY_LABELS[name] .. " " .. (amount > 0 and "+" or "") .. tostring(amount))
+				end
+			end
+		end
+	end
+
+	if #parts <= 0 then
+		return nil
+	end
+	return table.concat(parts, ", ")
 end
 
 function BitKaisenTraits.GetModifier(stats, modifierName, defaultValue)
@@ -1820,9 +1943,21 @@ function BitKaisenTraits.ApplyStartingBonuses(stats)
 	local moneyBonus  = BitKaisenTraits.GetModifier(stats, "StartingMoneyBonus",  0)
 	local gradeFloor  = BitKaisenTraits.GetModifier(stats, "GradeFloor",          nil)
 
+	-- Update 31: traits that lean the cursed energy stats themselves rather than a gain
+	-- rate. Both are clamped by CE Potential the same way training is, so a trait cannot
+	-- push a character past the ceiling they were born under.
+	local outputBonus  = BitKaisenTraits.GetModifier(stats, "StartingCEOutputBonus",  0)
+	local controlPenalty = BitKaisenTraits.GetModifier(stats, "StartingCEControlPenalty", 0)
+
 	stats.CursedEnergy = math.max(0, (tonumber(stats.CursedEnergy) or 0) + ceBonus)
 	stats.Health       = clamp((tonumber(stats.Health) or 100) + healthBonus, 0, 100)
 	stats.Money        = math.max(0, (tonumber(stats.Money) or 0) + moneyBonus)
+
+	if outputBonus ~= 0 or controlPenalty ~= 0 then
+		local ceiling = math.max(1, tonumber(stats.CEPotential) or 0)
+		stats.CEOutput = clamp((tonumber(stats.CEOutput) or 0) + outputBonus, 0, ceiling)
+		stats.CEControl = clamp((tonumber(stats.CEControl) or 0) - controlPenalty, 0, ceiling)
+	end
 
 	if gradeFloor and tostring(gradeFloor) ~= "" then
 		local order = {

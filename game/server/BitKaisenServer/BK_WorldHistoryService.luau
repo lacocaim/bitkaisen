@@ -437,7 +437,7 @@ function BK_WorldHistoryService.GetWorldHistoryPayload(stats)
 			cursedToolCount += 1
 		end
 	end
-	local equippedTool = BitKaisenCursedTools.GetTool(stats.EquippedCursedToolId)
+	local equippedTool = BitKaisenCursedTools.ResolveTool(stats, stats.EquippedCursedToolId)
 	local clanWarState = typeof(stats.ClanWarState) == "table" and stats.ClanWarState or {}
 	return {
 		History = stats.WorldHistory,

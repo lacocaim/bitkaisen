@@ -1784,7 +1784,13 @@ function tryVoDRCT(player, stats, onDeath)
 	})
 
 	local done = false
-	task.delay(10, function()
+	-- The client shows a 10 second countdown and auto-rejects at zero. The server window
+	-- has to be longer than that, not equal to it: the client starts counting when the
+	-- prompt draws, the server when it sends, and the answer still has to travel back. At
+	-- 10 and 10 a player who pressed FORCE RCT at their own second 9 arrived after the
+	-- server had already given up and killed them. Reported as "You die despite forcing
+	-- RCT". The extra five seconds are never seen by the player, they only stop the race.
+	task.delay(15, function()
 		if not done then
 			done = true
 			if pendingVoDRCT[userId] == signal then
@@ -3066,7 +3072,34 @@ function applyCharacterCustomization(player, payload)
 	return { Success = true, Stats = stats }
 end
 
+-- Update 31: the Ryomen Clan no longer exists. It was never a clan, only a title, which
+-- LavieCovie pointed out and which is correct. Lives that were born into it are moved to
+-- the Itadori family and given the Cursed Mutation trait, which carries everything the
+-- clan carried, so a player who found the one in two thousand secret keeps the whole of
+-- it and only the name on the card changes. Runs on every load, so a save that has been
+-- sitting untouched for months is corrected the moment it is opened.
+-- Deliberately a global and not a local: this file sits against Luau's 200 register
+-- ceiling and one more top level local takes the whole GameManager down at load, which is
+-- exactly what adding this function did the first time.
+function migrateRyomenOrigin(stats)
+	if typeof(stats) ~= "table" then
+		return
+	end
+	local wasRyomen = tostring(stats.Origin or "") == "Ryomen Clan"
+		or tostring(stats.Clan or "") == "Ryomen Clan"
+	if not wasRyomen then
+		return
+	end
+	stats.Origin = "Itadori Lineage"
+	stats.Clan = "Itadori Lineage"
+	if tostring(stats.FamilyName or "") == "Ryomen" then
+		stats.FamilyName = "Itadori"
+	end
+	BitKaisenTraits.AddTrait(stats, "cursed_mutation")
+end
+
 function ensureExtraStats(stats)
+	migrateRyomenOrigin(stats)
 	stats.Name = stats.Name or "Unknown"
 	stats.FirstName = stats.FirstName or "Unknown"
 	stats.FamilyName = stats.FamilyName or "Unknown"
@@ -3326,12 +3359,15 @@ local SECRET_BIRTH_EASTER_EGGS = {
 		AchievementId = "Myth",
 		Chance = 2000,
 		RewardMoney = 10000,
+		-- Update 31: the secret is intact, the name is corrected. Itadori with the
+		-- Cursed Mutation instead of a Ryomen family that never existed.
+		GrantTrait = "cursed_mutation",
 		Origin = {
-			Id = "ryomen_clan",
-			DisplayName = "Ryomen Clan",
-			Category = "Clan",
+			Id = "itadori_lineage",
+			DisplayName = "Itadori Lineage",
+			Category = "Lineage",
 			FamilyType = "Sorcerer",
-			FamilyName = "Ryomen",
+			FamilyName = "Itadori",
 			BonusCE = 36,
 			BonusSmarts = 6,
 			InnatePool = { { Name = "Shrine", Weight = 100 } },
@@ -3404,6 +3440,12 @@ function applySecretBirthEasterEggs(player, stats)
 	for _, egg in ipairs(SECRET_BIRTH_EASTER_EGGS) do
 		if math.random(1, egg.Chance) == 1 then
 			applySecretOrigin(stats, egg.Origin)
+			-- Update 31: some secrets are now a trait carried by an ordinary family rather
+			-- than a family of their own. The Myth is the first, and the mechanism is here
+			-- rather than in the egg so the next one costs a single line.
+			if egg.GrantTrait then
+				BitKaisenTraits.AddTrait(stats, egg.GrantTrait)
+			end
 			stats.SecretAchievements[egg.AchievementId] = true
 			stats.SecretBirthEasterEggId = egg.Id
 			stats.SecretBirthEasterEggTitle = egg.Title
@@ -4659,6 +4701,11 @@ function startNewLife(player, mode, preferences)
 		local oldEntry = typeof(oldStats.CursedTools) == "table" and oldStats.CursedTools[oldStats.EquippedCursedToolId]
 		if oldEntry and oldEntry.Imbued then
 			BitKaisenCursedTools.EnsureInventory(newStats)
+			-- A forged tool carries its own definition on the entry, so rebuilding the entry
+			-- from scratch would hand the heir a tool with no shape, no affinity and no
+			-- grade. ResolveTool would then return nil and the tool would simply vanish
+			-- from their inventory. Carry those fields across, and let the grade reset with
+			-- the bond: the heir inherits the blade, not the years of using it.
 			newStats.CursedTools[oldStats.EquippedCursedToolId] = {
 				Id = oldStats.EquippedCursedToolId,
 				AcquiredFrom = "Inherited",
@@ -4666,6 +4713,11 @@ function startNewLife(player, mode, preferences)
 				Affinity = math.floor((tonumber(oldEntry.Affinity) or 0) * 0.5),
 				Imbued = false,
 				ImbuedPower = 0,
+				Forged = oldEntry.Forged,
+				Name = oldEntry.Name,
+				ToolType = oldEntry.ToolType,
+				AffinityId = oldEntry.AffinityId,
+				Uses = oldEntry.Forged and math.floor((tonumber(oldEntry.Uses) or 0) * 0.5) or nil,
 			}
 		end
 	end

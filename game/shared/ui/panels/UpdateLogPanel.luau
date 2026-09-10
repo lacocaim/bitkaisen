@@ -104,12 +104,12 @@ padding.PaddingLeft = UDim.new(0, 16)
 padding.PaddingRight = UDim.new(0, 16)
 padding.Parent = panel
 
-local title = makeText(panel, "Title", "UPDATE 30", 22, true)
+local title = makeText(panel, "Title", "UPDATE 31", 22, true)
 title.Size = UDim2.new(1, -48, 0, 34)
 title.Position = UDim2.new(0, 0, 0, 0)
 title.TextColor3 = Color3.fromRGB(255, 220, 139)
 
-local subtitle = makeText(panel, "Subtitle", "Tokyo is a map now, and your shadows can hold it", 14, false)
+local subtitle = makeText(panel, "Subtitle", "Knowledge you earn, not a name you were born with", 14, false)
 subtitle.Size = UDim2.new(1, -48, 0, 22)
 subtitle.Position = UDim2.new(0, 0, 0, 34)
 subtitle.TextColor3 = Color3.fromRGB(198, 186, 164)
@@ -187,6 +187,16 @@ local function addSection(headerText, bodyText, headerColor)
 	body.AutomaticSize = Enum.AutomaticSize.Y
 	body.TextColor3 = Color3.fromRGB(232, 223, 205)
 end
+
+addSection("Update 31 - Study Instead of Bloodline", "• Two fields of study open up, and they advance over years rather than in one sitting. <b>Barrier Techniques</b> from 14, and <b>Reincarnation Theory</b> from 20.\n• <b>Smarts decides how fast you get there.</b> A clever sorcerer reaches Master in a decade of adult life. Nobody reaches it without spending the years.\n• <b>Death Paintings and the Culling Games are no longer locked behind being born a Kenjaku.</b> Master Reincarnation Theory and they open. Brain Transplant gets there sooner, at Expert.\n• <b>Barrier content no longer requires the barrier technique.</b> Reach Adept and the mission choices that used to check your bloodline check your studies instead.\n• Reading about moving souls costs you standing and makes people afraid of you. It is not a neutral hobby.\n• Suggested by LavieCovie.\n", Color3.fromRGB(150, 200, 255))
+
+addSection("Update 31 - Lore Accuracy", "• <b>Jujutsu High does not exist before the modern era.</b> Born earlier, you benefit the Jujutsu Society instead and register as an Apprentice. The progression is the same, the world finally says the right thing.\n• <b>Divergent Fist is not a cursed technique.</b> It never was. It leaves the technique pool and becomes a body trait, <b>Lagged Output</b>. Anyone who already has the technique keeps it.\n• <b>The Ryomen Sukuna clan is gone.</b> Sukuna was a sorcerer, not a bloodline you can be born into. Existing characters are migrated to the Itadori lineage and keep a Mythic trait, <b>Cursed Mutation</b>, for the trouble.\n• Suggested by LavieCovie.\n", Color3.fromRGB(255, 200, 90))
+
+addSection("Update 31 - Your Traits Say What They Do", "• The dossier used to list your trait names and stop there, which is why so many of you reported that traits do nothing. They were always working. Nothing ever showed it.\n• Your traits now add up into one line: combat, mission success, risk, cursed energy, smarts, happiness. Everything they are applying to you right now.\n• The Rates panel counts the full trait table live, so the numbers there can never drift from what the game actually rolls.\n• <b>Every cursed technique now has a description.</b> Fifty five of them said \"Description not yet available\" and shared the same generic line underneath. All 82 are written, on desktop and on mobile.\n", Color3.fromRGB(178, 122, 255))
+
+addSection("Update 31 - Fixes", "• <b>Forcing RCT no longer kills you anyway.</b> The client and the server both counted ten seconds but started at different moments, so pressing the button late in the window arrived after the server had already closed it. The server now allows fifteen. Reported by Light.\n• <b>Both equipped cursed tools gain affinity</b>, not just the first one. Reported by Light.\n• The imbued tool bonus was also only counting the first slot. Fixed alongside it.\n• <b>Imbuing a forged tool works.</b> It used to answer that the tool does not exist, because forged tools live in your inventory rather than the catalogue.\n• A forged tool passed down to your heir keeps its name, shape, affinity and half its uses. It used to arrive as something the game could not read at all.\n• Forged tools show up properly in World History instead of appearing blank.\n", Color3.fromRGB(120, 240, 160))
+
+addSection("Update 31 - New Code", "Redeem in Settings > Codes:\n\n• <b>Study31</b> - +$18,000, +60 CE, +8 Smarts\n", Color3.fromRGB(255, 160, 210))
 
 addSection("Update 30 - The Incident Map", "• The Incident Map is no longer a list. It is a full-screen map of <b>Tokyo Metropolis</b>, and the twelve incidents are pins on it.\n• Every pin reads its own threat: colour tells you how bad it is, and an active incident pulses faster the worse it gets.\n• The mountains of Okutama sit west, the wards and the bay east. The further you travel from the city, the uglier the site.\n• Cursed energy drifts across the map while you read it.\n• Select a site to open its dossier: threat, fear, society attention, residue and control.\n", Color3.fromRGB(178, 122, 255))
 

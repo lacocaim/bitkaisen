@@ -13,6 +13,31 @@ local scroll: ScrollingFrame
 
 local sections = {
 	{
+		header = "Update 31 - Study Instead of Bloodline",
+		body = "• Two fields of study open up, and they advance over years rather than in one sitting. Barrier Techniques from 14, and Reincarnation Theory from 20.\n• Smarts decides how fast you get there. A clever sorcerer reaches Master in a decade of adult life. Nobody reaches it without spending the years.\n• Death Paintings and the Culling Games are no longer locked behind being born a Kenjaku. Master Reincarnation Theory and they open. Brain Transplant gets there sooner, at Expert.\n• Barrier content no longer requires the barrier technique. Reach Adept and the mission choices that used to check your bloodline check your studies instead.\n• Reading about moving souls costs you standing and makes people afraid of you. It is not a neutral hobby.\n• Suggested by LavieCovie.",
+		color = theme.Blue,
+	},
+	{
+		header = "Update 31 - Lore Accuracy",
+		body = "• Jujutsu High does not exist before the modern era. Born earlier, you benefit the Jujutsu Society instead and register as an Apprentice. The progression is the same, the world finally says the right thing.\n• Divergent Fist is not a cursed technique. It never was. It leaves the technique pool and becomes a body trait, Lagged Output. Anyone who already has the technique keeps it.\n• The Ryomen Sukuna clan is gone. Sukuna was a sorcerer, not a bloodline you can be born into. Existing characters are migrated to the Itadori lineage and keep a Mythic trait, Cursed Mutation, for the trouble.\n• Suggested by LavieCovie.",
+		color = theme.Gold,
+	},
+	{
+		header = "Update 31 - Your Traits Say What They Do",
+		body = "• The dossier used to list your trait names and stop there, which is why so many of you reported that traits do nothing. They were always working. Nothing ever showed it.\n• Your traits now add up into one line: combat, mission success, risk, cursed energy, smarts, happiness. Everything they are applying to you right now.\n• The Rates panel counts the full trait table live, so the numbers there can never drift from what the game actually rolls.\n• Every cursed technique now has a description. Fifty five of them said \"Description not yet available\" and shared the same generic line underneath. All 82 are written, on desktop and on mobile.",
+		color = theme.Purple,
+	},
+	{
+		header = "Update 31 - Fixes",
+		body = "• Forcing RCT no longer kills you anyway. The client and the server both counted ten seconds but started at different moments, so pressing the button late in the window arrived after the server had already closed it. The server now allows fifteen. Reported by Light.\n• Both equipped cursed tools gain affinity, not just the first one. Reported by Light.\n• The imbued tool bonus was also only counting the first slot. Fixed alongside it.\n• Imbuing a forged tool works. It used to answer that the tool does not exist, because forged tools live in your inventory rather than the catalogue.\n• A forged tool passed down to your heir keeps its name, shape, affinity and half its uses. It used to arrive as something the game could not read at all.\n• Forged tools show up properly in World History instead of appearing blank.",
+		color = theme.Green,
+	},
+	{
+		header = "Update 31 - New Code",
+		body = "Redeem in Settings > Codes:\n\n• Study31 - +$18,000, +60 CE, +8 Smarts",
+		color = theme.Red,
+	},
+	{
 		header = "Update 30 - The Incident Map",
 		body = "• The Incident Map is no longer a list. It is a full-screen map of Tokyo Metropolis, and the twelve incidents are pins on it.\n• Every pin reads its own threat: colour tells you how bad it is, and an active incident pulses faster the worse it gets.\n• The mountains of Okutama sit west, the wards and the bay east. The further you travel from the city, the uglier the site.\n• Cursed energy drifts across the map while you read it.\n• Select a site to open its dossier: threat, fear, society attention, residue and control.",
 		color = theme.Purple,
@@ -546,7 +571,7 @@ local function renderSections()
 	local subtitleCard = mc.mobileCard({ parent = scroll, order = 0, accentColor = theme.Gold })
 	mc.mobileLabel({
 		parent = subtitleCard,
-		text = "UPDATE 30: The Incident Map, shikigami on the map, and the Simple Menu",
+		text = "UPDATE 31: Knowledge you earn, not a name you were born with",
 		size = 13,
 		color = theme.SubText,
 		order = 1,

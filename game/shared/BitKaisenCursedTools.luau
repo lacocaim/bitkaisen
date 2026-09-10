@@ -292,7 +292,9 @@ function BitKaisenCursedTools.GrowAffinity(stats, toolId, amount)
 end
 
 function BitKaisenCursedTools.ImbueTool(stats, toolId)
-	local def = BitKaisenCursedTools.GetTool(toolId)
+	-- ResolveTool, not GetTool: a forged tool is not in the catalogue, so the catalogue
+	-- lookup answered "that cursed tool does not exist" for a tool the player was holding.
+	local def = BitKaisenCursedTools.ResolveTool(stats, toolId)
 	if not def then
 		return false, "That cursed tool does not exist."
 	end

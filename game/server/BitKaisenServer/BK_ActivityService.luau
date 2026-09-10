@@ -19,6 +19,7 @@ local BitKaisenTechniqueEvolution = require(ReplicatedStorage:WaitForChild("BitK
 local BitKaisenCurseEvolution = require(ReplicatedStorage:WaitForChild("BitKaisenCurseEvolution"))
 local BitKaisenCombat = require(ReplicatedStorage:WaitForChild("BitKaisenCombat"))
 local BitKaisenStats = require(ReplicatedStorage:WaitForChild("BitKaisenStats"))
+local BitKaisenStudies = require(ReplicatedStorage:WaitForChild("BitKaisenStudies"))
 local BitKaisenCursedTools = require(ReplicatedStorage:WaitForChild("BitKaisenCursedTools"))
 
 local BK_ActivityService = {}
@@ -210,6 +211,10 @@ local function enrollInJujutsuHigh(player, stats)
 
 	local officialGrade = getEstimatedUnregisteredGrade and getEstimatedUnregisteredGrade(stats) or tostring(stats.Grade or "Grade 4")
 
+	-- Update 31: a Heian or Edo life is taken in by the jujutsu society, not enrolled in a
+	-- high school that would not exist for another thousand years. Raised by LavieCovie.
+	local institution = BitKaisenStats.GetJujutsuInstitution(stats)
+
 	stats.InJujutsuHigh = true
 	stats.RegisteredSorcerer = true
 	stats.Grade = officialGrade
@@ -219,37 +224,37 @@ local function enrollInJujutsuHigh(player, stats)
 	stats.UnregisteredGradeUps = 0
 	stats.Reputation = (tonumber(stats.Reputation) or 0) + 10
 	stats.Happiness = math.clamp((tonumber(stats.Happiness) or 100) + 12, 0, 100)
-	stats.Affiliation = "Jujutsu High"
-	stats.AffiliationRank = "Student"
+	stats.Affiliation = institution.Name
+	stats.AffiliationRank = institution.Rank
 	stats.AffiliationReputation = math.clamp((tonumber(stats.AffiliationReputation) or 0) + 10, 0, 100)
-	stats.LifePath = "Jujutsu High"
+	stats.LifePath = institution.Name
 
 	local repText = ""
 	if adjustWorldReputation then
 		repText = adjustWorldReputation(stats, 3, 0, 4) or ""
 	end
 
-	local logMsg = "You were accepted into Jujutsu High and officially registered as <b>" .. tostring(officialGrade) .. "</b>." .. repText
+	local logMsg = institution.AcceptLine .. "<b>" .. tostring(officialGrade) .. "</b>." .. repText
 
 	local teacher = BitKaisenRelationships.AddTeacher(stats)
 
 	if fireMajorPopup then
 		fireMajorPopup(
 			player,
-			"JUJUTSU HIGH ACCEPTANCE",
-			"Your application was reviewed by the jujutsu world.",
+			institution.AcceptTitle,
+			institution.AcceptBody,
 			"Accepted",
 			"Your unregistered grade became official."
 		)
 	end
 
 	if teacher then
-		logMsg = logMsg .. "\n" .. teacher.Name .. " was assigned as one of your instructors."
+		logMsg = logMsg .. "\n" .. teacher.Name .. institution.TeacherLine
 		if fireMajorPopup then
 			fireMajorPopup(
 				player,
 				"TEACHER ASSIGNED",
-				"Someone at Jujutsu High will be watching your progress.",
+				"Someone at " .. institution.Name .. " will be watching your progress.",
 				teacher.Name,
 				"Teachers can submit promotion recommendations."
 			)
@@ -1372,10 +1377,22 @@ local function hasBrainTransplant(stats)
 	return technique == "Brain Transplant" or innate == "Brain Transplant"
 end
 
-local function isKenjakuClan(stats)
-	local clan = tostring(stats and stats.Clan or "")
-	local origin = tostring(stats and stats.Origin or "")
-	return clan == "Kenjaku Clan" or origin == "Kenjaku Clan"
+-- Update 31: what used to be a clan check. Raised by LavieCovie: there is nothing about
+-- Kenjaku's lineage that is inheritable, so gating the Culling Games behind a family was
+-- backwards. The gate is the knowledge now, which is the thing Kenjaku actually had, and
+-- a life has to spend years on it. The clan itself no longer rolls at birth, and the
+-- sorcerers who already have it keep it without it being the requirement any more.
+--
+-- Two ways in, and both of them cost a life. Someone who already carries Brain Transplant
+-- needs Expert to put it to this use. Someone who does not can still get there by taking
+-- Reincarnation Theory all the way to Master, which is roughly a decade of an adult life
+-- spent on one subject and is exactly how Kenjaku got there. Without that second door the
+-- content would be unreachable the moment the clan stopped being handed out at birth.
+local function canWorkDeathPaintings(stats)
+	if BitKaisenStudies.IsAtLeast(stats, "reincarnation", "master") then
+		return true
+	end
+	return hasBrainTransplant(stats) and BitKaisenStudies.IsAtLeast(stats, "reincarnation", "expert")
 end
 
 local function shouldShowActivityForPlayer(player, stats, activity)
@@ -1387,11 +1404,11 @@ local function shouldShowActivityForPlayer(player, stats, activity)
 		return false
 	end
 
-	if activity.Id == "create_death_painting" and not (isKenjakuClan(stats) and hasBrainTransplant(stats)) then
+	if activity.Id == "create_death_painting" and not canWorkDeathPaintings(stats) then
 		return false
 	end
 
-	if activity.Id == "cast_culling_games" and not (isKenjakuClan(stats) and hasBrainTransplant(stats)) then
+	if activity.Id == "cast_culling_games" and not canWorkDeathPaintings(stats) then
 		return false
 	end
 
@@ -1851,8 +1868,8 @@ local function processActivity(player, activityId)
 		logMessage = tAct(player, "surgery_result", { gain = looksGain }, "You paid for cosmetic surgery. Looks +" .. tostring(looksGain) .. ".")
 
 	elseif activityId == "create_death_painting" then
-		if not (isKenjakuClan(stats) and hasBrainTransplant(stats)) then
-			fireLifeUpdate(player, stats, tAct(player, "death_painting_gate", nil, "Only Kenjaku Clan sorcerers with Brain Transplant can create Death Paintings."))
+		if not canWorkDeathPaintings(stats) then
+			fireLifeUpdate(player, stats, tAct(player, "death_painting_gate", nil, "You need Master level Reincarnation Theory, or Brain Transplant with Expert level, to shape a Death Painting."))
 			return false
 		end
 		stats.DeathPaintings = typeof(stats.DeathPaintings) == "table" and stats.DeathPaintings or {}
@@ -1880,8 +1897,8 @@ local function processActivity(player, activityId)
 		fireMajorPopup(player, "DEATH PAINTING BORN", "A new cursed existence took shape.", paintingName, "You can invoke it once per age during combat.")
 
 	elseif activityId == "cast_culling_games" then
-		if not (isKenjakuClan(stats) and hasBrainTransplant(stats)) then
-			fireLifeUpdate(player, stats, tAct(player, "culling_games_gate", nil, "Only Kenjaku Clan sorcerers with Brain Transplant can cast the Culling Games."))
+		if not canWorkDeathPaintings(stats) then
+			fireLifeUpdate(player, stats, tAct(player, "culling_games_gate", nil, "You need Master level Reincarnation Theory, or Brain Transplant with Expert level, to cast the Culling Games."))
 			return false
 		end
 		if stats.CullingGamesCast == true then
@@ -1927,6 +1944,45 @@ local function processActivity(player, activityId)
 		stats.Smarts = math.clamp((stats.Smarts or 0) + update16Gain(stats, 3, 8, true), 0, 100)
 		stats.Happiness = math.clamp((stats.Happiness or 100) - math.random(1, 5), 0, 100)
 		logMessage = tAct(player, "study_theory", nil, "You studied jujutsu theory.")
+
+	-- Update 31: the two fields of accumulated study. Both run through the same handler
+	-- because the only thing that differs is which field advances and what the world thinks
+	-- of you for reading it.
+	elseif activityId == "study_barriers" or activityId == "study_reincarnation" then
+		local fieldId = activityId == "study_barriers" and "barrier" or "reincarnation"
+		local canStudy, reason = BitKaisenStudies.CanStudy(stats, fieldId)
+		if not canStudy then
+			stats.ActivitiesDoneThisAge -= 1
+			fireLifeUpdate(player, stats, tostring(reason or "You cannot study that yet."))
+			return false
+		end
+
+		local field = BitKaisenStudies.GetField(fieldId)
+		local gain, leveled, level = BitKaisenStudies.Study(stats, fieldId)
+		stats.Smarts = math.clamp((stats.Smarts or 0) + update16Gain(stats, 2, 5, true), 0, 100)
+		stats.Happiness = math.clamp((stats.Happiness or 100) - math.random(1, 4), 0, 100)
+
+		logMessage = "You spent the year on " .. field.Name .. ". Knowledge +" .. tostring(gain)
+			.. ", now " .. tostring(level.Name) .. "."
+
+		-- Reading about moving souls is not a neutral hobby. The society notices, and the
+		-- cost is paid in standing rather than in a new counter nothing else reads.
+		if fieldId == "reincarnation" then
+			stats.Reputation = (tonumber(stats.Reputation) or 0) - math.random(0, 2)
+			stats.Fear = math.clamp((tonumber(stats.Fear) or 0) + math.random(0, 2), 0, 100)
+		end
+
+		if leveled then
+			fireMajorPopup(
+				player,
+				"STUDY",
+				field.Name .. " advanced.",
+				tostring(leveled.Name),
+				fieldId == "reincarnation" and leveled.Id == "expert"
+					and "Death Paintings and the Culling Games are within reach now."
+					or "Years of reading are starting to show."
+			)
+		end
 
 	elseif activityId == "expand_curse_knowledge" then
 		stats.Smarts = math.clamp((stats.Smarts or 0) + update16Gain(stats, 5, 10, true), 0, 100)
@@ -3141,7 +3197,7 @@ local function processActivity(player, activityId)
 			{ Clan = "Fushiguro Lineage", Family = "Fushiguro", CE = 18, Weight = 14 },
 			{ Clan = "Itadori Lineage", Family = "Itadori", CE = 18, Weight = 12 },
 			{ Clan = "Gojo Clan", Family = "Gojo", CE = 26, Weight = 5 },
-			{ Clan = "Ryomen Clan", Family = "Ryomen", CE = 30, Weight = 2 },
+
 		}
 		local totalWeight = 0
 		for _, entry in ipairs(featuredPool) do totalWeight += entry.Weight end
@@ -3816,9 +3872,13 @@ local function processActivity(player, activityId)
 				fireLifeUpdate(player, stats, "<font color='#d6455d'><b>[ SUKUNA ]</b></font> You consumed the fingers. The curse overwhelmed your body and killed you.")
 			end
 		elseif roll <= 65 then
-			stats.Origin = "Ryomen Clan"
-			stats.Clan = "Ryomen Clan"
-			stats.FamilyName = "Ryomen"
+			-- Update 31: eating the fingers does not put you in a family. It changes what is
+			-- in your blood. Raised by LavieCovie: "Ryomen Sukuna" is a title, not a clan, so
+			-- the anomaly is a mutation carried by an Itadori, which is Sukuna's own case.
+			stats.Origin = "Itadori Lineage"
+			stats.Clan = "Itadori Lineage"
+			stats.FamilyName = "Itadori"
+			BitKaisenTraits.AddTrait(stats, "cursed_mutation")
 			if not stats.CursedTechnique or stats.CursedTechnique == "" or stats.CursedTechnique == "None" then
 				stats.CursedTechnique = "Shrine"
 				stats.InnateTechnique = "Shrine"

@@ -103,7 +103,53 @@ body.TextWrapped = true
 body.RichText = true
 body.ZIndex = 646
 body.Parent = panel
-body.Text = "<b>Clan Rates</b>\nCommon Clan - 65%\nUncommon Clan - 20%\nRare Clan - 10%\nEpic Clan - 3.5%\nLegendary Clan - 1.4%  Example: Itadori\nHonored Clan - 0.09%  Example: Gojo\nSecret Clan - ???  Examples: Pumpkin, Ryomen\n\n<b>Cursed Technique Rates</b>\nCommon CT - 65%\nUncommon CT - 20%\nRare CT - 10%\nEpic CT - 3.5%\nLegendary CT - 1.4%\nHonored CT - 0.09%\nSecret CT - ???\n\nSecret rates are intentionally hidden."
+-- Update 31: the traits section. Asked for by Vigilante, who wanted a list of traits the
+-- way there is already a list of clans. There are 263 of them, which is too many to print,
+-- so this answers the question behind the request instead: what kinds exist, how rare each
+-- kind is, and where they come from. The counts are read from the trait table at load, so
+-- they cannot go stale the way a hand-written number would.
+local traitCounts = { total = 0, byRarity = {}, byCategory = {} }
+do
+	local ok, traits = pcall(function()
+		return require(game:GetService("ReplicatedStorage"):WaitForChild("BitKaisenTraits", 5))
+	end)
+	if ok and typeof(traits) == "table" and typeof(traits.Definitions) == "table" then
+		for _, definition in ipairs(traits.Definitions) do
+			if definition.Id and definition.Name then
+				traitCounts.total += 1
+				local rarity = tostring(definition.Rarity or "Common")
+				local category = tostring(definition.Category or "Other")
+				traitCounts.byRarity[rarity] = (traitCounts.byRarity[rarity] or 0) + 1
+				traitCounts.byCategory[category] = (traitCounts.byCategory[category] or 0) + 1
+			end
+		end
+	end
+end
+
+local function traitLine(rarity: string): string
+	local count = traitCounts.byRarity[rarity] or 0
+	if count <= 0 then
+		return ""
+	end
+	return "\n" .. rarity .. " Trait - " .. tostring(count) .. " of them"
+end
+
+local traitSection = ""
+if traitCounts.total > 0 then
+	traitSection = "\n\n<b>Traits</b>\n"
+		.. tostring(traitCounts.total) .. " traits exist. You are born with some and earn the rest by living."
+		.. traitLine("Common")
+		.. traitLine("Uncommon")
+		.. traitLine("Rare")
+		.. traitLine("Legendary")
+		.. traitLine("Mythic")
+		.. "\n\nThey come from your personality, your body, your bloodline, your work, and the things that happen to you."
+		.. "\nSelect a trait on your dossier to see exactly what it is doing to your numbers."
+end
+
+body.Text = "<b>Clan Rates</b>\nCommon Clan - 65%\nUncommon Clan - 20%\nRare Clan - 10%\nEpic Clan - 3.5%\nLegendary Clan - 1.4%  Example: Itadori\nHonored Clan - 0.09%  Example: Gojo\nSecret Clan - ???  Example: Pumpkin King\n\n<b>Cursed Technique Rates</b>\nCommon CT - 65%\nUncommon CT - 20%\nRare CT - 10%\nEpic CT - 3.5%\nLegendary CT - 1.4%\nHonored CT - 0.09%\nSecret CT - ???"
+	.. traitSection
+	.. "\n\nSecret rates are intentionally hidden."
 
 responsiveScale.attach(panel, 430, 420)
 

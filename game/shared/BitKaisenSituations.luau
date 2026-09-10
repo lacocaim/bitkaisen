@@ -20,6 +20,7 @@
 
 local BitKaisenSituations = {}
 local BitKaisenStats = require(game:GetService("ReplicatedStorage"):WaitForChild("BitKaisenStats"))
+local BitKaisenStudies = require(game:GetService("ReplicatedStorage"):WaitForChild("BitKaisenStudies"))
 
 local GRADE_ORDER = {
 	["Grade 4"] = 1,
@@ -1501,6 +1502,16 @@ local function hasSpecificTechnique(stats, requiredTechnique)
 		if normalizeTechniqueName(techniqueName) == required then
 			return true
 		end
+	end
+
+	-- Update 31: barriers are a discipline, not a birthright. Raised by LavieCovie, who
+	-- pointed out that "Barrier Techniques" should never have been a cursed technique and
+	-- that finesse with them should come from study and Smarts. Anyone who has taken
+	-- Barrier Techniques to Adept can now take these options, alongside the clans who are
+	-- still born knowing them. The technique itself is left in place: stripping it would
+	-- take the Yamashiro and Fujiwara their signature away to win a naming argument.
+	if required == normalizeTechniqueName("Barrier Technique") then
+		return BitKaisenStudies.IsAtLeast(stats, "barrier", "adept")
 	end
 
 	return false

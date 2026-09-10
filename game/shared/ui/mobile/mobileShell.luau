@@ -10,6 +10,8 @@ local remotes = require("@ui-state/remotes")
 local mc = require("@ui/mobile/mobileComponents")
 local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
 local BitKaisenCombat = require(ReplicatedStorage:WaitForChild("BitKaisenCombat"))
+local BitKaisenTraits = require(ReplicatedStorage:WaitForChild("BitKaisenTraits"))
+local BitKaisenStudies = require(ReplicatedStorage:WaitForChild("BitKaisenStudies"))
 local bindTap = mc.bindTap
 
 local L = BitKaisenLocale.getClientLocale()
@@ -154,11 +156,12 @@ local function DossierBar(label: string, color: Color3, getValue: () -> number, 
 	}
 end
 
-local function DInfoRow(label: string, val: any, color: Color3?, valueName: string?)
+local function DInfoRow(label: string, val: any, color: Color3?, valueName: string?, visible: any)
 	return create("Frame") {
 		Size = UDim2.new(1, 0, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundTransparency = 1,
+		Visible = visible,
 		create("UISizeConstraint") { MinSize = Vector2.new(0, 17) },
 		create("TextLabel") {
 			Size = UDim2.new(0, 60, 0, 17),
@@ -211,6 +214,35 @@ local function MobileProfileHeader()
 	local lineageVal = derive(function() return helpers.getLineageText(stats()) end)
 	local techVal   = derive(function() local s = stats() return tostring(s and s.CursedTechnique or "None") end)
 	local traitVal  = derive(function() local s = stats() return tostring(s and s.TraitSummary or "None") end)
+	-- Update 31: what those traits are actually doing, added up. See ProfileCard.
+	local traitEffectVal = derive(function()
+		local s = stats()
+		return (s and BitKaisenTraits.GetModifierSummary(s)) or "No active modifiers"
+	end)
+	-- Update 31: where you stand in each field of study. Same reasoning as the desktop
+	-- ProfileCard, and mobile gets it at the same time so the two dossiers do not drift
+	-- the way the stat weights did in Update 30.
+	local studiesVal = derive(function()
+		local s = stats()
+		if not s then return "" end
+		local parts = {}
+		for _, field in ipairs(BitKaisenStudies.FIELDS) do
+			local progress = BitKaisenStudies.GetProgress(s, field.Id)
+			if progress > 0 then
+				local level = BitKaisenStudies.GetLevel(s, field.Id)
+				local nextLevel = BitKaisenStudies.GetNextLevel(s, field.Id)
+				local text = field.Name .. ": " .. level.Name
+				if nextLevel then
+					text = text .. " (" .. tostring(math.max(0, nextLevel.Progress - progress))
+						.. " to " .. nextLevel.Name .. ")"
+				end
+				table.insert(parts, text)
+			end
+		end
+		return table.concat(parts, " | ")
+	end)
+	local studiesVisible = derive(function() return studiesVal() ~= "" end)
+
 	local ceVal     = derive(function() local s = stats() return tostring(s and s.CursedEnergy or 0) end)
 	local cePotVal  = derive(function() local s = stats() return tostring(s and s.CEPotential or 0) end)
 	local ceOutVal  = derive(function() local s = stats() return tostring(s and s.CEOutput or 0) end)
@@ -560,6 +592,8 @@ local function MobileProfileHeader()
 						},
 					},
 					DInfoRow(_ui("dossier_traits", "Traits"), traitVal, theme.Gold, "Traits"),
+					DInfoRow(_ui("dossier_trait_effect", "Doing"), traitEffectVal, theme.Green),
+					DInfoRow(_ui("dossier_studies", "Studies"), studiesVal, theme.Blue, nil, studiesVisible),
 				},
 
 				-- Right column
@@ -588,11 +622,7 @@ local function MobileProfileHeader()
 					end)(),
 					DInfoRow(_ui("dossier_money",     "Money"),     moneyVal,  theme.Green),
 					DInfoRow(_ui("dossier_rep",       "Rep"),       repVal,    repColor),
-					(function()
-						local row = DInfoRow(_ui("dossier_karma", "Karma"), karmaVal, theme.Gold)
-						row.Visible = karmaVisible
-						return row
-					end)(),
+					DInfoRow(_ui("dossier_karma", "Karma"), karmaVal, theme.Gold, nil, karmaVisible),
 					DInfoRow(_ui("dossier_school",    "School"),    schoolVal, theme.Blue),
 					DInfoRow(_ui("dossier_path",      "Path"),      pathVal,   pathColor),
 					DInfoRow(_ui("dossier_alignment", "Alignment"), alignVal,  alignColor),

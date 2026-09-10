@@ -8,6 +8,8 @@ local uiState = require("@ui-state/uiState")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local BitKaisenLocale = require(ReplicatedStorage:WaitForChild("locale"))
 local BitKaisenCombat = require(ReplicatedStorage:WaitForChild("BitKaisenCombat"))
+local BitKaisenTraits = require(ReplicatedStorage:WaitForChild("BitKaisenTraits"))
+local BitKaisenStudies = require(ReplicatedStorage:WaitForChild("BitKaisenStudies"))
 local _pcL = BitKaisenLocale.getClientLocale()
 local function _pc(key, fallback) return BitKaisenLocale.tOrFallback(_pcL, "ui." .. key, nil, fallback) end
 
@@ -85,11 +87,17 @@ local function DossierBar(title: string, color: Color3, getValue: () -> number, 
 	}
 end
 
-local function DInfoRow(label: string, val: any, color: Color3?, valueName: string?)
+-- `visible` must be passed in here rather than assigned onto the returned Frame afterwards.
+-- Roblox silently swallows `frame.Visible = <function>`: it does not error, it coerces the
+-- function to true, and the row is then visible forever. That is why every conditional row
+-- in this card was showing even when empty. Only vide's own property binding, applied at
+-- creation, actually tracks the source.
+local function DInfoRow(label: string, val: any, color: Color3?, valueName: string?, visible: any)
 	return create("Frame") {
 		Size = UDim2.new(1, 0, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundTransparency = 1,
+		Visible = visible,
 		create("UISizeConstraint") { MinSize = Vector2.new(0, 18) },
 		create("TextLabel") {
 			Size = UDim2.new(0, 68, 0, 18),
@@ -108,6 +116,42 @@ local function DInfoRow(label: string, val: any, color: Color3?, valueName: stri
 			AutomaticSize = Enum.AutomaticSize.Y,
 			BackgroundTransparency = 1,
 			Text = val,
+			TextColor3 = color or theme.Text,
+			TextSize = 11,
+			Font = Enum.Font.GothamBlack,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			TextYAlignment = Enum.TextYAlignment.Center,
+			TextWrapped = true,
+		},
+	}
+end
+
+-- A Cursed Data row: hides itself while its getter returns nil, and keeps its slot in the
+-- list. `getter` returns the text or nil, so the visibility and the value stay one source.
+local function DInfoRowOrdered(label: string, getter: () -> string?, color: Color3?, order: number)
+	return create("Frame") {
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 1,
+		LayoutOrder = order,
+		Visible = function() return getter() ~= nil end,
+		create("UISizeConstraint") { MinSize = Vector2.new(0, 18) },
+		create("TextLabel") {
+			Size = UDim2.new(0, 68, 0, 18),
+			BackgroundTransparency = 1,
+			Text = "\226\128\162 " .. string.upper(label),
+			TextColor3 = LABEL,
+			TextSize = 8,
+			Font = Enum.Font.GothamBold,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			TextYAlignment = Enum.TextYAlignment.Center,
+		},
+		create("TextLabel") {
+			Position = UDim2.new(0, 70, 0, 0),
+			Size = UDim2.new(1, -70, 0, 0),
+			AutomaticSize = Enum.AutomaticSize.Y,
+			BackgroundTransparency = 1,
+			Text = function() return getter() or "" end,
 			TextColor3 = color or theme.Text,
 			TextSize = 11,
 			Font = Enum.Font.GothamBlack,
@@ -184,6 +228,15 @@ local function ProfileCard()
 		return technique
 	end)
 	local traitVal    = derive(function() local s = stats() return tostring(s and s.TraitSummary or "None") end)
+	-- Update 31: the row used to list trait names and stop there, which is why players
+	-- kept reporting that traits do nothing. They do. This adds up every modifier the
+	-- traits are applying and says so, the way the stat bars started doing in Update 30.
+	-- Computed here rather than on the server so it can never disagree with the traits
+	-- the player actually holds.
+	local traitEffectVal = derive(function()
+		local s = stats()
+		return (s and BitKaisenTraits.GetModifierSummary(s)) or "No active modifiers"
+	end)
 	local ceTraitVal  = derive(function() local s = stats() local t = s and tostring(s.CETrait or "") return (t and t ~= "") and ("Cursed Energy: " .. t) or "None" end)
 	local assistantVal = derive(function()
 		local s = stats()
@@ -228,6 +281,31 @@ local function ProfileCard()
 		return tostring(s.TechniqueEvolutionStage or "Dormant") .. " | " .. tostring(s.TechniqueBranch or "None")
 	end)
 	local recVal    = derive(function() local s = stats() return tostring(s and s.TeacherRecommendations or 0) end)
+	-- Update 31: a field of study is a decade of a life and it gates real content, so the
+	-- dossier has to say where you stand in it. Without this the only feedback is a log
+	-- line that scrolls away, which is the exact problem the Doing row was added to fix.
+	-- Fields you have never opened stay hidden instead of showing Untrained forever.
+	local studiesVal = derive(function()
+		local s = stats()
+		if not s then return "" end
+		local parts = {}
+		for _, field in ipairs(BitKaisenStudies.FIELDS) do
+			local progress = BitKaisenStudies.GetProgress(s, field.Id)
+			if progress > 0 then
+				local level = BitKaisenStudies.GetLevel(s, field.Id)
+				local nextLevel = BitKaisenStudies.GetNextLevel(s, field.Id)
+				local text = field.Name .. ": " .. level.Name
+				if nextLevel then
+					text = text .. " (" .. tostring(math.max(0, nextLevel.Progress - progress))
+						.. " to " .. nextLevel.Name .. ")"
+				end
+				table.insert(parts, text)
+			end
+		end
+		return table.concat(parts, " | ")
+	end)
+	local studiesVisible = derive(function() return studiesVal() ~= "" end)
+
 	local karmaVal  = derive(function() local s = stats() return tostring(s and s.KarmaLevel or "") end)
 	local karmaVisible = derive(function() local s = stats() return s and s.KarmaLevel ~= nil end)
 	local progressVal = derive(function() return helpers.getProfileProgressText(stats()) or "" end)
@@ -574,6 +652,8 @@ local function ProfileCard()
 							uiState.navigate("technique_mastery")
 						end),
 						DInfoRow(_pc("dossier_traits",    "Traits"),    traitVal,     theme.Gold, "Traits"),
+						DInfoRow(_pc("dossier_trait_effect", "Doing"),  traitEffectVal, theme.Green),
+						DInfoRow(_pc("dossier_studies", "Studies"), studiesVal, theme.Blue, nil, studiesVisible),
 						DInfoRow(_pc("dossier_cetrait",   "CE Trait"),  ceTraitVal,   theme.Purple),
 						DInfoRow(_pc("dossier_assistant", "Assistant"), assistantVal, theme.SubText),
 					},
@@ -598,11 +678,7 @@ local function ProfileCard()
 						DInfoRow(_pc("dossier_jjh_pop",   "JJH Pop."),    popularityVal, theme.Gold),
 						DInfoRow(_pc("dossier_tech_stage","Tech Stage"),  evolutionVal, theme.Purple),
 						DInfoRow(_pc("dossier_recs",      "Recs"),        recVal,       theme.Orange),
-						(function()
-							local row = DInfoRow(_pc("dossier_karma", "Karma"), karmaVal, theme.Gold)
-							row.Visible = karmaVisible
-							return row
-						end)(),
+						DInfoRow(_pc("dossier_karma", "Karma"), karmaVal, theme.Gold, nil, karmaVisible),
 					},
 				},
 
@@ -751,53 +827,18 @@ local function ProfileCard()
 								LayoutOrder = 2,
 								create("UIListLayout") { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 5) },
 
-								(function()
-									local row = DInfoRow("RCT Revives", function() return rctRevivesText() or "" end, theme.Green)
-									row.Visible = function() return rctRevivesText() ~= nil end
-									row.LayoutOrder = 1
-									return row
-								end)(),
-								(function()
-									local row = DInfoRow("Banked RCT", function() return rctPendingText() or "" end, theme.Green)
-									row.Visible = function() return rctPendingText() ~= nil end
-									row.LayoutOrder = 2
-									return row
-								end)(),
-								(function()
-									local row = DInfoRow("CE Trait", function() return ceTraitName() or "" end, theme.Purple)
-									row.Visible = function() return ceTraitName() ~= nil end
-									row.LayoutOrder = 3
-									return row
-								end)(),
+								DInfoRowOrdered("RCT Revives", rctRevivesText, theme.Green, 1),
+								DInfoRowOrdered("Banked RCT", rctPendingText, theme.Green, 2),
+								DInfoRowOrdered("CE Trait", ceTraitName, theme.Purple, 3),
 								(function()
 									local row = DInfoRow("Awakening", awakeningText, awakeningColor)
 									row.LayoutOrder = 4
 									return row
 								end)(),
-								(function()
-									local row = DInfoRow("Times Exorcised", function() return timesExorcisedText() or "" end, theme.Orange)
-									row.Visible = function() return timesExorcisedText() ~= nil end
-									row.LayoutOrder = 5
-									return row
-								end)(),
-								(function()
-									local row = DInfoRow("Binding Vow", function() return bindingVowText() or "" end, theme.Gold)
-									row.Visible = function() return bindingVowText() ~= nil end
-									row.LayoutOrder = 6
-									return row
-								end)(),
-								(function()
-									local row = DInfoRow("VoD RCT", function() return vodRCTText() or "" end, vodRCTColor)
-									row.Visible = function() return vodRCTText() ~= nil end
-									row.LayoutOrder = 7
-									return row
-								end)(),
-								(function()
-									local row = DInfoRow("RCT 2nd Chances", function() return rctSecondChancesText() or "" end, theme.Green)
-									row.Visible = function() return rctSecondChancesText() ~= nil end
-									row.LayoutOrder = 8
-									return row
-								end)(),
+								DInfoRowOrdered("Times Exorcised", timesExorcisedText, theme.Orange, 5),
+								DInfoRowOrdered("Binding Vow", bindingVowText, theme.Gold, 6),
+								DInfoRowOrdered("VoD RCT", vodRCTText, vodRCTColor, 7),
+								DInfoRowOrdered("RCT 2nd Chances", rctSecondChancesText, theme.Green, 8),
 							}
 							return rows
 						end)(),

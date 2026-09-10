@@ -22,7 +22,7 @@ local CLAN_RATES = {
 	{ Tier = "Epic Clan", Rate = "3.5%", Color = theme.Purple },
 	{ Tier = "Legendary Clan", Rate = "1.4%", Color = theme.Gold, Note = "Example: Itadori" },
 	{ Tier = "Honored Clan", Rate = "0.09%", Color = theme.Orange, Note = "Example: Gojo" },
-	{ Tier = "Secret Clan", Rate = "???", Color = theme.Bad, Note = "Examples: Pumpkin, Ryomen" },
+	{ Tier = "Secret Clan", Rate = "???", Color = theme.Bad, Note = "Example: Pumpkin King" },
 }
 
 local CT_RATES = {
@@ -34,6 +34,42 @@ local CT_RATES = {
 	{ Tier = "Honored CT", Rate = "0.09%", Color = theme.Orange },
 	{ Tier = "Secret CT", Rate = "???", Color = theme.Bad },
 }
+
+-- Update 31: the traits section, asked for by Vigilante. Counted from the trait table at
+-- load rather than typed in, so the numbers cannot drift from the game. Mirrors the
+-- desktop RatesPanel.
+local TRAIT_RATES = {}
+do
+	local counts, total = {}, 0
+	local ok, traits = pcall(function()
+		return require(game:GetService("ReplicatedStorage"):WaitForChild("BitKaisenTraits", 5))
+	end)
+	if ok and typeof(traits) == "table" and typeof(traits.Definitions) == "table" then
+		for _, definition in ipairs(traits.Definitions) do
+			if definition.Id and definition.Name then
+				total += 1
+				local rarity = tostring(definition.Rarity or "Common")
+				counts[rarity] = (counts[rarity] or 0) + 1
+			end
+		end
+	end
+	local order = {
+		{ "Common", theme.SubText }, { "Uncommon", theme.SubText }, { "Rare", theme.Blue },
+		{ "Legendary", theme.Gold }, { "Mythic", theme.Bad },
+	}
+	for _, entry in ipairs(order) do
+		local count = counts[entry[1]]
+		if count and count > 0 then
+			table.insert(TRAIT_RATES, { Tier = entry[1] .. " Trait", Rate = tostring(count), Color = entry[2] })
+		end
+	end
+	if total > 0 then
+		table.insert(TRAIT_RATES, 1, {
+			Tier = "All traits", Rate = tostring(total), Color = theme.Text,
+			Note = "Born with some, the rest are earned by living",
+		})
+	end
+end
 
 local function clearScroll()
 	for _, child in ipairs(scroll:GetChildren()) do
@@ -122,11 +158,17 @@ local function refresh()
 	buildSection("Clan Rates", CLAN_RATES, 0)
 	buildSection("Cursed Technique Rates", CT_RATES, 1)
 
+	local footerOrder = 2
+	if #TRAIT_RATES > 0 then
+		buildSection("Traits", TRAIT_RATES, 2)
+		footerOrder = 3
+	end
+
 	local footerCard = mobileCard({
 		parent = scroll,
 		color = Color3.fromRGB(30, 26, 18),
 		accentColor = theme.Muted,
-		order = 2,
+		order = footerOrder,
 	})
 
 	mobileLabel({
